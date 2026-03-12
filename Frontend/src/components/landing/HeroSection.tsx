@@ -21,7 +21,12 @@ const LowPolyBackground = () => (
         <stop offset="100%" stopColor="#FD5A1A" />
       </linearGradient>
       <filter id="noise" x="0%" y="0%" width="100%" height="100%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" />
+        <feTurbulence
+          type="fractalNoise"
+          baseFrequency="0.65"
+          numOctaves="3"
+          stitchTiles="stitch"
+        />
         <feColorMatrix type="saturate" values="0" />
         <feBlend in="SourceGraphic" mode="multiply" result="blend" />
         <feComposite in="blend" in2="SourceGraphic" operator="in" />
@@ -56,7 +61,11 @@ const LowPolyBackground = () => (
     <polygon points="800,160 860,70 1000,175" fill="#A6E5FA" opacity="0.8" />
     <polygon points="860,70 1080,85 1000,175" fill="#80CEF3" opacity="0.85" />
     <polygon points="1000,175 1080,85 1200,150" fill="#66BDEC" opacity="0.8" />
-    <polygon points="1000,175 1200,150 1200,280" fill="#99DFF9" opacity="0.75" />
+    <polygon
+      points="1000,175 1200,150 1200,280"
+      fill="#99DFF9"
+      opacity="0.75"
+    />
     {/* Middle row – warm white/light transition */}
     <polygon points="0,280 200,170 240,300" fill="#FDFEFE" opacity="0.7" />
     <polygon points="0,280 240,300 0,420" fill="#FDFEFE" opacity="0.75" />
@@ -92,7 +101,11 @@ const LowPolyBackground = () => (
     <polygon points="680,430 900,425 840,550" fill="#FD5A1A" opacity="0.9" />
     <polygon points="840,550 900,425 1100,545" fill="#FD6D33" opacity="0.85" />
     <polygon points="900,425 1200,530 1100,545" fill="#FD5A1A" opacity="0.9" />
-    <polygon points="1100,545 1200,530 1200,700" fill="#E34D14" opacity="0.85" />
+    <polygon
+      points="1100,545 1200,530 1200,700"
+      fill="#E34D14"
+      opacity="0.85"
+    />
     <polygon points="0,700 320,560 400,700" fill="#CC4511" opacity="0.9" />
     <polygon points="320,560 600,555 500,700" fill="#E34D14" opacity="0.85" />
     <polygon points="600,555 840,550 700,700" fill="#CC4511" opacity="0.9" />
@@ -133,12 +146,12 @@ const HeroSection = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="font-hero text-5xl sm:text-6xl lg:text-8xl leading-[1.05] tracking-wide mb-6 text-center text-white drop-shadow-2xl"
+            className="font-hero text-4xl sm:text-6xl lg:text-8xl leading-tight md:leading-[1.05] tracking-tight md:tracking-wide mb-6 text-center text-white drop-shadow-2xl px-2"
           >
             SMART LEARNING
             <br className="hidden md:block" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] via-[#FD5A1A] to-[#0075CF]">
-              MANAGEMENT SYSTEM
+              {" "}MANAGEMENT SYSTEM
             </span>
           </motion.h1>
 
@@ -205,7 +218,7 @@ const HeroSection = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.55 }}
-            className="flex flex-wrap justify-center gap-8 md:gap-16 mt-16 pt-8 border-t border-white/20"
+            className="grid grid-cols-2 md:flex md:flex-wrap justify-items-center md:justify-center gap-y-8 gap-x-4 md:gap-16 mt-16 pt-8 border-t border-white/20"
           >
             {[
               { value: "10K+", label: "Active Students" },
@@ -213,11 +226,13 @@ const HeroSection = () => {
               { value: "100+", label: "Courses" },
               { value: "95%", label: "Success Rate" },
             ].map((stat) => (
-              <div key={stat.label} className="text-center">
-                <p className="text-3xl md:text-4xl font-black text-white drop-shadow">
+              <div key={stat.label} className="text-center w-full md:w-auto">
+                <p className="text-2xl sm:text-3xl md:text-4xl font-black text-white drop-shadow">
                   {stat.value}
                 </p>
-                <p className="text-sm text-white/60 mt-1 font-semibold tracking-wide">{stat.label}</p>
+                <p className="text-[10px] md:text-sm text-white/60 mt-1 font-semibold tracking-wider uppercase">
+                  {stat.label}
+                </p>
               </div>
             ))}
           </motion.div>

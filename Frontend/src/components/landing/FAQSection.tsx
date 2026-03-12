@@ -282,8 +282,8 @@ const FAQSection = () => {
                   }}
                   className={`flex-shrink-0 flex items-center gap-4 px-6 py-5 rounded-[1.5rem] border transition-all duration-300 text-left ${
                     activeTab === i
-                      ? "bg-white border-[#0075CF] shadow-xl shadow-[#0075CF]/10 scale-[1.02]"
-                      : "bg-white/50 border-white/50 hover:bg-white/80"
+                      ? "bg-white/80 border-[#0075CF] shadow-xl shadow-[#0075CF]/10 scale-[1.02]"
+                      : "bg-white/30 border-slate-900/10 hover:bg-white/50 backdrop-blur-sm"
                   }`}
                 >
                   <div
@@ -328,8 +328,8 @@ const FAQSection = () => {
                     key={qi}
                     className={`group relative rounded-[2rem] border transition-all duration-300 ${
                       openId === qi
-                        ? "bg-white border-[#0075CF] shadow-2xl shadow-[#0075CF]/5"
-                        : "bg-white/70 border-white hover:border-slate-200"
+                        ? "bg-white/80 backdrop-blur-md border-[#0075CF] shadow-2xl shadow-[#0075CF]/5"
+                        : "bg-white/40 backdrop-blur-sm border-slate-900/10 hover:border-slate-200"
                     }`}
                   >
                     <button

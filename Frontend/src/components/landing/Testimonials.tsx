@@ -128,10 +128,10 @@ const Testimonials = () => {
 
         <div className="relative flex flex-col items-center">
           {/* Main Kinetic Stage */}
-          <div className="relative w-full max-w-5xl aspect-[16/10] md:aspect-[16/8] flex items-center justify-center">
+          <div className="relative w-full max-w-5xl md:aspect-[16/8] flex items-center justify-center">
             
-            {/* Background "Ghost" Cards */}
-            <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none scale-110 blur-sm">
+            {/* Background "Ghost" Cards - Hidden on small mobile to save vertical space */}
+            <div className="absolute inset-0 hidden md:flex items-center justify-center opacity-10 pointer-events-none scale-110 blur-sm">
                 <div className="w-full h-full border-[10px] border-[#0075CF]/20 rounded-[4rem] rotate-2" />
             </div>
 
@@ -143,9 +143,9 @@ const Testimonials = () => {
                 animate={{ opacity: 1, x: 0, scale: 1, rotateY: 0 }}
                 exit={{ opacity: 0, x: direction > 0 ? -100 : 100, scale: 0.8, rotateY: direction > 0 ? -15 : 15 }}
                 transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                className="relative w-full h-full"
+                className="relative w-full"
               >
-                <div className="w-full h-full bg-white rounded-[3rem] md:rounded-[4rem] shadow-[0_50px_100px_-20px_rgba(0,117,207,0.15)] border border-white p-8 md:p-16 flex flex-col lg:flex-row items-center gap-10 lg:gap-20 overflow-hidden">
+                <div className="w-full bg-white/70 backdrop-blur-2xl rounded-[3rem] md:rounded-[4rem] shadow-[0_50px_100px_-20px_rgba(0,117,207,0.15)] border border-slate-900/10 p-8 md:p-16 flex flex-col lg:flex-row items-center gap-10 lg:gap-20 overflow-hidden">
                   
                   {/* Decorative Shard */}
                   <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50 rounded-bl-[10rem] -z-10 group-hover:bg-[#0075CF]/5 transition-colors" />

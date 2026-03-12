@@ -130,6 +130,14 @@
   .status-pill {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border;
   }
+
+  .container-width {
+    @apply max-w-7xl mx-auto;
+  }
+
+  .section-padding {
+    @apply py-16 md:py-24 lg:py-32;
+  }
 }
 
 @layer utilities {

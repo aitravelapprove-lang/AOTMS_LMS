@@ -85,7 +85,7 @@ const KeyFeatures = () => (
               {/* Outer glow/border effect on hover */}
               <div className={`absolute -inset-0.5 bg-gradient-to-br ${f.gradient} rounded-[2.5rem] opacity-0 group-hover:opacity-20 blur-md transition duration-500`} />
               
-              <div className="relative h-full bg-white/90 backdrop-blur-xl border border-white/50 rounded-[2rem] rounded-tl-[4rem] rounded-br-[4rem] p-8 shadow-xl shadow-slate-200/50 group-hover:shadow-2xl group-hover:shadow-[#0075CF]/20 group-hover:-translate-y-2 transition-all duration-500 flex flex-col overflow-hidden">
+              <div className="relative h-full bg-white/70 backdrop-blur-2xl border border-slate-900/10 rounded-[2rem] rounded-tl-[4rem] rounded-br-[4rem] p-8 shadow-xl shadow-slate-200/50 group-hover:shadow-2xl group-hover:shadow-[#0075CF]/20 group-hover:-translate-y-2 transition-all duration-500 flex flex-col overflow-hidden">
                 
                 {/* Tech chip corner decoration */}
                 <div className="absolute top-0 right-0 w-24 h-24 pointer-events-none opacity-10 group-hover:opacity-20 transition-opacity">

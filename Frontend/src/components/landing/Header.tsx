@@ -115,7 +115,9 @@ const Header = () => {
               src={logo}
               alt="AOTMS Logo"
               className={`h-10 sm:h-12 md:h-14 lg:h-16 w-auto transition-all duration-300 ${
-                !isScrolled && !hasLightBg ? "brightness-0 invert opacity-90" : ""
+                !isScrolled && !hasLightBg
+                  ? "brightness-0 invert opacity-90"
+                  : ""
               }`}
             />
           </Link>
@@ -167,7 +169,10 @@ const Header = () => {
                       {user.email}
                     </p>
                   </div>
-                  <DropdownMenuItem asChild className="cursor-pointer focus:bg-[#0075CF]/10 focus:text-[#0075CF]">
+                  <DropdownMenuItem
+                    asChild
+                    className="cursor-pointer focus:bg-[#0075CF]/10 focus:text-[#0075CF]"
+                  >
                     <Link
                       to={
                         userRole === "admin"
@@ -185,7 +190,10 @@ const Header = () => {
                       <span className="font-bold">Dashboard</span>
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild className="cursor-pointer focus:bg-[#0075CF]/10 focus:text-[#0075CF]">
+                  <DropdownMenuItem
+                    asChild
+                    className="cursor-pointer focus:bg-[#0075CF]/10 focus:text-[#0075CF]"
+                  >
                     <Link to="/settings" className="flex items-center gap-2">
                       <Settings className="h-4 w-4" />
                       <span className="font-bold">Settings</span>
@@ -207,8 +215,8 @@ const Header = () => {
                   variant="ghost"
                   size="sm"
                   className={`text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-6 rounded-full border-2 font-bold transition-all duration-300 hover:scale-105 ${
-                    isScrolled || hasLightBg 
-                      ? "text-slate-800 border-slate-800/30 hover:border-[#0075CF] hover:text-[#0075CF] hover:bg-transparent" 
+                    isScrolled || hasLightBg
+                      ? "text-slate-800 border-slate-800/30 hover:border-[#0075CF] hover:text-[#0075CF] hover:bg-transparent"
                       : "text-[#FDFEFE] border-[#FDFEFE]/50 hover:border-[#FDFEFE] hover:text-[#FDFEFE] hover:bg-transparent"
                   }`}
                   asChild
@@ -219,8 +227,8 @@ const Header = () => {
                   variant="ghost"
                   size="sm"
                   className={`text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-6 rounded-full border-2 font-black transition-all duration-300 hover:scale-105 ${
-                    isScrolled || hasLightBg 
-                      ? "bg-[#0075CF] text-[#FDFEFE] border-[#0075CF] hover:bg-[#0066B3] hover:text-[#FDFEFE]" 
+                    isScrolled || hasLightBg
+                      ? "bg-[#0075CF] text-[#FDFEFE] border-[#0075CF] hover:bg-[#0066B3] hover:text-[#FDFEFE]"
                       : "bg-[#FD5A1A] text-[#FDFEFE] border-[#FD5A1A] hover:bg-[#E34D14] hover:text-[#FDFEFE]"
                   }`}
                   asChild
@@ -274,12 +282,19 @@ const Header = () => {
                   {!user && (
                     <div className="p-4 border-t border-border space-y-3">
                       <SheetClose asChild>
-                        <Button variant="outline" className="w-full font-bold border-border hover:text-[#0075CF] hover:border-[#0075CF]" asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full font-bold border-border hover:text-[#0075CF] hover:border-[#0075CF]"
+                          asChild
+                        >
                           <Link to="/auth">Login</Link>
                         </Button>
                       </SheetClose>
                       <SheetClose asChild>
-                        <Button className="w-full bg-[#FD5A1A] hover:bg-[#E34D14] text-[#FDFEFE] font-black" asChild>
+                        <Button
+                          className="w-full bg-[#FD5A1A] hover:bg-[#E34D14] text-[#FDFEFE] font-black"
+                          asChild
+                        >
                           <Link to="/auth">Sign Up</Link>
                         </Button>
                       </SheetClose>

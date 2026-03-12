@@ -88,7 +88,7 @@ const ScrollBot = () => {
               <motion.div
                 initial={{ opacity: 0, y: 20, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                className="bg-[#FDFEFE] border border-slate-200 shadow-2xl rounded-2xl w-80 sm:w-96 overflow-hidden flex flex-col mb-4"
+                className="bg-[#FDFEFE] border-2 border-white shadow-[0_20px_50px_rgba(0,117,207,0.2)] rounded-3xl w-80 sm:w-96 overflow-hidden flex flex-col mb-4"
               >
                 {/* Header */}
                 <div className="bg-[#0075CF] p-4 flex items-center justify-between text-[#FDFEFE]">
@@ -153,7 +153,7 @@ const ScrollBot = () => {
               /* FLOATING CHAT BUBBLE */
               <button
                 onClick={() => setIsChatOpen(true)}
-                className="w-14 h-14 rounded-full bg-[#0075CF] text-[#FDFEFE] shadow-lg flex items-center justify-center hover:scale-110 active:scale-95 transition-transform group relative overflow-hidden"
+                className="w-14 h-14 rounded-full bg-[#0075CF] text-[#FDFEFE] shadow-lg flex items-center justify-center hover:scale-110 active:scale-95 transition-transform group relative overflow-hidden border-2 border-white"
               >
                 <div className="absolute inset-0 bg-gradient-to-tr from-[#0075CF] to-[#FD5A1A] opacity-0 group-hover:opacity-100 transition-opacity" />
                 <MessageSquare className="relative z-10 w-6 h-6" />

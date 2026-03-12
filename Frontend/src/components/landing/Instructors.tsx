@@ -93,15 +93,17 @@ const initialInstructors = [
     name: "Vikram Singh",
     expertise: "Cyber Security",
     exp: "11+ Yrs",
-    image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop&crop=face"
+    image:
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop&crop=face",
   },
   {
     id: 6,
     name: "Ananya Rao",
     expertise: "Digital Marketing",
     exp: "7+ Yrs",
-    image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=400&fit=crop&crop=face"
-  }
+    image:
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=400&fit=crop&crop=face",
+  },
 ];
 
 const Instructors = () => {
@@ -120,9 +122,12 @@ const Instructors = () => {
   }, []);
 
   return (
-    <section id="trainers" className="relative py-24 lg:py-32 overflow-hidden bg-transparent">
+    <section
+      id="trainers"
+      className="relative py-24 lg:py-32 overflow-hidden bg-transparent"
+    >
       <div className="absolute inset-0 bg-white/5 backdrop-blur-[1px]" />
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -138,7 +143,8 @@ const Instructors = () => {
             <span className="text-[#0075CF]">Best in Tech</span>
           </h2>
           <p className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-medium">
-            Our mentors are industry veterans who have built systems used by millions.
+            Our mentors are industry veterans who have built systems used by
+            millions.
           </p>
         </motion.div>
 
@@ -152,10 +158,10 @@ const Instructors = () => {
                   initial={{ opacity: 0, x: 50, scale: 0.9 }}
                   animate={{ opacity: 1, x: 0, scale: 1 }}
                   exit={{ opacity: 0, x: -50, scale: 0.9 }}
-                  transition={{ 
+                  transition={{
                     duration: 0.8,
-                    ease: [0.16, 1, 0.3, 1]
-                  } }
+                    ease: [0.16, 1, 0.3, 1],
+                  }}
                   className="group h-full"
                 >
                   <div className="relative bg-white/90 backdrop-blur-xl rounded-[2.5rem] border border-white/50 shadow-2xl shadow-slate-200/50 hover:shadow-[#0075CF]/20 transition-all duration-500 overflow-hidden flex flex-col h-full">
@@ -173,14 +179,28 @@ const Instructors = () => {
 
                       {/* Float-in social tags */}
                       <div className="absolute top-6 right-6 flex flex-col gap-3 z-30 translate-x-16 group-hover:translate-x-0 transition-transform duration-500">
-                        <a href="#" className="w-11 h-11 rounded-2xl bg-white/90 backdrop-blur-md flex items-center justify-center hover:bg-[#0075CF] hover:text-white transition-all shadow-xl"><Linkedin className="w-5 h-5" /></a>
-                        <a href="#" className="w-11 h-11 rounded-2xl bg-white/90 backdrop-blur-md flex items-center justify-center hover:bg-[#FD5A1A] hover:text-white transition-all shadow-xl"><Twitter className="w-5 h-5" /></a>
+                        <a
+                          href="#"
+                          className="w-11 h-11 rounded-2xl bg-white/90 backdrop-blur-md flex items-center justify-center hover:bg-[#0075CF] hover:text-white transition-all shadow-xl"
+                        >
+                          <Linkedin className="w-5 h-5" />
+                        </a>
+                        <a
+                          href="#"
+                          className="w-11 h-11 rounded-2xl bg-white/90 backdrop-blur-md flex items-center justify-center hover:bg-[#FD5A1A] hover:text-white transition-all shadow-xl"
+                        >
+                          <Twitter className="w-5 h-5" />
+                        </a>
                       </div>
 
                       {/* Stats Badge */}
                       <div className="absolute bottom-6 left-6 z-30 bg-white/95 backdrop-blur-md px-4 py-2 rounded-2xl shadow-xl">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Exp Level</p>
-                        <p className="text-xs font-black text-[#FD5A1A] uppercase tracking-tighter">{inst.exp}</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">
+                          Exp Level
+                        </p>
+                        <p className="text-xs font-black text-[#FD5A1A] uppercase tracking-tighter">
+                          {inst.exp}
+                        </p>
                       </div>
                     </div>
 
@@ -203,7 +223,9 @@ const Instructors = () => {
         {/* Rotation Indicator */}
         <div className="mt-16 flex justify-center items-center gap-3">
           <div className="w-2 h-2 rounded-full bg-[#0075CF] animate-ping" />
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Rotating Active Mentors</span>
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
+            Rotating Active Mentors
+          </span>
         </div>
       </div>
     </section>

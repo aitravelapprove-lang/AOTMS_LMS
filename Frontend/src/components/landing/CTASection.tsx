@@ -62,23 +62,23 @@ const CTASection = () => {
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7 }}
-          className="relative overflow-hidden rounded-[3rem] rounded-tl-[10rem] rounded-br-[10rem] min-h-[500px] flex items-center justify-center shadow-[0_40px_100px_-20px_rgba(0,117,207,0.3)] bg-[#0075CF] border border-white/20"
+          className="relative overflow-hidden rounded-[2.5rem] md:rounded-[3rem] md:rounded-tl-[10rem] md:rounded-br-[10rem] min-h-[400px] md:min-h-[500px] flex items-center justify-center shadow-[0_40px_100px_-20px_rgba(0,117,207,0.3)] bg-[#0075CF]/85 backdrop-blur-2xl border border-white/20"
         >
           <CTABackground />
 
-          <div className="relative z-10 px-8 sm:px-12 md:px-24 py-16 md:py-24 text-center">
+          <div className="relative z-10 px-6 sm:px-12 md:px-24 py-12 md:py-24 text-center">
             {/* Pulsing Status Badge */}
-            <div className="flex justify-center mb-8">
-              <span className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-white/10 border border-white/20 text-[#FDFEFE] text-[10px] font-black uppercase tracking-[0.3em] backdrop-blur-md">
-                <span className="relative flex h-2 w-2">
+            <div className="flex justify-center mb-6">
+              <span className="inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2 rounded-full bg-white/10 border border-white/20 text-[#FDFEFE] text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] backdrop-blur-md">
+                <span className="relative flex h-1.5 w-1.5 sm:h-2 sm:w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 sm:h-2 sm:w-2 bg-white"></span>
                 </span>
                 Active Enrollment 2024
               </span>
             </div>
 
-            <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-[#FDFEFE] mb-8 leading-[1.05] tracking-tight">
+            <h2 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-[#FDFEFE] mb-6 md:mb-8 leading-tight tracking-tight">
               Launch Your <br className="hidden sm:block" />
               <span className="text-white">Future In Tech</span>
             </h2>

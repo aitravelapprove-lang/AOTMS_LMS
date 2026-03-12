@@ -105,7 +105,7 @@ const WhyAOTMS = () => (
               {/* Abstract Glass Shard */}
               <div className="absolute -top-3 -left-3 w-16 h-16 bg-gradient-to-br from-[#0075CF]/20 to-transparent rounded-full blur-xl group-hover:blur-2xl transition-all duration-500" />
               
-              <div className="relative h-full bg-white/90 backdrop-blur-xl border border-white/50 rounded-[2.5rem] rounded-tr-none p-8 shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-[#0075CF]/10 hover:-translate-y-2 transition-all duration-500 flex flex-col overflow-hidden">
+              <div className="relative h-full bg-white/70 backdrop-blur-2xl border border-slate-900/10 rounded-[2.5rem] rounded-tr-none p-8 shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-[#0075CF]/10 hover:-translate-y-2 transition-all duration-500 flex flex-col overflow-hidden">
                 
                 {/* Tech ID Stamp */}
                 <div className="absolute top-0 right-0 px-4 py-2 bg-slate-50 border-b border-l border-slate-100 rounded-bl-2xl">

@@ -151,7 +151,8 @@ const HeroSection = () => {
             SMART LEARNING
             <br className="hidden md:block" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] via-[#FDFEFE] to-[#0075CF]">
-              {" "}MANAGEMENT SYSTEM
+              {" "}
+              MANAGEMENT SYSTEM
             </span>
           </motion.h1>
 

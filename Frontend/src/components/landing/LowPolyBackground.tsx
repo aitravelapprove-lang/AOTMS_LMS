@@ -35,104 +35,113 @@ const LowPolyBackground = () => (
       <rect width="1200" height="3200" fill="url(#bg-grad-global)" />
 
       {/* ULTRA-DENSE LOW-POLY TRIANGLE MESH - Maximum Visibility */}
-      <g opacity="0.95">
+      <g opacity="1">
         {/* TOP BLUE SECTION */}
         <polygon
           points="0,0 600,0 0,600"
           fill="#0075CF"
-          opacity="0.3"
+          opacity="0.75"
           stroke="#0075CF"
-          strokeWidth="1.5"
+          strokeWidth="5"
+          className="drop-shadow-[0_0_15px_rgba(0,117,207,0.4)]"
         />
         <polygon
           points="1200,0 600,0 1200,600"
           fill="#0075CF"
-          opacity="0.3"
+          opacity="0.75"
           stroke="#0075CF"
-          strokeWidth="1.5"
+          strokeWidth="5"
+          className="drop-shadow-[0_0_15px_rgba(0,117,207,0.4)]"
         />
         <polygon
           points="600,0 0,600 1200,600"
           fill="#005A9C"
-          opacity="0.2"
+          opacity="0.65"
           stroke="#0075CF"
-          strokeWidth="1.5"
+          strokeWidth="5"
         />
 
         {/* MIDDLE SECTION - BLUEPRINT FEEL */}
         <path
           d="M0,800 L400,1000 L0,1200 Z"
           fill="#0075CF"
-          opacity="0.15"
+          opacity="0.6"
           stroke="#0075CF"
-          strokeWidth="1.5"
+          strokeWidth="5"
         />
         <path
           d="M1200,800 L800,1000 L1200,1200 Z"
           fill="#0075CF"
-          opacity="0.15"
+          opacity="0.6"
           stroke="#0075CF"
-          strokeWidth="1.5"
+          strokeWidth="5"
         />
         <path
           d="M400,1000 L800,1000 L600,1400 Z"
           fill="#0075CF"
-          opacity="0.1"
+          opacity="0.55"
           stroke="#0075CF"
-          strokeWidth="1"
+          strokeWidth="4.5"
         />
 
         <polygon
           points="0,1400 300,1600 0,1800"
           fill="#0075CF"
-          opacity="0.12"
+          opacity="0.52"
           stroke="#0075CF"
-          strokeWidth="1.5"
+          strokeWidth="5"
         />
         <polygon
           points="1200,1400 900,1600 1200,1800"
           fill="#FD5A1A"
-          opacity="0.12"
+          opacity="0.52"
           stroke="#FD5A1A"
-          strokeWidth="1.5"
+          strokeWidth="5"
         />
         <polygon
           points="300,1600 900,1600 600,2000"
           fill="#0075CF"
-          opacity="0.08"
+          opacity="0.45"
           stroke="#0075CF"
-          strokeWidth="1"
+          strokeWidth="4.5"
         />
+
+        {/* EXTRA INTERMEDIATE SHARDS */}
+        <polygon points="200,400 400,500 200,600" fill="#0075CF" opacity="0.4" stroke="#0075CF" strokeWidth="3" />
+        <polygon points="1000,400 800,500 1000,600" fill="#0075CF" opacity="0.4" stroke="#0075CF" strokeWidth="3" />
 
         {/* BOTTOM ORANGE SECTION */}
         <polygon
           points="0,2600 600,2600 0,3200"
           fill="#FD5A1A"
-          opacity="0.25"
+          opacity="0.65"
           stroke="#FD5A1A"
-          strokeWidth="1.5"
+          strokeWidth="5"
+          className="drop-shadow-[0_0_15px_rgba(253,90,26,0.4)]"
         />
         <polygon
           points="1200,2600 600,2600 1200,3200"
           fill="#FD5A1A"
-          opacity="0.25"
+          opacity="0.65"
           stroke="#FD5A1A"
-          strokeWidth="1.5"
+          strokeWidth="5"
+          className="drop-shadow-[0_0_15px_rgba(253,90,26,0.4)]"
         />
         <polygon
           points="600,2600 0,3200 1200,3200"
           fill="#E34D14"
-          opacity="0.2"
+          opacity="0.6"
           stroke="#FD5A1A"
-          strokeWidth="1.5"
+          strokeWidth="5"
         />
       </g>
 
       {/* ADDITIONAL CONNECTING LINES FOR "TECH" FEEL */}
-      <g stroke="#000" strokeWidth="1" opacity="0.15">
+      <g stroke="#0075CF" strokeWidth="2" opacity="0.35">
         <line x1="0" y1="0" x2="1200" y2="3200" />
         <line x1="1200" y1="0" x2="0" y2="3200" />
         <line x1="600" y1="0" x2="600" y2="3200" />
+        <line x1="0" y1="1600" x2="1200" y2="1600" strokeDasharray="10 10" />
       </g>
 
       {/* INTENSE GLOW ORBS */}
@@ -141,7 +150,7 @@ const LowPolyBackground = () => (
         cy="500"
         r="400"
         fill="#0075CF"
-        opacity="0.4"
+        opacity="0.6"
         filter="url(#glow-blue)"
       />
       <circle
@@ -149,7 +158,7 @@ const LowPolyBackground = () => (
         cy="1200"
         r="450"
         fill="#0075CF"
-        opacity="0.25"
+        opacity="0.45"
         filter="url(#glow-blue)"
       />
       <circle
@@ -157,7 +166,7 @@ const LowPolyBackground = () => (
         cy="2700"
         r="500"
         fill="#E34D14"
-        opacity="0.4"
+        opacity="0.6"
         filter="url(#glow-orange)"
       />
       <circle
@@ -165,17 +174,17 @@ const LowPolyBackground = () => (
         cy="2200"
         r="400"
         fill="#FD5A1A"
-        opacity="0.25"
+        opacity="0.45"
         filter="url(#glow-orange)"
       />
     </svg>
 
     {/* High-Contrast Digital Grid Overlay */}
     <div
-      className="absolute inset-0 opacity-[0.08] pointer-events-none"
+      className="absolute inset-0 opacity-[0.25] pointer-events-none"
       style={{
         backgroundImage: `linear-gradient(#0075CF 1px, transparent 1px), linear-gradient(90deg, #0075CF 1px, transparent 1px)`,
-        backgroundSize: "60px 60px",
+        backgroundSize: "40px 40px",
       }}
     />
 

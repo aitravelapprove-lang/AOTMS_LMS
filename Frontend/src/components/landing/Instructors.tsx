@@ -219,14 +219,6 @@ const Instructors = () => {
             </AnimatePresence>
           </div>
         </div>
-
-        {/* Rotation Indicator */}
-        <div className="mt-16 flex justify-center items-center gap-3">
-          <div className="w-2 h-2 rounded-full bg-[#0075CF] animate-ping" />
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
-            Rotating Active Mentors
-          </span>
-        </div>
       </div>
     </section>
   );

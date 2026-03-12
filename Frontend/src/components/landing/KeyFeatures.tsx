@@ -58,9 +58,8 @@ const features = [
 ];
 
 const KeyFeatures = () => (
-  <section id="features" className="relative py-16 md:py-24 overflow-hidden">
-    <KeyFeatBg />
-    <div className="absolute inset-0 bg-[#FDFEFE]/60" />
+  <section id="features" className="relative py-16 md:py-24 overflow-hidden bg-transparent">
+    <div className="absolute inset-0 bg-white/5 backdrop-blur-[2px]" />
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
       <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.55 }} className="text-center mb-12 md:mb-16">
         <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#FFF2EC] text-[#FD5A1A] text-xs font-bold uppercase tracking-widest mb-5">

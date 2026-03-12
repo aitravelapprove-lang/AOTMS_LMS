@@ -244,8 +244,11 @@ const FAQSection = () => {
   const activeGroup = faqGroups[activeTab];
 
   return (
-    <section id="faq" className="relative py-20 lg:py-32 overflow-hidden">
-      <FAQBg />
+    <section
+      id="faq"
+      className="relative py-20 lg:py-32 overflow-hidden bg-transparent"
+    >
+      {/* Global background is active */}
       {/* Dynamic Background Glow */}
       <div
         className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] blur-[120px] rounded-full pointer-events-none transition-colors duration-1000 ${activeTab % 2 === 0 ? "bg-[#0075CF]/5" : "bg-[#FD5A1A]/5"}`}

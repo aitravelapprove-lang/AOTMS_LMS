@@ -41,8 +41,8 @@ const steps = [
 ];
 
 const HowItWorks = () => (
-  <section id="how-it-works" className="relative py-20 lg:py-32 overflow-hidden">
-    <HowBg />
+  <section id="how-it-works" className="relative py-20 lg:py-32 overflow-hidden bg-transparent">
+    {/* Global background visibility */}
     {/* Central Blur Decor */}
     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#0075CF]/5 blur-[120px] rounded-full pointer-events-none" />
     

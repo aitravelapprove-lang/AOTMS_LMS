@@ -100,8 +100,8 @@ const Testimonials = () => {
   const t = testimonials[current];
 
   return (
-    <section id="testimonials" className="relative py-24 lg:py-40 bg-[#FDFEFE] overflow-hidden">
-      <TestBg />
+    <section id="testimonials" className="relative py-24 lg:py-40 bg-transparent overflow-hidden">
+      {/* Background patterns sourced from global mesh */}
       
       {/* Dynamic Aura */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#0075CF]/5 blur-[150px] rounded-full pointer-events-none" />

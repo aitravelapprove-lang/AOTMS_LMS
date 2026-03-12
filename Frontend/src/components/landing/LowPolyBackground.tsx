@@ -1,50 +1,81 @@
 import React from "react";
 
 const LowPolyBackground = () => (
-  <svg
-    className="absolute inset-0 w-full h-full"
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 1200 700"
-    preserveAspectRatio="xMidYMid slice"
-    aria-hidden="true"
-  >
-    <defs>
-      <linearGradient id="bg-grad-global" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="#1a4f7a" />
-        <stop offset="35%" stopColor="#4a7fa5" />
-        <stop offset="55%" stopColor="#f5e6c0" />
-        <stop offset="75%" stopColor="#e8a04a" />
-        <stop offset="100%" stopColor="#b85c1a" />
-      </linearGradient>
-    </defs>
-    <rect width="1200" height="700" fill="url(#bg-grad-global)" />
-    {/* Simplified but high-quality mosaic polygons for the global background */}
-    <polygon points="0,0 120,80 0,160" fill="#1b507e" opacity="0.85" />
-    <polygon points="0,0 200,0 120,80" fill="#2562a0" opacity="0.9" />
-    <polygon points="200,0 320,90 120,80" fill="#1d5b8e" opacity="0.8" />
-    <polygon points="200,0 400,0 320,90" fill="#2e6fa3" opacity="0.85" />
-    <polygon points="400,0 480,75 320,90" fill="#3578ae" opacity="0.9" />
-    <polygon points="400,0 600,0 480,75" fill="#205f95" opacity="0.8" />
-    <polygon points="600,0 640,80 480,75" fill="#3070a8" opacity="0.75" />
-    <polygon points="600,0 800,0 640,80" fill="#1e5a8a" opacity="0.85" />
-    <polygon points="200,170 320,90 440,180" fill="#6a9bbf" opacity="0.8" />
-    <polygon points="440,180 480,75 620,170" fill="#78a8c0" opacity="0.8" />
-    <polygon points="620,170 640,80 800,160" fill="#80afc4" opacity="0.8" />
-    <polygon points="1000,175 1200,150 1200,280" fill="#82afc6" opacity="0.75" />
-    <polygon points="440,180 620,170 540,305" fill="#e8d0a0" opacity="0.8" />
-    <polygon points="540,305 620,170 760,300" fill="#f5e2a8" opacity="0.8" />
-    <polygon points="980,295 1000,175 1200,280" fill="#f5e0a0" opacity="0.8" />
-    <polygon points="0,420 280,440 0,540" fill="#c88430" opacity="0.85" />
-    <polygon points="420,435 540,305 680,430" fill="#e8a040" opacity="0.8" />
-    <polygon points="900,425 980,295 1200,400" fill="#e89a38" opacity="0.8" />
-    <polygon points="0,540 320,560 0,700" fill="#a05c18" opacity="0.85" />
-    <polygon points="400,570 420,435 600,555" fill="#c87028" opacity="0.85" />
-    <polygon points="840,550 900,425 1100,545" fill="#c07020" opacity="0.85" />
-    <polygon points="1100,545 1200,530 1200,700" fill="#a85c18" opacity="0.85" />
-    {/* More base triangles for fuller look as global bg */}
-    <polygon points="800,0 1200,0 1000,100" fill="#1b507e" opacity="0.8" />
-    <polygon points="0,700 1200,700 600,600" fill="#a05c18" opacity="0.8" />
-  </svg>
+  <div className="fixed inset-0 -z-50 pointer-events-none overflow-hidden bg-slate-50">
+    <svg
+      className="w-full h-full"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 1200 3200"
+      preserveAspectRatio="xMidYMid slice"
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id="bg-grad-global" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#005A9C" />
+          <stop offset="15%" stopColor="#0075CF" />
+          <stop offset="35%" stopColor="#FDFEFE" />
+          <stop offset="65%" stopColor="#FDFEFE" />
+          <stop offset="85%" stopColor="#FD7A45" />
+          <stop offset="100%" stopColor="#E34D14" />
+        </linearGradient>
+        
+        {/* Glow Filters */}
+        <filter id="glow-blue" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="70" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+        <filter id="glow-orange" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="60" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+      </defs>
+      
+      {/* Dynamic Gradient Base */}
+      <rect width="1200" height="3200" fill="url(#bg-grad-global)" />
+
+      {/* ULTRA-DENSE LOW-POLY TRIANGLE MESH - Maximum Visibility */}
+      <g opacity="0.9">
+        {/* TOP BLUE SECTION */}
+        <polygon points="0,0 400,0 200,300" fill="#004C85" opacity="0.8" stroke="#0075CF" strokeWidth="0.5" />
+        <polygon points="400,0 800,0 600,250" fill="#0066B3" opacity="0.7" stroke="#3391D9" strokeWidth="0.5" />
+        <polygon points="800,0 1200,0 1000,300" fill="#1b507e" opacity="0.8" stroke="#0075CF" strokeWidth="0.5" />
+        
+        <polygon points="0,300 400,400 200,600" fill="#0075CF" opacity="0.6" stroke="#FFFFFF" strokeWidth="0.2" />
+        <polygon points="400,400 800,350 600,650" fill="#005A9C" opacity="0.7" stroke="#FFFFFF" strokeWidth="0.2" />
+        <polygon points="800,350 1200,400 1000,600" fill="#1d5b8e" opacity="0.6" stroke="#FFFFFF" strokeWidth="0.2" />
+
+        {/* MIDDLE TRANSITION - Blueprint Grid Sub-patterns */}
+        <polygon points="0,1000 300,1200 0,1400" fill="#D1E9F6" opacity="0.9" stroke="#0075CF" strokeWidth="1" strokeOpacity="0.1" />
+        <polygon points="300,1200 900,1300 600,1600" fill="#FDFEFE" opacity="1" stroke="#0075CF" strokeWidth="1" strokeOpacity="0.05" />
+        <polygon points="900,1300 1200,1200 1200,1500" fill="#D1E9F6" opacity="0.9" stroke="#0075CF" strokeWidth="1" strokeOpacity="0.1" />
+        
+        <polygon points="0,1600 600,1800 1200,1600" fill="#FDFEFE" opacity="0.8" stroke="#FD5A1A" strokeWidth="1" strokeOpacity="0.05" />
+
+        {/* BOTTOM ORANGE SECTION */}
+        <polygon points="0,2400 300,2600 0,2800" fill="#E34D14" opacity="0.7" stroke="#FD5A1A" strokeWidth="0.5" />
+        <polygon points="300,2600 900,2700 600,3000" fill="#FD5A1A" opacity="0.8" stroke="#FFFFFF" strokeWidth="0.3" />
+        <polygon points="900,2700 1200,2600 1200,2900" fill="#B23C0F" opacity="0.7" stroke="#FD8C5E" strokeWidth="0.5" />
+        
+        <polygon points="0,2800 600,3000 1200,2800" fill="#CC4511" opacity="0.6" stroke="#FFFFFF" strokeWidth="0.2" />
+        <polygon points="0,3200 600,3200 300,3000" fill="#8E2D0B" opacity="0.8" stroke="#FD5A1A" strokeWidth="0.5" />
+        <polygon points="1200,3200 600,3200 900,3000" fill="#B23C0F" opacity="0.8" stroke="#FD5A1A" strokeWidth="0.5" />
+      </g>
+
+      {/* INTENSE GLOW ORBS */}
+      <circle cx="150" cy="400" r="300" fill="#0075CF" opacity="0.35" filter="url(#glow-blue)" />
+      <circle cx="1050" cy="300" r="350" fill="#005A9C" opacity="0.3" filter="url(#glow-blue)" />
+      <circle cx="1150" cy="2700" r="400" fill="#E34D14" opacity="0.35" filter="url(#glow-orange)" />
+      <circle cx="50" cy="2850" r="350" fill="#FD5A1A" opacity="0.3" filter="url(#glow-orange)" />
+    </svg>
+    
+    {/* High-Contrast Digital Grid Overlay */}
+    <div className="absolute inset-0 opacity-[0.1] pointer-events-none" 
+         style={{ backgroundImage: `linear-gradient(#0075CF 1px, transparent 1px), linear-gradient(90#0075CF 1px, transparent 1px)`, backgroundSize: '100px 100px', transform: 'rotate(5deg) scale(2)' }} />
+    
+    {/* Global Grain Texture for Depth */}
+    <div className="absolute inset-0 opacity-[0.04] pointer-events-none mix-blend-overlay" 
+         style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} />
+  </div>
 );
 
 export default LowPolyBackground;

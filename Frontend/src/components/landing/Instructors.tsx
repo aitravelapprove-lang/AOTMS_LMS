@@ -120,9 +120,8 @@ const Instructors = () => {
   }, []);
 
   return (
-    <section id="trainers" className="relative py-24 lg:py-32 overflow-hidden bg-[#FDFEFE]">
-      <InstBg />
-      <div className="absolute inset-0 bg-[#FDFEFE]/40" />
+    <section id="trainers" className="relative py-24 lg:py-32 overflow-hidden bg-transparent">
+      <div className="absolute inset-0 bg-white/5 backdrop-blur-[1px]" />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <motion.div

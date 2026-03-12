@@ -146,11 +146,11 @@ const HeroSection = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="font-hero text-4xl sm:text-6xl lg:text-8xl leading-tight md:leading-[1.05] tracking-tight md:tracking-wide mb-6 text-center text-white drop-shadow-2xl px-2"
+            className="font-heading text-4xl sm:text-6xl lg:text-8xl leading-none tracking-tight mb-6 text-center text-white drop-shadow-2xl px-2 font-extrabold"
           >
             SMART LEARNING
             <br className="hidden md:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] via-[#FD5A1A] to-[#0075CF]">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] via-[#FDFEFE] to-[#0075CF]">
               {" "}MANAGEMENT SYSTEM
             </span>
           </motion.h1>
@@ -227,7 +227,7 @@ const HeroSection = () => {
               { value: "95%", label: "Success Rate" },
             ].map((stat) => (
               <div key={stat.label} className="text-center w-full md:w-auto">
-                <p className="text-2xl sm:text-3xl md:text-4xl font-black text-white drop-shadow">
+                <p className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white drop-shadow">
                   {stat.value}
                 </p>
                 <p className="text-[10px] md:text-sm text-white/60 mt-1 font-semibold tracking-wider uppercase">

@@ -1,6 +1,6 @@
-import { motion } from "framer-motion";
 import Header from "@/components/landing/Header";
 import Footer from "@/components/landing/Footer";
+import LowPolyBackground from "@/components/landing/LowPolyBackground";
 import {
   BookOpen,
   Target,
@@ -13,13 +13,15 @@ import {
   Shield,
   Zap,
 } from "lucide-react";
+import { motion } from "framer-motion";
 
 const About = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen relative overflow-x-hidden">
+      <LowPolyBackground />
       <Header />
 
-      <main className="pt-24 pb-16">
+      <main className="relative z-10 w-full pt-20 pb-16">
         {/* 1. Introduction (H1) */}
         <section className="container-width section-padding">
           <div className="max-w-4xl mx-auto text-center space-y-6">
@@ -34,9 +36,10 @@ const About = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="font-heading text-4xl md:text-5xl lg:text-6xl font-bold text-foreground"
+              className="text-4xl sm:text-5xl md:text-7xl font-extrabold text-slate-900 leading-tight tracking-tight font-heading"
             >
-              About <span className="text-primary">AOTMS LMS</span>
+              Building the Future of{" "}
+              <span className="text-[#0075CF]">Learning</span>
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -63,14 +66,14 @@ const About = () => {
               <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                 <Target className="w-6 h-6" />
               </div>
-              <h2 className="font-heading text-3xl md:text-4xl font-bold">
+              <h2 className="text-3xl md:text-5xl font-black text-slate-900 leading-tight tracking-tight">
                 Our Mission
               </h2>
-              <p className="text-lg text-muted-foreground leading-relaxed">
+              <p className="text-lg text-slate-600 font-medium leading-relaxed">
                 Our mission is to democratize access to high-quality technical
                 education. We exist to transform aspiring students into
                 industry-ready professionals by focusing strictly on{" "}
-                <strong className="text-foreground">
+                <strong className="text-slate-900">
                   skill-based and career-oriented education
                 </strong>{" "}
                 rather than just theoretical knowledge.
@@ -140,13 +143,15 @@ const About = () => {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-card p-6 rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow"
+                className="bg-white/70 backdrop-blur-2xl p-8 rounded-[2rem] border border-slate-900/10 shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-[#0075CF]/10 transition-all duration-500"
               >
                 <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center text-accent mb-4">
                   <item.icon className="w-5 h-5" />
                 </div>
-                <h3 className="text-xl font-bold mb-2">{item.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
+                <h3 className="text-xl font-black text-slate-900 mb-3">
+                  {item.title}
+                </h3>
+                <p className="text-slate-600 font-medium text-sm leading-relaxed">
                   {item.desc}
                 </p>
               </motion.div>
@@ -157,8 +162,8 @@ const About = () => {
         {/* 4. Who AOTMS LMS Is For (H2) */}
         <section className="container-width section-padding bg-primary/5 my-12 py-20">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="font-heading text-3xl md:text-4xl font-bold mb-4">
-              Who Is AOTMS LMS For?
+            <h2 className="text-3xl md:text-5xl font-extrabold text-slate-900 leading-tight tracking-tight mb-4 font-heading">
+              Who Is <span className="text-[#0075CF]">AOTMS LMS</span> For?
             </h2>
             <p className="text-muted-foreground">
               Our platform caters to a diverse range of ambitious learners.
@@ -186,13 +191,17 @@ const About = () => {
             ].map((item, index) => (
               <div
                 key={index}
-                className="bg-background p-6 rounded-xl border border-border text-center"
+                className="bg-white/70 backdrop-blur-2xl p-8 rounded-[2rem] border border-slate-900/10 text-center shadow-xl shadow-slate-200/50 hover:-translate-y-2 transition-all duration-500"
               >
-                <div className="w-12 h-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center text-primary mb-4">
-                  <Users className="w-6 h-6" />
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-[#E6F2FA] flex items-center justify-center text-[#0075CF] mb-6 shadow-lg">
+                  <Users className="w-8 h-8" />
                 </div>
-                <h3 className="text-lg font-bold mb-2">{item.title}</h3>
-                <p className="text-sm text-muted-foreground">{item.desc}</p>
+                <h3 className="text-xl font-black text-slate-900 mb-3">
+                  {item.title}
+                </h3>
+                <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                  {item.desc}
+                </p>
               </div>
             ))}
           </div>
@@ -202,8 +211,8 @@ const About = () => {
         <section className="container-width section-padding">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div>
-              <h2 className="font-heading text-3xl md:text-4xl font-bold mb-6">
-                Why Choose AOTMS LMS?
+              <h2 className="text-3xl md:text-5xl font-extrabold text-slate-900 leading-tight tracking-tight mb-8 font-heading">
+                Why Choose <span className="text-[#0075CF]">AOTMS LMS?</span>
               </h2>
               <div className="space-y-6">
                 {[
@@ -238,20 +247,34 @@ const About = () => {
             </div>
             <div className="relative">
               <div className="absolute -inset-4 bg-gradient-to-r from-primary to-accent opacity-20 blur-2xl rounded-full" />
-              <div className="relative bg-card border border-border rounded-2xl p-8 shadow-xl">
-                <h3 className="text-2xl font-bold mb-2">The AOTMS Advantage</h3>
-                <div className="space-y-4 mt-6">
-                  <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                    <span className="font-medium">Placement Rate</span>
-                    <span className="font-bold text-primary">85%+</span>
+              <div className="relative bg-white/80 backdrop-blur-3xl border border-slate-900/10 rounded-[2.5rem] p-10 shadow-2xl shadow-slate-200/60">
+                <h3 className="text-3xl font-extrabold text-slate-900 mb-6 tracking-tight font-heading">
+                  The <span className="text-[#0075CF]">AOTMS</span> Advantage
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-5 bg-[#E6F2FA]/50 rounded-2xl border border-[#0075CF]/5">
+                    <span className="font-bold text-slate-700">
+                      Placement Rate
+                    </span>
+                    <span className="text-2xl font-black text-[#FD5A1A]">
+                      85%+
+                    </span>
                   </div>
-                  <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                    <span className="font-medium">Student Satisfaction</span>
-                    <span className="font-bold text-primary">4.8/5</span>
+                  <div className="flex items-center justify-between p-5 bg-[#FFF2EC]/50 rounded-2xl border border-[#FD5A1A]/5">
+                    <span className="font-bold text-slate-700">
+                      Satisfaction
+                    </span>
+                    <span className="text-2xl font-black text-[#0075CF]">
+                      4.8/5
+                    </span>
                   </div>
-                  <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                    <span className="font-medium">Practical Focus</span>
-                    <span className="font-bold text-primary">100%</span>
+                  <div className="flex items-center justify-between p-5 bg-slate-50/80 rounded-2xl border border-slate-200/50">
+                    <span className="font-bold text-slate-700">
+                      Practical Focus
+                    </span>
+                    <span className="text-2xl font-black text-slate-900">
+                      100%
+                    </span>
                   </div>
                 </div>
               </div>

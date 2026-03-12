@@ -30,14 +30,14 @@ const LearningPathCard = ({
 
   return (
     <motion.div
-      whileHover={{ y: -4 }}
+      whileHover={{ y: -6 }}
       transition={{ duration: 0.3 }}
-      className="group relative bg-card rounded-xl border border-border p-6 shadow-soft hover:shadow-medium hover:border-sky-300 transition-all duration-300"
+      className="group relative bg-white/70 backdrop-blur-2xl rounded-[2.5rem] border border-slate-900/10 p-8 shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-[#0075CF]/10 transition-all duration-300 flex flex-col h-full"
     >
       {isPopular && (
-        <div className="absolute -top-3 right-4">
-          <Badge className="bg-accent text-accent-foreground gap-1">
-            <Star className="w-3 h-3 fill-current" />
+        <div className="absolute -top-3 right-8">
+          <Badge className="bg-[#FD5A1A] text-white border-0 py-1 px-4 rounded-full font-extrabold text-[10px] uppercase tracking-widest shadow-lg shadow-[#FD5A1A]/30">
+            <Star className="w-3 h-3 fill-current mr-1 text-white" />
             Most Chosen
           </Badge>
         </div>
@@ -49,32 +49,31 @@ const LearningPathCard = ({
         </Badge>
       </div>
 
-      <h3 className="font-heading text-xl text-foreground mb-2 group-hover:text-sky-600 transition-colors">
+      <h3 className="text-2xl font-extrabold text-slate-900 mb-3 tracking-tight group-hover:text-[#0075CF] transition-colors leading-tight font-heading">
         {title}
       </h3>
       
-      <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
+      <p className="text-slate-600 text-base leading-relaxed flex-1 font-medium mb-6">
         {description}
       </p>
 
-      <div className="flex items-center gap-4 text-sm text-muted-foreground mb-6">
-        <div className="flex items-center gap-1.5">
-          <Clock className="w-4 h-4" />
+      <div className="flex items-center gap-6 text-xs font-bold text-slate-400 uppercase tracking-widest mb-8">
+        <div className="flex items-center gap-2">
+          <Clock className="w-4 h-4 text-[#FD5A1A]" />
           <span>{duration}</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <BookOpen className="w-4 h-4" />
-          <span>{courseCount} courses</span>
+        <div className="flex items-center gap-2">
+          <BookOpen className="w-4 h-4 text-[#0075CF]" />
+          <span>{courseCount} modules</span>
         </div>
       </div>
 
       <Button 
-        variant="outline" 
-        className="w-full group-hover:bg-sky-500 group-hover:text-white group-hover:border-sky-500 transition-all"
+        className="w-full h-14 rounded-2xl bg-[#0075CF] hover:bg-[#005A9C] text-white font-extrabold uppercase tracking-widest text-xs shadow-lg shadow-[#0075CF]/20 transition-all border-0"
         onClick={onViewPath}
       >
         View Path
-        <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+        <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform" />
       </Button>
     </motion.div>
   );

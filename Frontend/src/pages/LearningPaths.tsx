@@ -9,6 +9,7 @@ import HowPathsWork from "@/components/learning-paths/HowPathsWork";
 import PerformanceTracking from "@/components/learning-paths/PerformanceTracking";
 import CareerOutcomes from "@/components/learning-paths/CareerOutcomes";
 import LearningPathsCTA from "@/components/learning-paths/LearningPathsCTA";
+import LowPolyBackground from "@/components/landing/LowPolyBackground";
 
 const learningPaths = [
   {
@@ -164,24 +165,25 @@ const LearningPaths = () => {
   const allPaths = learningPaths;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen relative overflow-x-hidden">
+      <LowPolyBackground />
       <Header />
-      <main>
+      <main className="relative z-10 w-full pt-20">
         <LearningPathsHero />
 
         {/* Popular Learning Paths */}
-        <section className="section-padding bg-muted/30">
+        <section className="section-padding bg-transparent">
           <div className="container-width">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
-          className="text-center mb-10"
-        >
-          <h2 className="font-heading text-3xl md:text-4xl text-sky-700 mb-4">
-            Popular Learning Paths
-          </h2>
+              className="text-center mb-16"
+            >
+              <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-4 leading-tight tracking-tight font-heading">
+                Popular <span className="text-[#0075CF]">Learning Paths</span>
+              </h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
                 Our most chosen career paths by students across Vijayawada and beyond
               </p>
@@ -207,18 +209,18 @@ const LearningPaths = () => {
         </section>
 
         {/* All Learning Paths */}
-        <section className="section-padding bg-background">
+        <section className="section-padding bg-transparent">
           <div className="container-width">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
-          className="text-center mb-10"
-        >
-          <h2 className="font-heading text-3xl md:text-4xl text-sky-700 mb-4">
-            All Learning Paths
-          </h2>
+              className="text-center mb-16"
+            >
+              <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-4 leading-tight tracking-tight font-heading">
+                All <span className="text-[#0075CF]">Learning Paths</span>
+              </h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
                 Explore all available career paths and find the one that matches your goals
               </p>

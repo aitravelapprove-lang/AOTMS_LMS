@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Header from "@/components/landing/Header";
 import Footer from "@/components/landing/Footer";
+import LowPolyBackground from "@/components/landing/LowPolyBackground";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -52,16 +53,17 @@ const Assignments = () => {
     };
 
     return (
-        <div className="min-h-screen bg-background bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-50/50 via-white to-white">
+        <div className="min-h-screen relative overflow-x-hidden">
+            <LowPolyBackground />
             <Header />
 
-            <main className="pt-24 pb-16">
+            <main className="relative z-10 w-full pt-20 pb-16">
                 {/* 1. Hero Header */}
                 <section className="container-width section-padding pb-6">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="glass-card p-8 rounded-2xl border border-white/20 shadow-xl backdrop-blur-md bg-white/70"
+                        className="bg-white/70 backdrop-blur-2xl p-8 md:p-12 rounded-[2.5rem] border border-slate-900/10 shadow-2xl shadow-slate-200/50"
                     >
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                             <div>
@@ -72,8 +74,8 @@ const Assignments = () => {
                                     <span className="text-muted-foreground">•</span>
                                     <span className="text-muted-foreground">Module 4: State Management</span>
                                 </div>
-                                <h1 className="font-['Saira'] text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-2">
-                                    Building a Real-World Dashboard
+                                <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 mb-4 leading-tight tracking-tight font-heading">
+                                    Building a <span className="text-[#0075CF]">Real-World Dashboard</span>
                                 </h1>
                                 <p className="text-muted-foreground flex items-center gap-2">
                                     Instructor: <span className="font-medium text-foreground">Sarah Johnson</span>
@@ -99,18 +101,18 @@ const Assignments = () => {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.1 }}
                         >
-                            <Card className="border-border/50 shadow-sm hover:shadow-md transition-all duration-300">
-                                <CardHeader>
-                                    <CardTitle>Assignment Overview</CardTitle>
+                            <Card className="bg-white/70 backdrop-blur-2xl border-slate-900/10 shadow-xl rounded-[2rem] overflow-hidden">
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-2xl font-extrabold text-slate-900 font-heading">Assignment Overview</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className={`prose prose-sm max-w-none text-muted-foreground ${!isExpanded ? 'line-clamp-3' : ''}`}>
+                                    <div className={`prose prose-sm max-w-none text-slate-600 font-medium leading-relaxed ${!isExpanded ? 'line-clamp-3' : ''}`}>
                                         <p>
                                             In this assignment, you will apply your knowledge of React Context API and Redux Toolkit to build a functional analytics dashboard.
                                             This task mirrors real-world requirements for frontend developers in 2024.
                                         </p>
-                                        <h4>Learning Objectives:</h4>
-                                        <ul>
+                                        <h4 className="text-slate-900 font-bold mt-4">Learning Objectives:</h4>
+                                        <ul className="list-disc pl-5 mt-2 space-y-1">
                                             <li>Implement global state management effectively.</li>
                                             <li>Optimize rendering performance using memoization.</li>
                                             <li>Handle asynchronous data fetching with Redux Thunks.</li>
@@ -160,11 +162,11 @@ const Assignments = () => {
                             transition={{ delay: 0.2 }}
                             id="submission-area"
                         >
-                            <Card className="border-border/50 shadow-lg overflow-hidden relative">
-                                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-accent" />
+                            <Card className="bg-white/70 backdrop-blur-2xl border-slate-900/10 shadow-2xl rounded-[2rem] overflow-hidden relative">
+                                <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[#0075CF] to-[#FD5A1A]" />
                                 <CardHeader>
-                                    <CardTitle>Submit Your Work</CardTitle>
-                                    <CardDescription>Upload your assignment files or paste a link.</CardDescription>
+                                    <CardTitle className="text-2xl font-extrabold text-slate-900 font-heading">Submit Your Work</CardTitle>
+                                    <CardDescription className="text-slate-500 font-medium">Upload your assignment files or paste a link.</CardDescription>
                                 </CardHeader>
                                 <CardContent>
                                     <Tabs defaultValue="upload" className="w-full">
@@ -242,9 +244,9 @@ const Assignments = () => {
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.3 }}
                         >
-                            <Card>
+                            <Card className="bg-white/70 backdrop-blur-2xl border-slate-900/10 shadow-xl rounded-[2rem] overflow-hidden">
                                 <CardHeader className="pb-3">
-                                    <CardTitle className="text-lg">Resources</CardTitle>
+                                    <CardTitle className="text-xl font-extrabold text-slate-900 font-heading">Resources</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-3">
                                     {[
@@ -270,9 +272,9 @@ const Assignments = () => {
                         </motion.div>
 
                         {/* 6. Submission Status */}
-                        <Card>
+                        <Card className="bg-white/70 backdrop-blur-2xl border-slate-900/10 shadow-xl rounded-[2rem] overflow-hidden">
                             <CardHeader className="pb-3">
-                                <CardTitle className="text-lg">Status & History</CardTitle>
+                                <CardTitle className="text-xl font-extrabold text-slate-900 font-heading">Status & History</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-6">

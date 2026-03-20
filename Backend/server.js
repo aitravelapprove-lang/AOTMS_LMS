@@ -252,43 +252,42 @@ app.post('/api/zoom/meetings', authenticateToken, requireInstructor, async (req,
         handleError(res, err, 'create-zoom-meeting');
     }
 });
-
-app.post('/api/zoom/signature', authenticateToken, async (req, res) => {
+// 2. Zoom SDK Signature Generation (Meeting SDK)
+app.post('/api/zoom/signature', (req, res) => {
     try {
         const { meetingNumber, role } = req.body;
-        const sdkKey = process.env.ZOOM_SDK_KEY || process.env.ZOOM_S2S_CLIENT_ID;
-        const sdkSecret = process.env.ZOOM_SDK_SECRET || process.env.ZOOM_S2S_CLIENT_SECRET;
+        const sdkKey = process.env.ZOOM_SDK_KEY;
+        const sdkSecret = process.env.ZOOM_SDK_SECRET;
 
-        // In Meeting SDK, a signature is a JWT
-        const iat = Math.round(new Date().getTime() / 1000) - 30;
-        const exp = iat + 60 * 60 * 2; // Valid for 2 hours
+        if (!sdkKey || !sdkSecret) {
+            return res.status(500).json({ error: 'Zoom SDK Credentials missing on server' });
+        }
 
-        const oHeader = { alg: 'HS256', typ: 'JWT' };
-        const oPayload = {
+        const iat = Math.floor(Date.now() / 1000) - 30;
+        const exp = iat + 60 * 60 * 2; // 2 hours
+
+        const payload = {
             sdkKey: sdkKey,
             mn: meetingNumber,
-            role: role,
+            role: role, // 0 for attendee, 1 for host
             iat: iat,
             exp: exp,
             tokenExp: exp
         };
 
-        const sHeader = JSON.stringify(oHeader);
-        const sPayload = JSON.stringify(oPayload);
-        
-        const base64Header = Buffer.from(sHeader).toString('base64').replace(/=/g, '');
-        const base64Payload = Buffer.from(sPayload).toString('base64').replace(/=/g, '');
-        
-        const signature = require('crypto')
-            .createHmac('sha256', sdkSecret)
-            .update(`${base64Header}.${base64Payload}`)
-            .digest('base64')
-            .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+        const jwt = require('jsonwebtoken');
+        const signature = jwt.sign(payload, sdkSecret, { algorithm: 'HS256' });
 
-        const finalSignature = `${base64Header}.${base64Payload}.${signature}`;
-        res.json({ signature: finalSignature });
+        console.log(`[Zoom Signature] Generated for meeting: ${meetingNumber}`);
+        // Return BOTH the signature and the sdkKey to ensure frontend syncs correctly
+        res.json({ 
+            signature, 
+            sdkKey: sdkKey 
+        });
+
     } catch (err) {
-        handleError(res, err, 'zoom-signature');
+        console.error('[Zoom Signature Error]', err);
+        res.status(500).json({ error: 'Signature generation failed' });
     }
 });
 

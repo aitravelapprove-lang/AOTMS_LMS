@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
  * ZOOM SDK Initialization
  * Moved INSIDE the component to prevent it from injecting global CSS and breaking the layout on other pages!
  */
-const ZOOM_VERSION = '5.1.2';
+const ZOOM_VERSION = '5.1.4'; // Matches package.json
 
 export default function LiveSession() {
     const { meetingId } = useParams();
@@ -31,7 +31,7 @@ export default function LiveSession() {
     const role = parseInt(queryParams.get('role') || '0');
 
     const addLog = (msg: string) => {
-        setLogs(prev => [...prev.slice(-3), msg]);
+        setLogs(prev => [...prev.slice(-4), msg]);
     };
 
     useEffect(() => {
@@ -41,6 +41,13 @@ export default function LiveSession() {
 
         const setupMeeting = async () => {
             try {
+                const meetingNumber = meetingId.replace(/\s/g, '');
+                const sdkKey = import.meta.env.VITE_ZOOM_CLIENT_ID;
+
+                if (!sdkKey) {
+                    throw new Error('Frontend VITE_ZOOM_CLIENT_ID is missing. Check your .env file or Render dashboard.');
+                }
+
                 addLog('Verifying meeting credentials...');
 
                 // Initialize Zoom only now to prevent global CSS hijacking on other pages
@@ -49,23 +56,22 @@ export default function LiveSession() {
                 ZoomMtg.prepareWebSDK();
 
                 // 1. Get Security Signature
-                addLog('Requesting security signature...');
-                const { signature } = await fetchWithAuth('/zoom/signature', {
+                addLog('Generating security signature...');
+                const response = await fetchWithAuth('/zoom/signature', {
                     method: 'POST',
                     body: JSON.stringify({
-                        meetingNumber: meetingId.replace(/\s/g, ''),
+                        meetingNumber: meetingNumber,
                         role: role
                     })
                 });
 
-                if (!signature) throw new Error('Failed to generate signature');
-                addLog('Signature ready. Initializing engine...');
+                // USE THE KEY FROM THE BACKEND IF POSSIBLE to avoid local .env mismatch
+                const signature = response.signature;
+                const activeSdkKey = response.sdkKey || sdkKey; 
 
-                const sdkKey = import.meta.env.VITE_ZOOM_CLIENT_ID;
-                if (!sdkKey) {
-                    addLog('Error: VITE_ZOOM_CLIENT_ID is missing!');
-                    throw new Error('Zoom SDK Key is not configured in Frontend .env');
-                }
+                if (!signature) throw new Error('Signature generation failed on backend.');
+
+                addLog('Engine preparation...')
 
                 // 2. Initialize Zoom Client View
                 const zRoot = document.getElementById('zmmtg-root');
@@ -73,7 +79,7 @@ export default function LiveSession() {
 
                 ZoomMtg.init({
                     leaveUrl: window.location.origin + (role === 1 ? '/instructor' : '/student-dashboard'),
-                    sdkKey: sdkKey,
+                    sdkKey: activeSdkKey,
                     patchJsMedia: true,
                     isSupportAV: true,
                     isSupportChat: true,
@@ -81,32 +87,32 @@ export default function LiveSession() {
                     isSupportPolling: true,
                     isSupportBreakoutRoom: true,
                     success: () => {
-                        addLog('Engine initialized. Joining room...');
+                        addLog('Engine ready. Joining room...');
 
                         ZoomMtg.join({
                             signature: signature,
-                            sdkKey: sdkKey,
-                            meetingNumber: meetingId!.replace(/\s/g, ''),
+                            sdkKey: activeSdkKey,
+                            meetingNumber: meetingNumber,
                             userName: user.user_metadata?.full_name || user.email || 'AOTMS User',
                             passWord: password,
                             tk: '',
-                            success: (res: any) => {
+                            success: () => {
                                 addLog('Joined successfully!');
                                 setStatus('Connected!');
                                 setLoading(false);
                             },
                             error: (err: any) => {
                                 console.error('Join Error:', err);
-                                addLog(`Join Fail: ${err.errorMessage || 'Unknown error'}`);
-                                setError(`Failed to enter: ${err.errorMessage || 'Invalid meeting credentials'}`);
+                                addLog(`Join Fail: ${err.errorMessage || 'Invalid meeting'}`);
+                                setError(`Failed to enter: ${err.errorMessage || 'Unknown Zoom error'}`);
                                 setLoading(false);
                             }
                         });
                     },
                     error: (err: any) => {
                         console.error('Init Error:', err);
-                        addLog(`Init Fail: ${err.errorMessage || 'Parameter mismatch'}`);
-                        setError(`Engine initialization failed: ${err.errorMessage || 'Check SDK Key and Meeting ID format'}`);
+                        addLog(`Init Fail: ${err.errorMessage || 'Invalid parameters'}`);
+                        setError(`Engine initialization failed: ${err.errorMessage || 'Please check SDK Key and Meeting ID format'}`);
                         setLoading(false);
                     }
                 });

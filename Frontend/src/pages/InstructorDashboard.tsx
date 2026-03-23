@@ -16,9 +16,11 @@ import { SmartAlerts } from "@/components/instructor/dashboard/SmartAlerts";
 import { InstructorCourses } from "@/components/instructor/courses/InstructorCourses";
 import { InstructorStudentDashboard } from "@/components/instructor/dashboard/InstructorStudentDashboard";
 import { DoubtManager } from "@/components/instructor/dashboard/DoubtManager";
+import { ChatInterface } from "@/components/chat/ChatInterface";
 import { ResourcesDashboard } from "@/components/instructor/dashboard/ResourcesDashboard";
-import AssignmentsDashboard from "@/components/instructor/dashboard/AssignmentsDashboard";
 import PerformanceDashboard from "@/components/instructor/dashboard/PerformanceDashboard";
+import { QuestionBankManager } from "@/components/manager/QuestionBankManager";
+import { InstructorVideoLibrary } from "@/components/instructor/dashboard/InstructorVideoLibrary";
 import { LiveClassManager } from "@/components/instructor/dashboard/LiveClassManager";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -177,10 +179,11 @@ export default function InstructorDashboard() {
   const isStudents = path === "/instructor/students";
   const isDoubts = path === "/instructor/doubts";
   const isResources = path === "/instructor/resources";
-  const isAssignments = path.startsWith("/instructor/assignments");
   const isPerformance = path === "/instructor/performance";
   const isVideos = path === "/instructor/videos";
   const isLiveClasses = path === "/instructor/live-classes";
+  const isChat = path === "/instructor/chat";
+  const isQuestionBank = path === "/instructor/question-bank";
 
   return (
     <SidebarProvider className="h-screen w-full overflow-hidden mesh-bg font-sans">
@@ -284,15 +287,6 @@ export default function InstructorDashboard() {
               )}
 
               {/* ── Routing Content ────────────────────────────────────────── */}
-              {isAssignments && (
-                <motion.div
-                  key="assignments"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                >
-                  <AssignmentsDashboard />
-                </motion.div>
-              )}
               {isMyCourses && (
                 <motion.div
                   key="my-courses"
@@ -347,6 +341,15 @@ export default function InstructorDashboard() {
                   <PerformanceDashboard />
                 </motion.div>
               )}
+              {isVideos && (
+                <motion.div
+                  key="videos"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <InstructorVideoLibrary />
+                </motion.div>
+              )}
               {isLiveClasses && (
                 <motion.div
                   key="live"
@@ -354,6 +357,24 @@ export default function InstructorDashboard() {
                   animate={{ opacity: 1 }}
                 >
                   <LiveClassManager />
+                </motion.div>
+              )}
+              {isChat && (
+                <motion.div
+                  key="chat"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <ChatInterface />
+                </motion.div>
+              )}
+              {isQuestionBank && (
+                <motion.div
+                  key="question-bank"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <QuestionBankManager mode="instructor" />
                 </motion.div>
               )}
             </AnimatePresence>

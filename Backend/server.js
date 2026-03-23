@@ -4,21 +4,38 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
-const { generateUploadUrl, generateViewUrl, deleteObject } = require('./utils/s3');
+const { generateUploadUrl, generateViewUrl, deleteObject, uploadFile } = require('./utils/s3');
 const axios = require('axios');
 const connectDB = require('./config/db');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
+const cloudinary = require('cloudinary').v2;
+const vm = require('vm'); // Native Node.js module for executing code locally
+
+// Cloudinary Config
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dbhuezxh0',
+    api_key: process.env.CLOUDINARY_API_KEY || '586353983153752',
+    api_secret: process.env.CLOUDINARY_API_SECRET || 'S6rxE-cjejQxkdWucUuAb7rGUXI'
+});
 
 // Import Mongoose Models
 const { User, Profile, UserRole, OTP, VerifiedEmail, InstructorApplication, GuestCredential } = require('./models/User');
-const { Course, Enrollment, Topic, Module, Video, Announcement, Timeline, Resource, InstructorProgress } = require('./models/Course');
+const { Course, Enrollment, Topic, Module, Video, Announcement, Timeline, Resource, InstructorProgress, VideoProgress } = require('./models/Course');
 const { Exam, QuestionBank, ExamSchedule, StudentExamAccess, ExamResult, MockPaper, ExamRule, MockTestConfig } = require('./models/Exam');
 const { Assignment, Submission, Playlist, LiveClass } = require('./models/Content');
 const { SystemLog, SecurityEvent, LeaderboardStat } = require('./models/System');
+const { Conversation, Message } = require('./models/Chat');
+const { Doubt, DoubtReply } = require('./models/Doubt');
 
 // Map table names to Models for generic routes
 const MODEL_MAP = {
     'profiles': Profile,
     'user_roles': UserRole,
+    'conversations': Conversation,
+    'messages': Message,
+    'doubts': Doubt,
+    'doubt_replies': DoubtReply,
     'courses': Course,
     'course_topics': Topic,
     'course_modules': Module,
@@ -26,6 +43,7 @@ const MODEL_MAP = {
     'course_resources': Resource,
     'course_timeline': Timeline,
     'course_announcements': Announcement,
+    'announcements': Announcement, // Alias for frontend compatibility
     'course_enrollments': Enrollment,
     'exams': Exam,
     'question_bank': QuestionBank,
@@ -46,6 +64,7 @@ const MODEL_MAP = {
     'leaderboard': LeaderboardStat, // Alias
     'instructor_applications': InstructorApplication,
     'instructor_progress': InstructorProgress,
+    'video_progress': VideoProgress,
     'guest_credentials': GuestCredential
 };
 
@@ -69,6 +88,7 @@ const io = new Server(httpServer, {
 
 // Socket.io Connection Logic
 const userSockets = new Map(); // userId -> Set of socketIds
+const onlineUsers = new Set(); // Set of online userIds
 
 io.on('connection', (socket) => {
     socket.on('authenticate', (userId) => {
@@ -78,7 +98,44 @@ io.on('connection', (socket) => {
             userSockets.set(userId, new Set());
         }
         userSockets.get(userId).add(socket.id);
+        onlineUsers.add(userId);
+        
         console.log(`[Socket] User ${userId} connected (${socket.id})`);
+        io.emit('user_status', { userId, status: 'online' });
+    });
+
+    socket.on('join_conversation', (conversationId) => {
+        socket.join(conversationId);
+        console.log(`[Socket] User ${socket.userId} joined conversation ${conversationId}`);
+    });
+
+    socket.on('typing', ({ conversationId, isTyping }) => {
+        socket.to(conversationId).emit('typing_status', { 
+            userId: socket.userId, 
+            isTyping,
+            conversationId 
+        });
+    });
+
+    socket.on('mark_read', async ({ conversationId, messageIds }) => {
+        try {
+            if (!messageIds || messageIds.length === 0) return;
+            
+            // Update DB
+            await Message.updateMany(
+                { _id: { $in: messageIds }, conversation_id: conversationId },
+                { status: 'read' }
+            );
+
+            // Emit to sender that messages are read
+            io.to(conversationId).emit('messages_read', { 
+                conversationId, 
+                messageIds,
+                readBy: socket.userId 
+            });
+        } catch (err) {
+            console.error('Error marking messages read:', err);
+        }
     });
 
     socket.on('disconnect', () => {
@@ -86,6 +143,8 @@ io.on('connection', (socket) => {
             userSockets.get(socket.userId).delete(socket.id);
             if (userSockets.get(socket.userId).size === 0) {
                 userSockets.delete(socket.userId);
+                onlineUsers.delete(socket.userId);
+                io.emit('user_status', { userId: socket.userId, status: 'offline' });
             }
         }
         console.log(`[Socket] Disconnected: ${socket.id}`);
@@ -361,6 +420,170 @@ app.post('/api/zoom/webhook', async (req, res) => {
     }
 });
 
+
+// --- Question Bank Generator Proxy ---
+app.post('/api/manager/generate-questions', authenticateToken, requireManager, async (req, res) => {
+    console.log('[API] Generate Questions Request:', req.body.topic, req.body.type);
+    const { topic, type, count, difficulty, prompt } = req.body;
+    
+    // Determine webhook URL based on type
+    const N8N_MCQ_WEBHOOK = process.env.N8N_MCQ_GENERATOR_URL || 'https://aotms.app.n8n.cloud/webhook/generate-quiz';
+    const N8N_TRUE_FALSE_WEBHOOK = process.env.N8N_TRUE_FALSE_GENERATOR_URL || 'https://aotms.app.n8n.cloud/webhook/true';
+    const N8N_SHORT_ANSWER_WEBHOOK = process.env.N8N_SHORT_ANSWER_GENERATOR_URL || 'https://aotms.app.n8n.cloud/webhook/generate-short-answer';
+    const N8N_LONG_ANSWER_WEBHOOK = process.env.N8N_LONG_ANSWER_GENERATOR_URL || 'https://aotms.app.n8n.cloud/webhook/generate-long-answer';
+    const N8N_FILL_BLANK_WEBHOOK = process.env.N8N_FILL_BLANK_GENERATOR_URL || 'https://aotms.app.n8n.cloud/webhook/generate-fill-blank';
+    const N8N_CODING_WEBHOOK = process.env.N8N_CODING_GENERATOR_URL || 'https://aotms.app.n8n.cloud/webhook/generate-coding';
+    
+    let webhookUrl;
+    switch (type) {
+        case 'mcq':
+            webhookUrl = N8N_MCQ_WEBHOOK;
+            break;
+        case 'true_false':
+            webhookUrl = N8N_TRUE_FALSE_WEBHOOK;
+            break;
+        case 'short':
+        case 'short_answer':
+            webhookUrl = N8N_SHORT_ANSWER_WEBHOOK;
+            break;
+        case 'long':
+        case 'long_answer':
+            webhookUrl = N8N_LONG_ANSWER_WEBHOOK;
+            break;
+        case 'fill_blank':
+            webhookUrl = N8N_FILL_BLANK_WEBHOOK;
+            break;
+        case 'coding':
+            webhookUrl = N8N_CODING_WEBHOOK;
+            break;
+        default:
+            webhookUrl = N8N_MCQ_WEBHOOK; // Default fallback
+    }
+
+    try {
+        const response = await axios.post(webhookUrl, {
+            topic,
+            context: topic, // Alias for older n8n workflows
+            type,
+            question_type: type, // Alias
+            count,
+            questionCount: count, // Alias
+            difficulty,
+            prompt,
+            timestamp: new Date().toISOString()
+        }, { timeout: 120000 }); // AI generation can be slow
+
+        // Forward the response data directly
+        res.json(response.data);
+    } catch (error) {
+        console.error('Error calling n8n webhook:', error.message);
+        if (error.response) {
+            res.status(error.response.status).json(error.response.data);
+        } else {
+            res.status(500).json({ error: 'Failed to generate questions via AI service' });
+        }
+    }
+});
+
+// --- Code Execution Helper ---
+const executeCode = async (language, sourceCode, stdin = '') => {
+    // 1. Local JavaScript Execution (VM)
+    if (language === 'javascript' || language === 'js' || language === 'node') {
+        return new Promise((resolve) => {
+            const outputBuffer = [];
+            const errorBuffer = [];
+            
+            // Capture console.log
+            const sandbox = {
+                console: {
+                    log: (...args) => outputBuffer.push(args.map(a => String(a)).join(' ')),
+                    error: (...args) => errorBuffer.push(args.map(a => String(a)).join(' ')),
+                    warn: (...args) => outputBuffer.push('[WARN] ' + args.map(a => String(a)).join(' '))
+                },
+                setTimeout: setTimeout,
+                clearTimeout: clearTimeout,
+                setInterval: setInterval,
+                clearInterval: clearInterval,
+                process: {
+                    exit: (code) => { throw new Error(`Process exited with code ${code}`); }
+                }
+            };
+
+            try {
+                // Create script
+                const script = new vm.Script(sourceCode);
+                const context = vm.createContext(sandbox);
+                
+                // Run with timeout
+                script.runInContext(context, { timeout: 2000 }); // 2s timeout
+                
+                resolve({
+                    run: {
+                        stdout: outputBuffer.join('\n'),
+                        stderr: errorBuffer.join('\n'),
+                        code: 0,
+                        signal: null,
+                        output: outputBuffer.join('\n')
+                    },
+                    language: 'javascript',
+                    version: process.version
+                });
+            } catch (err) {
+                resolve({
+                    run: {
+                        stdout: outputBuffer.join('\n'),
+                        stderr: err.toString(),
+                        code: 1,
+                        signal: null,
+                        output: outputBuffer.join('\n') + '\n' + err.toString()
+                    },
+                    language: 'javascript',
+                    version: process.version
+                });
+            }
+        });
+    }
+
+    // 2. Fallback to Piston (for other languages) - May fail if not whitelisted
+    try {
+        const response = await axios.post('https://emkc.org/api/v2/piston/execute', {
+            language,
+            version: '*', 
+            files: [{ content: sourceCode }],
+            stdin: stdin
+        });
+        return response.data;
+    } catch (error) {
+        // If Piston fails (400/401/403 whitelist), return a formatted error
+        const msg = error.response?.data?.message || error.message;
+        return {
+            run: {
+                stdout: '',
+                stderr: `Execution Failed (External API): ${msg}\nNote: Only JavaScript is currently supported locally.`,
+                code: 1
+            }
+        };
+    }
+};
+
+// --- Piston Code Execution (Run Code) ---
+app.post('/api/run-code', authenticateToken, async (req, res) => {
+    const { language, version, files, stdin } = req.body;
+    
+    console.log(`[API] Run Code Request: ${language}`);
+
+    if (!language || !files || !Array.isArray(files) || files.length === 0) {
+        return res.status(400).json({ error: 'Language and files (array) are required.' });
+    }
+
+    try {
+        const sourceCode = files[0].content;
+        const result = await executeCode(language, sourceCode, stdin);
+        res.json(result);
+    } catch (err) {
+        handleError(res, err, 'run-code');
+    }
+});
 
 // --- Auth Routes ---
 
@@ -880,10 +1103,592 @@ app.put('/api/user/profile', authenticateToken, async (req, res) => {
     }
 });
 
-// --- Instructor Routes ---
 
-const multer = require('multer');
-const upload = multer({ storage: multer.memoryStorage() });
+app.get('/api/admin/conversations', authenticateToken, requireAdminOrManager, async (req, res) => {
+    try {
+        const conversations = await Conversation.find()
+            .populate('participants', 'full_name avatar_url email')
+            .populate('last_message')
+            .sort({ updated_at: -1 })
+            .lean();
+
+        // Get profiles to check approval_status (blocked/active)
+        const userIds = [];
+        conversations.forEach(c => {
+             if (c.participants) {
+                 c.participants.forEach(p => {
+                     if (p._id) userIds.push(p._id);
+                 });
+             }
+        });
+        
+        const profiles = await Profile.find({ user_id: { $in: userIds } }).select('user_id approval_status').lean();
+        const statusMap = profiles.reduce((acc, p) => {
+            acc[p.user_id.toString()] = p.approval_status;
+            return acc;
+        }, {});
+
+        // Transform for frontend
+        const data = conversations.map(c => ({
+            id: c._id,
+            participants: (c.participants || []).map(p => ({
+                id: p._id,
+                name: p.full_name,
+                avatar: p.avatar_url,
+                email: p.email,
+                status: statusMap[p._id.toString()] || 'pending'
+            })),
+            lastMessage: c.last_message ? {
+                content: c.last_message.content,
+                timestamp: c.last_message.created_at,
+                sender: c.last_message.sender
+            } : null,
+            updatedAt: c.updated_at
+        }));
+
+        res.json(data);
+    } catch (err) {
+        handleError(res, err, 'admin-get-conversations');
+    }
+});
+
+app.get('/api/admin/conversations/:id/messages', authenticateToken, requireAdminOrManager, async (req, res) => {
+    try {
+        const messages = await Message.find({ conversation_id: req.params.id })
+            .sort({ created_at: 1 })
+            .lean();
+            
+        res.json(messages.map(m => ({
+            id: m._id,
+            content: m.content,
+            sender: m.sender,
+            timestamp: m.created_at,
+            status: m.status,
+            type: m.type
+        })));
+    } catch (err) {
+        handleError(res, err, 'admin-get-messages');
+    }
+});
+
+// --- Chat Routes ---
+
+
+app.get('/api/users/:id/public-profile', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const user = await User.findById(userId).select('full_name avatar_url email created_at');
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        const role = await getUserRole(userId);
+        let details = {};
+
+        if (role === 'instructor') {
+            const app = await InstructorApplication.findOne({ user_id: userId });
+            details.expertise = app?.area_of_expertise || 'General Instructor';
+            details.experience = app?.experience || 'N/A';
+            details.bio = app?.custom_expertise || '';
+            details.courses_count = await Course.countDocuments({ instructor_id: userId, status: 'published' });
+        } else {
+            details.enrolled_courses = await Enrollment.countDocuments({ user_id: userId });
+            details.completed_courses = await Enrollment.countDocuments({ user_id: userId, status: 'completed' });
+        }
+
+        res.json({
+            id: user._id,
+            full_name: user.full_name,
+            avatar_url: user.avatar_url,
+            email: user.email,
+            joined_at: user.created_at,
+            role,
+            details
+        });
+    } catch (err) {
+        handleError(res, err, 'get-public-profile');
+    }
+});
+
+app.post('/api/chat/start', authenticateToken, async (req, res) => {
+    const { participantId, recipientId } = req.body;
+    const targetId = participantId || recipientId;
+    
+    if (!targetId) return res.status(400).json({ error: 'Missing participantId' });
+
+    try {
+        const participant = await User.findById(targetId);
+        if (!participant) return res.status(404).json({ error: 'User not found' });
+
+        // Find existing conversation
+        let conversation = await Conversation.findOne({
+            participants: { $all: [req.user.id, targetId] }
+        });
+
+        if (!conversation) {
+            conversation = await Conversation.create({
+                participants: [req.user.id, targetId],
+                unread_counts: { [req.user.id]: 0, [targetId]: 0 }
+            });
+        }
+
+        // Populate for frontend
+        const populatedConv = await Conversation.findById(conversation._id)
+            .populate('participants', 'full_name avatar_url email')
+            .populate('last_message')
+            .lean();
+
+        const otherUser = populatedConv.participants.find(p => p._id.toString() !== req.user.id);
+        
+        const formattedConv = {
+            id: populatedConv._id,
+            user: otherUser ? {
+                id: otherUser._id,
+                name: otherUser.full_name,
+                avatar: otherUser.avatar_url,
+                email: otherUser.email
+            } : null,
+            lastMessage: populatedConv.last_message ? {
+                content: populatedConv.last_message.content,
+                timestamp: populatedConv.last_message.created_at,
+                status: populatedConv.last_message.status,
+                sender: populatedConv.last_message.sender
+            } : null,
+            unreadCount: populatedConv.unread_counts?.[req.user.id] || 0
+        };
+
+        res.json(formattedConv);
+    } catch (err) {
+        handleError(res, err, 'start-conversation');
+    }
+});
+
+app.get('/api/chat/conversations', authenticateToken, async (req, res) => {
+    try {
+        const conversations = await Conversation.find({ participants: req.user.id })
+            .populate('participants', 'full_name avatar_url email')
+            .populate('last_message')
+            .sort({ updated_at: -1 })
+            .lean();
+
+        // Transform for frontend
+        const data = conversations.map(c => {
+            const otherUser = c.participants.find(p => p._id.toString() !== req.user.id);
+            return {
+                id: c._id,
+                user: otherUser ? {
+                    id: otherUser._id,
+                    name: otherUser.full_name,
+                    avatar: otherUser.avatar_url,
+                    email: otherUser.email
+                } : null,
+                lastMessage: c.last_message ? {
+                    content: c.last_message.content,
+                    timestamp: c.last_message.created_at,
+                    status: c.last_message.status,
+                    sender: c.last_message.sender
+                } : null,
+                unreadCount: c.unread_counts?.[req.user.id] || 0
+            };
+        });
+
+        res.json(data);
+    } catch (err) {
+        handleError(res, err, 'get-conversations');
+    }
+});
+
+app.get('/api/chat/messages/:conversationId', authenticateToken, async (req, res) => {
+    const { conversationId } = req.params;
+    try {
+        const messages = await Message.find({ conversation_id: conversationId })
+            .sort({ created_at: 1 })
+            .lean();
+        
+        // Mark as read (simple implementation: assume viewing marks all as read for now)
+        // Ideally handled via specific socket event or batch update
+        await Message.updateMany(
+            { conversation_id: conversationId, sender: { $ne: req.user.id }, status: { $ne: 'read' } },
+            { status: 'read' }
+        );
+
+        // Reset unread count for this user
+        await Conversation.findByIdAndUpdate(conversationId, {
+            [`unread_counts.${req.user.id}`]: 0
+        });
+
+        res.json(messages.map(m => ({
+            id: m._id,
+            content: m.content,
+            sender: m.sender,
+            timestamp: m.created_at,
+            status: m.status,
+            type: m.type
+        })));
+    } catch (err) {
+        handleError(res, err, 'get-messages');
+    }
+});
+
+
+app.get('/api/chat/contacts', authenticateToken, async (req, res) => {
+    try {
+        const role = await getUserRole(req.user.id);
+        let contacts = [];
+
+        if (role === 'student') {
+            // Students see instructors of courses they are enrolled in
+            const enrollments = await Enrollment.find({ 
+                user_id: req.user.id, 
+                status: 'active' 
+            }).lean();
+            
+            const courseIds = enrollments.map(e => e.course_id);
+            const courses = await Course.find({ 
+                _id: { $in: courseIds }, 
+                instructor_id: { $ne: null } 
+            }).lean();
+            
+            const instructorIds = [...new Set(courses.map(c => c.instructor_id))];
+            
+            const instructors = await User.find({ _id: { $in: instructorIds } })
+                .select('full_name avatar_url email')
+                .lean();
+
+            contacts = instructors.map(i => ({
+                id: i._id,
+                name: i.full_name,
+                avatar: i.avatar_url,
+                email: i.email,
+                role: 'instructor'
+            }));
+
+        } else if (role === 'instructor') {
+            // Instructors see students enrolled in their courses
+            const myCourses = await Course.find({ instructor_id: req.user.id }).select('_id').lean();
+            const courseIds = myCourses.map(c => c._id);
+            
+            const enrollments = await Enrollment.find({ 
+                course_id: { $in: courseIds }, 
+                status: 'active' 
+            })
+            .populate('user_id', 'full_name avatar_url email')
+            .lean();
+
+            // Deduplicate students
+            const studentMap = new Map();
+            enrollments.forEach(e => {
+                if (e.user_id) {
+                    studentMap.set(e.user_id._id.toString(), {
+                        id: e.user_id._id,
+                        name: e.user_id.full_name,
+                        avatar: e.user_id.avatar_url,
+                        email: e.user_id.email,
+                        role: 'student'
+                    });
+                }
+            });
+            
+            contacts = Array.from(studentMap.values());
+        }
+
+        res.json(contacts);
+    } catch (err) {
+        handleError(res, err, 'get-chat-contacts');
+    }
+});
+
+app.post('/api/chat/send', authenticateToken, async (req, res) => {
+    const { conversationId, content, type } = req.body;
+    try {
+        console.log('--- START CHAT SEND ---');
+        console.log('Request User:', req.user.id);
+        console.log('Conversation ID:', conversationId);
+
+        // Check if user is blocked/suspended
+        const profile = await Profile.findOne({ user_id: req.user.id });
+        if (profile?.approval_status === 'rejected' || profile?.approval_status === 'suspended') {
+            return res.status(403).json({ error: 'Your account has been suspended. You cannot send messages.' });
+        }
+
+        // Fetch conversation first to get participants
+        // RENAMED from 'conversation' to 'chatConv' to avoid any scope collision
+        let chatConv = await Conversation.findById(conversationId);
+        if (!chatConv) {
+            console.error('Conversation not found:', conversationId);
+            return res.status(404).json({ error: 'Conversation not found' });
+        }
+
+        console.log('Conversation Found:', chatConv._id);
+
+        // Determine initial status based on recipient online status
+        const otherUserId = chatConv.participants.find(p => p.toString() !== req.user.id);
+        let initialStatus = 'sent';
+        if (otherUserId && userSockets.has(otherUserId.toString())) {
+            initialStatus = 'delivered';
+        }
+
+        const message = await Message.create({
+            conversation_id: conversationId,
+            sender: req.user.id,
+            content,
+            type: type || 'text',
+            status: initialStatus
+        });
+
+        chatConv = await Conversation.findByIdAndUpdate(
+            conversationId,
+            { 
+                last_message: message._id, 
+                updated_at: new Date(),
+                // We update unread counts separately below or here if we have the ID
+            },
+            { new: true }
+        );
+
+        if (otherUserId) {
+            await Conversation.findByIdAndUpdate(conversationId, {
+                $inc: { [`unread_counts.${otherUserId}`]: 1 }
+            });
+        }
+
+        // Emit socket event to room (real-time)
+        io.to(conversationId).emit('receive_message', {
+            id: message._id,
+            conversationId,
+            sender: req.user.id,
+            content,
+            timestamp: message.created_at,
+            status: initialStatus,
+            type: message.type
+        });
+
+        // Notify specific user if online but maybe not in room (push notification style)
+        if (otherUserId) {
+            const socketIds = userSockets.get(otherUserId.toString());
+            if (socketIds) {
+                socketIds.forEach(sid => {
+                    io.to(sid).emit('new_message_notification', {
+                        senderName: req.user.full_name || 'User',
+                        content: content
+                    });
+                });
+            }
+        }
+
+        console.log('Message sent successfully:', message._id);
+        res.json({ 
+            success: true, 
+            message: {
+                ...message.toObject(),
+                id: message._id
+            }
+        });
+    } catch (err) {
+        console.error('Error in /api/chat/send:', err);
+        handleError(res, err, 'send-message');
+    }
+});
+
+app.post('/api/chat/upload', authenticateToken, upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+        
+        // Convert buffer to base64
+        const b64 = Buffer.from(req.file.buffer).toString('base64');
+        let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
+        
+        const result = await cloudinary.uploader.upload(dataURI, {
+            folder: 'chat_uploads',
+            resource_type: 'auto'
+        });
+
+        res.json({ url: result.secure_url });
+    } catch (err) {
+        handleError(res, err, 'chat-upload');
+    }
+});
+
+app.put('/api/chat/block-user', authenticateToken, requireAdminOrManager, async (req, res) => {
+    // Already implemented as /api/admin/update-user-status but specialized for chat context if needed
+    // We'll reuse update-user-status on frontend, or create a specific chat block if needed.
+    // Let's stick to update-user-status for now.
+    res.status(501).json({ error: 'Not implemented, use update-user-status' });
+});
+
+// --- Course Resources Upload (S3) ---
+app.post('/api/upload/course-resources', authenticateToken, requireInstructor, upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+        const originalName = req.file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const fileName = `Resources/${Date.now()}_${originalName}`;
+        
+        // Upload to S3
+        const s3Key = await uploadFile(req.file.buffer, fileName, req.file.mimetype);
+
+        // Generate a signed URL immediately so the uploader can preview/download it
+        // Or if the bucket is public, construct the public URL.
+        // Assuming we want to return a usable URL:
+        const signedUrl = await generateViewUrl(s3Key);
+
+        res.json({ 
+            url: s3Key, // Store the KEY in the database, not the signed URL
+            public_id: s3Key, 
+            format: req.file.mimetype.split('/')[1] || 'raw',
+            original_filename: req.file.originalname,
+            view_url: signedUrl // Frontend can use this immediately
+        });
+    } catch (err) {
+        console.error('Resource upload failed:', err);
+        handleError(res, err, 'upload-resource');
+    }
+});
+
+// --- Video Progress Tracking ---
+
+app.post('/api/student/video-progress', authenticateToken, async (req, res) => {
+    const { courseId, videoId, watchedSeconds, totalSeconds } = req.body;
+    
+    if (!videoId) return res.status(400).json({ error: 'Video ID required' });
+
+    try {
+        const completed = totalSeconds > 0 && (watchedSeconds / totalSeconds) >= 0.90; // 90% threshold for completion
+
+        const progress = await VideoProgress.findOneAndUpdate(
+            { user_id: req.user.id, video_id: videoId },
+            { 
+                course_id: courseId,
+                watched_seconds: watchedSeconds,
+                total_seconds: totalSeconds,
+                completed: completed ? true : undefined, // Only update to true, never back to false
+                last_watched_at: new Date()
+            },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+
+        // Update overall course progress on every update (not just completion)
+        if (courseId) {
+             const allVideos = await Video.find({ course_id: courseId }).select('_id duration');
+             const totalVideos = allVideos.length;
+             
+             if (totalVideos > 0) {
+                 const allProgress = await VideoProgress.find({ 
+                     user_id: req.user.id, 
+                     course_id: courseId 
+                 });
+
+                 let totalProgressSum = 0;
+                 
+                 // Create a map for quick lookup
+                 const progressMap = new Map();
+                 allProgress.forEach(p => progressMap.set(p.video_id.toString(), p));
+
+                 allVideos.forEach(v => {
+                     const p = progressMap.get(v._id.toString());
+                     if (p) {
+                         // Calculate percentage for this video
+                         let vidPercent = 0;
+                         if (p.completed) {
+                             vidPercent = 100;
+                         } else if (p.total_seconds > 0) {
+                             vidPercent = (p.watched_seconds / p.total_seconds) * 100;
+                         }
+                         // Cap at 100
+                         totalProgressSum += Math.min(100, vidPercent);
+                     }
+                 });
+
+                 const coursePercent = Math.round(totalProgressSum / totalVideos);
+                 
+                 await Enrollment.findOneAndUpdate(
+                     { user_id: req.user.id, course_id: courseId },
+                     { progress_percentage: coursePercent, last_accessed_at: new Date() }
+                 );
+             }
+        }
+
+        res.json(progress);
+    } catch (err) {
+        handleError(res, err, 'update-video-progress');
+    }
+});
+
+app.get('/api/student/video-progress/:courseId', authenticateToken, async (req, res) => {
+    try {
+        const progress = await VideoProgress.find({ 
+            user_id: req.user.id, 
+            course_id: req.params.courseId 
+        });
+        res.json(progress);
+    } catch (err) {
+        handleError(res, err, 'get-student-progress');
+    }
+});
+
+app.get('/api/instructor/student-progress/:studentId', authenticateToken, requireInstructor, async (req, res) => {
+    try {
+        const { studentId } = req.params;
+        const { courseId } = req.query;
+        
+        const query = { user_id: studentId };
+        if (courseId) {
+            query.course_id = courseId;
+        }
+        
+        const progress = await VideoProgress.find(query).lean();
+        res.json(progress);
+    } catch (err) {
+        handleError(res, err, 'get-student-progress-instructor');
+    }
+});
+
+app.get('/api/instructor/course-progress/:courseId', authenticateToken, requireInstructor, async (req, res) => {
+    try {
+        // Returns progress for all students enrolled in this course
+        // Grouped by student
+        const enrollments = await Enrollment.find({ course_id: req.params.courseId })
+            .populate('user_id', 'full_name email avatar_url')
+            .lean();
+            
+        const studentIds = enrollments.map(e => e.user_id?._id).filter(id => id);
+        
+        const allProgress = await VideoProgress.find({ 
+            course_id: req.params.courseId,
+            user_id: { $in: studentIds }
+        }).lean();
+
+        // Map progress to students
+        const data = enrollments.map(enrollment => {
+            const studentId = enrollment.user_id?._id?.toString();
+            const studentProgress = allProgress.filter(p => p.user_id.toString() === studentId);
+            const videosCompleted = studentProgress.filter(p => p.completed).length;
+            
+            return {
+                student: {
+                    id: studentId,
+                    name: enrollment.user_id?.full_name,
+                    email: enrollment.user_id?.email,
+                    avatar: enrollment.user_id?.avatar_url
+                },
+                overall_progress: enrollment.progress_percentage,
+                videos_completed: videosCompleted,
+                last_active: enrollment.last_accessed_at,
+                video_details: studentProgress.map(p => ({
+                    videoId: p.video_id,
+                    watched: p.watched_seconds,
+                    total: p.total_seconds,
+                    completed: p.completed,
+                    last_watched: p.last_watched_at
+                }))
+            };
+        });
+
+        res.json(data);
+    } catch (err) {
+        handleError(res, err, 'get-course-progress-instructor');
+    }
+});
+
+// --- Instructor Routes ---
 
 app.post('/api/instructor/register', upload.single('resume'), async (req, res) => {
     const { email, password, fullName, areaOfExpertise, customExpertise, experience } = req.body;
@@ -1334,11 +2139,23 @@ app.post('/api/manager/grant-exam-access', authenticateToken, requireAdminOrMana
 
 app.get('/api/manager/approved-question-banks', authenticateToken, requireAdminOrManager, async (req, res) => {
     try {
-        const questions = await QuestionBank.find({ approval_status: 'approved' })
-            .sort({ created_at: -1 });
-        res.json(questions);
+        const banks = await QuestionBank.aggregate([
+            { $match: { approval_status: 'approved' } },
+            { 
+                $group: {
+                    _id: '$topic',
+                    topic: { $first: '$topic' },
+                    count: { $sum: 1 },
+                    difficulties: { $addToSet: '$difficulty' },
+                    created_at: { $max: '$created_at' },
+                    created_by: { $first: '$created_by' }
+                }
+            },
+            { $sort: { created_at: -1 } }
+        ]);
+        res.json(banks);
     } catch (err) {
-        handleError(res, err, 'get-approved-questions');
+        handleError(res, err, 'get-approved-questions-grouped');
     }
 });
 
@@ -1373,20 +2190,89 @@ app.post('/api/student/submit-exam', authenticateToken, async (req, res) => {
         const qIds = Object.keys(answers);
         const questions = await QuestionBank.find({ _id: { $in: qIds } }).lean();
         
-        questions.forEach(q => {
+        // Use for...of loop to allow await for async operations (grading coding questions)
+        for (const q of questions) {
             const studentAns = answers[q._id.toString()];
-            const correctOpt = q.options.find(opt => opt.is_correct);
-            
-            if (correctOpt) {
-                const correctId = correctOpt._id?.toString() || correctOpt.text;
-                if (studentAns === correctId) {
-                    score += q.marks || 1;
-                    correctCount++;
-                } else {
-                    wrongCount++;
+            if (!studentAns) continue; // Skip if not answered
+
+            let isCorrect = false;
+
+            // Normalize question type
+            const type = q.type || 'multiple_choice';
+
+            if (type === 'multiple_choice' || type === 'mcq') {
+                const correctOpt = q.options.find(opt => opt.is_correct);
+                if (correctOpt) {
+                    const correctId = correctOpt._id?.toString();
+                    const correctText = correctOpt.text;
+                    // Check ID match OR exact text match
+                    if (studentAns === correctId || studentAns === correctText) {
+                        isCorrect = true;
+                    }
+                }
+            } 
+            else if (type === 'true_false') {
+                // Compare case-insensitive "true"/"false"
+                const correctVal = String(q.correct_answer || q.options.find(o => o.is_correct)?.text).toLowerCase();
+                if (String(studentAns).toLowerCase() === correctVal) {
+                    isCorrect = true;
+                }
+            } 
+            else if (type === 'fill_blank') {
+                // Compare trimmed, case-insensitive
+                const correctVal = String(q.correct_answer || q.options.find(o => o.is_correct)?.text).trim().toLowerCase();
+                if (String(studentAns).trim().toLowerCase() === correctVal) {
+                    isCorrect = true;
                 }
             }
-        });
+            else if (type === 'coding') {
+                 // AUTO-GRADING FOR CODING
+                 // Strategy: Compare the OUTPUT of the student's code with the OUTPUT of the correct_answer (Solution Code).
+                 // This allows flexibility in how the student writes code, as long as the output matches.
+                 
+                 try {
+                     // 1. Execute Student Code
+                     const studentResult = await executeCode('javascript', studentAns);
+                     const studentOutput = studentResult.run ? studentResult.run.stdout.trim() : '';
+                     
+                     // 2. Execute Solution Code (stored in correct_answer)
+                     // If correct_answer is just plain text (not code), this might fail or print nothing, 
+                     // so we treat it as the expected output itself if execution produces no output/error? 
+                     // No, safer to assume it IS code.
+                     const solutionResult = await executeCode('javascript', q.correct_answer || '');
+                     const expectedOutput = solutionResult.run ? solutionResult.run.stdout.trim() : '';
+                     
+                     // 3. Compare Outputs
+                     if (studentOutput === expectedOutput && expectedOutput !== '') {
+                         isCorrect = true;
+                     } else if (expectedOutput === '' && studentOutput === '') {
+                         // If both produce no output, is it correct? Maybe.
+                         // But usually we expect some output.
+                         // Fallback: exact string match of code if output is empty
+                         if (String(studentAns).trim() === String(q.correct_answer).trim()) {
+                             isCorrect = true;
+                         }
+                     }
+                 } catch (e) {
+                     console.error(`Error grading coding question ${q._id}:`, e);
+                 }
+            }
+            else if (type === 'short' || type === 'long' || type === 'short_answer' || type === 'long_answer') {
+                 // Logic: If there is a strict answer key, try to match it.
+                 // Otherwise, we might mark it as 0 (pending review).
+                 // For MVP, we'll leave it as 0 but ensure it's recorded.
+                 if (q.correct_answer && String(studentAns).trim() === String(q.correct_answer).trim()) {
+                     isCorrect = true; 
+                 }
+            }
+
+            if (isCorrect) {
+                score += q.marks || 1;
+                correctCount++;
+            } else {
+                wrongCount++;
+            }
+        }
 
         const percentage = totalQuestions > 0 ? (score / totalQuestions) * 100 : 0;
 
@@ -1450,18 +2336,50 @@ app.get('/api/student/exam-review/:resultId', authenticateToken, async (req, res
         const qIds = Object.keys(answers);
         const questions = await QuestionBank.find({ _id: { $in: qIds } }).lean();
 
-        const review = questions.map(q => ({
-            id: q._id,
-            text: q.question_text,
-            type: q.type,
-            options: q.options.map(opt => ({ 
-                id: opt._id?.toString() || opt.text, 
-                text: opt.text,
-                is_correct: opt.is_correct 
-            })),
-            studentAnswerId: answers[q._id.toString()],
-            marks: q.marks || 1
-        }));
+        const review = questions.map(q => {
+            const studentAns = answers[q._id.toString()];
+            let isCorrect = false;
+            
+            // Re-evaluate correctness for review display
+            // Note: This duplicates logic from submit-exam but is necessary since we don't store per-question results
+            // For Coding, this is imperfect because we can't re-run code here efficiently.
+            
+            if (q.type === 'multiple_choice' || q.type === 'mcq') {
+                const correctOpt = q.options.find(opt => opt.is_correct);
+                if (correctOpt && (studentAns === correctOpt._id?.toString() || studentAns === correctOpt.text)) {
+                    isCorrect = true;
+                }
+            } else if (q.type === 'true_false') {
+                 const correctVal = String(q.correct_answer || q.options.find(o => o.is_correct)?.text).toLowerCase();
+                 if (String(studentAns).toLowerCase() === correctVal) isCorrect = true;
+            } else if (q.type === 'fill_blank') {
+                 const correctVal = String(q.correct_answer || q.options.find(o => o.is_correct)?.text).trim().toLowerCase();
+                 if (String(studentAns).trim().toLowerCase() === correctVal) isCorrect = true;
+            } else if (q.type === 'coding') {
+                // Approximate check: If strict match, it's correct. 
+                // If not, we can't easily know without re-running. 
+                // We'll return 'null' to indicate "Manual Review" or "Unknown" status to frontend?
+                // For now, let's just do strict match or check if marks were awarded (impossible to know from here).
+                // We'll default to strict string match or 'review'
+                if (String(studentAns).trim() === String(q.correct_answer).trim()) isCorrect = true;
+                else isCorrect = null; // Unknown/Review
+            }
+
+            return {
+                id: q._id,
+                text: q.question_text,
+                type: q.type,
+                options: q.options.map(opt => ({ 
+                    id: opt._id?.toString() || opt.text, 
+                    text: opt.text,
+                    is_correct: opt.is_correct 
+                })),
+                correct_answer: q.correct_answer,
+                studentAnswerId: studentAns,
+                is_correct: isCorrect,
+                marks: q.marks || 1
+            };
+        });
 
         res.json({
             meta: {
@@ -1494,8 +2412,34 @@ const createCourseResourceRoutes = (resourceName, Model) => {
                 }
             });
 
-            const data = await Model.find(filter).sort({ order_index: 1, created_at: -1 });
-            res.json(data);
+            // Use .lean() so we can modify the objects
+            const data = await Model.find(filter).sort({ order_index: 1, created_at: -1 }).lean();
+
+            // Transform S3 keys into signed URLs
+            const processedData = await Promise.all(data.map(async (item) => {
+                // If the item has a file_url or video_url, check if it's an S3 key
+                if (item.file_url && !item.file_url.startsWith('http')) {
+                    try {
+                        item.file_url = await generateViewUrl(item.file_url);
+                    } catch (e) {
+                        console.error('Error signing file_url:', e);
+                    }
+                }
+                if (item.video_url && !item.video_url.startsWith('http')) {
+                    try {
+                        item.video_url = await generateViewUrl(item.video_url);
+                    } catch (e) {
+                        console.error('Error signing video_url:', e);
+                    }
+                }
+                // Ensure frontend gets 'id' property
+                if (item._id) {
+                    item.id = item._id.toString();
+                }
+                return item;
+            }));
+
+            res.json(processedData);
         } catch (err) {
             handleError(res, err, `get-${resourceName}`);
         }
@@ -1507,6 +2451,31 @@ const createCourseResourceRoutes = (resourceName, Model) => {
             res.json(item);
         } catch (err) {
             handleError(res, err, `create-${resourceName}`);
+        }
+    });
+
+    // Add generic update/delete routes for this resource type
+    // e.g. /api/topics/:id, /api/videos/:id
+    app.put(`/api/${resourceName}/:id`, authenticateToken, requireInstructor, async (req, res) => {
+        try {
+            // In a real app, verify ownership:
+            // const doc = await Model.findById(req.params.id);
+            // const course = await Course.findById(doc.course_id);
+            // if (course.instructor_id !== req.user.id) throw new Error('Forbidden');
+            
+            const item = await Model.findByIdAndUpdate(req.params.id, req.body, { new: true });
+            res.json(item);
+        } catch (err) {
+            handleError(res, err, `update-${resourceName}`);
+        }
+    });
+
+    app.delete(`/api/${resourceName}/:id`, authenticateToken, requireInstructor, async (req, res) => {
+        try {
+            await Model.findByIdAndDelete(req.params.id);
+            res.json({ success: true });
+        } catch (err) {
+            handleError(res, err, `delete-${resourceName}`);
         }
     });
 };
@@ -1527,7 +2496,15 @@ app.get('/api/courses/:courseId/roster', authenticateToken, requireInstructor, a
         // Fetch profiles separately if needed, or join if possible. 
         // For now, let's just get the basic user info and use the Profile model if mobile_number is there.
         const userIds = enrollments.map(e => e.user_id?._id).filter(id => id);
-        const profiles = await Profile.find({ user_id: { $in: userIds } }).lean();
+        
+        const [profiles, allProgress] = await Promise.all([
+            Profile.find({ user_id: { $in: userIds } }).lean(),
+            VideoProgress.find({ 
+                course_id: req.params.courseId,
+                user_id: { $in: userIds }
+            }).lean()
+        ]);
+
         const profileMap = profiles.reduce((acc, p) => {
             acc[p.user_id.toString()] = p;
             return acc;
@@ -1536,6 +2513,9 @@ app.get('/api/courses/:courseId/roster', authenticateToken, requireInstructor, a
         const roster = enrollments.map(e => {
             const userIdStr = e.user_id?._id?.toString();
             const profile = userIdStr ? profileMap[userIdStr] : null;
+            
+            // Get video progress for this student
+            const studentProgress = userIdStr ? allProgress.filter(p => p.user_id.toString() === userIdStr) : [];
 
             return {
                 id: e.user_id?._id,
@@ -1546,7 +2526,14 @@ app.get('/api/courses/:courseId/roster', authenticateToken, requireInstructor, a
                 role: 'student',
                 status: e.status,
                 enrolled_at: e.enrolled_at,
-                progress: e.progress_percentage || 0
+                progress: e.progress_percentage || 0,
+                video_details: studentProgress.map(p => ({
+                    videoId: p.video_id,
+                    watched: p.watched_seconds,
+                    total: p.total_seconds,
+                    completed: p.completed,
+                    last_watched: p.last_watched_at
+                }))
             };
         });
         
@@ -1584,6 +2571,22 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
 
         // Authorization Scoping
         const role = await getUserRole(req.user.id);
+
+        if (role === 'instructor' && table === 'question_bank') {
+            const accessFilter = {
+                $or: [
+                    { approval_status: 'approved' },
+                    { created_by: req.user.id }
+                ]
+            };
+             // If query already has keys, wrap it in $and along with our access filter
+             if (Object.keys(query).length > 0) {
+                 query = { $and: [query, accessFilter] };
+             } else {
+                 query = accessFilter;
+             }
+        }
+
         if (!['admin', 'manager', 'instructor'].includes(role)) {
 
             if (['course_enrollments', 'student_exam_access', 'exam_results'].includes(table)) {
@@ -1620,12 +2623,31 @@ app.post('/api/data/:table', authenticateToken, async (req, res) => {
                 // Force user_id and pending status for students
                 req.body.user_id = req.user.id;
                 req.body.status = 'pending';
+            } else if (table === 'question_bank') {
+                // Instructors can create questions, but forced to pending
+                req.body.created_by = req.user.id;
+                req.body.approval_status = 'pending';
             } else if (['user_roles', 'courses', 'system_logs'].includes(table)) {
                 return res.status(403).json({ error: 'Unauthorized to create entries in this table' });
             }
+        } else {
+             // Admin/Manager creation logic
+             if (table === 'question_bank') {
+                 // Admins/Managers can set status, but default created_by to themselves if not set
+                 req.body.created_by = req.body.created_by || req.user.id;
+                 // If they didn't provide status, let schema default (pending) or they can set 'approved'
+             }
         }
 
         const item = await Model.create(req.body);
+
+        // Socket Events for Doubts
+        if (table === 'doubts') {
+            io.emit('new_doubt', item);
+        } else if (table === 'doubt_replies') {
+            io.emit('doubt_reply', item);
+        }
+
         res.json(item);
     } catch (err) {
         handleError(res, err, `data-create-${table}`);
@@ -1672,12 +2694,28 @@ app.put('/api/data/:table/:id', authenticateToken, async (req, res) => {
                         // Let's assume for now they can mod their own course freely.
                     }
                 }
-            } else {
-                return res.status(403).json({ error: 'Unauthorized to update this table' });
+            } else if (table === 'question_bank') {
+                const existing = await Model.findById(id);
+                if (existing && existing.created_by?.toString() !== req.user.id) {
+                    return res.status(403).json({ error: 'Forbidden: Cannot update questions created by others' });
+                }
+                // Force status to pending on update if not admin
+                req.body.approval_status = 'pending';
+                delete req.body.created_by;
+            } else if (!['doubts', 'doubt_replies'].includes(table)) {
+                 // Allow instructors/students to update their own doubts/replies (simplified check for now)
+                 // Ideally verify ownership or role
+                 return res.status(403).json({ error: 'Unauthorized to update this table' });
             }
         }
 
         const item = await Model.findByIdAndUpdate(id, req.body, { new: true });
+        
+        // Socket Events for Updates
+        if (table === 'doubts') {
+            io.emit('doubt_updated', item);
+        }
+
         res.json(item);
     } catch (err) {
         handleError(res, err, `data-update-${table}`);
@@ -1690,6 +2728,34 @@ app.delete('/api/data/:table/:id', authenticateToken, async (req, res) => {
     if (!Model) return res.status(403).json({ error: 'Invalid table' });
 
     try {
+        const role = await getUserRole(req.user.id);
+
+        // Security: Restrict deletions
+        if (role !== 'admin' && role !== 'manager') {
+            // Instructors
+            if (role === 'instructor') {
+                if (table === 'question_bank') {
+                    const item = await Model.findById(id);
+                    if (!item) return res.status(404).json({ error: 'Item not found' });
+                    
+                    if (item.created_by?.toString() !== req.user.id) {
+                        return res.status(403).json({ error: 'Forbidden: You can only delete your own questions' });
+                    }
+                } else if (['doubts', 'doubt_replies'].includes(table)) {
+                    // Allow deleting own doubts/replies (basic check)
+                    const item = await Model.findById(id);
+                    if (item && item.user_id?.toString() !== req.user.id) {
+                         return res.status(403).json({ error: 'Forbidden: Ownership required' });
+                    }
+                } else {
+                    return res.status(403).json({ error: 'Unauthorized to delete from this table' });
+                }
+            } else {
+                // Students or others
+                return res.status(403).json({ error: 'Unauthorized to delete' });
+            }
+        }
+
         await Model.findByIdAndDelete(id);
         res.json({ success: true });
     } catch (err) {
@@ -1749,6 +2815,22 @@ app.post('/api/s3/view-url', authenticateToken, async (req, res) => {
         res.json({ viewUrl });
     } catch (err) {
         handleError(res, err, 's3-view');
+    }
+});
+
+// Serve public S3 assets (images/thumbnails) via redirect to signed URL
+// Uses regex to capture the full path including slashes
+app.get(/^\/api\/s3\/public\/(.*)$/, async (req, res) => {
+    try {
+        const key = req.params[0];
+        if (!key) return res.status(404).send('Not Found');
+        
+        // Generate a signed URL (valid for 1 hour) and redirect the browser to it
+        const url = await generateViewUrl(key);
+        res.redirect(url);
+    } catch (err) {
+        console.error('S3 Public Proxy Error:', err);
+        res.status(404).send('Resource not found');
     }
 });
 

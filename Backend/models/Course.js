@@ -101,9 +101,13 @@ TimelineSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (do
 
 const ResourceSchema = new Schema({
     course_id: { type: Schema.Types.ObjectId, ref: 'Course', required: true },
-    title: { type: String, required: true },
-    url: { type: String, required: true },
-    type: { type: String, default: 'pdf' }, // pdf, link, zip
+    asset_title: { type: String, required: true },
+    file_url: { type: String, required: true },
+    resource_type: { type: String, default: 'Study Material' }, 
+    upload_format: { type: String },
+    instructor_name: { type: String },
+    instructor_avatar_url: { type: String },
+    short_description: { type: String },
     created_at: { type: Date, default: Date.now }
 });
 ResourceSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
@@ -132,5 +136,14 @@ module.exports = {
     Announcement: mongoose.model('Announcement', AnnouncementSchema),
     Timeline: mongoose.model('Timeline', TimelineSchema),
     Resource: mongoose.model('Resource', ResourceSchema),
-    InstructorProgress: mongoose.model('InstructorProgress', InstructorProgressSchema)
+    InstructorProgress: mongoose.model('InstructorProgress', InstructorProgressSchema),
+    VideoProgress: mongoose.model('VideoProgress', new Schema({
+        user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+        course_id: { type: Schema.Types.ObjectId, ref: 'Course', required: true },
+        video_id: { type: Schema.Types.ObjectId, ref: 'Video', required: true },
+        watched_seconds: { type: Number, default: 0 },
+        total_seconds: { type: Number, default: 0 }, // Duration of video
+        completed: { type: Boolean, default: false },
+        last_watched_at: { type: Date, default: Date.now }
+    }).set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } }))
 };

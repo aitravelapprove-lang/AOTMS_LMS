@@ -26,6 +26,8 @@ import {
   Settings,
   LogOut,
   Zap,
+  MessageSquare,
+  Folder,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -37,6 +39,7 @@ const navigationGroups = [
     items: [
       { title: "Dashboard", url: "/student-dashboard", icon: LayoutDashboard },
       { title: "My Profile", url: "/student-dashboard/profile", icon: User },
+      { title: "Messages", url: "/student-dashboard/chat", icon: MessageSquare },
     ],
   },
   {
@@ -45,13 +48,13 @@ const navigationGroups = [
       { title: "My Courses", url: "/student-dashboard/courses", icon: BookOpen },
       { title: "Video Lessons", url: "/student-dashboard/videos", icon: Video },
       { title: "Live Classes", url: "/student-dashboard/live-classes", icon: Calendar },
+      { title: "Resources", url: "/student-dashboard/resources", icon: Folder },
     ],
   },
   {
     label: "Academic",
     items: [
       { title: "Mock Papers", url: "/student-dashboard/mock-papers", icon: FileText },
-      { title: "Exams", url: "/student-dashboard/exams", icon: ClipboardCheck },
       { title: "Leaderboard", url: "/student-dashboard/leaderboard", icon: Trophy },
     ],
   },

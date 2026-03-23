@@ -14,6 +14,31 @@ const s3Client = new S3Client({
 });
 
 /**
+ * Upload a file directly to S3 from the server.
+ * @param {Buffer} fileBuffer - The file content.
+ * @param {string} fileName - The desired path/name in S3.
+ * @param {string} mimeType - The file's MIME type.
+ * @returns {Promise<string>} The public URL or key of the uploaded file.
+ */
+async function uploadFile(fileBuffer, fileName, mimeType) {
+    const command = new PutObjectCommand({
+        Bucket: BUCKET,
+        Key: fileName,
+        Body: fileBuffer,
+        ContentType: mimeType
+        // ACL: 'public-read' // Only if bucket allows public ACLs. If blocked, we rely on bucket policy or signed URLs.
+    });
+
+    await s3Client.send(command);
+    // Return the key so we can generate signed URLs later, or the full URL if public access is enabled
+    // For now, let's return the key as the "url" stored in DB, or construct a virtual hosted style URL
+    // But since the frontend expects a URL to "Download", we might need a signed URL or a public URL.
+    // Assuming the user wants public read or signed URLs. Let's return the key for now and handling viewing logic.
+    // actually, let's return the standard S3 URL format
+    return fileName;
+}
+
+/**
  * Generate a pre-signed URL for uploading a file directly from the browser to S3.
  * @param {string} fileName - The desired name/path of the file in S3.
  * @param {string} fileType - The MIME type of the file.
@@ -65,5 +90,6 @@ module.exports = {
     generateUploadUrl,
     generateViewUrl,
     deleteObject,
+    uploadFile,
     BUCKET
 };

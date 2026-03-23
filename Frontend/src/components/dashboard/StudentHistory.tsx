@@ -54,7 +54,7 @@ interface ExamResult {
 export function StudentHistory() {
     const { user } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
-    const [activeTab, setActiveTab] = useState<'all' | 'courses' | 'assessments'>('all');
+    const [activeTab, setActiveTab] = useState<'all' | 'courses' | 'tests'>('all');
     const [viewingResultId, setViewingResultId] = useState<string | null>(null);
 
     const { data: enrollments, isLoading: enrollLoading } = useQuery({
@@ -76,7 +76,7 @@ export function StudentHistory() {
             // Fetch exam titles if possible, though for now we can rely on ID or generic name
             return data.map(r => ({
                 ...r,
-                type: 'assessment'
+                type: 'test'
             }));
         },
         enabled: !!user?.id
@@ -101,9 +101,9 @@ export function StudentHistory() {
         })),
         ...(results || []).map(r => ({
             id: r._id || r.id,
-            title: r.mock_paper_id ? 'Mock Test Session' : 'Final Exam Submission',
+            title: r.mock_paper_id ? 'Mock Test Score' : 'Exam Score',
             date: r.submitted_at,
-            type: 'assessment',
+            type: 'test',
             status: r.percentage >= 60 ? 'passed' : 'completed',
             meta: `${Math.round(r.percentage)}% Score • ${Math.floor(r.time_spent / 60)}m ${r.time_spent % 60}s`,
             icon: <Trophy className="h-5 w-5 text-amber-500" />
@@ -114,7 +114,7 @@ export function StudentHistory() {
         const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesTab = activeTab === 'all' || 
                          (activeTab === 'courses' && item.type === 'course') || 
-                         (activeTab === 'assessments' && item.type === 'assessment');
+                         (activeTab === 'tests' && item.type === 'test');
         return matchesSearch && matchesTab;
     });
 
@@ -136,11 +136,11 @@ export function StudentHistory() {
 
                 <Card className="pro-card border-slate-200 shadow-sm">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-500">Exams Completed</CardTitle>
+                        <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-500">Tests Completed</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="text-4xl font-black text-slate-900 mb-1">{results?.length || 0}</div>
-                        <p className="text-xs text-slate-400 font-medium">Verified skill assessments</p>
+                        <p className="text-xs text-slate-400 font-medium">Scored assessments</p>
                     </CardContent>
                 </Card>
 
@@ -175,7 +175,7 @@ export function StudentHistory() {
                     <TabsList className="bg-transparent">
                         <TabsTrigger value="all" className="rounded-xl px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm">All activity</TabsTrigger>
                         <TabsTrigger value="courses" className="rounded-xl px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm">Courses</TabsTrigger>
-                        <TabsTrigger value="assessments" className="rounded-xl px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm">Assessments</TabsTrigger>
+                        <TabsTrigger value="tests" className="rounded-xl px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm">Test Scores</TabsTrigger>
                     </TabsList>
                 </Tabs>
             </div>
@@ -224,14 +224,14 @@ export function StudentHistory() {
                             </div>
 
                             <div className="flex items-center gap-3">
-                                {item.type === 'assessment' ? (
+                                {item.type === 'test' ? (
                                     <Button 
                                         variant="outline" 
                                         size="sm" 
                                         onClick={() => setViewingResultId(item.id)}
                                         className="h-10 rounded-xl px-4 border-slate-200 text-primary hover:bg-primary/5 hover:border-primary/20 font-bold transition-all"
                                     >
-                                        Review Details
+                                        Review Score
                                         <ArrowUpRight className="h-4 w-4 ml-1.5" />
                                     </Button>
                                 ) : (

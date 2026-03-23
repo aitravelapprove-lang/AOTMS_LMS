@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, PlayCircle, CheckCircle2, Video, BookOpen, Lock, Sparkles, GraduationCap } from 'lucide-react';
+import { ArrowLeft, PlayCircle, CheckCircle2, Video, BookOpen, Lock, Sparkles, GraduationCap, MessageCircle } from 'lucide-react';
 import { StudentCourse, useEnrollCourse } from '@/hooks/useStudentData';
 import { useCourseModules, useModuleVideos, S3CourseVideo, CourseModule } from '@/hooks/useCourseBuilder';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,6 +14,7 @@ interface StudentCourseViewerProps {
 }
 
 export function StudentCourseViewer({ course, isEnrolled = true, onBack }: StudentCourseViewerProps) {
+    const navigate = useNavigate();
     const { data: modules, isLoading: modulesLoading } = useCourseModules(course.id);
     const [selectedVideo, setSelectedVideo] = useState<S3CourseVideo | null>(null);
     const enrollMutation = useEnrollCourse();
@@ -33,15 +35,27 @@ export function StudentCourseViewer({ course, isEnrolled = true, onBack }: Stude
             exit={{ opacity: 0, y: -15 }}
             className="space-y-6"
         >
-            <div className="flex items-center justify-between mb-4">
-                <Button variant="ghost" onClick={onBack} className="gap-2 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors rounded-full px-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                <Button variant="ghost" onClick={onBack} className="gap-2 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors rounded-full px-4 w-fit">
                     <ArrowLeft className="h-4 w-4" /> Back to Library
                 </Button>
-                {!localIsEnrolled && (
-                    <div className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-sm font-medium border border-primary/20">
-                        <Sparkles className="h-4 w-4" /> Preview Mode
-                    </div>
-                )}
+                <div className="flex items-center gap-3">
+                    {course.instructor_id && (
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => navigate(`/student-dashboard/chat?recipientId=${course.instructor_id}&showProfile=true`)}
+                            className="gap-2 border-primary/20 text-primary hover:bg-primary/5 hover:text-primary rounded-full"
+                        >
+                            <MessageCircle className="h-4 w-4" /> Message Instructor
+                        </Button>
+                    )}
+                    {!localIsEnrolled && (
+                        <div className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-sm font-medium border border-primary/20">
+                            <Sparkles className="h-4 w-4" /> Preview Mode
+                        </div>
+                    )}
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

@@ -1,7 +1,7 @@
 import { fetchWithAuth } from '@/lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
-import { Course } from './useInstructorData';
+import { Course, CourseResource } from './useInstructorData';
 
 interface ExamAccess {
     id: string;
@@ -233,3 +233,59 @@ export function useEnrollCourse() {
         }
     });
 }
+
+
+export function useStudentVideoProgress(courseId: string | null) {
+    const { user } = useAuth();
+    return useQuery({
+        queryKey: ['student-video-progress', courseId, user?.id],
+        queryFn: async () => {
+            if (!courseId || !user?.id) return [];
+            return await fetchWithAuth(`/student/video-progress/${courseId}`);
+        },
+        enabled: !!courseId && !!user?.id,
+        staleTime: 1000 * 60 * 5,
+    });
+}
+
+export function useUpdateVideoProgress() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ courseId, videoId, watchedSeconds, totalSeconds }: { courseId: string, videoId: string, watchedSeconds: number, totalSeconds: number }) => {
+            return fetchWithAuth('/student/video-progress', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ courseId, videoId, watchedSeconds, totalSeconds })
+            });
+        },
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['student-video-progress', variables.courseId] });
+            queryClient.invalidateQueries({ queryKey: ['enrolled-courses-details'] });
+        }
+    });
+}
+
+
+export function useStudentVideos(courseId: string | null) {
+    return useQuery({
+        queryKey: ['student-course-videos', courseId],
+        queryFn: async () => {
+            if (!courseId) return [];
+            return await fetchWithAuth(`/courses/${courseId}/videos`);
+        },
+        enabled: !!courseId,
+    });
+}
+
+export function useStudentResources(courseId: string | null) {
+    return useQuery({
+        queryKey: ['student-course-resources', courseId],
+        queryFn: async () => {
+            if (!courseId) return [];
+            return await fetchWithAuth(`/courses/${courseId}/resources`);
+        },
+        enabled: !!courseId,
+    });
+}
+
+

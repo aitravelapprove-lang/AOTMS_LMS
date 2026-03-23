@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
+import { ChatMonitor } from "@/components/admin/ChatMonitor";
 import {
   Users,
   Shield,
@@ -43,6 +44,7 @@ import {
   Calendar,
   Clock,
   Archive,
+  MessageSquare,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Course as InstructorCourse } from "@/hooks/useInstructorData";
@@ -55,82 +57,111 @@ function AllCoursesList({ onDelete, onView, refreshTrigger }: { onDelete?: (id: 
   const { courses: allCourses, fetchCourses, loading } = useCourses();
 
   useEffect(() => {
-    fetchCourses(1, 'all', true);
+    fetchCourses(1, 'all', true, 1000); // Fetch up to 1000 courses to show all
   }, [fetchCourses, refreshTrigger]);
 
   if (loading && allCourses.length === 0) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
-          <Skeleton key={i} className="h-48 rounded-xl" />
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+          <div key={i} className="rounded-3xl overflow-hidden bg-white shadow-sm border border-slate-100 h-[320px]">
+            <Skeleton className="h-48 w-full" />
+            <div className="p-5 space-y-3">
+              <Skeleton className="h-6 w-3/4 rounded-lg" />
+              <div className="flex gap-2">
+                <Skeleton className="h-5 w-20 rounded-full" />
+                <Skeleton className="h-5 w-20 rounded-full" />
+              </div>
+            </div>
+          </div>
         ))}
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">All Courses</h2>
-          <p className="text-slate-500">View and manage all courses in the system</p>
+    <div className="space-y-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">All Courses</h2>
+          <p className="text-slate-500">Manage your entire course catalog</p>
         </div>
-        <Badge variant="secondary" className="text-sm px-3 py-1">
-          {allCourses.length} Courses
-        </Badge>
+        <div className="flex items-center gap-3 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm">
+          <Badge variant="secondary" className="px-3 py-1.5 h-8 text-sm font-medium bg-slate-100 text-slate-700">
+            {allCourses.length} Total
+          </Badge>
+          <div className="h-4 w-px bg-slate-200" />
+          <span className="text-xs font-medium text-slate-400 px-2">
+            {allCourses.filter(c => c.is_active).length} Active
+          </span>
+        </div>
       </div>
 
       {allCourses.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <LayoutGrid className="h-12 w-12 text-slate-300 mb-4" />
-            <p className="text-slate-500 font-medium">No courses found</p>
-          </CardContent>
-        </Card>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center justify-center py-20 bg-slate-50/50 rounded-3xl border border-dashed border-slate-200"
+        >
+          <div className="h-16 w-16 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-4">
+            <LayoutGrid className="h-8 w-8 text-slate-300" />
+          </div>
+          <h3 className="text-lg font-medium text-slate-900">No courses found</h3>
+          <p className="text-slate-500 max-w-sm text-center mt-2">
+            Get started by creating a new course in the Instructor portal.
+          </p>
+        </motion.div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {allCourses.map((course) => (
-            <Card key={course.id} className="overflow-hidden hover:shadow-md transition-shadow">
-              <div className="aspect-video relative bg-slate-100">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {allCourses.map((course, index) => (
+            <motion.div
+              key={course.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+              className="group relative bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 overflow-hidden flex flex-col"
+            >
+              {/* Image Container */}
+              <div className="aspect-[4/3] relative overflow-hidden bg-slate-100">
                 {course.image ? (
                   <img 
                     src={course.image.startsWith('http') ? course.image : `/s3/public/${course.image}`}
                     alt={course.title}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <BookOpen className="h-8 w-8 text-slate-300" />
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-slate-50 text-slate-300">
+                    <BookOpen className="h-10 w-10 mb-2" />
+                    <span className="text-xs font-medium uppercase tracking-wider">No Preview</span>
                   </div>
                 )}
-                <Badge 
-                  className={`absolute top-2 right-2 ${
-                    course.is_active ? 'bg-green-500' : 'bg-slate-400'
-                  }`}
-                >
-                  {course.is_active ? 'Active' : 'Inactive'}
-                </Badge>
-              </div>
-              <CardHeader className="p-4 relative">
-                <CardTitle className="text-lg line-clamp-2 pr-8">{course.title}</CardTitle>
-                <div className="flex items-center gap-2 mt-2">
-                  <Badge variant="outline" className="text-xs">
-                    {course.category || 'Uncategorized'}
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    {course.level || 'All Levels'}
-                  </Badge>
+                
+                {/* Overlay Gradient */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                {/* Status Badge */}
+                <div className="absolute top-3 right-3 z-10">
+                  <span className={`
+                    inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm backdrop-blur-md
+                    ${course.is_active 
+                      ? 'bg-emerald-500/90 text-white' 
+                      : 'bg-slate-500/90 text-white'}
+                  `}>
+                    {course.is_active ? 'Active' : 'Draft'}
+                  </span>
                 </div>
-                <div className="absolute top-4 right-4 flex gap-1">
+
+                {/* Quick Actions (Hover) */}
+                <div className="absolute bottom-3 right-3 flex gap-2 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 z-10">
                   {onView && (
                     <Button
                       size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-full"
+                      className="h-9 w-9 rounded-full bg-white/90 text-slate-700 hover:bg-white hover:text-primary shadow-lg backdrop-blur-sm border-0"
                       onClick={(e) => {
                         e.stopPropagation();
                         onView(course);
                       }}
+                      title="View Details"
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -138,25 +169,50 @@ function AllCoursesList({ onDelete, onView, refreshTrigger }: { onDelete?: (id: 
                   {onDelete && (
                     <Button
                       size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full"
+                      className="h-9 w-9 rounded-full bg-white/90 text-slate-700 hover:bg-red-50 hover:text-red-600 shadow-lg backdrop-blur-sm border-0"
                       onClick={(e) => {
                         e.stopPropagation();
                         onDelete(course.id);
                       }}
+                      title="Delete Course"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   )}
                 </div>
-              </CardHeader>
-              <CardContent className="p-4 pt-0">
-                <div className="flex items-center justify-between text-sm text-slate-500">
-                  <span>{course.duration || '0'} hours</span>
-                  <span className="font-medium">{course.price || 'Free'}</span>
+              </div>
+
+              {/* Content */}
+              <div className="p-5 flex-1 flex flex-col">
+                <div className="mb-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="px-2 py-1 rounded-md bg-primary/5 text-primary text-[10px] font-bold uppercase tracking-wider">
+                      {course.category || 'General'}
+                    </span>
+                    <span className="px-2 py-1 rounded-md bg-slate-100 text-slate-500 text-[10px] font-bold uppercase tracking-wider">
+                      {course.level || 'All Levels'}
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-slate-900 leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                    {course.title}
+                  </h3>
                 </div>
-              </CardContent>
-            </Card>
+
+                <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-50">
+                  <div className="flex items-center gap-1.5 text-slate-500 text-xs font-medium">
+                    <Clock className="h-3.5 w-3.5" />
+                    <span>{course.duration || 'Flexible'}</span>
+                  </div>
+                  <div className="text-sm font-bold text-slate-900">
+                    {course.price === '0' || course.price === 'Free' ? (
+                      <span className="text-emerald-600">Free</span>
+                    ) : (
+                      <span>{course.price}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
           ))}
         </div>
       )}
@@ -258,6 +314,7 @@ export default function AdminDashboard() {
       "/admin/courses": "courses",
       "/admin/exams": "exams",
       "/admin/security": "security",
+      "/admin/chat": "chat",
     };
     const path = location.pathname;
     const tab = tabUrlMap[path];
@@ -420,6 +477,7 @@ export default function AdminDashboard() {
                       },
                       { id: "exams", label: "Assessments", icon: ShieldCheck, key: "tab-exams" },
                       { id: "security", label: "Security Center", icon: Shield, key: "tab-security" },
+                      { id: "chat", label: "Chat Monitor", icon: MessageSquare, key: "tab-chat" },
                     ].map((tab) => (
                       <TabsTrigger
                         key={tab.key}
@@ -480,7 +538,7 @@ export default function AdminDashboard() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                     >
-                      <GrantStudentAccess />
+                      <GrantStudentAccess profiles={profiles} />
                     </motion.div>
                   </TabsContent>
 
@@ -560,6 +618,16 @@ export default function AdminDashboard() {
                         highPriorityCount={stats.highPriorityEvents}
                         onResolveEvent={resolveSecurityEvent}
                       />
+                    </motion.div>
+                  </TabsContent>
+
+                  <TabsContent key="tab-chat" value="chat" className="mt-0 outline-none">
+                    <motion.div
+                      key="motion-chat"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                    >
+                      <ChatMonitor />
                     </motion.div>
                   </TabsContent>
                 </AnimatePresence>

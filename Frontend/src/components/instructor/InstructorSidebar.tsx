@@ -43,14 +43,14 @@ const mainNavItems = [
   { title: "Dashboard", url: "/instructor", icon: LayoutDashboard },
   { title: "My Courses", url: "/instructor/my-courses", icon: BookOpen },
   { title: "Student Roster", url: "/instructor/students", icon: Users, isLive: true },
+  { title: "Messages", url: "/instructor/chat", icon: MessageSquare },
   { title: "Live Broadcast", url: "/instructor/live-classes", icon: Radio },
 ];
 
 
 const contentNavItems = [
   { title: "Video Library", url: "/instructor/videos", icon: Video },
-  { title: "Assessments", url: "/instructor/exams", icon: FileQuestion },
-  { title: "Assignments", url: "/instructor/assignments", icon: FileText },
+  { title: "Question Bank", url: "/instructor/question-bank", icon: FolderOpen },
   { title: "Course Resources", url: "/instructor/resources", icon: FolderOpen },
 ];
 

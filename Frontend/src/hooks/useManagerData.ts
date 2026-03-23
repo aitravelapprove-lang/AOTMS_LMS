@@ -44,6 +44,7 @@ export interface Question {
   marks: number | null;
   created_by: string;
   is_active?: boolean;
+  approval_status?: string;
 }
 
 export interface LeaderboardEntry {

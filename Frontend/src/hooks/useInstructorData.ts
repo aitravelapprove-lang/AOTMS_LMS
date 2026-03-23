@@ -411,111 +411,6 @@ export function useDeleteResource() {
   });
 }
 
-// --- Assignments ---
-
-export function useAssignments(courseId: string | null) {
-  const queryClient = useQueryClient();
-
-
-
-  return useQuery({
-    queryKey: ['course-assignments', courseId],
-    queryFn: async () => {
-      if (!courseId) return [];
-
-      try {
-        const res = await fetchWithAuth(`/data/assignments?course_id=eq.${courseId}`);
-        return Array.isArray(res) ? res : [];
-      } catch (err) {
-        console.error('Fetch Assignments Error:', err);
-        throw err;
-      }
-    },
-    enabled: true, // Always enabled so the state is consistent
-  });
-}
-
-export function useAssignmentSubmissions(assignmentId: string | null) {
-  return useQuery({
-    queryKey: ['assignment-submissions', assignmentId],
-    queryFn: async () => {
-      if (!assignmentId) return [];
-      return fetchWithAuth(`/data/assignment_submissions?assignment_id=${assignmentId}`);
-    },
-    enabled: !!assignmentId,
-  });
-}
-
-export function useCreateAssignment() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: async (assignment: Omit<Assignment, 'id' | 'created_at' | 'updated_at'>) => {
-      return fetchWithAuth('/data/assignments', {
-        method: 'POST',
-        body: JSON.stringify(assignment)
-      });
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['course-assignments', variables.course_id] });
-      toast({ title: 'Assignment created successfully' });
-    },
-  });
-}
-
-
-export function useUpdateAssignment() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<Assignment> & { id: string }) => {
-      return fetchWithAuth(`/data/assignments/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(updates)
-      });
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['course-assignments'] });
-      toast({ title: 'Assignment updated successfully' });
-    },
-  });
-}
-
-export function useDeleteAssignment() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: async ({ id, courseId }: { id: string; courseId: string }) => {
-      await fetchWithAuth(`/data/assignments/${id}`, { method: 'DELETE' });
-      return courseId;
-    },
-    onSuccess: (courseId) => {
-      queryClient.invalidateQueries({ queryKey: ['course-assignments', courseId] });
-      toast({ title: 'Assignment deleted successfully', variant: 'destructive' });
-    },
-  });
-}
-
-export function useGradeSubmission() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: async ({ id, gradeData }: { id: string; gradeData: Partial<Submission> }) => {
-      return fetchWithAuth(`/data/assignment_submissions/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(gradeData)
-      });
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['assignment-submissions'] });
-      toast({ title: 'Grade submitted successfully' });
-    },
-  });
-}
 
 export function useCreateTimeline() {
   const queryClient = useQueryClient();
@@ -985,6 +880,34 @@ export interface InstructorStudent {
     progress: number;
     lastWatchedAt: string;
   }[];
+}
+
+export interface VideoProgressDetail {
+  _id: string;
+  user_id: string;
+  course_id: string;
+  video_id: string;
+  watched_seconds: number;
+  total_seconds: number;
+  completed: boolean;
+  last_watched_at: string;
+}
+
+export function useStudentVideoProgress(studentId: string | undefined, courseId?: string) {
+  const { user, userRole } = useAuth();
+
+  return useQuery({
+    queryKey: ['student-video-progress', studentId, courseId],
+    queryFn: async () => {
+      if (!studentId) return [];
+      let url = `/instructor/student-progress/${studentId}`;
+      if (courseId) {
+        url += `?courseId=${courseId}`;
+      }
+      return fetchWithAuth(url);
+    },
+    enabled: !!studentId && (userRole === 'instructor' || userRole === 'admin' || userRole === 'manager'),
+  });
 }
 
 export function useInstructorAllStudents() {

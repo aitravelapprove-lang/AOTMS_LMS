@@ -31,10 +31,3 @@ dist-ssr
 .env.production.local
 .env.production
 .env.example
-
-# Secret Files
-Backend/service.json
-
-
-
-

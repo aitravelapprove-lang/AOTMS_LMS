@@ -33,15 +33,21 @@ import {
   Target,
   Medal,
   ChevronRight,
-  Copy
+  Copy,
+  MessageSquare,
+  Folder,
+  MonitorPlay
 } from "lucide-react";
 import { UserProfile } from "./UserProfile";
 import { CourseList } from "./CourseList";
 import { StudentCourseViewer } from "./StudentCourseViewer";
 import { StudentHistory } from "./StudentHistory";
+import StudentResources from "./StudentResources";
+import StudentVideoLibrary from "./StudentVideoLibrary";
 import { ExamModule } from "./ExamModule";
 import { Notifications } from "./Notifications";
 import { StudentSettings } from "./StudentSettings";
+import { ChatInterface } from "../chat/ChatInterface";
 import {
   StudentCourse,
   useStudentAnnouncements,
@@ -586,17 +592,23 @@ const routeConfig: Record<string, { title: string; description: string; icon: Re
     icon: Video,
     component: <LiveClassesTab />,
   },
+  "/student-dashboard/videos": {
+    title: "Video Library",
+    description: "Browse and watch video lessons from your enrolled courses",
+    icon: MonitorPlay,
+    component: <StudentVideoLibrary />,
+  },
+  "/student-dashboard/resources": {
+    title: "Course Resources",
+    description: "Download study materials and reference documents",
+    icon: Folder,
+    component: <StudentResources />,
+  },
   "/student-dashboard/mock-papers": {
     title: "Simulation Lab",
     description: "Practice with timed mock examinations",
     icon: FileText,
     component: <ExamModule type="mock" />,
-  },
-  "/student-dashboard/exams": {
-    title: "Certification Center",
-    description: "Take your final graded examinations",
-    icon: ClipboardCheck,
-    component: <ExamModule type="live" />,
   },
   "/student-dashboard/history": {
     title: "Academic Record",
@@ -615,6 +627,12 @@ const routeConfig: Record<string, { title: string; description: string; icon: Re
     description: "Important updates from the academy",
     icon: Bell,
     component: <Notifications />,
+  },
+  "/student-dashboard/chat": {
+    title: "Messages",
+    description: "Chat with your instructors and peers",
+    icon: MessageSquare,
+    component: <ChatInterface />,
   },
   "/student-dashboard/settings": {
     title: "Preferences",

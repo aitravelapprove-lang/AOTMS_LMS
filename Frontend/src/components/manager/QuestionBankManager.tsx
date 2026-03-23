@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { fetchWithAuth } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -87,7 +88,6 @@ const QUESTION_TYPES = [
   { value: 'short', label: 'Short Answer' },
   { value: 'long', label: 'Long Answer / Essay' },
   { value: 'fill_blank', label: 'Fill in the Blank' },
-  { value: 'match', label: 'Match the Following' },
   { value: 'coding', label: 'Coding / Practical' },
 ];
 
@@ -107,6 +107,7 @@ const EMPTY_QUESTION = {
 export interface AiQuestion {
   topic?: string;
   question_text: string;
+  type?: string;
   question_type?: string;
   difficulty?: string;
   options?: string[];
@@ -166,75 +167,98 @@ function parseAiText(
       }
     }
 
-    // Normalize: If json is { questions: [...] } or { data: [...] }
-    if (!Array.isArray(json) && typeof json === 'object' && json !== null) {
-      if (Array.isArray(json.questions)) json = json.questions;
-      else if (Array.isArray(json.data)) json = json.data;
-      else if (Array.isArray(json.items)) json = json.items;
-    }
+    /**
+     * Helper to recursively look for any array that might be the questions array.
+     */
+    const findQuestionsArray = (obj: unknown): unknown[] | null => {
+      if (Array.isArray(obj)) {
+        // Check if elements look like questions
+        const looksLikeQuestions = obj.length > 0 && obj.some(item => 
+          item && typeof item === 'object' && ('question' in item || 'question_text' in item || 'text' in item || 'Question' in item)
+        );
+        if (looksLikeQuestions) return obj;
+        
+        // If not, maybe it's an array of objects that have the array inside?
+        for (const item of obj) {
+          const found = findQuestionsArray(item);
+          if (found) return found;
+        }
+      } else if (typeof obj === 'object' && obj !== null) {
+        const o = obj as Record<string, unknown>;
+        
+        // NEW: Check if this object itself IS a question
+        if ('question' in o || 'question_text' in o || 'text' in o || 'Question' in o || 'QuestionText' in o) {
+          return [obj];
+        }
 
-    // Case C: Array of Questions (User's Schema)
-    if (Array.isArray(json) && json.length > 0) {
+        // Check standard keys
+        if (Array.isArray(o.questions)) return o.questions as unknown[];
+        if (Array.isArray(o.data)) return o.data as unknown[];
+        if (Array.isArray(o.items)) return o.items as unknown[];
+        if (Array.isArray(o.output)) return o.output as unknown[];
+        if (o.data && typeof o.data === 'object') return findQuestionsArray(o.data);
+        
+        // Search all keys
+        for (const key in o) {
+          if (key === 'questions' || key === 'data' || key === 'items' || key === 'output') continue;
+          const found = findQuestionsArray(o[key]);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    const questionsArray = findQuestionsArray(json);
+
+    if (questionsArray && questionsArray.length > 0) {
       const mappedQuestions: AiQuestion[] = [];
 
-      for (const item of json) {
+      for (const item of questionsArray) {
+        const itemObj = item as Record<string, any>;
         // loose check for question-like object
-        const qText = item.question || item.question_text || item.Question || item.questionText || '';
+        const qText = String(itemObj.question || itemObj.question_text || itemObj.Question || itemObj.questionText || itemObj.text || '');
 
         if (!qText) continue;
 
-        // Options: handle 'options' array OR 'optionA'...'optionD' fields
+        // Options
         let opts: string[] = [];
-        if (Array.isArray(item.options)) {
-          opts = item.options.map((o: any) => typeof o === 'object' ? (o.text || o.option || String(o)) : String(o));
-        } else if (item.optionA || item.optionA || item.OptionA) {
-          // Strict Schema Support (checking variants optionA/OptionA)
+        if (Array.isArray(itemObj.options)) {
+          opts = itemObj.options.map((o: any) => {
+            if (typeof o === 'object' && o !== null) {
+              return String(o.text || o.option || String(o));
+            }
+            return String(o);
+          });
+        } else if (itemObj.optionA || itemObj.OptionA) {
           opts = [
-            item.optionA || item.optionA || item.OptionA,
-            item.optionB || item.optionB || item.OptionB,
-            item.optionC || item.optionC || item.OptionC,
-            item.optionD || item.optionD || item.OptionD,
-            item.optionE || item.optionE || item.OptionE
+            itemObj.optionA, itemObj.optionB, itemObj.optionC, itemObj.optionD, itemObj.optionE,
+            itemObj.OptionA, itemObj.OptionB, itemObj.OptionC, itemObj.OptionD, itemObj.OptionE
           ].filter(Boolean).map(String);
-        } else if (typeof item.options === 'object' && item.options !== null) {
-          // Check for n8n format: [{ text, isCorrect }]
-          if (Array.isArray(Object.values(item.options)[0])) {
-             opts = Object.values(item.options).flat().map((o: any) => typeof o === 'object' ? o.text : String(o));
-          } else {
-             opts = Object.values(item.options).map((o: any) => typeof o === 'object' ? o.text : String(o));
-          }
-        } else {
-          // Try fetching "Options", "choices"
-          const rawOpts = item.Options || item.choices || [];
-          if (Array.isArray(rawOpts)) opts = rawOpts.map(String);
+        } else if (typeof itemObj.options === 'object' && itemObj.options !== null) {
+          opts = Object.values(itemObj.options).map((o: any) => {
+             if (o && typeof o === 'object') return String(o.text || o);
+             return String(o);
+          });
         }
 
         // Correct Answer
-        let ans = item.answer || item.correct_answer || item.Answer || item.correctAnswer || '';
+        let ans = String(itemObj.answer || itemObj.correct_answer || itemObj.Answer || itemObj.correctAnswer || '');
 
-        // Resolve "A", "B", etc. to full option text if possible
-        if (opts.length > 0 && /^[A-E]$/i.test(ans)) {
-          const idx = ans.toUpperCase().charCodeAt(0) - 65;
-          if (opts[idx]) {
-            ans = opts[idx];
-          }
-        }
-
-        // Handle n8n isCorrect mapping
-        if (!ans && Array.isArray(item.options)) {
-          const correct = item.options.find((o: any) => o.isCorrect === true || o.correct === true);
-          if (correct) ans = correct.text || correct.text;
+        // Resolve "A", "B", etc.
+        if (opts.length > 0 && /^[A-E]$/i.test(String(ans))) {
+          const idx = String(ans).toUpperCase().charCodeAt(0) - 65;
+          if (opts[idx]) ans = opts[idx];
         }
 
         mappedQuestions.push({
-          topic: item.topic || fallbackTopic,
+          topic: String(itemObj.topic || fallbackTopic),
           question_text: qText,
-          question_type: item.type || item.question_type || fallbackType,
-          difficulty: item.difficulty || fallbackDifficulty,
+          type: String(itemObj.type || itemObj.question_type || fallbackType),
+          difficulty: String(itemObj.difficulty || fallbackDifficulty),
           options: opts.length >= 2 ? opts : undefined,
           correct_answer: ans,
-          explanation: item.explanation || item.Explanation || '',
-          marks: item.marks || 1,
+          explanation: String(itemObj.explanation || itemObj.Explanation || ''),
+          marks: Number(itemObj.marks) || 1,
         });
       }
 
@@ -243,42 +267,31 @@ function parseAiText(
       }
     }
   } catch (e) {
-    // Not valid JSON, treat as raw markdown
+    // Not valid JSON, treat as raw markdown/text
   }
 
   // ── 1.5. Try to Parse Markdown Tables ──
-  // Tables typically look like: | # | Question | Options | Correct Answer |
   if (rawText.includes('|') && rawText.includes('\n|')) {
     const tableLines = rawText.split('\n').map(l => l.trim()).filter(l => l.startsWith('|'));
     if (tableLines.length >= 3) {
-      // Skip header and separator rows
       const dataRows = tableLines.slice(2);
       const tableQuestions: AiQuestion[] = [];
 
       for (const row of dataRows) {
         const cols = row.split('|').map(c => c.trim()).filter((col, i, arr) => i > 0 && i < arr.length - 1);
         if (cols.length >= 3) {
-          // Typically: [index, question, options, answer]
           const qTextCol = cols.length === 3 ? cols[0] : cols[1];
           const optsCol = cols.length === 3 ? cols[1] : cols[2];
           const ansCol = cols.length === 3 ? cols[2] : cols[3];
 
           const qText = qTextCol.replace(/\*\*/g, '').trim();
-
-          // Split options by <br>, \n, or letter markers
-          let opts = optsCol.split(/<br\s*\/?>|\n/gi)
-            .map(o => o.trim())
-            .filter(Boolean)
-            .map(o => o.replace(/^\s*[A-E][.)]\s*/i, '').replace(/\*\*/g, '').trim());
-
-          // If splitting by <br> didn't work well, try finding letter patterns
+          let opts = optsCol.split(/<br\s*\/?>|\n/gi).map(o => o.trim()).filter(Boolean).map(o => o.replace(/^\s*[A-E][.)]\s*/i, '').replace(/\*\*/g, '').trim());
           if (opts.length < 2) {
             const manualSplit = optsCol.split(/\s*\b[A-E][.)]\s+/i).map(o => o.trim()).filter(Boolean);
             if (manualSplit.length >= 2) opts = manualSplit;
           }
 
           let ansLetter = ansCol.replace(/\*\*/g, '').trim().toUpperCase();
-          // Extract just the letter if it's like "B) " or similar
           const letterMatch = ansLetter.match(/^([A-E])\b/i);
           if (letterMatch) ansLetter = letterMatch[1].toUpperCase();
 
@@ -299,98 +312,57 @@ function parseAiText(
           });
         }
       }
-
-      if (tableQuestions.length > 0) {
-        return { rawText, questions: tableQuestions };
-      }
+      if (tableQuestions.length > 0) return { rawText, questions: tableQuestions };
     }
   }
 
   // ── 2. Split into Blocks ──
-  // Clean up: Ensure newlines before markers to make splitting easier
   const activeText = rawText
     .replace(/\*\*\s*Question/gi, '\n**Question')
     .replace(/^Question/gm, '\nQuestion');
 
-  // Split by digit+dot OR **Question
   const splitRegex = /\n(?=(?:\d+[.)])|(?:\*\*Question)|(?:Question\s))/i;
   let blocks = activeText.split(splitRegex).map(b => b.trim()).filter(Boolean);
-
-  // If split didn't result in multiple blocks, but we have text, treat entire text as one block
-  if (blocks.length === 0 && rawText.length > 10) {
-    blocks = [rawText];
-  }
+  if (blocks.length === 0 && rawText.length > 10) blocks = [rawText];
 
   const questions: AiQuestion[] = [];
-
   for (const block of blocks) {
-    // If block doesn't look like a question (must have "Question" or "?" or options), skip
     if (!block.match(/Question|\?|Option/i)) continue;
-
     const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
     if (!lines.length) continue;
 
-    // ── Extract Question Text ──
-    let questionLine = lines[0]
-      .replace(/^\d+[.)\s]+/, '') // Remove "1. "
-      .replace(/^\**Question\s*(\(.*\))?\**[:\s-]*/i, '') // Remove "**Question (type)**"
-      .replace(/^Q[:\s]*/i, '')
-      .replace(/\*\*/g, '')
-      .trim();
-
-    // If the first line was just "Question", take the second line as text
-    if (!questionLine && lines.length > 1) {
-      questionLine = lines[1].replace(/\*\*/g, '').trim();
-    }
+    let questionLine = lines[0].replace(/^\d+[.)\s]+/, '').replace(/^\**Question\s*(\(.*\))?\**[:\s-]*/i, '').replace(/^Q[:\s]*/i, '').replace(/\*\*/g, '').trim();
+    if (!questionLine && lines.length > 1) questionLine = lines[1].replace(/\*\*/g, '').trim();
 
     const options: string[] = [];
     let correctAnswer = '';
     let explanation = '';
 
-    // ── Extract Details ──
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-
-      // Options: A) ... B. ...
+    for (const line of lines) {
       const optMatch = line.match(/^[-*\u2022]?\s*(\*{0,2}[A-E]\*{0,2})[.)\s]+(.+)/);
       if (optMatch) {
-        const optText = optMatch[2].replace(/\*\*/g, '').trim();
-        options.push(optText);
+        options.push(optMatch[2].replace(/\*\*/g, '').trim());
         continue;
       }
-
-      // Answer
       const ansMatch = line.match(/^\*{0,2}(?:Correct\s*)?Answer\*{0,2}[:\s]+(.+)/i);
       if (ansMatch) {
         let ansText = ansMatch[1].replace(/\*\*/g, '').trim();
-        // Resolve "A" to full text if possible
+        // If it's just a letter and we have options, map the letter to the option text
         const letterMatch = ansText.match(/^([A-E])\b/i);
         if (letterMatch && options.length > 0) {
           const idx = letterMatch[1].toUpperCase().charCodeAt(0) - 65;
-          if (options[idx]) {
-            ansText = options[idx];
-          }
+          if (options[idx]) ansText = options[idx];
         }
         correctAnswer = ansText;
         continue;
       }
-
-      // Explanation
       const expMatch = line.match(/^\*{0,2}Explanation\*{0,2}[:\s]+(.+)/i);
       if (expMatch) {
         explanation = expMatch[1].replace(/\*\*/g, '').trim();
         continue;
       }
-
-      // Append to explanation
-      if (explanation && !optMatch && !ansMatch && !line.startsWith('**Question')) {
-        explanation += ' ' + line.replace(/\*\*/g, '').trim();
-      }
     }
-
-    // Fallbacks
     if (!questionLine) continue;
-
     questions.push({
       topic: fallbackTopic,
       question_text: questionLine,
@@ -403,10 +375,7 @@ function parseAiText(
     });
   }
 
-  if (questions.length > 0) {
-    return { rawText, questions };
-  }
-
+  if (questions.length > 0) return { rawText, questions };
   return { rawText, parseError: 'Could not parse questions. Try ensuring the format is "Question: ... \n A) ... \n Answer: ..."' };
 }
 
@@ -439,7 +408,6 @@ function QuestionTypeIcon({ type }: { type: string }) {
     short: '✎',
     long: '≡',
     fill_blank: '▭',
-    match: '↔',
     coding: '</>',
   };
   return (
@@ -512,7 +480,7 @@ export function QuestionBankManager({ onSectionChange }: { onSectionChange?: (se
       q.topic.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTopic = filterTopic === 'all' || q.topic === filterTopic;
     const matchesDifficulty = filterDifficulty === 'all' || q.difficulty === filterDifficulty;
-    const matchesType = filterType === 'all' || q.question_type === filterType;
+    const matchesType = filterType === 'all' || (q as any).type === filterType || (q as any).question_type === filterType;
     return matchesSearch && matchesTopic && matchesDifficulty && matchesType;
   });
 
@@ -523,13 +491,13 @@ export function QuestionBankManager({ onSectionChange }: { onSectionChange?: (se
     hard: questions.filter(q => q.difficulty === 'hard').length,
     typeBreakdown: QUESTION_TYPES.map(t => ({
       ...t,
-      count: questions.filter(q => q.question_type === t.value).length,
+      count: questions.filter(q => (q as any).type === t.value || (q as any).question_type === t.value).length,
     })),
   };
 
   // ─── Actions ───
 
-  const handleAddBlanks = () => {
+  const handleAddBlanks = (specificType?: string) => {
     if (!globalTopic.trim()) {
       toast({
         title: "Topic Required",
@@ -538,17 +506,18 @@ export function QuestionBankManager({ onSectionChange }: { onSectionChange?: (se
       });
       return;
     }
+    const targetType = specificType || globalType;
     const blanks = Array.from({ length: Math.max(1, globalCount) }).map(() => ({
       ...EMPTY_QUESTION,
       topic: globalTopic,
-      question_type: globalType,
+      type: targetType,
       difficulty: globalDifficulty,
       marks: globalMarks,
     }));
     setBatchQuestions(prev => [...prev, ...blanks]);
   };
 
-  const handleUpdateQuestion = (index: number, field: string, value: string | number | boolean) => {
+  const handleUpdateQuestion = (index: number, field: string, value: any) => {
     setBatchQuestions(prev => {
       const next = [...prev];
       next[index] = { ...next[index], [field]: value };
@@ -584,25 +553,30 @@ export function QuestionBankManager({ onSectionChange }: { onSectionChange?: (se
     setAiError(null);
     setRawInput('');
 
-    const payload = {
-      context: globalTopic,
-      prompt: globalPrompt,
-      questionCount: globalCount,
-      difficulty: globalDifficulty,
-      question_type: globalType,
-      explanation: true, // Explicitly request explanations from AI
-      existing_count: questions.length,
-      timestamp: new Date().toISOString(),
-    };
-
     try {
-      const res = await fetch(N8N_WEBHOOK, {
+      const data = await fetchWithAuth('/manager/generate-questions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          topic: globalTopic,
+          type: globalType,
+          count: globalCount,
+          difficulty: globalDifficulty,
+          prompt: globalPrompt || `Generate ${globalCount} ${globalType} questions about ${globalTopic}`
+        }),
       });
 
-      const rawText = await res.text();
+      let rawText = '';
+      if (typeof data === 'string') {
+        rawText = data;
+      } else if (data && typeof data === 'object') {
+        // If n8n returned an error but included the raw text
+        const d = data as Record<string, unknown>;
+        if (d.raw) {
+          rawText = String(d.raw);
+        } else {
+          rawText = JSON.stringify(data, null, 2);
+        }
+      }
 
       // Attempt Automatic Parsing & Distribution
       const parsed = parseAiText(rawText, globalTopic, globalType, globalDifficulty);
@@ -611,14 +585,14 @@ export function QuestionBankManager({ onSectionChange }: { onSectionChange?: (se
         // Success! Auto-fill
         const newForms = parsed.questions.map(q => ({
           ...EMPTY_QUESTION,
-          topic: globalTopic, // Strictly follow global topic
-          question_type: globalType, // Strictly follow global type
-          difficulty: globalDifficulty, // Strictly follow global difficulty
+          topic: globalTopic,
+          type: q.type || globalType,
+          difficulty: q.difficulty || globalDifficulty,
           question_text: q.question_text,
           options: (q.options && q.options.length >= 2) ? q.options : ['', '', '', ''],
           correct_answer: q.correct_answer || '',
           explanation: q.explanation || '',
-          marks: globalMarks, // Strictly follow global marks
+          marks: q.marks || globalMarks,
         }));
 
         setBatchQuestions(prev => [...prev, ...newForms]);
@@ -648,10 +622,11 @@ export function QuestionBankManager({ onSectionChange }: { onSectionChange?: (se
       }
 
     } catch (err) {
-      setAiError(err instanceof Error ? err.message : String(err));
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      setAiError(errorMsg);
       toast({
         title: "AI Generation Error",
-        description: "Failed to connect to AI service.",
+        description: errorMsg,
         variant: "destructive"
       });
     } finally {
@@ -667,14 +642,14 @@ export function QuestionBankManager({ onSectionChange }: { onSectionChange?: (se
     if (parsed.questions && parsed.questions.length > 0) {
       const newForms = parsed.questions.map(q => ({
         ...EMPTY_QUESTION,
-        topic: globalTopic, // Strictly use global topic
+        topic: globalTopic,
+        type: q.type || globalType,
+        difficulty: q.difficulty || globalDifficulty,
         question_text: q.question_text,
-        type: globalType, // Strictly use global type
-        difficulty: globalDifficulty, // Strictly use global difficulty
         options: (q.options && q.options.length >= 2) ? q.options : ['', '', '', ''],
         correct_answer: q.correct_answer || '',
         explanation: q.explanation || '',
-        marks: globalMarks, // Strictly use global marks
+        marks: q.marks || globalMarks,
       }));
       setBatchQuestions(prev => [...prev, ...newForms]);
       setShowRaw(false);
@@ -708,17 +683,21 @@ export function QuestionBankManager({ onSectionChange }: { onSectionChange?: (se
       const questionsToSave = batchQuestions
         .filter(q => q.question_text.trim())
         .map(q => {
-          let type = globalType;
-          if (type === 'short') type = 'short_answer';
-          if (type === 'long') type = 'long_answer';
+          const type = (q.type || globalType) as string;
+          let finalType = 'subjective';
+          if (type === 'mcq' || type === 'multiple_choice') finalType = 'multiple_choice';
+          else if (type === 'true_false') finalType = 'true_false';
+          else if (type === 'short' || type === 'short_answer') finalType = 'short_answer';
+          else if (type === 'long' || type === 'long_answer') finalType = 'long_answer';
+          else if (type === 'fill_blank') finalType = 'fill_blank';
+          else if (type === 'coding') finalType = 'coding';
 
           return {
             topic: batchTopic,
             question_text: q.question_text,
-            type: globalType === 'mcq' ? 'multiple_choice' : 
-                  globalType === 'true_false' ? 'true_false' : 'subjective',
+            type: finalType,
             difficulty: globalDifficulty,
-            options: globalType === 'mcq' ? 
+            options: finalType === 'multiple_choice' ? 
               (Array.isArray(q.options) ? q.options.filter(o => o?.trim()).map(o => ({
                 text: o,
                 is_correct: String(o).trim() === String(q.correct_answer).trim()
@@ -872,7 +851,7 @@ export function QuestionBankManager({ onSectionChange }: { onSectionChange?: (se
           <div className="flex items-center gap-3 pt-2">
             <Button
               variant="secondary"
-              onClick={handleAddBlanks}
+              onClick={() => handleAddBlanks()}
               className="gap-2"
             >
               <Plus className="h-4 w-4" />
@@ -983,63 +962,116 @@ export function QuestionBankManager({ onSectionChange }: { onSectionChange?: (se
                     />
                   </div>
 
-                  {/* Row 3: Options (if MCQ) & Answer */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Row 3: Options or True/False or Open Answer */}
+                  <div className="grid grid-cols-1 gap-6">
+                    {/* Multiple Choice Layout */}
                     {q.type === 'mcq' && (
                       <div className="space-y-2">
-                        <Label>Options</Label>
-                        <div className="grid grid-cols-1 gap-2">
-                          {q.options.map((opt, optIdx) => (
+                        <Label className="flex items-center gap-2">
+                          Options
+                          <Badge variant="outline" className="text-[10px] font-normal">Multiple Choice</Badge>
+                        </Label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {(q.options || ['', '', '', '']).map((opt, optIdx) => (
                             <div key={optIdx} className="flex items-center gap-2">
-                              <span className="text-xs font-mono w-4 text-muted-foreground">{String.fromCharCode(65 + optIdx)}</span>
+                              <span className={cn(
+                                "text-xs font-mono w-6 h-9 flex items-center justify-center rounded border bg-muted/30",
+                                q.correct_answer === opt && opt.trim() ? "border-emerald-500 bg-emerald-50 text-emerald-700 font-bold" : "text-muted-foreground"
+                              )}>
+                                {String.fromCharCode(65 + optIdx)}
+                              </span>
                               <Input
                                 value={opt}
                                 onChange={(e) => handleUpdateOption(idx, optIdx, e.target.value)}
                                 placeholder={`Option ${String.fromCharCode(65 + optIdx)}`}
-                                className="h-9"
+                                className={cn(
+                                  "h-9 transition-colors",
+                                  q.correct_answer === opt && opt.trim() ? "border-emerald-500 focus-visible:ring-emerald-500" : ""
+                                )}
                               />
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className={cn(
+                                  "h-8 w-8 shrink-0",
+                                  q.correct_answer === opt && opt.trim() ? "text-emerald-500 hover:text-emerald-600" : "text-slate-200"
+                                )}
+                                onClick={() => handleUpdateQuestion(idx, 'correct_answer', opt)}
+                                title="Mark as correct"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </Button>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
 
-                    <div className="space-y-3">
-                      <div className="space-y-1.5">
-                        <Label>Correct Answer</Label>
-                        {q.question_type === 'true_false' ? (
-                          <Select
-                            value={q.correct_answer}
-                            onValueChange={(v) => handleUpdateQuestion(idx, 'correct_answer', v)}
-                          >
-                            <SelectTrigger><SelectValue placeholder="Select True/False" /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="true">True</SelectItem>
-                              <SelectItem value="false">False</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Input
+                    {/* True / False Layout */}
+                    {q.type === 'true_false' && (
+                      <div className="space-y-3">
+                        <Label className="flex items-center gap-2">
+                          True / False Toggle
+                          <Badge variant="outline" className="text-[10px] font-normal">Boolean</Badge>
+                        </Label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {['True', 'False'].map((val) => (
+                            <Button
+                              key={val}
+                              variant={q.correct_answer === val ? 'default' : 'outline'}
+                              className={cn(
+                                "h-14 rounded-2xl border-2 text-lg font-bold transition-all",
+                                q.correct_answer === val 
+                                  ? (val === 'True' ? "bg-emerald-500 hover:bg-emerald-600 border-transparent text-white" : "bg-rose-500 hover:bg-rose-600 border-transparent text-white") 
+                                  : "hover:border-slate-300 bg-slate-50/50"
+                              )}
+                              onClick={() => {
+                                handleUpdateQuestion(idx, 'correct_answer', val);
+                                handleUpdateQuestion(idx, 'options', ['True', 'False']);
+                              }}
+                            >
+                              <div className="flex items-center justify-between w-full px-2">
+                                <span>{val}</span>
+                                {q.correct_answer === val && <CheckCircle className="h-5 w-5" />}
+                              </div>
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Open Answer Layout (Short/Long/Coding) */}
+                    {(q.type !== 'mcq' && q.type !== 'true_false') && (
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label className="flex items-center gap-2">
+                            Ideal Answer Logic
+                            <Badge variant="outline" className="text-[10px] font-normal tracking-wide">
+                              {String(q.type || 'short').toUpperCase().replace('_', ' ')}
+                            </Badge>
+                          </Label>
+                          <Textarea
                             value={q.correct_answer}
                             onChange={(e) => handleUpdateQuestion(idx, 'correct_answer', e.target.value)}
-                            placeholder={q.question_type === 'mcq' ? "Enter option (e.g. MongoDB)" : "Enter answer"}
+                            className={cn(
+                              "min-h-[140px] font-mono leading-relaxed",
+                              q.type === 'coding' ? "bg-slate-900 text-emerald-400 border-slate-800" : "bg-slate-50 border-slate-200"
+                            )}
+                            placeholder={q.type === 'coding' ? "// Paste solution here..." : "Describe the answer..."}
                           />
-                        )}
-                        <p className="text-[10px] text-muted-foreground">
-                          {q.question_type === 'mcq' ? 'Paste the text of the correct option.' : ''}
-                        </p>
+                        </div>
                       </div>
+                    )}
 
-                      <div className="space-y-1.5">
-                        <Label>Explanation</Label>
-                        <Textarea
-                          value={q.explanation}
-                          onChange={(e) => handleUpdateQuestion(idx, 'explanation', e.target.value)}
-                          rows={2}
-                          className="resize-none text-xs"
-                          placeholder="Why is this correct?"
-                        />
-                      </div>
+                    <div className="space-y-2 mt-4 bg-muted/20 p-3 rounded-lg border border-slate-100">
+                      <Label className="text-[10px] uppercase tracking-widest text-slate-400">Contextual Explanation</Label>
+                      <Textarea
+                        value={q.explanation}
+                        onChange={(e) => handleUpdateQuestion(idx, 'explanation', e.target.value)}
+                        rows={2}
+                        className="resize-none text-xs border-0 bg-transparent focus-visible:ring-0 p-0"
+                        placeholder="Add reasoning or reference link..."
+                      />
                     </div>
                   </div>
                 </CardContent>
@@ -1047,24 +1079,51 @@ export function QuestionBankManager({ onSectionChange }: { onSectionChange?: (se
             ))}
           </div>
 
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 py-6">
-            <Button
-              variant="outline"
-              onClick={handleAddBlanks}
-              className="w-full sm:w-auto gap-2 border-dashed border-2 hover:border-primary hover:text-primary transition-all px-6"
-            >
-              <Plus className="h-4 w-4" />
-              Add More Questions
-            </Button>
+          <div className="flex flex-col lg:flex-row justify-between items-center gap-6 py-8 bg-slate-50/50 border-2 border-dashed border-slate-100 rounded-3xl p-8 shadow-inner mt-12">
+            <div className="flex flex-col gap-4 w-full lg:w-auto">
+              <div className="flex items-center gap-2">
+                <Plus className="h-4 w-4 text-primary" />
+                <span className="text-[10px] font-black text-slate-800 uppercase tracking-[0.2em]">Quick Addition Matrix</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleAddBlanks('mcq')} 
+                  className="rounded-xl h-12 px-5 border-slate-200 shadow-sm hover:border-primary hover:bg-primary/5 transition-all text-[10px] font-bold uppercase tracking-widest"
+                >
+                  <FileQuestion className="h-4 w-4 mr-2 text-indigo-500" /> + MCQ
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleAddBlanks('true_false')} 
+                  className="rounded-xl h-12 px-5 border-slate-200 shadow-sm hover:border-emerald-500 hover:bg-emerald-50 transition-all text-[10px] font-bold uppercase tracking-widest"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2 text-emerald-500" /> + T/F
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleAddBlanks('short')} 
+                  className="rounded-xl h-12 px-5 border-slate-200 shadow-sm hover:border-amber-500 hover:bg-amber-50 transition-all text-[10px] font-bold uppercase tracking-widest"
+                >
+                  <ClipboardList className="h-4 w-4 mr-2 text-amber-500" /> + Short
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleAddBlanks('long')} 
+                  className="rounded-xl h-12 px-5 border-slate-200 shadow-sm hover:border-rose-500 hover:bg-rose-50 transition-all text-[10px] font-bold uppercase tracking-widest"
+                >
+                  <Plus className="h-4 w-4 mr-2 text-rose-500" /> + Long
+                </Button>
+              </div>
+            </div>
 
             <Button
               onClick={handleOpenSaveWizard}
               disabled={isSaving}
               size="lg"
-              className="w-full sm:w-auto gap-2 text-lg px-10 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-xl shadow-emerald-500/20 border-0"
+              className="w-full lg:w-auto gap-3 h-16 px-12 text-lg font-black italic tracking-tighter bg-slate-900 hover:bg-black text-white shadow-2xl shadow-slate-900/20 border-0 rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
-              <ArrowRight className="h-5 w-5" />
-              Finalize & Save Batch
+              FINALIZE BATCH <ArrowRight className="h-6 w-6" />
             </Button>
           </div>
           <Separator className="my-8" />

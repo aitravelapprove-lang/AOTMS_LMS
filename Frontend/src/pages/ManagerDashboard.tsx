@@ -388,7 +388,9 @@ export default function ManagerDashboard() {
       case "exams":
         return <ExamScheduler />;
       case "questions":
-        return <QuestionBankManager onSectionChange={setActiveSection} />;
+        return <QuestionBankManager onSectionChange={setActiveSection} initialTab="bank" />;
+      case "approvals":
+        return <QuestionBankManager onSectionChange={setActiveSection} initialTab="approvals" />;
       case "mock-tests":
         return <MockTestManager />;
       case "leaderboard":

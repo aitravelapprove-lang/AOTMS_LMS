@@ -37,7 +37,12 @@ const QuestionBankSchema = new Schema({
     difficulty: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' },
     question_text: { type: String, required: true },
     options: [{ text: String, is_correct: Boolean }], // Array of options
-    type: { type: String, enum: ['multiple_choice', 'true_false', 'subjective'], default: 'multiple_choice' },
+    correct_answer: { type: String }, // Stored answer for T/F, Short, etc.
+    type: { 
+        type: String, 
+        enum: ['multiple_choice', 'true_false', 'subjective', 'short_answer', 'long_answer', 'fill_blank', 'coding'], 
+        default: 'multiple_choice' 
+    },
     marks: { type: Number, default: 1 },
     course_id: { type: Schema.Types.ObjectId, ref: 'Course' }, // Optional course link
     approval_status: { type: String, default: 'pending' }, // pending, approved, rejected

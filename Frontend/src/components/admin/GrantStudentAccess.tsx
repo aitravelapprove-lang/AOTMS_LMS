@@ -22,6 +22,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchWithAuth } from '@/lib/api';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
+import { Profile } from '@/hooks/useAdminData';
 
 interface Course {
   id: string;
@@ -29,18 +30,16 @@ interface Course {
   status: string;
 }
 
-interface Student {
-  id: string;
-  full_name: string;
-  email: string;
-  avatar_url?: string;
+interface GrantStudentAccessProps {
+    profiles?: Profile[];
 }
 
-export function GrantStudentAccess() {
+export function GrantStudentAccess({ profiles = [] }: GrantStudentAccessProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [studentUuid, setStudentUuid] = useState('');
-  const [studentInfo, setStudentInfo] = useState<Student | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<Profile | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [isLookingUp, setIsLookingUp] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -54,34 +53,22 @@ export function GrantStudentAccess() {
     }
   });
 
-  // Lookup student by UUID
-  const lookupStudent = async () => {
-    if (!studentUuid || studentUuid.length < 20) return; // Allow Mongo ObjectId (24) or UUID (36)
-    setIsLookingUp(true);
-    try {
-      const profiles = await fetchWithAuth(`/data/profiles?id=eq.${studentUuid}`);
-      if (profiles && profiles.length > 0) {
-        setStudentInfo(profiles[0]);
-      } else {
-        setStudentInfo(null);
-        toast({ title: 'Student Not Found', description: 'No student found with this UUID', variant: 'destructive' });
-      }
-    } catch (err) {
-      setStudentInfo(null);
-    } finally {
-      setIsLookingUp(false);
-    }
-  };
+  // Filter students based on search query
+  const filteredStudents = profiles.filter(profile => 
+      (profile.role === 'student') && 
+      (profile.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+       profile.email?.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
   // Grant access mutation
   const grantAccess = useMutation({
     mutationFn: async () => {
-      if (!selectedCourse || !studentInfo) return;
+      if (!selectedCourse || !selectedStudent) return;
       
       return fetchWithAuth('/data/course_enrollments', {
         method: 'POST',
         body: JSON.stringify({
-          user_id: studentInfo.id,
+          user_id: selectedStudent.id,
           course_id: selectedCourse.id,
           status: 'active',
           progress_percentage: 0
@@ -91,7 +78,7 @@ export function GrantStudentAccess() {
     onSuccess: () => {
       toast({ title: 'Access Granted', description: `Student has been enrolled in ${selectedCourse?.title}` });
       setStudentUuid('');
-      setStudentInfo(null);
+      setSelectedStudent(null);
       setSelectedCourse(null);
       setIsOpen(false);
     },
@@ -105,6 +92,11 @@ export function GrantStudentAccess() {
     setSelectedCourse(course || null);
   };
 
+  const handleStudentSelect = (student: Profile) => {
+      setSelectedStudent(student);
+      setStudentUuid(student.id);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -115,7 +107,7 @@ export function GrantStudentAccess() {
               Grant Student Access
             </CardTitle>
             <CardDescription>
-              Manually enroll students in courses
+              Select a student from the list and manually enroll them in a course.
             </CardDescription>
           </div>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -132,7 +124,7 @@ export function GrantStudentAccess() {
                   Enroll Student in Course
                 </DialogTitle>
                 <DialogDescription>
-                  Select a course and enter student's UUID to grant access
+                  Search for a student and select a course to grant access.
                 </DialogDescription>
               </DialogHeader>
               
@@ -160,53 +152,84 @@ export function GrantStudentAccess() {
                   )}
                 </div>
 
-                {/* Student UUID Input */}
+                {/* Student Search & Selection */}
                 <div className="space-y-2">
-                  <Label>Student UUID</Label>
-                  <div className="relative">
-                    <Input
-                      placeholder="Paste student UUID here..."
-                      value={studentUuid}
-                      onChange={(e) => setStudentUuid(e.target.value)}
-                      onBlur={lookupStudent}
-                      className="font-mono text-xs pr-10"
-                    />
-                    {isLookingUp && (
-                      <div className="absolute right-3 top-2.5">
-                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <Label>Select Student</Label>
+                  {!selectedStudent ? (
+                      <div className="space-y-2">
+                          <div className="relative">
+                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <Input
+                                  placeholder="Search students by name or email..."
+                                  value={searchQuery}
+                                  onChange={(e) => setSearchQuery(e.target.value)}
+                                  className="pl-9"
+                              />
+                          </div>
+                          <div className="border rounded-md max-h-48 overflow-y-auto bg-slate-50">
+                              {filteredStudents.length === 0 ? (
+                                  <div className="p-4 text-center text-sm text-muted-foreground">
+                                      {searchQuery ? "No students found" : "Type to search students"}
+                                  </div>
+                              ) : (
+                                  filteredStudents.map(student => (
+                                      <div 
+                                          key={student.id} 
+                                          className="flex items-center gap-3 p-3 hover:bg-slate-100 cursor-pointer transition-colors border-b last:border-0"
+                                          onClick={() => handleStudentSelect(student)}
+                                      >
+                                          <Avatar className="h-8 w-8">
+                                              <AvatarImage src={student.avatar_url || ''} />
+                                              <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                                                  {student.full_name?.[0]?.toUpperCase() || 'S'}
+                                              </AvatarFallback>
+                                          </Avatar>
+                                          <div className="overflow-hidden">
+                                              <p className="text-sm font-medium truncate">{student.full_name}</p>
+                                              <p className="text-xs text-muted-foreground truncate">{student.email}</p>
+                                          </div>
+                                      </div>
+                                  ))
+                              )}
+                          </div>
                       </div>
-                    )}
-                  </div>
+                  ) : (
+                      <div className="rounded-xl border bg-card p-4 relative group">
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="absolute top-2 right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => setSelectedStudent(null)}
+                        >
+                            <XCircle className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                        </Button>
+                        <div className="flex items-center gap-4">
+                          <Avatar className="h-12 w-12">
+                            <AvatarImage src={selectedStudent.avatar_url || ''} />
+                            <AvatarFallback className="bg-primary text-primary-foreground">
+                              {selectedStudent.full_name?.[0]?.toUpperCase() || 'S'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <p className="font-medium">{selectedStudent.full_name}</p>
+                            <p className="text-sm text-muted-foreground flex items-center gap-1">
+                              <Mail className="h-3 w-3" />
+                              {selectedStudent.email}
+                            </p>
+                            <Badge variant="outline" className="mt-1 text-[10px] h-5 px-1.5">{selectedStudent.role}</Badge>
+                          </div>
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                        </div>
+                      </div>
+                  )}
                 </div>
-
-                {/* Student Preview */}
-                {studentInfo && (
-                  <div className="rounded-xl border bg-card p-4">
-                    <div className="flex items-center gap-4">
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={studentInfo.avatar_url || ''} />
-                        <AvatarFallback className="bg-primary text-primary-foreground">
-                          {studentInfo.full_name?.[0]?.toUpperCase() || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <p className="font-medium">{studentInfo.full_name}</p>
-                        <p className="text-sm text-muted-foreground flex items-center gap-1">
-                          <Mail className="h-3 w-3" />
-                          {studentInfo.email}
-                        </p>
-                      </div>
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                    </div>
-                  </div>
-                )}
               </div>
 
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
                 <Button
                   onClick={() => grantAccess.mutate()}
-                  disabled={!selectedCourse || !studentInfo || grantAccess.isPending}
+                  disabled={!selectedCourse || !selectedStudent || grantAccess.isPending}
                 >
                   {grantAccess.isPending ? (
                     <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Enrolling...</>
@@ -219,12 +242,51 @@ export function GrantStudentAccess() {
           </Dialog>
         </div>
       </CardHeader>
+      
+      {/* List of Recently Granted Access or a general placeholder list can go here if needed, 
+          but for now, the modal handles the action. We can show a simple instruction list. */}
       <CardContent>
-        <div className="text-center py-8 text-muted-foreground">
-          <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p className="font-medium">Manual Enrollment</p>
-          <p className="text-sm">Click "Enroll Student" to grant a student access to a course</p>
-        </div>
+          <div className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                 {filteredStudents.slice(0, 6).map(student => (
+                     <div key={student.id} className="flex items-center justify-between p-4 rounded-lg border bg-card text-card-foreground shadow-sm">
+                         <div className="flex items-center gap-3 overflow-hidden">
+                             <Avatar className="h-9 w-9 border">
+                                  <AvatarImage src={student.avatar_url} />
+                                  <AvatarFallback>{student.full_name?.[0]}</AvatarFallback>
+                             </Avatar>
+                             <div className="grid gap-0.5 overflow-hidden">
+                                 <p className="text-sm font-medium leading-none truncate">{student.full_name}</p>
+                                 <p className="text-xs text-muted-foreground truncate">{student.email}</p>
+                             </div>
+                         </div>
+                         <Button 
+                            variant="secondary" 
+                            size="sm" 
+                            className="ml-auto h-8 shadow-none"
+                            onClick={() => {
+                                setSelectedStudent(student);
+                                setIsOpen(true);
+                            }}
+                         >
+                            Enroll
+                         </Button>
+                     </div>
+                 ))}
+            </div>
+            {filteredStudents.length > 6 && (
+                <p className="text-xs text-center text-muted-foreground mt-4">
+                    + {filteredStudents.length - 6} more students available. Use the "Enroll Student" button to search all.
+                </p>
+            )}
+            {filteredStudents.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                    <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="font-medium">No students found</p>
+                    <p className="text-sm">Wait for students to register to grant them access.</p>
+                </div>
+            )}
+          </div>
       </CardContent>
     </Card>
   );

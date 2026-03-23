@@ -12,12 +12,11 @@ import LearningPaths from "./pages/LearningPaths";
 import InstructorRegister from "./pages/InstructorRegister";
 import Dashboard from "./pages/Dashboard";
 import InstructorDashboard from "./pages/InstructorDashboard";
-import ManagerDashboard from "./pages/ManagerDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import ManagerDashboard from "./pages/ManagerDashboard";
 import LiveSession from "./pages/LiveSession";
 import NotFound from "./pages/NotFound";
 import About from "./pages/About";
-import Assignments from "./pages/Assignments";
 import PendingApproval from "./pages/PendingApproval";
 import Courses from "./pages/Courses";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -94,7 +93,6 @@ const App = () => (
               <Route path="/" element={<Home />} />
               <Route path="/courses" element={<Courses />} />
               <Route path="/about" element={<About />} />
-              <Route path="/assignments" element={<Assignments />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/pending-approval" element={<ProtectedRoute><PendingApproval /></ProtectedRoute>} />
               <Route path="/become-instructor" element={<InstructorRegister />} />
@@ -109,12 +107,12 @@ const App = () => (
                 element={<ProtectedRoute allowedRoles={['instructor', 'admin']}><InstructorDashboard /></ProtectedRoute>}
               />
               <Route
-                path="/manager/*"
-                element={<ProtectedRoute allowedRoles={['manager', 'admin']}><ManagerDashboard /></ProtectedRoute>}
-              />
-              <Route
                 path="/admin/*"
                 element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>}
+              />
+              <Route
+                path="/manager/*"
+                element={<ProtectedRoute allowedRoles={['manager', 'admin']}><ManagerDashboard /></ProtectedRoute>}
               />
 
               <Route path="/live/:meetingId" element={<ProtectedRoute><LiveSession /></ProtectedRoute>} />

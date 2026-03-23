@@ -57,7 +57,7 @@ export function QuestionBankStudentAccess() {
             }
         };
         fetchApprovedBanks();
-    }, []);
+    }, [toast]);
 
     const handleLookup = async () => {
         const uuid = uuidInput.trim();
@@ -159,7 +159,7 @@ export function QuestionBankStudentAccess() {
                                                 <span className="text-xs text-muted-foreground flex items-center gap-1">
                                                     <Star className="h-3 w-3" /> {bank.count} questions
                                                 </span>
-                                                {bank.difficulties.map(d => (
+                                                {bank.difficulties?.map(d => (
                                                     <span key={d} className={cn('text-[10px] px-1.5 py-0.5 rounded border font-medium capitalize', difficultyColor(d))}>
                                                         {d}
                                                     </span>

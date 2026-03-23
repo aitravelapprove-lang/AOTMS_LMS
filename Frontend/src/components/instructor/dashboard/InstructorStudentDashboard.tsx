@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Users, Search, Filter, Download, Mail, MoreHorizontal, 
@@ -30,6 +31,8 @@ import {
   useInstructorAllStudents, 
   useInstructorStudentStats, 
   useInstructorCourses,
+  useStudentVideoProgress,
+  useVideos,
   useSendReminder,
   type InstructorStudent 
 } from '@/hooks/useInstructorData';
@@ -345,8 +348,82 @@ function ActivityFeed({ activities, students }: { activities: RecentActivity[]; 
   );
 }
 
+function StudentCourseDetails({ studentId, courseId, courseName, progress }: { studentId: string; courseId: string; courseName: string; progress: number }) {
+  const { data: videoProgress } = useStudentVideoProgress(studentId, courseId);
+  const { data: videos } = useVideos(courseId);
+  const [expanded, setExpanded] = useState(false);
+
+  // Merge video data with progress
+  const videoList = useMemo(() => {
+    if (!videos) return [];
+    return videos.map((video: any) => {
+      const p = videoProgress?.find((vp: any) => vp.video_id === video.id);
+      return {
+        ...video,
+        watched: p?.watched_seconds || 0,
+        total: p?.total_seconds || video.duration_seconds || 0,
+        completed: p?.completed || false,
+        lastWatched: p?.last_watched_at
+      };
+    }).sort((a: any, b: any) => a.order_index - b.order_index);
+  }, [videos, videoProgress]);
+
+  return (
+    <div className="p-4 rounded-xl border border-slate-100 bg-white">
+      <div 
+        className="flex items-center justify-between mb-2 cursor-pointer"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div className="flex items-center gap-2 overflow-hidden">
+            <Button variant="ghost" size="icon" className="h-6 w-6 p-0 hover:bg-slate-100">
+                {expanded ? <ChevronRight className="h-4 w-4 rotate-90 transition-transform" /> : <ChevronRight className="h-4 w-4 transition-transform" />}
+            </Button>
+            <span className="text-sm font-bold text-slate-800 truncate pr-4">{courseName}</span>
+        </div>
+        <span className="text-xs font-black text-primary whitespace-nowrap">{progress}%</span>
+      </div>
+      <Progress value={progress} className="h-1.5 mb-2" indicatorClassName={progress === 100 ? 'bg-green-500' : 'bg-primary'} />
+      
+      {expanded && (
+        <div className="mt-4 space-y-2 pl-2 border-l-2 border-slate-100 ml-2">
+            {videoList.length > 0 ? (
+                videoList.map((video: any) => (
+                    <div key={video.id} className="flex items-center gap-3 text-xs py-1">
+                        <div className={cn(
+                            "h-4 w-4 rounded-full flex items-center justify-center flex-shrink-0",
+                            video.completed ? "bg-green-100 text-green-600" : "bg-slate-100 text-slate-400"
+                        )}>
+                            {video.completed ? <CheckCircle2 className="h-3 w-3" /> : <PlayCircle className="h-3 w-3" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="font-medium text-slate-700 truncate">{video.title}</p>
+                            <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                                <span>{formatWatchTime(Math.round(video.watched / 60))} / {formatWatchTime(Math.round(video.total / 60))}</span>
+                                {video.lastWatched && (
+                                    <span>• {formatTimeAgo(video.lastWatched)}</span>
+                                )}
+                            </div>
+                        </div>
+                        <div className="w-16 h-1 bg-slate-100 rounded-full overflow-hidden flex-shrink-0">
+                            <div 
+                                className="h-full bg-blue-500 rounded-full" 
+                                style={{ width: `${Math.min(100, (video.watched / video.total) * 100)}%` }}
+                            />
+                        </div>
+                    </div>
+                ))
+            ) : (
+                <p className="text-xs text-muted-foreground italic pl-2">No videos found for this course.</p>
+            )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function InstructorStudentDashboard() {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { data: students, isLoading: studentsLoading, refetch } = useInstructorAllStudents();
   const { data: courses, isLoading: coursesLoading } = useInstructorCourses();
   const { stats, isLoading: statsLoading } = useInstructorStudentStats();
@@ -388,8 +465,8 @@ export function InstructorStudentDashboard() {
   };
 
   const handleSendMessage = (studentId: string) => {
-    const student = students?.find(s => s.userId === studentId);
-    toast({ title: 'Message feature', description: `Would send message to ${student?.name || 'student'}` });
+    // Navigate to chat with student selected
+    navigate(`/instructor/chat?recipientId=${studentId}&showProfile=true`);
   };
 
   const handleViewDetails = (studentId: string) => {
@@ -649,13 +726,13 @@ export function InstructorStudentDashboard() {
                   <ScrollArea className="h-[200px] pr-4">
                     <div className="space-y-3">
                       {selectedStudent.courseEnrollments.map((course) => (
-                        <div key={course.courseId} className="p-4 rounded-xl border border-slate-100 bg-white">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-bold text-slate-800 truncate flex-1 pr-4">{course.courseTitle}</span>
-                            <span className="text-xs font-black text-primary">{course.progress}%</span>
-                          </div>
-                          <Progress value={course.progress} className="h-1.5" indicatorClassName={course.progress === 100 ? 'bg-green-500' : 'bg-primary'} />
-                        </div>
+                        <StudentCourseDetails
+                            key={course.courseId}
+                            studentId={selectedStudent.userId}
+                            courseId={course.courseId}
+                            courseName={course.courseTitle}
+                            progress={course.progress}
+                        />
                       ))}
                     </div>
                   </ScrollArea>

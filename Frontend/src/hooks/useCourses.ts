@@ -60,7 +60,7 @@ export function useCourses() {
   const [page, setPage] = useState(1);
   const [categories, setCategories] = useState<string[]>([]);
 
-  const fetchCourses = useCallback(async (pageNum: number = 1, category: string = 'all', reset: boolean = false) => {
+  const fetchCourses = useCallback(async (pageNum: number = 1, category: string = 'all', reset: boolean = false, pageSize: number = 9) => {
     // Prevent fetching if we already have data and are just re-rendering, 
     // BUT allow if we are resetting (e.g. category change) or explicitly loading more
     if (loading) return;
@@ -92,7 +92,7 @@ export function useCourses() {
       }));
 
       // Client-side pagination since we fetch all active courses at once
-      const ITEMS_PER_PAGE = 9;
+      const ITEMS_PER_PAGE = pageSize;
       const startIndex = (pageNum - 1) * ITEMS_PER_PAGE;
       const endIndex = startIndex + ITEMS_PER_PAGE;
       const paginatedCourses = coursesData.slice(startIndex, endIndex);

@@ -6,9 +6,14 @@ export const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
     // Set up headers
     const getHeaders = (t: string | null): Record<string, string> => {
         const h: Record<string, string> = {
-            'Content-Type': 'application/json',
             ...(options.headers as Record<string, string>),
         };
+        
+        // Only set Content-Type to application/json if body is NOT FormData
+        if (!(options.body instanceof FormData)) {
+            h['Content-Type'] = 'application/json';
+        }
+
         if (t) {
             h['Authorization'] = `Bearer ${t}`;
         }
@@ -60,7 +65,8 @@ export const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
         let errStr = 'API Request Failed';
         try {
             const err = await res.json();
-            errStr = err.error || errStr;
+            // Check for common error fields: 'error', 'message', or nested 'error.message'
+            errStr = err.error || err.message || (err.data && err.data.message) || errStr;
         } catch {
             // Ignore if response is not JSON
         }

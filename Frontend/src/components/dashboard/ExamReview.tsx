@@ -127,7 +127,10 @@ export function ExamReview({ resultId, onClose }: ExamReviewProps) {
                 </div>
 
                 {review.questions.map((q, idx) => {
-                    const isCorrect = q.options.find(opt => opt.id === q.studentAnswerId)?.is_correct;
+                    // For MCQ, we can infer isCorrect from options, but backend now sends is_correct logic for all types
+                    // Fallback to option-based check for legacy/MCQ just in case
+                    const isCorrect = q.is_correct === true || (q.type === 'mcq' && q.options.find(opt => opt.id === q.studentAnswerId)?.is_correct);
+                    const isReview = q.is_correct === null && q.type === 'coding';
                     
                     return (
                         <motion.div
@@ -139,27 +142,33 @@ export function ExamReview({ resultId, onClose }: ExamReviewProps) {
                             <Card className={`overflow-hidden rounded-[1.5rem] border-2 transition-all ${
                                 isCorrect 
                                 ? 'border-emerald-100 bg-emerald-50/20' 
-                                : q.studentAnswerId 
-                                    ? 'border-rose-100 bg-rose-50/20' 
-                                    : 'border-slate-100'
+                                : isReview
+                                    ? 'border-amber-100 bg-amber-50/20'
+                                    : 'border-rose-100 bg-rose-50/20'
                             }`}>
                                 <CardHeader className="pb-4">
                                     <div className="flex items-start justify-between gap-4">
                                         <div className="space-y-2">
                                             <div className="flex items-center gap-3">
                                                 <Badge variant="outline" className="h-6 rounded-lg font-bold border-slate-200">Q#{idx + 1}</Badge>
-                                                <Badge className={isCorrect ? 'bg-emerald-500' : 'bg-rose-500'}>
-                                                    {isCorrect ? 'Correct' : 'Incorrect'}
+                                                <Badge className={
+                                                    isCorrect ? 'bg-emerald-500' : 
+                                                    isReview ? 'bg-amber-500' : 
+                                                    'bg-rose-500'
+                                                }>
+                                                    {isCorrect ? 'Correct' : isReview ? 'Manual Review' : 'Incorrect'}
                                                 </Badge>
+                                                <Badge variant="outline" className="text-[10px] uppercase font-bold">{q.type.replace('_', ' ')}</Badge>
                                             </div>
-                                            <h4 className="text-lg font-black text-slate-900 leading-tight">{q.text}</h4>
+                                            <h4 className="text-lg font-black text-slate-900 leading-tight whitespace-pre-wrap">{q.text}</h4>
                                         </div>
                                         <div className="shrink-0 font-black text-slate-400">+{q.marks} Pts</div>
                                     </div>
                                 </CardHeader>
                                 <CardContent className="space-y-3">
-                                    {q.options.map((opt) => {
-                                        const isSelected = opt.id === q.studentAnswerId;
+                                    {/* MCQ Options Display */}
+                                    {(q.type === 'mcq' || q.type === 'multiple_choice') && q.options.map((opt) => {
+                                        const isSelected = opt.id === q.studentAnswerId || opt.text === q.studentAnswerId;
                                         const isTruth = opt.is_correct;
                                         
                                         let stateClass = "bg-white border-slate-100 text-slate-600";
@@ -196,13 +205,50 @@ export function ExamReview({ resultId, onClose }: ExamReviewProps) {
                                         );
                                     })}
 
-                                    {!isCorrect && (
+                                    {/* Coding / Short Answer Display */}
+                                    {(q.type === 'coding' || q.type === 'short' || q.type === 'fill_blank' || q.type === 'true_false') && (
+                                        <div className="space-y-4">
+                                            <div className="space-y-1">
+                                                <p className="text-xs font-black uppercase text-slate-400">Your Answer</p>
+                                                {q.type === 'coding' ? (
+                                                    <pre className="p-4 bg-slate-950 text-slate-50 rounded-xl text-xs font-mono overflow-auto max-h-64 whitespace-pre-wrap border border-slate-800">
+                                                        {q.studentAnswerId || '// No code submitted'}
+                                                    </pre>
+                                                ) : (
+                                                    <div className={`p-4 rounded-xl border font-medium ${
+                                                        isCorrect ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-rose-50 border-rose-200 text-rose-900'
+                                                    }`}>
+                                                        {q.studentAnswerId || '(No answer)'}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Solution Display (if incorrect or review) */}
+                                            {(!isCorrect || isReview) && (
+                                                <div className="space-y-1 animate-in fade-in slide-in-from-top-2">
+                                                    <p className="text-xs font-black uppercase text-emerald-600 flex items-center gap-1">
+                                                        <CheckCircle2 className="h-3 w-3" /> Correct Answer / Reference
+                                                    </p>
+                                                    {q.type === 'coding' ? (
+                                                        <pre className="p-4 bg-emerald-50 text-emerald-900 rounded-xl text-xs font-mono overflow-auto max-h-64 whitespace-pre-wrap border border-emerald-200">
+                                                            {q.correct_answer || '// Solution not provided'}
+                                                        </pre>
+                                                    ) : (
+                                                        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 font-medium">
+                                                            {q.correct_answer || q.options.find(o => o.is_correct)?.text || '(Check Course Material)'}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {!isCorrect && !isReview && q.type !== 'coding' && (
                                         <div className="mt-4 p-4 rounded-xl bg-primary/5 border border-primary/10 flex items-start gap-3">
                                             <AlertCircle className="h-5 w-5 text-primary shrink-0" />
                                             <div className="space-y-1">
                                                 <p className="text-xs font-black text-primary uppercase tracking-widest">Correction Note</p>
                                                 <p className="text-xs text-slate-600 font-medium">
-                                                    The correct answer is <span className="font-bold text-emerald-600 underline">"{q.options.find(o => o.is_correct)?.text}"</span>. 
                                                     Review this topic in your courses to improve your concepts.
                                                 </p>
                                             </div>

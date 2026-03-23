@@ -31,3 +31,10 @@ dist-ssr
 .env.production.local
 .env.production
 .env.example
+
+# Secret & Workflow Files
+Backend/*.json
+!Backend/package*.json
+!Backend/tsconfig.json
+!Backend/manifest.json
+Backend/service.json

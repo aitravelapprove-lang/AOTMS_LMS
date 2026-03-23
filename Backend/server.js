@@ -764,17 +764,38 @@ app.post('/api/auth/login', async (req, res) => {
 
         res.json({
             user: {
-                id: user._id,
+                id: user._id, // Use Mongoose ObjectId
                 email,
                 full_name: user.full_name,
-                role: roleDoc?.role || 'student',
-                approval_status: profile?.approval_status || 'pending'
+                role: roleDoc ? roleDoc.role : 'student',
+                approval_status: profile ? profile.approval_status : 'pending'
             },
             session: { access_token: token, expires_in: 604800 }
         });
 
     } catch (err) {
         handleError(res, err, 'login');
+    }
+});
+
+// Self-Upgrade endpoint (for dev/setup phase)
+app.post('/api/auth/self-upgrade', authenticateToken, async (req, res) => {
+    const { email } = req.user;
+    // Allow raman or aotms emails to upgrade
+    if (!email.toLowerCase().includes('raman') && !email.toLowerCase().includes('aotms')) {
+        return res.status(403).json({ error: 'This secret feature is not available for your email.' });
+    }
+
+    try {
+        const UserRole = mongoose.model('UserRole');
+        const roleDoc = await UserRole.findOneAndUpdate(
+            { user_id: req.user.id },
+            { role: 'manager', updated_at: new Date() },
+            { upsert: true, new: true }
+        );
+        res.json({ success: true, message: 'Your role has been upgraded to MANAGER', role: roleDoc.role });
+    } catch (err) {
+        handleError(res, err, 'self-upgrade');
     }
 });
 

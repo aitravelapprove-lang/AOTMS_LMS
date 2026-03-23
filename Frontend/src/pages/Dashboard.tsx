@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardContent } from "@/components/dashboard/DashboardContent";
@@ -49,6 +50,21 @@ export default function Dashboard() {
     );
   }
 
+  const handleUpgrade = async () => {
+    try {
+      const { fetchWithAuth } = await import('@/lib/api');
+      const resp = await fetchWithAuth('/auth/self-upgrade', { method: 'POST' });
+      if (resp.success) {
+         window.location.reload(); 
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const isEligibleForUpgrade = user?.email?.toLowerCase().includes('raman') || user?.email?.toLowerCase().includes('aotms');
+  const needsUpgrade = userRole === 'student';
+
   return (
     <SidebarProvider className="h-[100dvh] w-full overflow-hidden mesh-bg font-sans">
       <DashboardSidebar />
@@ -57,6 +73,17 @@ export default function Dashboard() {
 
         <main className="flex-1 w-full overflow-y-auto overflow-x-hidden p-4 md:p-8 lg:p-10 custom-scrollbar">
           <div className="max-w-7xl mx-auto">
+            {isEligibleForUpgrade && needsUpgrade && (
+              <div className="mb-6 p-4 bg-primary/10 border border-primary/20 rounded-xl flex items-center justify-between animate-in slide-in-from-top duration-500">
+                <div className="space-y-1">
+                  <p className="text-sm font-bold text-primary">Owner Detected</p>
+                  <p className="text-xs text-muted-foreground">Click below to activate your Manager Console permissions.</p>
+                </div>
+                <Button onClick={handleUpgrade} size="sm" className="rounded-lg shadow-sm">
+                   Activate Manager Console
+                </Button>
+              </div>
+            )}
             <AnimatePresence mode="wait">
               <motion.div
                 initial={{ opacity: 0, y: 10 }}

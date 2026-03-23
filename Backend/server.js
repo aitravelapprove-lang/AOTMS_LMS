@@ -276,7 +276,7 @@ const requireRole = (allowedRoles) => async (req, res, next) => {
         }
         if (!allowedRoles.includes(role)) {
             console.warn(`[Auth] Access Denied for user ${req.user.id}. Role: ${role}. Required one of: ${allowedRoles}`);
-            return res.status(403).json({ error: 'Access denied' });
+            return res.status(403).json({ error: `Access denied. Your role is '${role}'. Required: ${allowedRoles.join(', ')}` });
         }
         next();
     } catch (err) {

@@ -81,8 +81,8 @@ GuestCredentialSchema.set('toJSON', { virtuals: true, versionKey: false, transfo
 
 module.exports = {
     User: mongoose.model('User', UserSchema),
-    Profile: mongoose.model('Profile', ProfileSchema),
-    UserRole: mongoose.model('UserRole', UserRoleSchema),
+    Profile: mongoose.model('Profile', ProfileSchema, 'profiles'),
+    UserRole: mongoose.model('UserRole', UserRoleSchema, 'user_roles'),
     OTP: mongoose.model('OTP', OTPSchema),
     VerifiedEmail: mongoose.model('VerifiedEmail', VerifiedEmailSchema),
     InstructorApplication: mongoose.model('InstructorApplication', InstructorApplicationSchema),

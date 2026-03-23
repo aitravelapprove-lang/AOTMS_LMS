@@ -200,7 +200,12 @@ const getZoomAccessToken = async () => {
 };
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    credentials: true
+}));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -243,15 +248,18 @@ const roleCache = new Map();
 const ROLE_CACHE_TTL = 30 * 1000;
 
 const getUserRole = async (userId) => {
-    if (roleCache.has(userId)) {
-        const { role, timestamp } = roleCache.get(userId);
+    if (!userId) return null;
+    const strId = userId.toString();
+    
+    if (roleCache.has(strId)) {
+        const { role, timestamp } = roleCache.get(strId);
         if (Date.now() - timestamp < ROLE_CACHE_TTL) return role;
     }
 
     try {
         const roleDoc = await UserRole.findOne({ user_id: userId });
         const role = roleDoc ? roleDoc.role : null;
-        if (role) roleCache.set(userId, { role, timestamp: Date.now() });
+        if (role) roleCache.set(strId, { role, timestamp: Date.now() });
         return role;
     } catch (error) {
         console.error(`[Auth] Failed to fetch role for ${userId}:`, error);
@@ -262,8 +270,14 @@ const getUserRole = async (userId) => {
 const requireRole = (allowedRoles) => async (req, res, next) => {
     try {
         const role = await getUserRole(req.user.id);
-        if (!role) return res.status(401).json({ error: 'User role not found' });
-        if (!allowedRoles.includes(role)) return res.status(403).json({ error: 'Access denied' });
+        if (!role) {
+            console.warn(`[Auth] No role found for user ID: ${req.user.id}`);
+            return res.status(401).json({ error: 'User role not found' });
+        }
+        if (!allowedRoles.includes(role)) {
+            console.warn(`[Auth] Access Denied for user ${req.user.id}. Role: ${role}. Required one of: ${allowedRoles}`);
+            return res.status(403).json({ error: 'Access denied' });
+        }
         next();
     } catch (err) {
         handleError(res, err, 'requireRole');

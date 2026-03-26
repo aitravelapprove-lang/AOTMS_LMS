@@ -2636,7 +2636,8 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
         if (req.query.limit) limit = parseInt(req.query.limit);
         if (req.query.offset) skip = parseInt(req.query.offset);
 
-        const data = await Model.find(query).sort(sort).limit(limit).skip(skip);
+        // Add allowDiskUse(true) to prevent MongoDB sorting memory limit errors
+        const data = await Model.find(query).allowDiskUse(true).sort(sort).limit(limit).skip(skip);
         res.json(data);
 
     } catch (err) {

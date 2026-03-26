@@ -21,10 +21,10 @@ SecurityEventSchema.set('toJSON', { virtuals: true, versionKey: false, transform
 
 const LeaderboardStatSchema = new Schema({
     user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
-    total_score: { type: Number, default: 0 },
+    total_score: { type: Number, default: 0, index: true },
     rank: { type: Number },
     badges: [String],
-    updated_at: { type: Date, default: Date.now }
+    updated_at: { type: Date, default: Date.now, index: true }
 });
 LeaderboardStatSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
 

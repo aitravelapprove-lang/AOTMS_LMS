@@ -75,7 +75,7 @@ const GuestCredentialSchema = new mongoose.Schema({
     is_active: { type: Boolean, default: true },
     last_login_at: { type: Date },
     created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    created_at: { type: Date, default: Date.now }
+    created_at: { type: Date, default: Date.now, index: true }
 });
 GuestCredentialSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
 

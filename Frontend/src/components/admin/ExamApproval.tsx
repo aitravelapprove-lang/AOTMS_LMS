@@ -80,7 +80,7 @@ export function ExamApproval() {
         id, 
         approval_status, 
         course_id: approval_status === 'approved' ? (selectedCourseId || selectedExam?.course_id) : undefined,
-        status: approval_status === 'approved' ? 'active' : undefined 
+        status: approval_status === 'approved' ? 'active' : 'cancelled' 
       });
       toast({
         title: approval_status === 'approved' ? 'Exam Published' : 'Exam Rejected',
@@ -117,7 +117,7 @@ export function ExamApproval() {
            </div>
            
            <div className="flex bg-slate-100 rounded-xl p-1">
-             {(['all', 'pending', 'approved'] as const).map((f) => (
+             {(['all', 'pending', 'approved', 'rejected'] as const).map((f) => (
                <Button 
                 key={f}
                 variant="ghost" 
@@ -215,6 +215,10 @@ export function ExamApproval() {
 
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
         <DialogContent className="sm:max-w-4xl p-0 overflow-hidden border-none shadow-2xl rounded-[3rem] bg-white">
+           <DialogHeader className="sr-only">
+             <DialogTitle>Audit Assessment Protocol</DialogTitle>
+             <DialogDescription>Review details before authorizing or denying.</DialogDescription>
+           </DialogHeader>
            {selectedExam && (
              <div className="flex flex-col h-[700px]">
                 <div className="h-40 relative bg-slate-900">

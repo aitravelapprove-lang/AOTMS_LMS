@@ -1,4 +1,4 @@
-export const API_URL = import.meta.env.VITE_API_URL || 'https://aotms-lms.onrender.com/api';
+export const API_URL = import.meta.env.VITE_API_URL || 'https://aotms-lms-new.onrender.com/api';
 
 export const fetchWithAuth = async <T = any>(url: string, options: RequestInit = {}): Promise<T> => {
     let token = localStorage.getItem('access_token');

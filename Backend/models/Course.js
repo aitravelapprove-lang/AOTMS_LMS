@@ -72,7 +72,9 @@ const VideoSchema = new Schema({
     module_id: { type: Schema.Types.ObjectId, ref: 'Module' },
     title: { type: String, required: true },
     video_url: { type: String, required: true }, // S3 or YouTube
+    thumbnail_url: { type: String },
     duration: { type: Number }, // seconds
+    duration_minutes: { type: Number },
     order_index: { type: Number, default: 0 },
     is_published: { type: Boolean, default: true },
     created_at: { type: Date, default: Date.now }

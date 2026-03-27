@@ -933,7 +933,7 @@ export function useInstructorAllStudents() {
 
       allEnrollments.forEach((enrollment: {
         id: string;
-        user_id: string;
+        user_id: any;
         course_id: string;
         user_name?: string;
         user_email?: string;
@@ -941,10 +941,10 @@ export function useInstructorAllStudents() {
         last_accessed_at?: string;
         enrolled_at?: string;
       }) => {
-        const userId = enrollment.user_id;
+        const userId = enrollment.user_id?.toString() || enrollment.user_id;
         
-        // Skip if the student is the instructor themselves (if that's even possible/desired to hide)
-        if (userId === user.id) return;
+        // Skip if the student is the instructor themselves
+        if (userId === user.id?.toString()) return;
 
         const course = courses.find((c: Course) => c.id === enrollment.course_id);
         const courseTitle = course?.title || 'Unknown Course';
@@ -952,7 +952,7 @@ export function useInstructorAllStudents() {
         if (studentMap.has(userId)) {
           const existing = studentMap.get(userId)!;
           existing.enrolledCourses += 1;
-
+          
           const progress = enrollment.progress_percentage || 0;
           if (progress === 100) {
             existing.completedCourses += 1;
@@ -964,9 +964,7 @@ export function useInstructorAllStudents() {
             (existing.overallProgress + progress) / existing.enrolledCourses
           );
 
-          // existing.totalWatchTimeMinutes += enrollment.time_spent_minutes || 0; // Assuming this field exists or we calculate it
-
-          const lastWatched = new Date(enrollment.last_accessed_at || enrollment.enrolled_at); // Use last_accessed_at if available
+          const lastWatched = new Date(enrollment.last_accessed_at || enrollment.enrolled_at);
           const existingLastWatched = new Date(existing.lastActiveAt);
           if (lastWatched > existingLastWatched) {
             existing.lastActiveAt = lastWatched.toISOString();
@@ -989,13 +987,13 @@ export function useInstructorAllStudents() {
           studentMap.set(userId, {
             id: enrollment.id,
             userId: userId,
-            name: enrollment.user_name || 'Student', // Backend might need to join with profiles or we fetch profiles separately
+            name: enrollment.user_name || 'Student', 
             email: enrollment.user_email || '',
             avatarUrl: undefined,
             enrolledCourses: 1,
             completedCourses: progress === 100 ? 1 : 0,
             inProgressCourses: progress > 0 && progress < 100 ? 1 : 0,
-            totalWatchTimeMinutes: 0, // enrollment.time_spent_minutes || 0,
+            totalWatchTimeMinutes: 0, 
             lastActiveAt: enrollment.last_accessed_at || enrollment.enrolled_at || new Date().toISOString(),
             overallProgress: progress,
             status,
@@ -1011,31 +1009,51 @@ export function useInstructorAllStudents() {
         }
       });
       
-      // If names are missing (which they likely are from the enrollment table directly), 
-      // we should fetch profiles for these studentIds.
+      // Fetch profiles for enriched info (actual names/emails from Profiles table)
       const studentIds = Array.from(studentMap.keys());
       if (studentIds.length > 0) {
-          // Changed user_id to id because profile docs are keyed by user UID
-          const profiles = await fetchWithAuth(`/data/profiles?id=in.(${studentIds.join(',')})`);
+          const profiles = await fetchWithAuth(`/data/profiles?user_id=in.(${studentIds.join(',')})`);
           profiles.forEach((p: {
-              id: string; // The primary ID
+              id: string; // The primary ID (mapped to user_id by transform)
+              user_id: string; // fallback
               full_name?: string;
               email?: string;
               avatar_url?: string;
+              mobile_number?: string;
+              phone?: string;
           }) => {
-              const student = studentMap.get(p.id);
+              const student = studentMap.get(p.id?.toString() || p.user_id?.toString());
 
               if (student) {
                   student.name = p.full_name || student.name;
                   student.email = p.email || student.email; 
                   student.avatarUrl = p.avatar_url;
-                  student.mobileNumber = p.mobile_number || (p as any).phone;
+                  student.mobileNumber = p.mobile_number || p.phone || student.mobileNumber;
               }
-
           });
       }
 
-      const students = Array.from(studentMap.values()).map(student => {
+      // Convert map to array and deduplicate by email (handle different IDs with same email)
+      const uniqueStudentsMap = new Map<string, InstructorStudent>();
+      
+      Array.from(studentMap.values()).forEach(student => {
+        const studentEmail = student.email?.toLowerCase().trim();
+        
+        // Only deduplicate by email IF we have a valid email. 
+        // Otherwise, use the unique userId to avoid merging different students with empty emails.
+        const dedupeKey = (studentEmail && studentEmail.length > 0) ? studentEmail : student.userId;
+        
+        if (uniqueStudentsMap.has(dedupeKey)) {
+           const existing = uniqueStudentsMap.get(dedupeKey)!;
+           if (student.enrolledCourses > existing.enrolledCourses) {
+               uniqueStudentsMap.set(dedupeKey, student);
+           }
+        } else {
+           uniqueStudentsMap.set(dedupeKey, student);
+        }
+      });
+
+      const students = Array.from(uniqueStudentsMap.values()).map(student => {
         const daysSinceActive = Math.floor(
           (Date.now() - new Date(student.lastActiveAt).getTime()) / (1000 * 60 * 60 * 24)
         );

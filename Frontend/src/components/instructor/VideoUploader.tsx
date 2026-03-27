@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import { useCourseModules, useModuleVideos, useS3Upload, CourseModule, S3CourseVideo, useCreateCourseVideo, useDeleteCourseVideo, useCreateCourseModule } from "@/hooks/useCourseBuilder";
 import { fetchWithAuth } from "@/lib/api";
-import { Trash2, Lock, PlayCircle, MoreVertical, CheckCircle, Loader2, Plus, X, Video, Layers } from "lucide-react";
+import { Trash2, Lock, PlayCircle, MoreVertical, CheckCircle, Loader2, Plus, X, Video, Layers, Image as ImageIcon, Camera } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { motion, AnimatePresence } from "framer-motion";
@@ -48,6 +48,8 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false }:
   const [playingVideo, setPlayingVideo] = useState<S3CourseVideo | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreviewUrl, setThumbnailPreviewUrl] = useState<string | null>(null);
   
   // Inline Module Creation State
   const [isCreatingModule, setIsCreatingModule] = useState(false);
@@ -94,6 +96,17 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false }:
     }
   };
 
+  const handleThumbnailSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (thumbnailPreviewUrl) {
+        URL.revokeObjectURL(thumbnailPreviewUrl);
+      }
+      setThumbnailFile(file);
+      setThumbnailPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
   const clearFile = () => {
     if (videoPreviewUrl) {
       URL.revokeObjectURL(videoPreviewUrl);
@@ -103,6 +116,14 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false }:
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+  };
+
+  const clearThumbnail = () => {
+    if (thumbnailPreviewUrl) {
+      URL.revokeObjectURL(thumbnailPreviewUrl);
+    }
+    setThumbnailFile(null);
+    setThumbnailPreviewUrl(null);
   };
 
   const handleUpload = async () => {
@@ -142,7 +163,7 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false }:
          console.log('Step 0 complete: Created module', targetModuleId);
       }
 
-      console.log('Step 1: Uploading to S3...');
+      console.log('Step 1: Uploading video to S3...');
       const videoUrl = await uploadS3.mutateAsync({
         file: selectedFile,
         customTitle: newVideo.title,
@@ -150,7 +171,18 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false }:
         onProgress: setUploadProgress,
         courseId
       });
-      console.log('Step 1 complete: S3 URL:', videoUrl);
+      console.log('Step 1 complete: Video S3 URL:', videoUrl);
+
+      let thumbnailUrl = "";
+      if (thumbnailFile) {
+        console.log('Step 1.5: Uploading thumbnail to S3...');
+        thumbnailUrl = await uploadS3.mutateAsync({
+          file: thumbnailFile,
+          folder: 'VIDEO THUMBNAILS',
+          courseId
+        });
+        console.log('Step 1.5 complete: Thumbnail S3 URL:', thumbnailUrl);
+      }
 
       console.log('Step 2: Saving to database...');
       await createVideo.mutateAsync({
@@ -159,6 +191,7 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false }:
         title: newVideo.title,
         video_type: 's3',
         video_url: videoUrl,
+        thumbnail_url: thumbnailUrl,
         order_index: videos.length,
       });
       console.log('Step 2 complete: Database saved');
@@ -183,6 +216,7 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false }:
       }
 
       clearFile();
+      clearThumbnail();
       toast({ 
         title: "Upload Successful", 
         description: "Your video has been processed and added to the course." 
@@ -380,6 +414,46 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false }:
                 )}
               </div>
             </div>
+            
+            {/* Thumbnail Upload */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold text-slate-700 ml-1">Thumbnail Image</Label>
+              <div 
+                className={`border-2 border-dashed rounded-2xl p-4 text-center transition-all cursor-pointer group min-h-[140px] flex flex-col items-center justify-center
+                  ${thumbnailFile ? 'border-primary/30 bg-primary/5' : 'border-slate-200 bg-slate-50/50 hover:border-primary/40 hover:bg-slate-50'}`}
+                onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'image/*';
+                  input.onchange = (e) => handleThumbnailSelect(e as any);
+                  input.click();
+                }}
+              >
+                {thumbnailPreviewUrl ? (
+                  <div className="relative w-full aspect-video rounded-xl overflow-hidden shadow-sm group">
+                    <img src={thumbnailPreviewUrl} className="h-full w-full object-cover" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                       <Camera className="h-6 w-6 text-white" />
+                    </div>
+                    <Button 
+                        variant="destructive" 
+                        size="icon" 
+                        className="absolute top-2 right-2 h-7 w-7 rounded-full scale-0 group-hover:scale-100 transition-transform" 
+                        onClick={(e) => { e.stopPropagation(); clearThumbnail(); }}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="h-10 w-10 bg-white rounded-full shadow-sm flex items-center justify-center text-slate-400 group-hover:text-primary transition-all">
+                       <ImageIcon className="h-5 w-5" />
+                    </div>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-tighter group-hover:text-primary transition-colors">Select Thumbnail</p>
+                  </div>
+                )}
+              </div>
+            </div>
 
             {uploading && (
               <div className="space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
@@ -454,7 +528,8 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false }:
                         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity" />
                         {video.video_url ? (
                           <video
-                            src={video.video_url}
+                            src={video.video_url.startsWith('http') ? video.video_url : (video.video_url.includes('s3') ? video.video_url : `/s3/public/${video.video_url}`)}
+                            poster={video.thumbnail_url ? (video.thumbnail_url.startsWith('http') ? video.thumbnail_url : `/s3/public/${video.thumbnail_url}`) : undefined}
                             className="h-full w-full object-cover translate-z-0 transition-transform duration-1000 group-hover:scale-110"
                             preload="metadata"
                             onMouseEnter={(e) => (e.target as HTMLVideoElement).play()}

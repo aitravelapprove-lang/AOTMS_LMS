@@ -15,7 +15,6 @@ import { PerformanceCharts } from "@/components/instructor/dashboard/Performance
 import { SmartAlerts } from "@/components/instructor/dashboard/SmartAlerts";
 import { InstructorCourses } from "@/components/instructor/courses/InstructorCourses";
 import { InstructorStudentDashboard } from "@/components/instructor/dashboard/InstructorStudentDashboard";
-import { DoubtManager } from "@/components/instructor/dashboard/DoubtManager";
 import { ChatInterface } from "@/components/chat/ChatInterface";
 import { ResourcesDashboard } from "@/components/instructor/dashboard/ResourcesDashboard";
 import PerformanceDashboard from "@/components/instructor/dashboard/PerformanceDashboard";
@@ -46,8 +45,8 @@ import {
 
 interface DashboardStats {
   totalStudents: number;
-  upcomingClasses: number;
-  pendingAssignments: number;
+  upcomingClasses?: number;
+  pendingAssignments?: number;
   totalEarnings?: number;
   avgCompletion?: number;
 }
@@ -130,7 +129,7 @@ export default function InstructorDashboard() {
 
   useEffect(() => {
     if (socket) {
-      const handleNotification = (notif: any) => {
+      const handleNotification = (notif: { title?: string; message: string }) => {
         toast({
           title: notif.title || "New Notification",
           description: notif.message,
@@ -177,7 +176,6 @@ export default function InstructorDashboard() {
   const isMyCourses = path === "/instructor/my-courses";
   const isCourses = path.startsWith("/instructor/courses");
   const isStudents = path === "/instructor/students";
-  const isDoubts = path === "/instructor/doubts";
   const isResources = path === "/instructor/resources";
   const isPerformance = path === "/instructor/performance";
   const isVideos = path === "/instructor/videos";
@@ -312,15 +310,6 @@ export default function InstructorDashboard() {
                   animate={{ opacity: 1 }}
                 >
                   <InstructorStudentDashboard />
-                </motion.div>
-              )}
-              {isDoubts && (
-                <motion.div
-                  key="doubts"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                >
-                  <DoubtManager />
                 </motion.div>
               )}
               {isResources && (

@@ -30,6 +30,7 @@ import {
 import { fetchWithAuth } from '@/lib/api';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
 interface InstructorCoursesProps {
     limit?: number;
@@ -111,14 +112,17 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
         e.stopPropagation();
         setAssigning(courseId);
         try {
-            await fetchWithAuth(`/data/courses/${courseId}`, {
-                method: 'PUT',
-                body: JSON.stringify({ instructor_id: user?.id })
+            await fetchWithAuth(`/instructor/choose-course`, {
+                method: 'POST',
+                body: JSON.stringify({ courseId })
             });
-            toast({ title: 'Success', description: 'Course assigned to your profile.' });
+            toast({ 
+                title: 'Request Sent', 
+                description: 'Your enrollment request has been submitted for admin approval.' 
+            });
             refetch();
         } catch (err) {
-            toast({ title: 'Error', description: 'Failed to assign course.', variant: 'destructive' });
+            toast({ title: 'Error', description: 'Failed to request enrollment.', variant: 'destructive' });
         } finally {
             setAssigning(null);
         }
@@ -177,6 +181,11 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
                     <AnimatePresence>
                         {courses?.map((course: Course, index: number) => {
                             const isInstructorOwner = course.instructor_id === user?.id;
+                            const isInstructorApproved = isInstructorOwner && (
+                                course.status?.toLowerCase() === 'approved' || 
+                                course.status?.toLowerCase() === 'published' || 
+                                course.status?.toLowerCase() === 'active'
+                            );
                             
                             return (
                                 <motion.div
@@ -186,7 +195,13 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
                                     exit={{ opacity: 0, scale: 0.95 }}
                                     transition={{ delay: index * 0.1 }}
                                 >
-                                    <Card className="overflow-hidden h-full flex flex-col hover:border-primary/50 transition-colors group cursor-pointer" onClick={() => isInstructorOwner && setViewingCourse(course)}>
+                                    <Card 
+                                        className={cn(
+                                            "overflow-hidden h-full flex flex-col transition-all group",
+                                            isInstructorApproved ? "hover:border-primary/50 cursor-pointer shadow-sm hover:shadow-md" : "opacity-90 grayscale-[0.3]"
+                                        )} 
+                                        onClick={() => isInstructorApproved && setViewingCourse(course)}
+                                    >
                                         <div className="relative aspect-video bg-muted border-b">
                                             {course.thumbnail_url || course.image ? (
                                                 <img
@@ -288,17 +303,22 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
                                                     >
                                                         <Eye className="h-4 w-4" />
                                                     </Button>
-                                                    {isInstructorOwner ? (
+                                                    {isInstructorApproved ? (
                                                         <Button variant="ghost" size="sm" className="group-hover:translate-x-1 transition-transform">
                                                             Manage <ArrowRight className="ml-1 h-4 w-4" />
                                                         </Button>
+                                                    ) : isInstructorOwner && course.status?.toLowerCase() === 'pending' ? (
+                                                        <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200 gap-1.5 px-3 py-1 animate-pulse">
+                                                            <Clock className="h-3 w-3" />
+                                                            <span className="text-[10px] uppercase font-bold tracking-wider">Awaiting Approval</span>
+                                                        </Badge>
                                                     ) : (
                                                         <Button 
                                                             variant="outline" 
                                                             size="sm" 
                                                             className="gap-2 border-primary/20 hover:bg-primary/5 text-primary"
                                                             onClick={(e) => handleAssignToMe(course.id || course._id, e)}
-                                                            disabled={assigning === (course.id || course._id)}
+                                                            disabled={assigning === (course.id || course._id) || isInstructorOwner}
                                                         >
                                                             {assigning === (course.id || course._id) ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                                                             Enroll to Teach
@@ -407,7 +427,7 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
                                     setShowProfile(false);
                                     handleAssignToMe(selectedProfile.id || selectedProfile._id, e);
                                 }}
-                                disabled={assigning === (selectedProfile?.id || selectedProfile?._id)}
+                                disabled={assigning === (selectedProfile?.id || selectedProfile?._id) || selectedProfile.instructor_id === user?.id}
                              >
                                 Enroll to Teach
                              </Button>

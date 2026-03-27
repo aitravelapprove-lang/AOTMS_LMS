@@ -61,35 +61,6 @@ export interface LeaderboardEntry {
   verified_at?: string | null;
 }
 
-export interface GuestCredential {
-  id: string;
-  username: string;
-  password_hash: string;
-  display_name: string;
-  email?: string;
-  access_level: string;
-  allowed_courses: string[] | null;
-  expires_at: string;
-  max_sessions: number | null;
-  is_active: boolean | null;
-  last_login_at: string | null;
-  created_by: string;
-  created_at?: string;
-}
-
-export interface MockTestConfig {
-  id: string;
-  title: string;
-  description: string | null;
-  course_id: string | null;
-  topics: string[];
-  question_count: number;
-  duration_minutes: number;
-  difficulty_mix: Record<string, number>;
-  is_active: boolean | null;
-  created_by: string;
-}
-
 export interface ExamRule {
   id: string;
   exam_id: string | null;
@@ -198,6 +169,8 @@ export function useExams() {
   return useQuery<Exam[]>({
     queryKey: ['exams'],
     queryFn: () => fetchWithAuth('/data/exams?sort=scheduled_date&order=asc'),
+    refetchInterval: 10000, // 10s Background Refresh
+    staleTime: 5000, 
   });
 }
 
@@ -223,13 +196,26 @@ export function useUpdateExam() {
   return useMutation({
     mutationFn: ({ id, ...updates }: Partial<Exam> & { id: string }) =>
       fetchWithAuth(`/data/exams/${id}`, { method: 'PUT', body: JSON.stringify(updates) }),
+    onMutate: async ({ id, ...updates }) => {
+      await queryClient.cancelQueries({ queryKey: ['exams'] });
+      const previousExams = queryClient.getQueryData<Exam[]>(['exams']);
+      queryClient.setQueryData<Exam[]>(['exams'], (old) => 
+        old?.map(exam => exam.id === id ? { ...exam, ...updates } : exam)
+      );
+      return { previousExams };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['exams'] });
-      toast({ title: 'Exam updated successfully' });
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _variables, context) => {
+      if (context?.previousExams) {
+        queryClient.setQueryData(['exams'], context.previousExams);
+      }
       toast({ title: 'Error updating exam', description: error.message, variant: 'destructive' });
     },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['exams'] });
+    }
   });
 }
 
@@ -238,13 +224,26 @@ export function useDeleteExam() {
   const { toast } = useToast();
   return useMutation({
     mutationFn: (id: string) => fetchWithAuth(`/data/exams/${id}`, { method: 'DELETE' }),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['exams'] });
+      const previousExams = queryClient.getQueryData<Exam[]>(['exams']);
+      queryClient.setQueryData<Exam[]>(['exams'], (old) => 
+        old?.filter(exam => exam.id !== id)
+      );
+      return { previousExams };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['exams'] });
-      toast({ title: 'Exam deleted successfully' });
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _variables, context) => {
+      if (context?.previousExams) {
+        queryClient.setQueryData(['exams'], context.previousExams);
+      }
       toast({ title: 'Error deleting exam', description: error.message, variant: 'destructive' });
     },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['exams'] });
+    }
   });
 }
 
@@ -256,6 +255,8 @@ export function useQuestions() {
   return useQuery<Question[]>({
     queryKey: ['questions'],
     queryFn: () => fetchWithAuth('/data/question_bank?sort=created_at&order=desc'),
+    refetchInterval: 15000, // 15s Background Refresh
+    staleTime: 5000,
   });
 }
 
@@ -325,65 +326,7 @@ export function useDeleteQuestion() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 3. MOCK TEST CONFIGURATION — Assign mock papers to students
-// ═══════════════════════════════════════════════════════════════════════════
-
-export function useMockTestConfigs() {
-  return useQuery<MockTestConfig[]>({
-    queryKey: ['mock-test-configs'],
-    queryFn: () => fetchWithAuth('/data/mock_test_configs?sort=created_at&order=desc'),
-  });
-}
-
-export function useCreateMockTestConfig() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  return useMutation({
-    mutationFn: (config: Omit<MockTestConfig, 'id'>) =>
-      fetchWithAuth('/data/mock_test_configs', { method: 'POST', body: JSON.stringify(config) }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['mock-test-configs'] });
-      toast({ title: 'Mock test configured successfully' });
-    },
-    onError: (error: Error) => {
-      toast({ title: 'Error configuring mock test', description: error.message, variant: 'destructive' });
-    },
-  });
-}
-
-export function useUpdateMockTestConfig() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  return useMutation({
-    mutationFn: ({ id, ...updates }: Partial<MockTestConfig> & { id: string }) =>
-      fetchWithAuth(`/data/mock_test_configs/${id}`, { method: 'PUT', body: JSON.stringify(updates) }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['mock-test-configs'] });
-      toast({ title: 'Mock test updated' });
-    },
-    onError: (error: Error) => {
-      toast({ title: 'Error updating mock test', description: error.message, variant: 'destructive' });
-    },
-  });
-}
-
-export function useDeleteMockTestConfig() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  return useMutation({
-    mutationFn: (id: string) => fetchWithAuth(`/data/mock_test_configs/${id}`, { method: 'DELETE' }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['mock-test-configs'] });
-      toast({ title: 'Mock test config deleted' });
-    },
-    onError: (error: Error) => {
-      toast({ title: 'Error deleting config', description: error.message, variant: 'destructive' });
-    },
-  });
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// 4. LEADERBOARD — Monitor and validate leaderboard scores
+// 3. LEADERBOARD — Monitor and validate leaderboard scores
 // ═══════════════════════════════════════════════════════════════════════════
 
 export function useLeaderboard() {
@@ -432,65 +375,7 @@ export function useResetLeaderboardEntry() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 5. GUEST CREDENTIALS — Create guest login credentials
-// ═══════════════════════════════════════════════════════════════════════════
-
-export function useGuestCredentials() {
-  return useQuery<GuestCredential[]>({
-    queryKey: ['guest-credentials'],
-    queryFn: () => fetchWithAuth('/data/guest_credentials?sort=created_at&order=desc'),
-  });
-}
-
-export function useCreateGuestCredential() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  return useMutation({
-    mutationFn: (credential: Omit<GuestCredential, 'id' | 'last_login_at' | 'created_at'>) =>
-      fetchWithAuth('/data/guest_credentials', { method: 'POST', body: JSON.stringify(credential) }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['guest-credentials'] });
-      toast({ title: 'Guest credential created successfully' });
-    },
-    onError: (error: Error) => {
-      toast({ title: 'Error creating credential', description: error.message, variant: 'destructive' });
-    },
-  });
-}
-
-export function useUpdateGuestCredential() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  return useMutation({
-    mutationFn: ({ id, ...updates }: Partial<GuestCredential> & { id: string }) =>
-      fetchWithAuth(`/data/guest_credentials/${id}`, { method: 'PUT', body: JSON.stringify(updates) }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['guest-credentials'] });
-      toast({ title: 'Guest credential updated' });
-    },
-    onError: (error: Error) => {
-      toast({ title: 'Error updating credential', description: error.message, variant: 'destructive' });
-    },
-  });
-}
-
-export function useDeleteGuestCredential() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  return useMutation({
-    mutationFn: (id: string) => fetchWithAuth(`/data/guest_credentials/${id}`, { method: 'DELETE' }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['guest-credentials'] });
-      toast({ title: 'Guest credential deleted' });
-    },
-    onError: (error: Error) => {
-      toast({ title: 'Error deleting credential', description: error.message, variant: 'destructive' });
-    },
-  });
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// 6. EXAM RULES — Configure duration, negative marking, attempts
+// 4. EXAM RULES — Configure duration, negative marking, attempts
 // ═══════════════════════════════════════════════════════════════════════════
 
 export function useExamRules() {
@@ -657,38 +542,4 @@ export function useCreateLeaderboardAudit() {
     },
   });
 }
-// ═══════════════════════════════════════════════════════════════════════════
-// 10. STUDENT ACCESS MANAGEMENT — Grant lookup and access via UUID
-// ═══════════════════════════════════════════════════════════════════════════
 
-export function useLookupStudent(studentId: string | null) {
-  return useQuery({
-    queryKey: ['student-lookup', studentId],
-    queryFn: () => fetchWithAuth(`/manager/lookup-student/${studentId}`),
-    enabled: !!studentId,
-    retry: false,
-  });
-}
-
-export function useGrantExamAccess() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  return useMutation({
-    mutationFn: (data: { studentId: string; examId?: string; mockPaperId?: string }) =>
-      fetchWithAuth('/manager/grant-exam-access', { method: 'POST', body: JSON.stringify(data) }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['accessible-exams'] });
-      toast({ title: 'Access granted successfully' });
-    },
-    onError: (error: Error) => {
-      toast({ title: 'Error granting access', description: error.message, variant: 'destructive' });
-    },
-  });
-}
-
-export function useAccessibleExams() {
-  return useQuery({
-    queryKey: ['accessible-exams'],
-    queryFn: () => fetchWithAuth('/student/accessible-exams'),
-  });
-}

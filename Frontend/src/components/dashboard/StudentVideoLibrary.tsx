@@ -274,10 +274,18 @@ export default function StudentVideoLibrary() {
                                 >
                                     <Card className="group h-full flex flex-col border-none shadow-sm hover:shadow-xl transition-all duration-300 rounded-2xl overflow-hidden bg-white cursor-pointer" onClick={() => setPlayingVideo(video)}>
                                         <div className="aspect-video bg-slate-900 relative overflow-hidden group-hover:opacity-95 transition-opacity">
-                                            {/* Thumbnail Placeholder */}
-                                            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
-                                                <Video className={`h-12 w-12 opacity-50 group-hover:scale-110 transition-transform duration-500 ${isCompleted ? 'text-green-500' : 'text-slate-700'}`} />
-                                            </div>
+                                            {/* Thumbnail */}
+                                            {video.thumbnail_url ? (
+                                                <img 
+                                                    src={video.thumbnail_url.startsWith('http') ? video.thumbnail_url : `/s3/public/${video.thumbnail_url}`} 
+                                                    alt={video.title}
+                                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                />
+                                            ) : (
+                                                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
+                                                    <Video className={`h-12 w-12 opacity-50 group-hover:scale-110 transition-transform duration-500 ${isCompleted ? 'text-green-500' : 'text-slate-700'}`} />
+                                                </div>
+                                            )}
                                             
                                             {/* Play Button Overlay */}
                                             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/30">

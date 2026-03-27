@@ -7,15 +7,11 @@ import { ManagerSidebar } from "@/components/manager/ManagerSidebar";
 import { ManagerHeader } from "@/components/manager/ManagerHeader";
 import { ExamScheduler } from "@/components/manager/ExamScheduler";
 import { QuestionBankManager } from "@/components/manager/QuestionBankManager";
-import { MockTestManager } from "@/components/manager/MockTestManager";
 import { LeaderboardManager } from "@/components/manager/LeaderboardManager";
-import { GuestCredentialsManager } from "@/components/manager/GuestCredentialsManager";
 import { ExamMonitoring } from "@/components/manager/ExamMonitoring";
-import { AccessControlManager } from "@/components/manager/AccessControlManager";
 import { CourseMonitoring } from "@/components/manager/CourseMonitoring";
 import { ExamRulesManager } from "@/components/manager/ExamRulesManager";
 import { ManagerCourses } from "@/components/manager/ManagerCourses";
-import { QuestionBankStudentAccess } from "@/components/manager/QuestionBankStudentAccess";
 import { EnrollmentsList } from "@/components/admin/EnrollmentsList";
 import { CourseAssignment } from "@/components/admin/CourseAssignment";
 import { InstructorManagement } from "@/components/manager/InstructorManagement";
@@ -53,8 +49,6 @@ import {
   useExams,
   useQuestions,
   useLeaderboard,
-  useGuestCredentials,
-  useMockTestConfigs,
   useExamRules,
   useExamResults,
   type ExamRule,
@@ -80,9 +74,7 @@ export default function ManagerDashboard() {
   const { data: exams = [] } = useExams();
   const { data: questions = [] } = useQuestions();
   const { data: leaderboard = [] } = useLeaderboard();
-  const { data: guests = [] } = useGuestCredentials();
 
-  const { data: mockTests = [] } = useMockTestConfigs();
   const { data: examRules = [] } = useExamRules();
   const { data: examResults = [] } = useExamResults();
 
@@ -164,7 +156,7 @@ export default function ManagerDashboard() {
       </div>
 
       {/* Standard Stats Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {[
           {
             label: "Exams Scheduled",
@@ -186,13 +178,6 @@ export default function ManagerDashboard() {
             color: "text-amber-600",
             icon: Trophy,
             bg: "bg-amber-50",
-          },
-          {
-            label: "Guest Access",
-            value: guests.length,
-            color: "text-emerald-600",
-            icon: UserPlus,
-            bg: "bg-emerald-50",
           },
         ].map((stat, i) => (
           <Card
@@ -246,32 +231,11 @@ export default function ManagerDashboard() {
                   color: "text-purple-500",
                 },
                 {
-                  id: "mock-tests",
-                  label: "Mock Tests",
-                  icon: FileText,
-                  desc: "Practice test configs",
-                  color: "text-orange-500",
-                },
-                {
                   id: "monitoring",
                   label: "Live Monitoring",
                   icon: MonitorPlay,
                   desc: "Watch active assessments",
                   color: "text-rose-500",
-                },
-                {
-                  id: "student-access",
-                  label: "Student Access",
-                  icon: KeyRound,
-                  desc: "Grant question bank access",
-                  color: "text-teal-500",
-                },
-                {
-                  id: "guests",
-                  label: "Guest Access",
-                  icon: UserPlus,
-                  desc: "Temporary credentials",
-                  color: "text-emerald-500",
                 },
                 {
                   id: "video-library",
@@ -284,31 +248,16 @@ export default function ManagerDashboard() {
                 <button
                   key={item.id}
                   onClick={() => setActiveSection(item.id)}
-                  className={cn(
-                    "group flex flex-col p-4 rounded-xl border bg-card hover:border-primary/50 hover:bg-muted/50 transition-all text-left",
-                    item.id === "student-access" &&
-                      "border-teal-200 bg-teal-50/50 hover:border-teal-400 hover:bg-teal-50",
-                  )}
+                  className="group flex flex-col p-4 rounded-xl border bg-card hover:border-primary/50 hover:bg-muted/50 transition-all text-left"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <div
-                      className={cn(
-                        "h-9 w-9 rounded-lg flex items-center justify-center bg-muted transition-colors group-hover:bg-primary/10",
-                        item.id === "student-access" &&
-                          "bg-teal-100 group-hover:bg-teal-200",
-                      )}
-                    >
+                    <div className="h-9 w-9 rounded-lg flex items-center justify-center bg-muted transition-colors group-hover:bg-primary/10">
                       <item.icon className={cn("h-4 w-4", item.color)} />
                     </div>
                     <ChevronRight className="h-4 w-4 text-muted-foreground/0 group-hover:text-muted-foreground transition-all" />
                   </div>
                   <p className="font-semibold text-sm">{item.label}</p>
                   <p className="text-xs text-muted-foreground">{item.desc}</p>
-                  {item.id === "student-access" && (
-                    <span className="mt-2 inline-flex items-center text-[10px] font-bold text-teal-600 uppercase tracking-wide">
-                      ✦ Grant Access
-                    </span>
-                  )}
                 </button>
               ))}
             </div>
@@ -367,9 +316,9 @@ export default function ManagerDashboard() {
                 variant="secondary"
                 size="sm"
                 className="w-full text-xs h-9 rounded-lg font-bold"
-                onClick={() => setActiveSection("access-control")}
+                onClick={() => setActiveSection("overview")}
               >
-                Manage Permissions
+                System Verified
               </Button>
             </CardContent>
             <div className="absolute top-0 right-0 p-4 opacity-10">
@@ -391,14 +340,8 @@ export default function ManagerDashboard() {
         return <QuestionBankManager onSectionChange={setActiveSection} initialTab="bank" />;
       case "approvals":
         return <QuestionBankManager onSectionChange={setActiveSection} initialTab="approvals" />;
-      case "mock-tests":
-        return <MockTestManager />;
       case "leaderboard":
         return <LeaderboardManager />;
-      case "guests":
-        return <GuestCredentialsManager />;
-      case "access-control":
-        return <AccessControlManager />;
       case "monitoring":
         return <ExamMonitoring />;
       case "course-monitoring":
@@ -436,8 +379,6 @@ export default function ManagerDashboard() {
         return <CourseAssignment />;
       case "instructors":
         return <InstructorManagement />;
-      case "student-access":
-        return <QuestionBankStudentAccess />;
       case "video-library":
         return <ManagerVideoLibrary />;
       default:

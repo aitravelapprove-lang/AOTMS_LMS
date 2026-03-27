@@ -48,17 +48,20 @@ export function GrantStudentAccess({ profiles = [] }: GrantStudentAccessProps) {
   const { data: courses = [], isLoading: coursesLoading } = useQuery({
     queryKey: ['approved-courses'],
     queryFn: async () => {
-      const data = await fetchWithAuth('/data/courses?status=eq.published&select=id,title,status');
+      // Fetch published, approved, or active courses for enrollment
+      const data = await fetchWithAuth('/data/courses?status=in.(published,approved,active)&select=id,title,status');
       return data as Course[];
     }
   });
 
-  // Filter students based on search query
-  const filteredStudents = profiles.filter(profile => 
-      (profile.role === 'student') && 
-      (profile.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-       profile.email?.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  // Filter profiles to show only students and instructors
+  const filteredStudents = profiles.filter(profile => {
+      const role = profile.role?.toLowerCase();
+      const isAllowedRole = role === 'student' || role === 'instructor';
+      const matchesSearch = (profile.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                             profile.email?.toLowerCase().includes(searchQuery.toLowerCase()));
+      return isAllowedRole && matchesSearch;
+  });
 
   // Grant access mutation
   const grantAccess = useMutation({
@@ -184,10 +187,22 @@ export function GrantStudentAccess({ profiles = [] }: GrantStudentAccessProps) {
                                                   {student.full_name?.[0]?.toUpperCase() || 'S'}
                                               </AvatarFallback>
                                           </Avatar>
-                                          <div className="overflow-hidden">
-                                              <p className="text-sm font-medium truncate">{student.full_name}</p>
-                                              <p className="text-xs text-muted-foreground truncate">{student.email}</p>
-                                          </div>
+                                           <div className="overflow-hidden">
+                                               <div className="flex items-center gap-2">
+                                                   <p className="text-sm font-medium truncate">{student.full_name}</p>
+                                                    <Badge 
+                                                        variant="outline" 
+                                                        className={`text-[8px] h-3 px-1 rounded-sm uppercase tracking-tighter ${
+                                                            student.role === 'instructor' 
+                                                            ? "border-amber-200 bg-amber-50 text-amber-700" 
+                                                            : "border-blue-200 bg-blue-50 text-blue-700"
+                                                        }`}
+                                                    >
+                                                        {student.role || 'student'}
+                                                    </Badge>
+                                               </div>
+                                               <p className="text-xs text-muted-foreground truncate">{student.email}</p>
+                                           </div>
                                       </div>
                                   ))
                               )}
@@ -248,7 +263,7 @@ export function GrantStudentAccess({ profiles = [] }: GrantStudentAccessProps) {
       <CardContent>
           <div className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                 {filteredStudents.slice(0, 6).map(student => (
+                 {filteredStudents.map(student => (
                      <div key={student.id} className="flex items-center justify-between p-4 rounded-lg border bg-card text-card-foreground shadow-sm">
                          <div className="flex items-center gap-3 overflow-hidden">
                              <Avatar className="h-9 w-9 border">
@@ -256,7 +271,19 @@ export function GrantStudentAccess({ profiles = [] }: GrantStudentAccessProps) {
                                   <AvatarFallback>{student.full_name?.[0]}</AvatarFallback>
                              </Avatar>
                              <div className="grid gap-0.5 overflow-hidden">
-                                 <p className="text-sm font-medium leading-none truncate">{student.full_name}</p>
+                                 <div className="flex items-center gap-2">
+                                     <p className="text-sm font-medium leading-none truncate">{student.full_name}</p>
+                                     <Badge 
+                                        variant="outline" 
+                                        className={`text-[9px] h-4 px-1 rounded-sm uppercase tracking-tighter ${
+                                            student.role === 'instructor' 
+                                            ? "border-amber-200 bg-amber-50 text-amber-700" 
+                                            : "border-blue-200 bg-blue-50 text-blue-700"
+                                        }`}
+                                    >
+                                        {student.role || 'student'}
+                                     </Badge>
+                                 </div>
                                  <p className="text-xs text-muted-foreground truncate">{student.email}</p>
                              </div>
                          </div>
@@ -274,10 +301,11 @@ export function GrantStudentAccess({ profiles = [] }: GrantStudentAccessProps) {
                      </div>
                  ))}
             </div>
-            {filteredStudents.length > 6 && (
-                <p className="text-xs text-center text-muted-foreground mt-4">
-                    + {filteredStudents.length - 6} more students available. Use the "Enroll Student" button to search all.
-                </p>
+            {filteredStudents.length === 0 && searchQuery && (
+                <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-xl">
+                    <Search className="h-10 w-10 mx-auto mb-2 opacity-20" />
+                    <p>No students match "{searchQuery}"</p>
+                </div>
             )}
             {filteredStudents.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground">

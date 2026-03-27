@@ -760,6 +760,13 @@ app.post('/api/auth/login', async (req, res) => {
             UserRole.findOne({ user_id: user._id })
         ]);
 
+        // Auto-Unsuspend check
+        if (profile?.approval_status === 'suspended' && profile?.suspended_until && new Date() > new Date(profile.suspended_until)) {
+            profile.approval_status = 'approved';
+            profile.suspended_until = null;
+            await profile.save();
+        }
+
         const token = generateToken(user);
 
         res.json({
@@ -768,7 +775,8 @@ app.post('/api/auth/login', async (req, res) => {
                 email,
                 full_name: user.full_name,
                 role: roleDoc ? roleDoc.role : 'student',
-                approval_status: profile ? profile.approval_status : 'pending'
+                approval_status: profile ? profile.approval_status : 'pending',
+                suspended_until: profile ? profile.suspended_until : null
             },
             session: { access_token: token, expires_in: 604800 }
         });
@@ -827,9 +835,19 @@ app.put('/api/admin/update-user-status', authenticateToken, requireAdmin, async 
     if (!userId || !status) return res.status(400).json({ error: 'Missing userId or status' });
 
     try {
+        let updateData = { approval_status: status, updated_at: new Date() };
+        
+        if (status === 'suspended' && req.body.suspensionDays) {
+            const suspendedUntil = new Date();
+            suspendedUntil.setDate(suspendedUntil.getDate() + parseInt(req.body.suspensionDays));
+            updateData.suspended_until = suspendedUntil;
+        } else if (status === 'approved') {
+            updateData.suspended_until = null;
+        }
+
         await Profile.findOneAndUpdate(
             { user_id: userId },
-            { approval_status: status, updated_at: new Date() },
+            updateData,
             { new: true }
         );
         res.json({ message: `User status updated to ${status}` });
@@ -933,6 +951,64 @@ app.put('/api/admin/approve-question-bank', authenticateToken, requireAdmin, asy
     }
 });
 
+// Remove/Disable Question Bank
+app.delete('/api/admin/question-bank/:topic', authenticateToken, requireAdmin, async (req, res) => {
+    const { topic } = req.params;
+    if (!topic) return res.status(400).json({ error: 'Missing topic' });
+
+    try {
+        const result = await QuestionBank.deleteMany({ topic });
+        
+        // Log action
+        await SystemLog.create({
+            log_type: 'audit',
+            module: 'QuestionBank',
+            action: `Question Bank Permanently Removed for topic: ${topic}`,
+            details: { topic, deleted_count: result.deletedCount },
+            user_id: req.user.id
+        });
+
+        res.json({ message: `Question Bank for ${topic} permanently removed`, deleted_count: result.deletedCount });
+    } catch (err) {
+        handleError(res, err, 'remove-question-bank');
+    }
+});
+
+// Get Student Access List for Question Bank
+app.get('/api/admin/question-bank/:topic/access-list', authenticateToken, requireAdmin, async (req, res) => {
+    const { topic } = req.params;
+    if (!topic) return res.status(400).json({ error: 'Missing topic' });
+
+    try {
+        const accesses = await StudentExamAccess.find({ 
+            question_bank_topic: topic,
+            access_type: 'question_bank'
+        })
+        .populate('student_id', 'full_name email avatar_url')
+        .populate('assigned_by', 'full_name')
+        .sort({ granted_at: -1 })
+        .lean();
+
+        const data = accesses.map(a => ({
+            student_id: a.student_id?._id,
+            student_name: a.student_id?.full_name || 'Unknown',
+            student_email: a.student_id?.email || 'N/A',
+            student_avatar: a.student_id?.avatar_url || '',
+            assigned_by: a.assigned_by?.full_name || 'System',
+            granted_at: a.granted_at,
+            access_type: a.access_type
+        }));
+
+        res.json({
+            topic,
+            total_count: data.length,
+            students: data
+        });
+    } catch (err) {
+        handleError(res, err, 'get-qb-access-list');
+    }
+});
+
 app.get('/api/admin/courses-with-instructors', authenticateToken, requireAdminOrManager, async (req, res) => {
     try {
         const courses = await Course.find()
@@ -1012,18 +1088,28 @@ app.get('/api/admin/instructors', authenticateToken, requireAdminOrManager, asyn
         const userIds = roles.map(r => r.user_id);
         const profiles = await Profile.find({ user_id: { $in: userIds } });
 
-        const data = profiles.map(p => ({
-            user_id: p.user_id,
-            full_name: p.full_name,
-            email: p.email,
-            mobile_number: p.mobile_number,
-            phone: p.phone,
-            role: 'instructor',
-            created_at: p.created_at,
-            avatar_url: p.avatar_url
-        }));
+        // Deduplicate by email (handle case where multiple accounts exist for same email)
+        const uniqueData = [];
+        const seenEmails = new Set();
         
-        res.json(data);
+        profiles.forEach(p => {
+            const email = p.email?.toLowerCase();
+            if (!email || seenEmails.has(email)) return;
+            seenEmails.add(email);
+            
+            uniqueData.push({
+                user_id: p.user_id,
+                full_name: p.full_name,
+                email: p.email,
+                mobile_number: p.mobile_number,
+                phone: p.phone,
+                role: 'instructor',
+                created_at: p.created_at,
+                avatar_url: p.avatar_url
+            });
+        });
+        
+        res.json(uniqueData);
     } catch (err) {
         handleError(res, err, 'get-admin-instructors');
     }
@@ -1104,12 +1190,181 @@ app.delete('/api/admin/delete-user/:userId', authenticateToken, requireAdmin, as
     }
 });
 
+// Quality Assurance - Data Summary
+app.get('/api/admin/data-summary', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const [users, courses, enrollments, questionBanks, exams, conversations, messages] = await Promise.all([
+            User.countDocuments(),
+            Course.countDocuments(),
+            Enrollment.countDocuments(),
+            QuestionBank.countDocuments(),
+            Exam.countDocuments(),
+            Conversation.countDocuments(),
+            Message.countDocuments()
+        ]);
+
+        res.json({
+            users,
+            courses,
+            enrollments,
+            questionBanks,
+            exams,
+            conversations,
+            messages
+        });
+    } catch (err) {
+        handleError(res, err, 'data-summary');
+    }
+});
+
+// Quality Assurance - Get Data Lists
+app.get('/api/admin/users-list', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const users = await Profile.find()
+            .populate('user_id', 'email created_at')
+            .sort({ created_at: -1 })
+            .limit(100)
+            .lean();
+        res.json(users);
+    } catch (err) {
+        handleError(res, err, 'users-list');
+    }
+});
+
+app.get('/api/admin/courses-list', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const courses = await Course.find()
+            .sort({ created_at: -1 })
+            .limit(100)
+            .lean();
+        res.json(courses);
+    } catch (err) {
+        handleError(res, err, 'courses-list');
+    }
+});
+
+app.get('/api/admin/enrollments-list', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const enrollments = await Enrollment.find()
+            .populate('user_id', 'full_name email')
+            .populate('course_id', 'title')
+            .sort({ enrolled_at: -1 })
+            .limit(100)
+            .lean();
+        res.json(enrollments);
+    } catch (err) {
+        handleError(res, err, 'enrollments-list');
+    }
+});
+
+// Quality Assurance - Permanent Delete
+app.delete('/api/admin/permanent-delete/:dataType', authenticateToken, requireAdmin, async (req, res) => {
+    const { dataType } = req.params;
+    
+    const validTypes = ['users', 'courses', 'enrollments', 'questionBanks', 'exams', 'conversations'];
+    if (!validTypes.includes(dataType)) {
+        return res.status(400).json({ error: 'Invalid data type' });
+    }
+
+    try {
+        let result = { deletedCount: 0 };
+        
+        switch (dataType) {
+            case 'users':
+                // Delete all user-related data
+                const userIds = await User.find().select('_id').lean();
+                const ids = userIds.map(u => u._id);
+                
+                await Promise.all([
+                    User.deleteMany({}),
+                    Profile.deleteMany({ user_id: { $in: ids } }),
+                    UserRole.deleteMany({ user_id: { $in: ids } }),
+                    Enrollment.deleteMany({ user_id: { $in: ids } }),
+                    Message.deleteMany({ sender: { $in: ids } }),
+                    Conversation.deleteMany({ participants: { $in: ids } })
+                ]);
+                result.deletedCount = ids.length;
+                break;
+
+            case 'courses':
+                const courseIds = await Course.find().select('_id').lean();
+                const cIds = courseIds.map(c => c._id);
+                
+                await Promise.all([
+                    Course.deleteMany({}),
+                    Topic.deleteMany({ course_id: { $in: cIds } }),
+                    Module.deleteMany({ course_id: { $in: cIds } }),
+                    Video.deleteMany({ course_id: { $in: cIds } }),
+                    Enrollment.deleteMany({ course_id: { $in: cIds } })
+                ]);
+                result.deletedCount = cIds.length;
+                break;
+
+            case 'enrollments':
+                result = await Enrollment.deleteMany({});
+                break;
+
+            case 'questionBanks':
+                result = await QuestionBank.deleteMany({});
+                break;
+
+            case 'exams':
+                const examIds = await Exam.find().select('_id').lean();
+                const eIds = examIds.map(e => e._id);
+                
+                await Promise.all([
+                    Exam.deleteMany({}),
+                    ExamSchedule.deleteMany({ exam_id: { $in: eIds } }),
+                    ExamResult.deleteMany({ exam_id: { $in: eIds } }),
+                    StudentExamAccess.deleteMany({ exam_id: { $in: eIds } }),
+                    MockPaper.deleteMany({ exam_id: { $in: eIds } })
+                ]);
+                result.deletedCount = eIds.length;
+                break;
+
+            case 'conversations':
+                const convIds = await Conversation.find().select('_id').lean();
+                const convIdList = convIds.map(c => c._id);
+                
+                await Promise.all([
+                    Conversation.deleteMany({}),
+                    Message.deleteMany({ conversation_id: { $in: convIdList } })
+                ]);
+                result.deletedCount = convIdList.length;
+                break;
+        }
+
+        // Log the deletion
+        await SystemLog.create({
+            log_type: 'audit',
+            module: 'QualityAssurance',
+            action: `Permanent Deletion: ${dataType}`,
+            details: { dataType, deletedCount: result.deletedCount, timestamp: new Date() },
+            user_id: req.user.id
+        });
+
+        res.json({ 
+            message: `${dataType} data permanently deleted`,
+            deletedCount: result.deletedCount
+        });
+    } catch (err) {
+        handleError(res, err, 'permanent-delete');
+    }
+});
+
 app.get('/api/user/profile', authenticateToken, async (req, res) => {
     try {
-        const [role, profile] = await Promise.all([
+        let [role, profile] = await Promise.all([
             getUserRole(req.user.id),
             Profile.findOne({ user_id: req.user.id })
         ]);
+
+        // Auto-Unsuspend check
+        if (profile?.approval_status === 'suspended' && profile?.suspended_until && new Date() > new Date(profile.suspended_until)) {
+            profile.approval_status = 'approved';
+            profile.suspended_until = null;
+            await profile.save();
+        }
 
         res.json({
             profile,
@@ -1117,7 +1372,8 @@ app.get('/api/user/profile', authenticateToken, async (req, res) => {
                 id: req.user.id,
                 email: req.user.email,
                 role: role || 'student',
-                approval_status: profile?.approval_status || 'pending'
+                approval_status: profile?.approval_status || 'pending',
+                suspended_until: profile?.suspended_until || null
             }
         });
     } catch (err) {
@@ -2545,19 +2801,24 @@ app.get('/api/courses/:courseId/roster', authenticateToken, requireInstructor, a
             return acc;
         }, {});
 
-        const roster = enrollments.map(e => {
-            const userIdStr = e.user_id?._id?.toString();
-            const profile = userIdStr ? profileMap[userIdStr] : null;
-            
-            // Get video progress for this student
-            const studentProgress = userIdStr ? allProgress.filter(p => p.user_id.toString() === userIdStr) : [];
+        // Deduplicate roster by user_id to prevent duplicates if multiple enrollments somehow exist
+        const uniqueRoster = [];
+        const seenUserIds = new Set();
 
-            return {
+        enrollments.forEach(e => {
+            const userIdStr = e.user_id?._id?.toString();
+            if (!userIdStr || seenUserIds.has(userIdStr)) return;
+            seenUserIds.add(userIdStr);
+            
+            const profile = profileMap[userIdStr] || null;
+            const studentProgress = allProgress.filter(p => p.user_id.toString() === userIdStr);
+
+            uniqueRoster.push({
                 id: e.user_id?._id,
-                full_name: e.user_id?.full_name || profile?.full_name,
-                email: e.user_id?.email || profile?.email,
-                mobile_number: profile?.mobile_number || e.user_id?.phone,
-                avatar_url: e.user_id?.avatar_url || profile?.avatar_url,
+                full_name: e.user_id?.full_name || profile?.full_name || 'Unknown Student',
+                email: e.user_id?.email || profile?.email || '',
+                mobile_number: profile?.mobile_number || e.user_id?.phone || '',
+                avatar_url: e.user_id?.avatar_url || profile?.avatar_url || null,
                 role: 'student',
                 status: e.status,
                 enrolled_at: e.enrolled_at,
@@ -2569,10 +2830,10 @@ app.get('/api/courses/:courseId/roster', authenticateToken, requireInstructor, a
                     completed: p.completed,
                     last_watched: p.last_watched_at
                 }))
-            };
+            });
         });
         
-        res.json(roster);
+        res.json(uniqueRoster);
     } catch (err) {
         handleError(res, err, 'get-course-roster');
     }
@@ -2636,9 +2897,10 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
         if (req.query.limit) limit = parseInt(req.query.limit);
         if (req.query.offset) skip = parseInt(req.query.offset);
 
-        // Add allowDiskUse(true) to prevent MongoDB sorting memory limit errors
-        const data = await Model.find(query).allowDiskUse(true).sort(sort).limit(limit).skip(skip);
-        res.json(data);
+        // Use lean queries for performance; Map _id to id for frontend compatibility with existing interfaces
+        const data = await Model.find(query).lean().sort(sort).limit(limit).skip(skip);
+        const transformedData = (data || []).map(item => ({ ...item, id: item._id }));
+        res.json(transformedData);
 
     } catch (err) {
         handleError(res, err, `data-get-${table}`);
@@ -2678,12 +2940,8 @@ app.post('/api/data/:table', authenticateToken, async (req, res) => {
         const item = await Model.create(req.body);
 
         // Socket Events for Doubts
-        if (table === 'doubts') {
-            io.emit('new_doubt', item);
-        } else if (table === 'doubt_replies') {
-            io.emit('doubt_reply', item);
-        }
-
+        // Emit realtime update
+        io.emit(`${table}_changed`, { action: 'create', item });
         res.json(item);
     } catch (err) {
         handleError(res, err, `data-create-${table}`);
@@ -2748,6 +3006,7 @@ app.put('/api/data/:table/:id', authenticateToken, async (req, res) => {
         const item = await Model.findByIdAndUpdate(id, req.body, { new: true });
         
         // Socket Events for Updates
+        io.emit(`${table}_changed`, { action: 'update', item, id });
         if (table === 'doubts') {
             io.emit('doubt_updated', item);
         }
@@ -2793,6 +3052,7 @@ app.delete('/api/data/:table/:id', authenticateToken, async (req, res) => {
         }
 
         await Model.findByIdAndDelete(id);
+        io.emit(`${table}_changed`, { action: 'delete', id });
         res.json({ success: true });
     } catch (err) {
         handleError(res, err, `data-delete-${table}`);

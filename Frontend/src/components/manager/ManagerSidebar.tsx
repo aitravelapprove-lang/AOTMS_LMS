@@ -20,18 +20,15 @@ import {
   Trophy,
   UserPlus,
   Settings,
-  HelpCircle,
   LogOut,
   ClipboardList,
   Shield,
   BarChart3,
-  Activity,
-  BookOpen,
-  Gavel,
   MonitorPlay,
   Video,
   KeyRound,
   GraduationCap,
+  BookOpen,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useAuth } from "@/hooks/useAuth";
@@ -45,14 +42,10 @@ const examManagementItems = [
   { id: "overview", title: "Dashboard", icon: LayoutDashboard },
   { id: "exams", title: "Exam Scheduling", icon: Calendar },
   { id: "questions", title: "Question Bank", icon: FileQuestion },
-  { id: "student-access", title: "Student Access", icon: KeyRound },
-  { id: "mock-tests", title: "Mock Tests", icon: ClipboardList },
 ];
 
 const managementItems = [
   { id: "leaderboard", title: "Leaderboard", icon: Trophy },
-  { id: "guests", title: "Guest Accounts", icon: UserPlus },
-  { id: "access-control", title: "Access Control", icon: Shield },
   { id: "instructors", title: "Instructors", icon: UserPlus },
 ];
 

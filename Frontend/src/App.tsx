@@ -21,6 +21,7 @@ import PendingApproval from "./pages/PendingApproval";
 import Courses from "./pages/Courses";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import ScrollToTop from "@/components/ScrollToTop";
+import { SuspensionOverlay } from "@/components/auth/SuspensionOverlay";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -87,6 +88,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <SuspensionOverlay />
             <ScrollToTop />
             <RoleRedirector />
             <Routes>

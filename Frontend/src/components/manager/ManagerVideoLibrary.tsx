@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PlusCircle, Video as VideoIcon, Search, RefreshCw, Play, Clock, BookOpen, User, X, UploadCloud } from "lucide-react";
+import { PlusCircle, Video as VideoIcon, Search, RefreshCw, Play, Clock, BookOpen, User, X, UploadCloud, Trash2 } from "lucide-react";
 import { fetchWithAuth } from "@/lib/api";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { VideoUploader } from "../instructor/VideoUploader";
+import { useDeleteCourseVideo } from "@/hooks/useCourseBuilder";
+import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 
@@ -45,6 +47,8 @@ export function ManagerVideoLibrary() {
   const [uploadCourseId, setUploadCourseId] = useState<string>("");
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [isPlayerOpen, setIsPlayerOpen] = useState(false);
+  const deleteVideo = useDeleteCourseVideo();
+  const { toast } = useToast();
 
   const loadData = async () => {
     setLoading(true);
@@ -76,6 +80,17 @@ export function ManagerVideoLibrary() {
   const getCourseTitle = (courseId: string) => {
     const course = courses.find(c => c.id === courseId);
     return course?.title || 'Unknown Course';
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this video? This action cannot be undone.")) return;
+    try {
+      await deleteVideo.mutateAsync(id);
+      setVideos(videos.filter(v => v.id !== id));
+      toast({ title: "Deleted", description: "Video removed successfully." });
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to delete video.", variant: "destructive" });
+    }
   };
 
   if (loading) {
@@ -243,7 +258,7 @@ export function ManagerVideoLibrary() {
               <div className="aspect-video relative bg-slate-100">
                 {video.thumbnail_url ? (
                   <img 
-                    src={video.thumbnail_url} 
+                    src={video.thumbnail_url.startsWith('http') ? video.thumbnail_url : `/s3/public/${video.thumbnail_url}`} 
                     alt={video.title}
                     className="w-full h-full object-cover"
                   />
@@ -288,6 +303,17 @@ export function ManagerVideoLibrary() {
                       {video.duration_minutes} min
                     </Badge>
                   )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(video.id);
+                    }}
+                    className="ml-auto h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </CardContent>
             </Card>

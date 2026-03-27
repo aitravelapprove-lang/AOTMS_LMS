@@ -39,9 +39,10 @@ import {
   FormLabel,
   FormMessage
 } from '@/components/ui/form';
-import { useExams, useCreateExam, useUpdateExam, useDeleteExam, type Exam } from '@/hooks/useManagerData';
+import { useExams, useCreateExam, useUpdateExam, useDeleteExam, useCreateQuestion, type Exam } from '@/hooks/useManagerData';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { fetchWithAuth } from '@/lib/api';
 import {
   Plus,
   Calendar as CalendarIcon,
@@ -108,6 +109,15 @@ const examSchema = z.object({
 });
 
 type ExamFormValues = z.infer<typeof examSchema>;
+
+interface GeneratedQuestion {
+  id: string;
+  text: string;
+  type: string;
+  options: { text: string; is_correct: boolean }[];
+  correct_answer: string;
+  difficulty: string;
+}
 
 interface AIQuestion {
   id: number;
@@ -186,7 +196,7 @@ function ExamCard({
              isRejected ? "bg-rose-500 text-white" :
              exam.status === 'active' ? "bg-slate-900 text-white animate-pulse" : "bg-slate-200 text-slate-500"
           )}>
-            {isPending ? 'Under review' : isRejected ? 'Rejected' : (exam.status || 'Draft')}
+            {isPending ? 'Under review' : isRejected ? 'Rejected' : (exam.approval_status === 'approved' ? 'Approved' : (exam.status || 'Draft'))}
           </Badge>
         </div>
       </div>
@@ -244,7 +254,9 @@ export function ExamScheduler() {
   const [isConfigureOpen, setIsConfigureOpen] = useState(false);
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedQuestions, setGeneratedQuestions] = useState<AIQuestion[]>([]);
+  const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestion[]>([]);
+  const [isOtherType, setIsOtherType] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
 
   const form = useForm<ExamFormValues>({
     resolver: zodResolver(examSchema),
@@ -263,6 +275,8 @@ export function ExamScheduler() {
       shuffle_questions: true,
       proctoring_enabled: false,
       topics: [],
+      scheduled_date: '',
+      source_topic: '',
       question_count: 10,
     },
   });
@@ -298,34 +312,95 @@ export function ExamScheduler() {
     try {
       const passing_marks = Math.round((data.total_marks * data.passing_percentage) / 100);
       await createExam.mutateAsync({
-        ...data,
+        ...(data as Omit<Exam, "id" | "created_at">),
         course_id: null,
         passing_marks,
         status: 'draft',
         approval_status: 'pending',
-        created_by: user.id,
+        created_by: user.id || '',
         scheduled_date: data.scheduled_date || new Date().toISOString(),
       });
       setIsAddOpen(false);
       form.reset();
-      toast({ title: 'Assessment Profile Synchronized' });
+      toast({ title: 'Architecture Successfully Committed' });
     } catch (error) {
       console.error(error);
     }
   };
 
   const handleGenerateAI = async () => {
-    if (!selectedExam) return;
+    if (!selectedExam || !aiPrompt) {
+      toast({ title: "Inference Error", description: "Subject vectors or context prompts are missing.", variant: "destructive" });
+      return;
+    }
+    
     setIsGenerating(true);
-    setTimeout(() => {
-      setGeneratedQuestions([
-        { id: 1, text: "Describe the execution sequence of a neural thread.", type: 'theory' },
-        { id: 2, text: "Predict the latency vector on multi-node deployment.", type: 'mcq' },
-        { id: 3, text: "Verify the entropy state of a locked database.", type: 'tf' },
-      ]);
+    try {
+      // Calling the backend proxy to n8n
+      const response = await fetchWithAuth('/manager/generate-questions', {
+        method: 'POST',
+        body: JSON.stringify({
+          topic: selectedExam.source_topic || selectedExam.title,
+          prompt: aiPrompt,
+          type: 'mcq',
+          count: 5,
+          difficulty: 'medium'
+        })
+      });
+
+      // Handle both direct array and nested 'questions' object from AI
+      const aiQuestions = response.questions || (Array.isArray(response) ? response : []);
+      
+      const mapped = aiQuestions.map((q: any, idx: number) => {
+        // Find the text of the correct option for the correct_answer field
+        const correctOption = q.options?.find((o: any) => o.isCorrect === true || o.is_correct === true);
+        
+        return {
+          id: `ai-${idx}-${Date.now()}`,
+          text: q.questionText || q.question_text || q.text,
+          type: 'mcq',
+          options: q.options?.map((o: any) => ({
+             text: o.text || o.option_text,
+             is_correct: o.isCorrect || o.is_correct || false
+          })) || [],
+          correct_answer: correctOption?.text || correctOption?.option_text || "",
+          difficulty: q.difficulty || 'medium'
+        };
+      });
+
+      setGeneratedQuestions(mapped);
+      toast({ title: 'Neural Vectors Synchronized', description: `${mapped.length} assessment items generated.` });
+    } catch (error) {
+      console.error('AI Sync Failed:', error);
+      toast({ title: 'AI Grid Sync Failed', description: 'Quantum handshake unsuccessful. Please retry.', variant: 'destructive' });
+    } finally {
       setIsGenerating(false);
-      toast({ title: 'AI Vectors Mapped' });
-    }, 1500);
+    }
+  };
+
+  const createQuestions = useCreateQuestion();
+
+  const handleDeploySync = async () => {
+    if (!generatedQuestions.length) return;
+    
+    try {
+      const payload = generatedQuestions.map(q => ({
+        topic: selectedExam?.source_topic || selectedExam?.title || "General",
+        question_text: q.text,
+        type: 'multiple_choice',
+        difficulty: q.difficulty || 'medium',
+        options: q.options,
+        correct_answer: q.correct_answer,
+        created_by: user?.id || ""
+      }));
+
+      await createQuestions.mutateAsync(payload);
+      setIsConfigureOpen(false);
+      setGeneratedQuestions([]);
+      toast({ title: 'Architecture Successfully Committed', description: 'Assessment repository core updated.' });
+    } catch (error) {
+      console.error('Deployment Failed:', error);
+    }
   };
 
   const todayExams = useMemo(() => exams.filter(e => e.scheduled_date && isToday(new Date(e.scheduled_date))), [exams]);
@@ -336,20 +411,26 @@ export function ExamScheduler() {
     <div className="space-y-8 animate-in fade-in duration-700">
       <div className="flex items-center justify-between gap-6">
         <div />
-        <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+        <Dialog open={isAddOpen} onOpenChange={(val) => {
+          setIsAddOpen(val);
+          if (!val) {
+            setIsOtherType(false);
+            form.reset();
+          }
+        }}>
           <DialogTrigger asChild>
             <Button className="rounded-2xl h-14 px-12 bg-slate-900 hover:bg-black text-white font-bold uppercase tracking-widest text-[10px] gap-2 shadow-2xl transition-all hover:scale-105 active:scale-95">
               <Plus className="h-4 w-4" /> Initialize Workspace
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-2xl p-0 overflow-hidden border-none shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] rounded-[3rem] bg-white">
-            <div className="p-16 border-b border-slate-50 relative">
-               <h3 className="text-4xl font-bold text-slate-900 tracking-tighter uppercase italic leading-none">Initialize <br/> Workspace</h3>
-               <p className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.5em] mt-3">Unified Assessment Module Builder</p>
+            <DialogHeader className="p-16 border-b border-slate-50 relative space-y-0">
+               <DialogTitle className="text-4xl font-bold text-slate-900 tracking-tighter uppercase italic leading-none">Initialize <br/> Workspace</DialogTitle>
+               <DialogDescription className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.5em] mt-3 block">Unified Assessment Module Builder</DialogDescription>
                <div className="absolute top-16 right-16 h-12 w-12 rounded-full border border-slate-100 flex items-center justify-center text-slate-200">
                   <Layout className="h-5 w-5" />
                </div>
-            </div>
+            </DialogHeader>
             <div className="p-16 overflow-y-auto max-h-[65vh] custom-scrollbar bg-white/50">
                <Form {...form}>
                  <form onSubmit={form.handleSubmit(onSubmitProfile)} className="space-y-12">
@@ -375,18 +456,48 @@ export function ExamScheduler() {
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-2">Class Profile</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger className="h-16 rounded-[1.5rem] border-slate-100 bg-slate-50/30 font-medium px-8 outline-none shadow-none">
-                                    <SelectValue placeholder="Type" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent className="rounded-2xl border-slate-100 p-2 shadow-2xl">
-                                  {['mock', 'certification', 'live'].map(t => (
-                                    <SelectItem key={t} value={t} className="font-bold py-4 uppercase text-[10px] tracking-widest rounded-xl hover:bg-slate-50">{t} paper</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              {isOtherType ? (
+                                <div className="relative group">
+                                  <Input 
+                                    placeholder="Enter custom type..." 
+                                    className="h-16 rounded-[1.5rem] border-slate-100 bg-slate-50/30 font-medium px-8 focus:bg-white focus:border-slate-900 transition-all text-sm outline-none shadow-none pr-12"
+                                    {...field}
+                                    autoFocus
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-900"
+                                    onClick={() => {
+                                      setIsOtherType(false);
+                                      field.onChange('mock');
+                                    }}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Select onValueChange={(val) => {
+                                  if (val === 'others') {
+                                    setIsOtherType(true);
+                                    field.onChange('');
+                                  } else {
+                                    field.onChange(val);
+                                  }
+                                }} value={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger className="h-16 rounded-[1.5rem] border-slate-100 bg-slate-50/30 font-medium px-8 outline-none shadow-none">
+                                      <SelectValue placeholder="Type" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent className="rounded-2xl border-slate-100 p-2 shadow-2xl">
+                                    {['mock', 'certification', 'live', 'others'].map(t => (
+                                      <SelectItem key={t} value={t} className="font-bold py-4 uppercase text-[10px] tracking-widest rounded-xl hover:bg-slate-50">{t} paper</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
                             </FormItem>
                           )}
                         />
@@ -524,9 +635,23 @@ export function ExamScheduler() {
                    </div>
                    <div className="flex gap-4 pt-10">
                      <Button type="button" variant="ghost" className="h-18 flex-1 rounded-2xl font-bold uppercase text-[10px] tracking-widest text-slate-300 hover:text-slate-900 hover:bg-slate-50" onClick={() => setIsAddOpen(false)}>Abort Change</Button>
-                     <Button className="h-18 flex-[2] rounded-2xl bg-slate-900 hover:bg-black text-white font-bold uppercase tracking-widest text-[11px] shadow-2xl transition-all">
-                        Initialize Profile <ChevronRight className="h-5 w-5 ml-2" />
-                     </Button>
+                     <Button 
+                        type="submit"
+                        disabled={createExam.isPending}
+                        className="h-18 flex-[2] rounded-2xl bg-slate-900 hover:bg-black text-white font-bold uppercase tracking-widest text-[11px] shadow-2xl transition-all flex items-center justify-center gap-2"
+                      >
+                        {createExam.isPending ? (
+                          <>
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            <span>Synchronizing Architecture...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>Initialize Profile</span>
+                            <ChevronRight className="h-5 w-5" />
+                          </>
+                        )}
+                      </Button>
                    </div>
                  </form>
                </Form>
@@ -535,7 +660,7 @@ export function ExamScheduler() {
         </Dialog>
       </div>
 
-      <Tabs defaultValue="upcoming" className="w-full">
+        <Tabs defaultValue="upcoming" className="w-full">
         <TabsList className="mb-12 h-20 rounded-[2.5rem] bg-white border border-slate-100 p-2 shadow-sm flex items-center gap-2">
            {['today', 'upcoming', 'past'].map(tab => (
              <TabsTrigger 
@@ -547,31 +672,37 @@ export function ExamScheduler() {
              </TabsTrigger>
            ))}
         </TabsList>
-        <AnimatePresence mode="wait">
-           {['today', 'upcoming', 'past'].map((tabVal) => (
-             <TabsContent key={tabVal} value={tabVal} className="focusVisible:outline-none">
-                <div className="grid gap-10 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                  {(() => {
-                    const list = tabVal === 'today' ? todayExams : tabVal === 'upcoming' ? upcomingExams : pastExams;
-                    if (list.length === 0) return (
-                      <div className="col-span-full py-40 text-center border-2 border-dashed border-slate-100 rounded-[4rem] bg-slate-50/20">
-                         <Rocket className="h-12 w-12 text-slate-100 mx-auto mb-6" />
-                         <h4 className="text-2xl font-bold text-slate-200 uppercase tracking-[0.3em] font-sans">Workspace Empty</h4>
-                         <p className="text-[10px] font-medium text-slate-200 uppercase tracking-widest mt-2">Analytical data set is currently zero</p>
-                      </div>
-                    );
-                    return list.map(exam => (
-                      <ExamCard key={exam.id} exam={exam} onUpdate={(p) => updateExam.mutate({ id: p.id, ...p })} onDelete={(id) => deleteExam.mutate(id)} onConfigure={(e) => { setSelectedExam(e); setIsConfigureOpen(true); }} isPast={tabVal === 'past'} />
-                    ));
-                  })()}
-                </div>
-             </TabsContent>
-           ))}
-        </AnimatePresence>
+        {['today', 'upcoming', 'past'].map((tabVal) => (
+          <TabsContent key={tabVal} value={tabVal} className="focusVisible:outline-none">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="grid gap-10 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+            >
+              {(() => {
+                const list = tabVal === 'today' ? todayExams : tabVal === 'upcoming' ? upcomingExams : pastExams;
+                if (list.length === 0) return (
+                  <div className="col-span-full py-40 text-center border-2 border-dashed border-slate-100 rounded-[4rem] bg-slate-50/20">
+                     <Rocket className="h-12 w-12 text-slate-100 mx-auto mb-6" />
+                     <h4 className="text-2xl font-bold text-slate-200 uppercase tracking-[0.3em] font-sans">Workspace Empty</h4>
+                     <p className="text-[10px] font-medium text-slate-200 uppercase tracking-widest mt-2">Analytical data set is currently zero</p>
+                  </div>
+                );
+                return list.map(exam => (
+                  <ExamCard key={exam.id} exam={exam} onUpdate={(p) => updateExam.mutate({ id: p.id, ...p })} onDelete={(id) => deleteExam.mutate(id)} onConfigure={(e) => { setSelectedExam(e); setIsConfigureOpen(true); }} isPast={tabVal === 'past'} />
+                ));
+              })()}
+            </motion.div>
+          </TabsContent>
+        ))}
       </Tabs>
 
       <Dialog open={isConfigureOpen} onOpenChange={setIsConfigureOpen}>
         <DialogContent className="sm:max-w-none w-screen h-screen m-0 rounded-none p-0 border-none bg-white overflow-hidden text-slate-900">
+          <DialogHeader className="sr-only">
+            <DialogTitle>{selectedExam?.title || 'Exam Configuration'}</DialogTitle>
+            <DialogDescription>Modify protocol settings and deployment parameters</DialogDescription>
+          </DialogHeader>
           {selectedExam && (
             <div className="flex flex-col h-full animate-in slide-in-from-bottom duration-1000">
               
@@ -586,7 +717,7 @@ export function ExamScheduler() {
                     <div className="flex items-center gap-4 text-[9px] font-medium text-slate-400 uppercase tracking-[0.3em]">
                        <span className="flex items-center gap-2"><Target className="h-3 w-3" /> Protocol Build</span>
                        <span className="h-1 w-1 rounded-full bg-slate-100" />
-                       <span className="flex items-center gap-2 font-mono text-slate-300">#{selectedExam.id.toUpperCase().slice(0, 12)}</span>
+                       <span className="flex items-center gap-2 font-mono text-slate-300">#{selectedExam.id?.toUpperCase().slice(0, 12)}</span>
                     </div>
                   </div>
                 </div>
@@ -765,7 +896,12 @@ export function ExamScheduler() {
 
                         <div className="relative group/input max-w-4xl mx-auto">
                            <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-[3rem] blur opacity-20 group-hover/input:opacity-50 transition duration-700" />
-                           <Input placeholder="Define assessment subject vectors..." className="relative h-24 rounded-[3rem] bg-white/5 border-white/10 text-white font-bold text-2xl px-12 placeholder:text-white/10 focus:border-white/20 transition-all outline-none shadow-none" />
+                           <Input 
+                             placeholder="Define assessment subject vectors..." 
+                             className="relative h-24 rounded-[3rem] bg-white/5 border-white/10 text-white font-bold text-2xl px-12 placeholder:text-white/10 focus:border-white/20 transition-all outline-none shadow-none" 
+                             value={aiPrompt}
+                             onChange={(e) => setAiPrompt(e.target.value)}
+                           />
                         </div>
 
                         {generatedQuestions.length > 0 && (
@@ -795,10 +931,14 @@ export function ExamScheduler() {
                     </div>
                     <div className="flex items-center gap-6">
                       <Button variant="ghost" className="h-18 px-12 rounded-2xl font-bold uppercase text-[10px] tracking-widest text-slate-300 hover:text-slate-900 hover:bg-slate-50" onClick={() => setIsConfigureOpen(false)}>Discard Workspace</Button>
-                      <Button className="h-18 px-20 rounded-2xl bg-slate-900 hover:bg-black text-white font-bold uppercase text-[11px] tracking-widest shadow-[0_25px_60px_-15px_rgba(0,0,0,0.15)] transition-all hover:scale-[1.05] active:scale-95 gap-4" onClick={() => {
-                        toast({ title: 'Architecture Successfully Committed' });
-                        setIsConfigureOpen(false);
-                      }}>Commence Deployment <ArrowRight className="h-5 w-5" /></Button>
+                      <Button 
+                        className="h-18 px-20 rounded-2xl bg-slate-900 hover:bg-black text-white font-bold uppercase text-[11px] tracking-widest shadow-[0_25px_60px_-15px_rgba(0,0,0,0.15)] transition-all hover:scale-[1.05] active:scale-95 gap-4" 
+                        onClick={handleDeploySync}
+                        disabled={createQuestions.isPending || !generatedQuestions.length}
+                      >
+                        {createQuestions.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-5 w-5" />}
+                        {createQuestions.isPending ? 'Committing Core...' : 'Commence Deployment'}
+                      </Button>
                     </div>
                   </div>
                 </div>

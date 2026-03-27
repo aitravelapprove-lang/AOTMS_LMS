@@ -15,6 +15,7 @@ export interface Profile {
   last_active_at: string | null;
   created_at: string;
   role?: string;
+  suspended_until?: string | null;
 }
 
 export interface UserRole {
@@ -38,6 +39,11 @@ export interface Course {
   reviewed_at: string | null;
   reviewed_by: string | null;
   rejection_reason: string | null;
+  price: string | number | null;
+  image?: string | null;
+  duration?: string | null;
+  level?: string | null;
+  is_active?: boolean;
   created_at: string;
 }
 
@@ -179,7 +185,7 @@ export function useAdminData(userRole?: string | null) {
       console.error('Error fetching admin data:', err);
       
       // Handle 403 specifically
-      if (error.message && error.message.includes('Administrative access required')) {
+      if (err.message && err.message.includes('Administrative access required')) {
         toast({
           title: 'Access Denied',
           description: 'Your account does not have admin permissions. Please contact support or re-login.',
@@ -200,8 +206,8 @@ export function useAdminData(userRole?: string | null) {
   // Set up polling instead of realtime
   useEffect(() => {
     fetchAllData();
-    // Poll every 2 minutes instead of 30s to save quota
-    const interval = setInterval(fetchAllData, 120000);
+    // Poll every 15 seconds for more responsive updates
+    const interval = setInterval(fetchAllData, 15000);
     return () => clearInterval(interval);
   }, [fetchAllData]);
 
@@ -254,11 +260,15 @@ export function useAdminData(userRole?: string | null) {
   };
 
   // Admin actions
-  const updateUserStatus = async (userId: string, status: 'approved' | 'rejected' | 'suspended' | 'active') => {
+  const updateUserStatus = async (userId: string, status: 'approved' | 'rejected' | 'suspended' | 'active', suspensionDays?: string) => {
     try {
       await fetchWithAuth('/admin/update-user-status', {
         method: 'PUT',
-        body: JSON.stringify({ userId, status: status === 'active' ? 'approved' : status })
+        body: JSON.stringify({ 
+            userId, 
+            status: status === 'active' ? 'approved' : status,
+            suspensionDays 
+        })
       });
 
       // Log action
@@ -439,5 +449,19 @@ export function useAdminData(userRole?: string | null) {
     approveCourse,
     rejectCourse,
     updateCourseStatus,
+    updateCoursePrice: async (courseId: string, newPrice: string | number) => {
+      try {
+        await fetchWithAuth(`/data/courses/${courseId}`, {
+          method: 'PUT',
+          body: JSON.stringify({ price: newPrice })
+        });
+        toast({ title: 'Success', description: 'Course price updated successfully' });
+        fetchAllData();
+        return true;
+      } catch (error) {
+        toast({ title: 'Error', description: 'Failed to update price', variant: 'destructive' });
+        return false;
+      }
+    }
   };
 }

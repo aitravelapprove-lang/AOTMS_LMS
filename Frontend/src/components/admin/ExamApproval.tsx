@@ -17,7 +17,8 @@ import {
   ChevronRight,
   ShieldAlert,
   ArrowUpRight,
-  RefreshCw
+  RefreshCw,
+  Trash2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -70,10 +71,13 @@ export function ExamApproval() {
   });
 
   const handleAction = async (id: string, approval_status: 'approved' | 'rejected') => {
+    // Courses are now optional for approval to allow faster deployment
+    /*
     if (approval_status === 'approved' && !selectedCourseId && !selectedExam?.course_id) {
         toast({ title: 'Course Required', description: 'Please associate this exam with a course before publishing.', variant: 'destructive' });
         return;
     }
+    */
 
     try {
       await updateExam.mutateAsync({ 
@@ -95,8 +99,25 @@ export function ExamApproval() {
     }
   };
 
-  if (isLoading) return <div className="p-8 text-center text-xs font-black uppercase text-slate-300 animate-pulse">Scanning assessment queue...</div>;
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("PERMANENT PROTOCOL PURGE: Are you sure you want to permanently delete this assessment? This cannot be undone.")) return;
+    
+    try {
+      await deleteExam.mutateAsync(id);
+      toast({
+        title: 'Protocol Purged',
+        description: 'The assessment has been permanently removed from the system.',
+        variant: 'destructive'
+      });
+      setIsDetailOpen(false);
+      refetch();
+    } catch (error) {
+       toast({ title: 'System Error', description: 'Failed to delete assessment.', variant: 'destructive' });
+    }
+  };
 
+  // Instant-fetch mode: Bypass full-page blocking loader
+  // if (isLoading && !exams) return <div ...> is gone.
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
@@ -185,31 +206,44 @@ export function ExamApproval() {
                      <Eye className="h-4 w-4" /> Comprehensive Audit
                    </Button>
                    
-                   {exam.approval_status === 'pending' && (
-                     <div className="flex gap-2">
-                        <Button 
-                          className="h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border-none shadow-none transition-all"
-                          onClick={() => handleAction(exam.id, 'approved')}
-                        >
-                          <CheckCircle2 className="h-5 w-5" />
-                        </Button>
-                        <Button 
-                          className="h-12 w-12 rounded-2xl bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white border-none shadow-none transition-all"
-                          onClick={() => handleAction(exam.id, 'rejected')}
-                        >
-                          <XCircle className="h-5 w-5" />
-                        </Button>
-                     </div>
-                   )}
-                </div>
+                    <div className="flex gap-2">
+                       {exam.approval_status === 'pending' && (
+                         <>
+                           <Button 
+                             className="h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border-none shadow-none transition-all"
+                             onClick={() => handleAction(exam.id, 'approved')}
+                           >
+                             <CheckCircle2 className="h-5 w-5" />
+                           </Button>
+                           <Button 
+                             className="h-12 w-12 rounded-2xl bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white border-none shadow-none transition-all"
+                             onClick={() => handleAction(exam.id, 'rejected')}
+                           >
+                             <XCircle className="h-5 w-5" />
+                           </Button>
+                         </>
+                       )}
+                       <Button 
+                         className="h-12 w-12 rounded-2xl bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white border-none shadow-none transition-all"
+                         onClick={() => handleDelete(exam.id)}
+                       >
+                         <Trash2 className="h-4 w-4" />
+                       </Button>
+                    </div>
+                  </div>
              </motion.div>
-           )) : (
-             <div className="py-32 text-center border-4 border-dashed border-slate-50 rounded-[4rem] bg-slate-50/20">
-                <ShieldAlert className="h-16 w-16 text-slate-200 mx-auto mb-6 opacity-30" />
-                <h4 className="text-2xl font-black text-slate-200 uppercase tracking-tighter italic">Queue is Empty</h4>
-                <p className="text-xs font-bold text-slate-100 uppercase tracking-widest mt-2">All protocols have been successfully reviewed</p>
-             </div>
-           )}
+            )) : isLoading ? (
+              // Inline skeleton for instant framework display
+              Array(3).fill(0).map((_, i) => (
+                <div key={i} className="h-32 w-full bg-slate-50/50 animate-pulse rounded-[2.5rem] border-4 border-dashed border-slate-100/30" />
+              ))
+            ) : (
+              <div className="py-32 text-center border-4 border-dashed border-slate-50 rounded-[4rem] bg-slate-50/20">
+                 <ShieldAlert className="h-16 w-16 text-slate-200 mx-auto mb-6 opacity-30" />
+                 <h4 className="text-2xl font-black text-slate-200 uppercase tracking-tighter italic">Queue is Empty</h4>
+                 <p className="text-xs font-bold text-slate-100 uppercase tracking-widest mt-2">All protocols have been successfully reviewed</p>
+              </div>
+            )}
          </AnimatePresence>
       </div>
 
@@ -318,22 +352,30 @@ export function ExamApproval() {
                       Close Session <ChevronRight className="h-4 w-4 ml-2 group-hover:translate-x-1" />
                    </Button>
                    
-                   {selectedExam.approval_status === 'pending' && (
-                     <div className="flex gap-4">
-                        <Button 
-                          className="h-14 px-10 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-black uppercase tracking-widest text-xs gap-3 shadow-xl shadow-rose-100"
-                          onClick={() => handleAction(selectedExam.id, 'rejected')}
-                        >
-                          <XCircle className="h-4 w-4" /> Deny Logic
-                        </Button>
-                        <Button 
-                          className="h-14 px-10 rounded-2xl pro-button-primary font-black uppercase tracking-widest text-xs gap-3 shadow-xl shadow-blue-200"
-                          onClick={() => handleAction(selectedExam.id, 'approved')}
-                        >
-                          <CheckCircle2 className="h-4 w-4" /> Authorize Session
-                        </Button>
-                     </div>
-                   )}
+                    <div className="flex gap-4">
+                       {selectedExam.approval_status === 'pending' && (
+                         <>
+                           <Button 
+                             className="h-14 px-10 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-black uppercase tracking-widest text-xs gap-3 shadow-xl shadow-rose-100"
+                             onClick={() => handleAction(selectedExam.id, 'rejected')}
+                           >
+                             <XCircle className="h-4 w-4" /> Deny Logic
+                           </Button>
+                           <Button 
+                             className="h-14 px-10 rounded-2xl pro-button-primary font-black uppercase tracking-widest text-xs gap-3 shadow-xl shadow-blue-200"
+                             onClick={() => handleAction(selectedExam.id, 'approved')}
+                           >
+                             <CheckCircle2 className="h-4 w-4" /> Authorize Session
+                           </Button>
+                         </>
+                       )}
+                       <Button 
+                         className="h-14 px-10 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-black uppercase tracking-widest text-xs gap-3 shadow-none border border-slate-200"
+                         onClick={() => handleDelete(selectedExam.id)}
+                       >
+                         <Trash2 className="h-4 w-4" /> Nuke Assessment
+                       </Button>
+                    </div>
                 </div>
              </div>
            )}

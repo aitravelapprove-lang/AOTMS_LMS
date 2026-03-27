@@ -23,6 +23,8 @@ import {
   GraduationCap,
   ClipboardList,
   ShieldCheck,
+  Award,
+  Video,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useAuth } from "@/hooks/useAuth";
@@ -31,15 +33,16 @@ import { Button } from "@/components/ui/button";
 const mainNavItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
   { title: "Users Management", url: "/admin/users", icon: Users },
-  { title: "Instructor Courses", url: "/admin/instructor-courses", icon: ClipboardList },
+  { title: "Instructor Courses", url: "/admin/instructor-courses", icon: BookOpen },
   { title: "All Courses", url: "/admin/all-courses", icon: GraduationCap },
+  { title: "Assign Courses", url: "/admin/assign-courses", icon: ClipboardList },
+  { title: "Instructors", url: "/admin/instructors", icon: Award },
+  { title: "Video Library", url: "/admin/videos", icon: Video },
   { title: "Question Bank", url: "/admin/questions", icon: FileQuestion },
   { title: "Exam Approvals", url: "/admin/exams", icon: ShieldCheck },
 ];
 
-const securityNavItems = [
-  { title: "Security Center", url: "/admin/security", icon: Shield },
-];
+
 
 export function AdminSidebar() {
   const { state } = useSidebar();
@@ -104,46 +107,12 @@ export function AdminSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Security Section */}
-        {securityNavItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="px-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">
-              Security
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="gap-1">
-                {securityNavItems.map((item) => (
-                  <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive(item.url)}
-                      className="h-11 px-4 rounded-lg transition-all duration-200 group data-[active=true]:bg-primary/10 data-[active=true]:text-primary"
-                    >
-                      <Link to={item.url} className="flex items-center gap-3">
-                        <item.icon
-                          className={`h-5 w-5 transition-colors ${isActive(item.url) ? "text-primary" : "text-slate-500 group-hover:text-slate-700"}`}
-                        />
-                        {!collapsed && <span className="font-medium">{item.title}</span>}
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+
       </SidebarContent>
 
       <SidebarFooter className="p-4 group-data-[collapsible=icon]:p-2 border-t border-slate-50 bg-slate-50/50">
         <div className="space-y-2">
-          <Button
-            variant="ghost"
-            className="w-full justify-start group-data-[collapsible=icon]:justify-center gap-3 h-11 px-4 group-data-[collapsible=icon]:px-0 rounded-lg text-slate-600 hover:bg-slate-100 font-semibold"
-            onClick={() => navigate("/admin/settings")}
-          >
-            <Settings className="h-5 w-5 shrink-0" />
-            {!collapsed && <span className="text-sm">Configurations</span>}
-          </Button>
+
           <Button
             variant="ghost"
             className="w-full justify-start group-data-[collapsible=icon]:justify-center gap-3 h-11 px-4 group-data-[collapsible=icon]:px-0 rounded-lg text-rose-600 hover:bg-rose-50 hover:text-rose-700 font-semibold"

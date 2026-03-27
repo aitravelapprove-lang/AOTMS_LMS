@@ -23,6 +23,7 @@ const ProfileSchema = new mongoose.Schema({
     avatar_url: { type: String },
     mobile_number: { type: String },
     approval_status: { type: String, default: 'pending' }, // pending, approved, suspended
+    suspended_until: { type: Date }, // For account suspension timers
     created_at: { type: Date, default: Date.now },
     updated_at: { type: Date }
 });

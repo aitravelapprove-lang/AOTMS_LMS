@@ -50,6 +50,7 @@ interface UserManagementProps {
   onUpdateStatus: (
     userId: string,
     status: "approved" | "rejected" | "suspended" | "active",
+    suspensionDays?: string
   ) => Promise<boolean>;
   onUpdateRole: (
     userId: string,
@@ -75,6 +76,8 @@ export function UserManagement({
   const [newRole, setNewRole] = useState<string>("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showSuspendDialog, setShowSuspendDialog] = useState(false);
+  const [suspensionDays, setSuspensionDays] = useState("7");
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -189,27 +192,23 @@ export function UserManagement({
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <div className="flex gap-2">
-                <Select value={roleFilter} onValueChange={setRoleFilter}>
-                  <SelectTrigger className="w-[120px] sm:w-32">
-                    <SelectValue placeholder="Filter role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Roles</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="manager">Manager</SelectItem>
-                    <SelectItem value="instructor">Instructor</SelectItem>
-                    <SelectItem value="student">Student</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button className="gap-2 flex-1 sm:flex-none whitespace-nowrap">
-                  <Plus className="h-4 w-4" />
-                  Add User
-                </Button>
+                <div className="flex gap-2">
+                  <Select value={roleFilter} onValueChange={setRoleFilter}>
+                    <SelectTrigger className="w-[120px] sm:w-32">
+                      <SelectValue placeholder="Filter role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Roles</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="manager">Manager</SelectItem>
+                      <SelectItem value="instructor">Instructor</SelectItem>
+                      <SelectItem value="student">Student</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
-          </div>
-        </CardHeader>
+          </CardHeader>
         <CardContent className="space-y-4 px-2 sm:px-6">
           {filteredUsers.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
@@ -239,12 +238,19 @@ export function UserManagement({
                       </Badge>
                       {user.status === "suspended" ||
                       user.approval_status === "suspended" ? (
-                        <Badge
-                          variant="destructive"
-                          className="h-5 px-1.5 py-0 text-[10px]"
-                        >
-                          Suspended
-                        </Badge>
+                        <div className="flex flex-col gap-1">
+                            <Badge
+                                variant="destructive"
+                                className="h-5 px-1.5 py-0 text-[10px] w-fit"
+                            >
+                                Suspended
+                            </Badge>
+                            {user.suspended_until && (
+                                <span className="text-[9px] font-mono text-rose-600 font-bold animate-pulse">
+                                    Ends {new Date(user.suspended_until).toLocaleDateString()}
+                                </span>
+                            )}
+                        </div>
                       ) : user.approval_status === "pending" ? (
                         <Badge
                           variant="secondary"
@@ -335,7 +341,10 @@ export function UserManagement({
                         size="icon"
                         className="h-8 w-8 hover:bg-red-100"
                         title="Suspend"
-                        onClick={() => onUpdateStatus(user.id, "suspended")}
+                        onClick={() => {
+                            setSelectedUser(user);
+                            setShowSuspendDialog(true);
+                        }}
                       >
                         <Lock className="h-4 w-4 text-destructive" />
                       </Button>
@@ -748,6 +757,56 @@ export function UserManagement({
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+      {/* Suspend Confirmation Dialog */}
+      <Dialog open={showSuspendDialog} onOpenChange={setShowSuspendDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Suspend User Access</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to suspend <span className="font-bold">{selectedUser?.full_name}</span>?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Duration (Days)</label>
+                <Select value={suspensionDays} onValueChange={setSuspensionDays}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select duration" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="1">1 Day</SelectItem>
+                        <SelectItem value="3">3 Days</SelectItem>
+                        <SelectItem value="7">7 Days (1 Week)</SelectItem>
+                        <SelectItem value="14">14 Days (2 Weeks)</SelectItem>
+                        <SelectItem value="30">30 Days (1 Month)</SelectItem>
+                        <SelectItem value="90">90 Days (3 Months)</SelectItem>
+                        <SelectItem value="365">365 Days (1 Year)</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="p-3 bg-red-50 text-red-700 text-xs rounded-lg border border-red-100">
+                This user will be blocked from all platform features until the suspension expires.
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowSuspendDialog(false)}>Cancel</Button>
+            <Button 
+                variant="destructive" 
+                onClick={async () => {
+                    if (selectedUser) {
+                        setIsProcessing(true);
+                        await onUpdateStatus(selectedUser.id, "suspended", suspensionDays);
+                        setIsProcessing(false);
+                        setShowSuspendDialog(false);
+                    }
+                }}
+                disabled={isProcessing}
+            >
+                {isProcessing ? "Processing..." : "Confirm Suspension"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

@@ -10,12 +10,17 @@ import { UserManagement } from "@/components/admin/UserManagement";
 import { CourseApproval } from "@/components/admin/CourseApproval";
 import { SecurityMonitor } from "@/components/admin/SecurityMonitor";
 import { QuestionBankApproval } from "@/components/admin/QuestionBankApproval";
+import { QualityAssurance } from "@/components/admin/QualityAssurance";
+import { CourseAssignment } from "@/components/admin/CourseAssignment";
+import { InstructorManagement } from "@/components/admin/InstructorManagement";
 import { ExamApproval } from "@/components/admin/ExamApproval";
 import { EnrollmentsList } from "@/components/admin/EnrollmentsList";
 import { GrantStudentAccess } from "@/components/admin/GrantStudentAccess";
 import InstructorCoursesAdmin from "@/pages/InstructorCourses";
+import { ManagerVideoLibrary } from "@/components/manager/ManagerVideoLibrary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
@@ -45,20 +50,41 @@ import {
   Clock,
   Archive,
   MessageSquare,
+  DollarSign,
+  Pencil,
+  Video as VideoIcon,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Course as InstructorCourse } from "@/hooks/useInstructorData";
 import { Course as CatalogCourse } from "@/hooks/useCourses";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
-type CombinedCourse = CatalogCourse & Partial<InstructorCourse>;
+import { Course as AdminCourse } from "@/hooks/useAdminData";
 
-function AllCoursesList({ onDelete, onView, refreshTrigger }: { onDelete?: (id: string) => void, onView?: (course: CatalogCourse) => void, refreshTrigger?: number }) {
-  const { courses: allCourses, fetchCourses, loading } = useCourses();
+type CombinedCourse = AdminCourse;
 
-  useEffect(() => {
-    fetchCourses(1, 'all', true, 1000); // Fetch up to 1000 courses to show all
-  }, [fetchCourses, refreshTrigger]);
+function AllCoursesList({ 
+  courses: allCourses, 
+  loading, 
+  onDelete, 
+  onView, 
+  onUpdatePrice 
+}: { 
+  courses: AdminCourse[], 
+  loading: boolean,
+  onDelete?: (id: string) => void, 
+  onView?: (course: AdminCourse) => void,
+  onUpdatePrice?: (id: string, price: string) => void 
+}) {
+  const [editingPrice, setEditingPrice] = useState<{ id: string, title: string, price: string } | null>(null);
+  const [newPrice, setNewPrice] = useState("");
+
+  const handlePriceUpdate = async () => {
+    if (editingPrice && onUpdatePrice) {
+      onUpdatePrice(editingPrice.id, newPrice);
+      setEditingPrice(null);
+    }
+  };
 
   if (loading && allCourses.length === 0) {
     return (
@@ -92,7 +118,7 @@ function AllCoursesList({ onDelete, onView, refreshTrigger }: { onDelete?: (id: 
           </Badge>
           <div className="h-4 w-px bg-slate-200" />
           <span className="text-xs font-medium text-slate-400 px-2">
-            {allCourses.filter(c => c.is_active).length} Active
+            {allCourses.filter(c => c.status === 'published' || c.status === 'approved').length} Active
           </span>
         </div>
       </div>
@@ -123,9 +149,9 @@ function AllCoursesList({ onDelete, onView, refreshTrigger }: { onDelete?: (id: 
             >
               {/* Image Container */}
               <div className="aspect-[4/3] relative overflow-hidden bg-slate-100">
-                {course.image ? (
+                {course.thumbnail_url ? (
                   <img 
-                    src={course.image.startsWith('http') ? course.image : `/s3/public/${course.image}`}
+                    src={course.thumbnail_url.startsWith('http') ? course.thumbnail_url : `/s3/public/${course.thumbnail_url}`}
                     alt={course.title}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
@@ -143,11 +169,11 @@ function AllCoursesList({ onDelete, onView, refreshTrigger }: { onDelete?: (id: 
                 <div className="absolute top-3 right-3 z-10">
                   <span className={`
                     inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm backdrop-blur-md
-                    ${course.is_active 
+                    ${(course.status === 'published' || course.status === 'approved') 
                       ? 'bg-emerald-500/90 text-white' 
                       : 'bg-slate-500/90 text-white'}
                   `}>
-                    {course.is_active ? 'Active' : 'Draft'}
+                    {course.status || 'Draft'}
                   </span>
                 </div>
 
@@ -156,6 +182,7 @@ function AllCoursesList({ onDelete, onView, refreshTrigger }: { onDelete?: (id: 
                   {onView && (
                     <Button
                       size="icon"
+                      variant="ghost"
                       className="h-9 w-9 rounded-full bg-white/90 text-slate-700 hover:bg-white hover:text-primary shadow-lg backdrop-blur-sm border-0"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -166,9 +193,25 @@ function AllCoursesList({ onDelete, onView, refreshTrigger }: { onDelete?: (id: 
                       <Eye className="h-4 w-4" />
                     </Button>
                   )}
+                  {onUpdatePrice && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-9 w-9 rounded-full bg-white/90 text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 shadow-lg backdrop-blur-sm border-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingPrice({ id: course.id, title: course.title, price: String(course.price || "0") });
+                        setNewPrice(String(course.price || "0"));
+                      }}
+                      title="Edit Price"
+                    >
+                      <DollarSign className="h-4 w-4" />
+                    </Button>
+                  )}
                   {onDelete && (
                     <Button
                       size="icon"
+                      variant="ghost"
                       className="h-9 w-9 rounded-full bg-white/90 text-slate-700 hover:bg-red-50 hover:text-red-600 shadow-lg backdrop-blur-sm border-0"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -190,7 +233,7 @@ function AllCoursesList({ onDelete, onView, refreshTrigger }: { onDelete?: (id: 
                       {course.category || 'General'}
                     </span>
                     <span className="px-2 py-1 rounded-md bg-slate-100 text-slate-500 text-[10px] font-bold uppercase tracking-wider">
-                      {course.level || 'All Levels'}
+                      Status: {course.status}
                     </span>
                   </div>
                   <h3 className="font-bold text-slate-900 leading-snug line-clamp-2 group-hover:text-primary transition-colors">
@@ -201,14 +244,28 @@ function AllCoursesList({ onDelete, onView, refreshTrigger }: { onDelete?: (id: 
                 <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-50">
                   <div className="flex items-center gap-1.5 text-slate-500 text-xs font-medium">
                     <Clock className="h-3.5 w-3.5" />
-                    <span>{course.duration || 'Flexible'}</span>
+                    <span>Manage Pricing</span>
                   </div>
-                  <div className="text-sm font-bold text-slate-900">
-                    {course.price === '0' || course.price === 'Free' ? (
-                      <span className="text-emerald-600">Free</span>
-                    ) : (
-                      <span>{course.price}</span>
-                    )}
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm font-bold text-slate-900">
+                      {course.price === '0' || course.price === 0 || course.price === 'Free' ? (
+                        <span className="text-emerald-600">Free</span>
+                      ) : (
+                        <span>₹{course.price}</span>
+                      )}
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6 text-slate-400 hover:text-primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingPrice({ id: course.id, title: course.title, price: String(course.price || "0") });
+                        setNewPrice(String(course.price || "0"));
+                      }}
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -216,6 +273,45 @@ function AllCoursesList({ onDelete, onView, refreshTrigger }: { onDelete?: (id: 
           ))}
         </div>
       )}
+
+      {/* Price Edit Modal */}
+      <Dialog open={!!editingPrice} onOpenChange={(open) => !open && setEditingPrice(null)}>
+        <DialogContent className="sm:max-w-md pro-modal">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-emerald-500" />
+              Edit Course Price
+            </DialogTitle>
+            <DialogDescription>
+              Update the pricing for "{editingPrice?.title}"
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">New Price (₹)</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                  <Input 
+                    type="number" 
+                    value={newPrice} 
+                    onChange={(e) => setNewPrice(e.target.value)}
+                    className="pl-8 h-12 text-lg font-bold rounded-xl"
+                    placeholder="Enter amount"
+                  />
+                </div>
+                <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Set to 0 for free courses</p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingPrice(null)} className="rounded-xl">Cancel</Button>
+            <Button onClick={handlePriceUpdate} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-8 shadow-lg shadow-emerald-200">
+              Update Price
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -304,24 +400,28 @@ export default function AdminDashboard() {
   }, [user, loadEnrollments]);
 
   useEffect(() => {
-    const tabUrlMap: Record<string, string> = {
-      "/admin": "users",
-      "/admin/users": "users",
-      "/admin/enrollments": "enrollments",
-      "/admin/all-courses": "all-courses",
-      "/admin/instructor-courses": "instructor-courses",
-      "/admin/questions": "questions",
-      "/admin/courses": "courses",
-      "/admin/exams": "exams",
-      "/admin/security": "security",
-      "/admin/chat": "chat",
-    };
+      const tabUrlMap: Record<string, string> = {
+        "/admin": "users",
+        "/admin/users": "users",
+        "/admin/enrollments": "enrollments",
+        "/admin/all-courses": "all-courses",
+        "/admin/instructor-courses": "instructor-courses",
+        "/admin/questions": "questions",
+        "/admin/courses": "courses",
+        "/admin/exams": "exams",
+        "/admin/security": "security",
+        "/admin/qa": "qa",
+        "/admin/chat": "chat",
+        "/admin/assign-courses": "assign-courses",
+        "/admin/instructors": "instructors",
+        "/admin/videos": "videos",
+      };
     const path = location.pathname;
     const tab = tabUrlMap[path];
     if (tab) {
       setActiveTab(tab);
     }
-  }, [location.pathname]); // Removed tabUrlMap from dependencies as it's now internal
+  }, [location.pathname]);
 
   if (authLoading) {
     return (
@@ -366,10 +466,7 @@ export default function AdminDashboard() {
                   />
                   Sync Data
                 </Button>
-                <Button className="pro-button-primary h-10 px-6 gap-2 rounded-lg shadow-md">
-                  <Shield className="h-4 w-4" />
-                  Security Protocol
-                </Button>
+
               </div>
             </div>
 
@@ -400,14 +497,7 @@ export default function AdminDashboard() {
                   trend: stats.pendingEnrollments > 0 ? "Action needed" : "Clear",
                   description: "Approval queue",
                 },
-                {
-                  label: "Security Events",
-                  value: stats.securityEvents,
-                  icon: ShieldAlert,
-                  color: "blue",
-                  trend: "-5%",
-                  description: "Requiring attention",
-                },
+
                 {
                   label: "System Health",
                   value: "99.9%",
@@ -476,8 +566,12 @@ export default function AdminDashboard() {
                         key: "tab-questions",
                       },
                       { id: "exams", label: "Assessments", icon: ShieldCheck, key: "tab-exams" },
-                      { id: "security", label: "Security Center", icon: Shield, key: "tab-security" },
+
+                      { id: "qa", label: "Quality Assurance", icon: ShieldCheck, key: "tab-qa" },
                       { id: "chat", label: "Chat Monitor", icon: MessageSquare, key: "tab-chat" },
+                      { id: "assign-courses", label: "Assign Courses", icon: ClipboardList, key: "tab-assign-courses" },
+                      { id: "instructors", label: "Instructors", icon: Users, key: "tab-instructors" },
+                      { id: "videos", label: "Video Library", icon: VideoIcon, key: "tab-videos" },
                     ].map((tab) => (
                       <TabsTrigger
                         key={tab.key}
@@ -499,138 +593,164 @@ export default function AdminDashboard() {
               </div>
 
               <div className="min-h-[600px]">
-                <AnimatePresence>
-                  <TabsContent key="tab-users" value="users" className="mt-0 outline-none">
-                    <motion.div
-                      key="motion-users"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      <UserManagement
-                        users={profiles}
-                        loading={dataLoading}
-                        roleCounts={stats.roleCounts}
-                        onUpdateStatus={updateUserStatus}
-                        onUpdateRole={updateUserRole}
-                        onSendEmail={sendApprovalEmail}
-                      />
-                    </motion.div>
-                  </TabsContent>
+                <TabsContent key="tab-users" value="users" className="mt-0 outline-none">
+                  <motion.div
+                    key="motion-users"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <UserManagement
+                      users={profiles}
+                      loading={dataLoading}
+                      roleCounts={stats.roleCounts}
+                      onUpdateStatus={updateUserStatus}
+                      onUpdateRole={updateUserRole}
+                      onSendEmail={sendApprovalEmail}
+                    />
+                  </motion.div>
+                </TabsContent>
 
-                  <TabsContent key="tab-enrollments" value="enrollments" className="mt-0 outline-none">
-                    <motion.div
-                      key="motion-enrollments"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      <EnrollmentsList
-                        enrollments={enrollments}
-                        loading={enrollmentsLoading}
-                        onUpdateStatus={updateEnrollmentStatus}
-                        onDelete={deleteEnrollment}
-                      />
-                    </motion.div>
-                  </TabsContent>
+                <TabsContent key="tab-enrollments" value="enrollments" className="mt-0 outline-none">
+                  <motion.div
+                    key="motion-enrollments"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <EnrollmentsList
+                      enrollments={enrollments}
+                      loading={enrollmentsLoading}
+                      onUpdateStatus={updateEnrollmentStatus}
+                      onDelete={deleteEnrollment}
+                    />
+                  </motion.div>
+                </TabsContent>
 
-                  <TabsContent key="tab-grant-access" value="grant-access" className="mt-0 outline-none">
-                    <motion.div
-                      key="motion-grant-access"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      <GrantStudentAccess profiles={profiles} />
-                    </motion.div>
-                  </TabsContent>
+                <TabsContent key="tab-grant-access" value="grant-access" className="mt-0 outline-none">
+                  <motion.div
+                    key="motion-grant-access"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <GrantStudentAccess profiles={profiles} />
+                  </motion.div>
+                </TabsContent>
 
-                  <TabsContent key="tab-instructor-courses" value="instructor-courses" className="mt-0 outline-none">
-                    <motion.div
-                      key="motion-instructor-courses"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      <InstructorCoursesAdmin />
-                    </motion.div>
-                  </TabsContent>
+                <TabsContent key="tab-instructor-courses" value="instructor-courses" className="mt-0 outline-none">
+                  <motion.div
+                    key="motion-instructor-courses"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <InstructorCoursesAdmin />
+                  </motion.div>
+                </TabsContent>
 
-                  <TabsContent key="tab-all-courses" value="all-courses" className="mt-0 outline-none">
-                    <motion.div
-                      key="motion-all-courses"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      <AllCoursesList 
-                        onDelete={deleteCourse} 
-                        onView={(course) => {
-                          setSelectedCourseDetail(course);
-                          setShowCourseDetail(true);
-                        }}
-                        refreshTrigger={coursesRefreshKey} 
-                      />
-                    </motion.div>
-                  </TabsContent>
+                <TabsContent key="tab-all-courses" value="all-courses" className="mt-0 outline-none">
+                  <motion.div
+                    key="motion-all-courses"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <AllCoursesList 
+                      courses={courses}
+                      loading={dataLoading}
+                      onDelete={deleteCourse} 
+                      onView={(course) => {
+                        setSelectedCourseDetail(course);
+                        setShowCourseDetail(true);
+                      }}
+                      onUpdatePrice={adminData.updateCoursePrice}
+                    />
+                  </motion.div>
+                </TabsContent>
 
-                  <TabsContent key="tab-questions" value="questions" className="mt-0 outline-none">
-                    <motion.div
-                      key="motion-questions"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      <QuestionBankApproval />
-                    </motion.div>
-                  </TabsContent>
+                <TabsContent key="tab-questions" value="questions" className="mt-0 outline-none">
+                  <motion.div
+                    key="motion-questions"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <QuestionBankApproval />
+                  </motion.div>
+                </TabsContent>
 
-                    <TabsContent key="tab-courses" value="courses" className="mt-0 outline-none">
-                    <motion.div
-                      key="motion-courses"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      <CourseApproval
-                        courses={courses}
-                        loading={dataLoading}
-                        onApprove={approveCourse}
-                        onReject={rejectCourse}
-                        onUpdateStatus={updateCourseStatus}
-                      />
-                    </motion.div>
-                  </TabsContent>
+                  <TabsContent key="tab-courses" value="courses" className="mt-0 outline-none">
+                  <motion.div
+                    key="motion-courses"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <CourseApproval
+                      courses={courses}
+                      loading={dataLoading}
+                      onApprove={approveCourse}
+                      onReject={rejectCourse}
+                      onUpdateStatus={updateCourseStatus}
+                    />
+                  </motion.div>
+                </TabsContent>
 
-                  <TabsContent key="tab-exams" value="exams" className="mt-0 outline-none">
-                    <motion.div
-                      key="motion-exams"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      <ExamApproval />
-                    </motion.div>
-                  </TabsContent>
+                <TabsContent key="tab-exams" value="exams" className="mt-0 outline-none">
+                  <motion.div
+                    key="motion-exams"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <ExamApproval />
+                  </motion.div>
+                </TabsContent>
 
-                  <TabsContent key="tab-security" value="security" className="mt-0 outline-none">
-                    <motion.div
-                      key="motion-security"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      <SecurityMonitor
-                        securityEvents={securityEvents}
-                        systemLogs={systemLogs}
-                        loading={dataLoading}
-                        highPriorityCount={stats.highPriorityEvents}
-                        onResolveEvent={resolveSecurityEvent}
-                      />
-                    </motion.div>
-                  </TabsContent>
 
-                  <TabsContent key="tab-chat" value="chat" className="mt-0 outline-none">
-                    <motion.div
-                      key="motion-chat"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      <ChatMonitor />
-                    </motion.div>
-                  </TabsContent>
-                </AnimatePresence>
+
+                <TabsContent key="tab-qa" value="qa" className="mt-0 outline-none">
+                  <motion.div
+                    key="motion-qa"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <QualityAssurance />
+                  </motion.div>
+                </TabsContent>
+
+                <TabsContent key="tab-assign-courses" value="assign-courses" className="mt-0 outline-none">
+                  <motion.div
+                    key="motion-assign-courses"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <CourseAssignment />
+                  </motion.div>
+                </TabsContent>
+
+                <TabsContent key="tab-instructors" value="instructors" className="mt-0 outline-none">
+                  <motion.div
+                    key="motion-instructors"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <InstructorManagement />
+                  </motion.div>
+                </TabsContent>
+
+                <TabsContent key="tab-chat" value="chat" className="mt-0 outline-none">
+                  <motion.div
+                    key="motion-chat"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <ChatMonitor />
+                  </motion.div>
+                </TabsContent>
+
+                <TabsContent key="tab-videos" value="videos" className="mt-0 outline-none">
+                  <motion.div
+                    key="motion-videos"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <ManagerVideoLibrary />
+                  </motion.div>
+                </TabsContent>
               </div>
             </Tabs>
           </div>
@@ -721,7 +841,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <Badge className="bg-orange-200 text-orange-800 hover:bg-orange-300 border-none">
-                  {selectedCourseDetail.is_active !== false ? 'Active' : 'Archived'}
+                  {selectedCourseDetail.status === 'published' || selectedCourseDetail.status === 'approved' ? 'Active' : 'Archived'}
                 </Badge>
               </div>
             </div>

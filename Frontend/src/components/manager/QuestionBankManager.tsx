@@ -24,8 +24,6 @@ import {
   useQuestions,
   useCreateQuestion,
   useDeleteQuestion,
-  useMockTestConfigs,
-  useCreateMockTestConfig,
   useExams
 } from '@/hooks/useManagerData';
 import { useAuth } from '@/hooks/useAuth';
@@ -244,6 +242,14 @@ function parseAiText(
         // Correct Answer
         let ans = String(itemObj.answer || itemObj.correct_answer || itemObj.Answer || itemObj.correctAnswer || '');
 
+        // NEW: If correct_answer was not found at the root, check if any option has isCorrect: true
+        if (!ans && Array.isArray(itemObj.options)) {
+          const correctOpt = itemObj.options.find((o: any) => o && typeof o === 'object' && (o.isCorrect === true || o.is_correct === true));
+          if (correctOpt) {
+            ans = String(correctOpt.text || correctOpt.option || String(correctOpt));
+          }
+        }
+
         // Resolve "A", "B", etc.
         if (opts.length > 0 && /^[A-E]$/i.test(String(ans))) {
           const idx = String(ans).toUpperCase().charCodeAt(0) - 65;
@@ -419,14 +425,20 @@ function QuestionTypeIcon({ type }: { type: string }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export function QuestionBankManager({ onSectionChange }: { onSectionChange?: (section: string) => void }) {
+export function QuestionBankManager({
+  onSectionChange,
+  initialTab = 'bank',
+  mode = 'manager'
+}: {
+  onSectionChange?: (section: string) => void;
+  initialTab?: string;
+  mode?: 'manager' | 'instructor';
+}) {
   const { user } = useAuth();
   const { toast } = useToast();
   const { data: questions = [], isLoading } = useQuestions();
-  const { data: quizzes = [] } = useMockTestConfigs();
   const createQuestion = useCreateQuestion();
   const deleteQuestion = useDeleteQuestion();
-  const createQuiz = useCreateMockTestConfig();
 
   // ─── Global Controls for Bulk Editor ───
   // These control the "next batch" of questions to be added
@@ -1146,26 +1158,25 @@ export function QuestionBankManager({ onSectionChange }: { onSectionChange?: (se
         {/* ── Topic Breakdown ── */}
         {topicStats.length > 0 && (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {topicStats.map((s) => {
-              const quizInfo = quizzes.find(q => q.title === s.topic);
-              return (
-                <Card
-                  key={s.topic}
-                  className={cn(
-                    "hover:shadow-lg transition-all cursor-pointer border-2 relative overflow-hidden group",
-                    filterTopic === s.topic ? "border-primary bg-primary/[0.03]" : "border-muted"
-                  )}
-                  onClick={() => setFilterTopic(filterTopic === s.topic ? 'all' : s.topic)}
-                >
-                  <CardContent className="p-6 space-y-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1">
-                        <p className="font-bold text-lg leading-tight group-hover:text-primary transition-colors">{s.topic}</p>
-                        <p className="text-xs text-muted-foreground line-clamp-2">
-                          {quizInfo?.description || "Curated batch of questions for practice and assessment."}
-                        </p>
-                      </div>
-                      <Badge variant="outline" className="bg-background shadow-sm shrink-0">{s.total}</Badge>
+             {topicStats.map((s) => {
+               return (
+                 <Card
+                   key={s.topic}
+                   className={cn(
+                     "hover:shadow-lg transition-all cursor-pointer border-2 relative overflow-hidden group",
+                     filterTopic === s.topic ? "border-primary bg-primary/[0.03]" : "border-muted"
+                   )}
+                   onClick={() => setFilterTopic(filterTopic === s.topic ? 'all' : s.topic)}
+                 >
+                   <CardContent className="p-6 space-y-4">
+                     <div className="flex items-start justify-between gap-3">
+                       <div className="space-y-1">
+                         <p className="font-bold text-lg leading-tight group-hover:text-primary transition-colors">{s.topic}</p>
+                         <p className="text-xs text-muted-foreground line-clamp-2">
+                           Curated batch of questions for practice and assessment.
+                         </p>
+                       </div>
+                       <Badge variant="outline" className="bg-background shadow-sm shrink-0">{s.total}</Badge>
                     </div>
                     <div className="flex items-center justify-between pt-2 border-t">
                       <DifficultyBar {...s} />

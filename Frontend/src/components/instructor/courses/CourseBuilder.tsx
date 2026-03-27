@@ -270,6 +270,7 @@ function ModuleItem({ module, course }: { module: CourseModule, course: Course }
                                         controls
                                         className="w-full h-full object-contain"
                                         preload="metadata"
+                                        poster={vid.thumbnail_url ? (vid.thumbnail_url.startsWith('http') ? vid.thumbnail_url : `/s3/public/${vid.thumbnail_url}`) : undefined}
                                     >
                                         <source src={vid.video_url.startsWith('https') ? vid.video_url : (vid.video_url.includes('s3') ? vid.video_url : `/s3/public/${vid.video_url}`)} type="video/mp4" />
                                     </video>

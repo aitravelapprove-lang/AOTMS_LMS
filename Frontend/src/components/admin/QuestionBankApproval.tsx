@@ -43,6 +43,13 @@ interface StudentAccess {
     granted_at: string;
 }
 
+interface Student {
+    id: string;
+    full_name: string;
+    email: string;
+    avatar_url?: string;
+}
+
 interface QuestionBankResponse {
     topic: string;
     approval_status: string;
@@ -84,6 +91,13 @@ export function QuestionBankApproval() {
     const [showRemoveDialog, setShowRemoveDialog] = useState(false);
     const [removingTopic, setRemovingTopic] = useState<string | null>(null);
 
+    const [showGrantDialog, setShowGrantDialog] = useState(false);
+    const [grantingTopic, setGrantingTopic] = useState<string | null>(null);
+    const [students, setStudents] = useState<Student[]>([]);
+    const [loadingStudents, setLoadingStudents] = useState(false);
+    const [selectedStudentId, setSelectedStudentId] = useState("");
+    const [isGranting, setIsGranting] = useState(false);
+
     const fetchPendingBanks = async (showLoading = true) => {
         try {
             if (showLoading && pendingBanks.length === 0 && approvedBanks.length === 0) setLoading(true);
@@ -111,10 +125,23 @@ export function QuestionBankApproval() {
 
     useEffect(() => {
         fetchPendingBanks();
+        fetchStudents();
         const interval = setInterval(() => fetchPendingBanks(), 15000);
         return () => clearInterval(interval);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    const fetchStudents = async () => {
+        setLoadingStudents(true);
+        try {
+            const res = await fetchWithAuth('/admin/students');
+            setStudents(res || []);
+        } catch (err) {
+            console.error('Failed to fetch students', err);
+        } finally {
+            setLoadingStudents(false);
+        }
+    };
 
     const [viewingQuestions, setViewingQuestions] = useState<string | null>(null);
     const [questionsList, setQuestionsList] = useState<Question[]>([]);
@@ -231,6 +258,39 @@ export function QuestionBankApproval() {
             });
         } finally {
             setLoadingAccess(false);
+        }
+    };
+
+    const handleGrantAccess = async () => {
+        if (!grantingTopic || !selectedStudentId) return;
+
+        setIsGranting(true);
+        try {
+            await fetchWithAuth('/admin/question-bank/grant-access', {
+                method: 'POST',
+                body: JSON.stringify({
+                    topic: grantingTopic,
+                    userId: selectedStudentId
+                })
+            });
+
+            toast({
+                title: 'Access Granted! 🚀',
+                description: `Student now has access to mock tests for ${grantingTopic}`
+            });
+
+            setShowGrantDialog(false);
+            setGrantingTopic(null);
+            setSelectedStudentId("");
+            fetchPendingBanks(false);
+        } catch (err) {
+            toast({
+                title: 'Grant Failed',
+                description: err instanceof Error ? err.message : 'Something went wrong',
+                variant: 'destructive'
+            });
+        } finally {
+            setIsGranting(false);
         }
     };
 
@@ -413,7 +473,10 @@ export function QuestionBankApproval() {
                                                     <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-none px-2 py-0 text-[10px] uppercase tracking-wider font-black">Approved</Badge>
                                                 </div>
                                                 <div className="flex items-center gap-4 text-xs font-semibold text-slate-500">
-                                                    <div className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
+                                                    <div 
+                                                        className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-200 transition-colors"
+                                                        onClick={() => handleViewAccess(bank.topic)}
+                                                    >
                                                         <Users className="h-3.5 w-3.5 text-primary" />
                                                         <span>{accessCount[bank.topic] || 0} Students Accessed</span>
                                                     </div>
@@ -421,6 +484,16 @@ export function QuestionBankApproval() {
                                             </div>
 
                                             <div className="p-6 lg:bg-slate-50/50 flex flex-row lg:flex-col justify-center gap-3 border-l border-slate-100 min-w-[200px]">
+                                                <Button
+                                                    onClick={() => {
+                                                        setGrantingTopic(bank.topic);
+                                                        setShowGrantDialog(true);
+                                                    }}
+                                                    className="w-full h-11 rounded-xl pro-button-primary shadow-lg shadow-primary/20 font-bold"
+                                                >
+                                                   <Users className="h-4 w-4 mr-2" />
+                                                   + Access
+                                                </Button>
                                                 <Button
                                                     variant="outline"
                                                     onClick={() => handleRemoveClick(bank.topic)}
@@ -728,6 +801,72 @@ export function QuestionBankApproval() {
                                 className="h-12 px-10 rounded-xl font-black bg-slate-900 hover:bg-black text-white uppercase tracking-widest text-[10px]"
                             >
                                 Done Inspection
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={showGrantDialog} onOpenChange={setShowGrantDialog}>
+                <DialogContent className="sm:max-w-md border-none shadow-2xl rounded-[2rem] bg-white p-0 overflow-hidden">
+                    <div className="bg-primary p-8 text-white relative">
+                        <div className="h-16 w-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 border border-white/30 shadow-xl relative z-10">
+                            <Users className="h-8 w-8 text-white" />
+                        </div>
+                        <DialogTitle className="text-2xl font-black tracking-tight relative z-10">Grant Mock Access</DialogTitle>
+                        <DialogDescription className="text-white/80 mt-2 font-medium relative z-10">Select a student to unlock {grantingTopic}</DialogDescription>
+                    </div>
+                    
+                    <div className="p-8 space-y-6 bg-white">
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label className="text-xs font-black uppercase text-slate-500 tracking-widest pl-1">Target Student</Label>
+                                <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
+                                    <SelectTrigger className="h-14 rounded-2xl border-slate-200 bg-slate-50 focus:ring-primary/20 font-bold text-slate-700">
+                                        <SelectValue placeholder="Pick a student..." />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-slate-200 shadow-xl max-h-[300px]">
+                                        {students.map((student) => (
+                                            <SelectItem 
+                                                key={student.id} 
+                                                value={student.id}
+                                                className="font-bold py-3 hover:bg-slate-50 rounded-xl"
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <Avatar className="h-6 w-6">
+                                                        <AvatarImage src={student.avatar_url} />
+                                                        <AvatarFallback>{student.full_name.charAt(0)}</AvatarFallback>
+                                                    </Avatar>
+                                                    <span>{student.full_name}</span>
+                                                </div>
+                                            </SelectItem>
+                                        ))}
+                                        {students.length === 0 && (
+                                            <div className="p-4 text-center text-sm text-slate-400">No students available</div>
+                                        )}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <p className="text-xs text-slate-500 font-medium leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                This will automatically assign this Question Bank topic to the student. They will see a notification and can immediately take mock tests.
+                            </p>
+                        </div>
+
+                        <div className="flex gap-3 pt-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => setShowGrantDialog(false)}
+                                className="flex-1 h-12 rounded-xl border-slate-200 text-slate-600 font-bold hover:bg-slate-50"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleGrantAccess}
+                                disabled={!selectedStudentId || isGranting}
+                                className="flex-[2] h-12 rounded-xl pro-button-primary shadow-xl shadow-primary/30 font-bold"
+                            >
+                                {isGranting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ShieldCheck className="h-4 w-4 mr-2" />}
+                                Grant Access
                             </Button>
                         </div>
                     </div>

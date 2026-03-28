@@ -1153,6 +1153,50 @@ app.get('/api/admin/question-bank/:topic/access-list', authenticateToken, requir
     }
 });
 
+app.post('/api/admin/question-bank/grant-access', authenticateToken, requireAdminOrManager, async (req, res) => {
+    const { topic, userId } = req.body;
+    if (!topic || !userId) return res.status(400).json({ error: 'Missing topic or userId' });
+
+    try {
+        await StudentExamAccess.findOneAndUpdate(
+            { 
+                student_id: userId, 
+                question_bank_topic: topic, 
+                access_type: 'question_bank' 
+            },
+            { 
+                assigned_by: req.user.id,
+                granted_at: new Date()
+            },
+            { upsert: true, new: true }
+        );
+
+        const student = await User.findById(userId);
+        if (student) {
+             const notification = new Notification({
+                user_id: userId,
+                type: 'mock_access',
+                title: `Mock Test Unlocked: ${topic} 🧠`,
+                message: `Admin has granted you special access to the ${topic} practice repository. You can now take mock tests for this topic!`,
+                data: { topic },
+                created_at: new Date()
+            });
+            await notification.save();
+
+            sendNotification(userId, {
+                type: 'mock_access',
+                title: 'Mock Test Unlocked! 🧠',
+                message: `You now have access to ${topic} mock tests.`,
+                topic
+            });
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        handleError(res, err, 'grant-qb-access');
+    }
+});
+
 app.get('/api/admin/courses-with-instructors', authenticateToken, requireAdminOrManager, async (req, res) => {
     try {
         const courses = await Course.find()
@@ -2602,33 +2646,73 @@ app.put('/api/courses/enrollment-status', authenticateToken, requireAdmin, async
 
 app.get('/api/student/accessible-exams', authenticateToken, async (req, res) => {
     try {
-        // 1. Get explicit access
-        const accessList = await StudentExamAccess.find({ student_id: req.user.id })
+        const studentId = req.user.id;
+
+        // 1. Get explicit access records from StudentExamAccess
+        const explicitAccess = await StudentExamAccess.find({ student_id: studentId })
             .populate('exam_id')
             .populate('mock_paper_id')
             .lean();
-        
-        // 2. Get implicit access via Course Enrollments
-        const enrollments = await Enrollment.find({ user_id: req.user.id, status: 'active' }).lean();
+
+        // 2. Get active enrollments to determine implicit course-based access
+        const enrollments = await Enrollment.find({ user_id: studentId, status: 'active' }).lean();
         const enrolledCourseIds = enrollments.map(e => e.course_id);
 
+        // 3. Get implicitly accessible exams (live/scheduled) and mocks via courses
         const courseExams = await Exam.find({ 
             course_id: { $in: enrolledCourseIds },
             approval_status: 'approved',
             status: 'active'
         }).lean();
 
-        // Map course-based exams to the consistent format based on type
-        const implicitAccess = courseExams.map(exam => {
+        // 4. Identify all accessible topics (implicit from courses + explicit granted)
+        const explicitQBTopics = explicitAccess
+            .filter(a => a.access_type === 'question_bank' && a.question_bank_topic)
+            .map(a => a.question_bank_topic);
+
+        // 5. Build the list of Question Banks (qbs)
+        const qbs = await QuestionBank.find({
+            $or: [
+                { course_id: { $in: enrolledCourseIds }, approval_status: 'approved' },
+                { topic: { $in: explicitQBTopics }, approval_status: 'approved' }
+            ]
+        }).lean();
+
+        // 6. Map Question Banks into the "topicMap" for frontend mock test interface
+        const topicMap = new Map();
+        qbs.forEach(qb => {
+            if (!topicMap.has(qb.topic)) {
+                // Find if there's an explicit grant for this topic to use its granted_at date
+                const explicitGrant = explicitAccess.find(a => a.question_bank_topic === qb.topic);
+                
+                topicMap.set(qb.topic, {
+                    id: `qb_${qb.topic}`,
+                    access_type: 'mock', 
+                    granted_at: explicitGrant ? explicitGrant.granted_at : (qb.updated_at || qb.created_at),
+                    mock_paper_id: `qb_${qb.topic}`, // Topic becomes the ID
+                    mock_papers: {
+                        title: `${qb.topic} Practice Set${explicitGrant ? ' (Unlocked)' : ''}`,
+                        description: `Topic-wise questions for ${qb.topic}`,
+                        duration_minutes: 60,
+                        total_marks: 0, 
+                        question_count: 0
+                    }
+                });
+            }
+            const item = topicMap.get(qb.topic);
+            item.mock_papers.question_count++;
+            item.mock_papers.total_marks++; 
+        });
+
+        // 7. Map Course-based Exams into consistent format
+        const implicitExams = courseExams.map(exam => {
             const isMock = exam.exam_type === 'mock';
             return {
                 id: `implicit_${exam._id}`,
                 access_type: isMock ? 'mock' : 'exam',
                 granted_at: exam.updated_at || exam.created_at,
-                // Assign to either exam_id or mock_paper_id depending on type
                 exam_id: isMock ? null : exam._id,
                 mock_paper_id: isMock ? exam._id : null,
-                // Populate the specific schema expected by useStudentExams/useStudentMockPapers
                 exam_schedules: isMock ? null : {
                     title: exam.title,
                     description: exam.description || '',
@@ -2645,61 +2729,42 @@ app.get('/api/student/accessible-exams', authenticateToken, async (req, res) => 
                 } : null
             };
         });
-        
-        // 3. Get Question Bank access via Course Enrollments
-        const courseQBs = await QuestionBank.find({
-            course_id: { $in: enrolledCourseIds },
-            approval_status: 'approved'
-        }).lean();
 
-        // Group QBs by topic to match the UI format
-        const topicMap = new Map();
-        courseQBs.forEach(qb => {
-            if (!topicMap.has(qb.topic)) {
-                topicMap.set(qb.topic, {
-                    id: `qb_${qb.topic}`,
-                    access_type: 'question_bank',
-                    granted_at: qb.updated_at || qb.created_at,
-                    mock_paper_id: `qb_${qb.topic}`, // Use topic as ID
-                    mock_papers: {
-                        title: `${qb.topic} Practice Set`,
-                        description: `Topic-wise questions for ${qb.topic}`,
-                        question_count: 0
-                    }
-                });
-            }
-            topicMap.get(qb.topic).mock_papers.question_count++;
-        });
+        // 8. Map Explicit Exams/Mock Papers from StudentExamAccess
+        const explicitExams = explicitAccess
+            .filter(a => a.access_type !== 'question_bank')
+            .map(access => ({
+                id: access._id,
+                access_type: access.access_type,
+                granted_at: access.granted_at,
+                exam_id: access.exam_id?._id,
+                mock_paper_id: access.mock_paper_id?._id,
+                exam_schedules: access.exam_id ? {
+                    title: access.exam_id.title,
+                    duration_minutes: access.exam_id.duration_minutes,
+                    total_marks: access.exam_id.total_marks,
+                    passing_marks: access.exam_id.passing_marks
+                } : null,
+                mock_papers: access.mock_paper_id ? {
+                    title: access.mock_paper_id.title,
+                    description: access.mock_paper_id.description || '',
+                    duration_minutes: access.mock_paper_id.duration_minutes || 60,
+                    question_count: access.mock_paper_id.questions?.length || 0
+                } : null
+            }));
 
-        const qbAccess = Array.from(topicMap.values());
-        
-        // Transform explicit access for frontend consistency
-        const explicitData = accessList.map(access => ({
-            id: access._id,
-            access_type: access.access_type,
-            granted_at: access.granted_at,
-            exam_id: access.exam_id?._id,
-            mock_paper_id: access.mock_paper_id?._id,
-            exam_schedules: access.exam_id ? {
-                title: access.exam_id.title,
-                duration_minutes: access.exam_id.duration_minutes,
-                total_marks: access.exam_id.total_marks,
-                passing_marks: access.exam_id.passing_marks
-            } : null,
-            mock_papers: access.mock_paper_id ? {
-                title: access.mock_paper_id.title,
-                description: access.mock_paper_id.description || '',
-                duration_minutes: access.mock_paper_id.duration_minutes || 60,
-                question_count: access.mock_paper_id.questions?.length || 0
-            } : null
-        }));
+        // 9. Combine and deduplicate
+        const combined = [...explicitExams, ...Array.from(topicMap.values())];
+        const existingExamIds = new Set(explicitExams.map(e => e.exam_id?.toString()).filter(Boolean));
+        const existingMockIds = new Set(explicitExams.map(e => e.mock_paper_id?.toString()).filter(Boolean));
 
-        // Combine and filter out duplicates (prefer explicit if both exist)
-        const combined = [...explicitData, ...qbAccess];
-        const existingExamIds = new Set(explicitData.map(e => e.exam_id?.toString()).filter(Boolean));
-
-        implicitAccess.forEach(ia => {
-             if (!existingExamIds.has(ia.exam_id.toString())) {
+        implicitExams.forEach(ia => {
+             const examId = ia.exam_id?.toString();
+             const mockId = ia.mock_paper_id?.toString();
+             
+             if (examId && !existingExamIds.has(examId)) {
+                 combined.push(ia);
+             } else if (mockId && !existingMockIds.has(mockId)) {
                  combined.push(ia);
              }
         });

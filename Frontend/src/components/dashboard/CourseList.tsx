@@ -168,7 +168,19 @@ export function CourseList({ type = 'enrolled', onSelectCourse }: CourseListProp
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="mt-auto space-y-3">
+                                    <div className="mt-auto space-y-4">
+                                        <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100/50">
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Value</span>
+                                                <span className="text-sm line-through text-slate-500">₹{course.original_price || "00,000"}</span>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-primary">Investment</span>
+                                                <p className="text-lg font-black text-slate-900 leading-none mt-0.5">
+                                                    {course.price === 0 ? "Free Access" : (course.price ? `₹${course.price.toLocaleString('en-IN')}` : "Contact Us")}
+                                                </p>
+                                            </div>
+                                        </div>
                                         <Button
                                             className="w-full group/btn pro-button-primary"
                                             onClick={(e) => {
@@ -176,7 +188,7 @@ export function CourseList({ type = 'enrolled', onSelectCourse }: CourseListProp
                                                 if (onSelectCourse) onSelectCourse(course);
                                             }}
                                         >
-                                            Enroll for Free
+                                            Purchase Course
                                             <ChevronRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
                                         </Button>
                                     </div>

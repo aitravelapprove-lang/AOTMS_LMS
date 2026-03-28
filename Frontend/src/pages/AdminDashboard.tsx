@@ -16,7 +16,11 @@ import { InstructorManagement } from "@/components/admin/InstructorManagement";
 import { ExamApproval } from "@/components/admin/ExamApproval";
 import { EnrollmentsList } from "@/components/admin/EnrollmentsList";
 import { GrantStudentAccess } from "@/components/admin/GrantStudentAccess";
+import { LiveMonitoring } from "@/components/admin/LiveMonitoring";
 import InstructorCoursesAdmin from "@/pages/InstructorCourses";
+import { ExamScheduler } from "@/components/manager/ExamScheduler";
+import { QuestionBankManager } from "@/components/manager/QuestionBankManager";
+import { LeaderboardManager } from "@/components/manager/LeaderboardManager";
 import { ManagerVideoLibrary } from "@/components/manager/ManagerVideoLibrary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -53,7 +57,9 @@ import {
   DollarSign,
   Pencil,
   Video as VideoIcon,
+  Database,
 } from "lucide-react";
+import { useSocket } from "@/hooks/useSocket";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Course as InstructorCourse } from "@/hooks/useInstructorData";
 import { Course as CatalogCourse } from "@/hooks/useCourses";
@@ -399,6 +405,24 @@ export default function AdminDashboard() {
     }
   }, [user, loadEnrollments]);
 
+  // Socket support for real-time enrollment updates
+  const { socket } = useSocket();
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleEnrollmentChange = () => {
+      console.log('[Socket] Enrollments changed, refreshing...');
+      loadEnrollments();
+    };
+
+    socket.on('course_enrollments_changed', handleEnrollmentChange);
+    
+    return () => {
+      socket.off('course_enrollments_changed', handleEnrollmentChange);
+    };
+  }, [socket, loadEnrollments]);
+
   useEffect(() => {
       const tabUrlMap: Record<string, string> = {
         "/admin": "users",
@@ -415,6 +439,9 @@ export default function AdminDashboard() {
         "/admin/assign-courses": "assign-courses",
         "/admin/instructors": "instructors",
         "/admin/videos": "videos",
+        "/admin/exam-scheduling": "exam-scheduling",
+        "/admin/question-repository": "question-repository",
+        "/admin/live-monitoring": "live-monitoring",
       };
     const path = location.pathname;
     const tab = tabUrlMap[path];
@@ -425,12 +452,58 @@ export default function AdminDashboard() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-4">
-          <RefreshCw className="h-8 w-8 text-primary animate-spin" />
-          <p className="text-sm font-medium text-slate-500 animate-pulse">
-            Initializing Dashboard...
-          </p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50/50 backdrop-blur-xl transition-all duration-700">
+        <div className="relative flex flex-col items-center">
+          {/* Main loader rings */}
+          <div className="relative flex items-center justify-center">
+            <motion.div 
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              className="h-28 w-28 rounded-full border-[3px] border-primary/10 border-t-primary shadow-[0_0_20px_rgba(var(--primary),0.1)]"
+            />
+            <motion.div 
+              animate={{ rotate: -360 }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+              className="absolute h-20 w-20 rounded-full border-[3px] border-slate-200 border-b-slate-400 opacity-50"
+            />
+            <div className="absolute flex flex-col items-center gap-1">
+              <Shield className="h-6 w-6 text-primary animate-pulse" />
+            </div>
+          </div>
+          
+          {/* Text indicators */}
+          <div className="mt-12 text-center space-y-4">
+            <motion.h4 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
+              className="text-lg font-black text-slate-900 uppercase tracking-[0.4em] italic leading-none pl-1"
+            >
+              Initializing <br/> <span className="text-primary not-italic font-medium text-sm">Integrity Console</span>
+            </motion.h4>
+            <div className="flex items-center gap-1 justify-center">
+              {[0, 1, 2].map((i) => (
+                <motion.div
+                  key={i}
+                  animate={{ 
+                    scale: [1, 1.4, 1],
+                    opacity: [0.3, 1, 0.3]
+                  }}
+                  transition={{ 
+                    duration: 1, 
+                    repeat: Infinity, 
+                    delay: i * 0.2 
+                  }}
+                  className="h-1.5 w-1.5 rounded-full bg-primary"
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+        
+        {/* Footnote */}
+        <div className="absolute bottom-12 text-[10px] font-bold text-slate-300 uppercase tracking-[0.5em] animate-pulse">
+          Quantum Authentication Protocol V.4
         </div>
       </div>
     );
@@ -459,14 +532,13 @@ export default function AdminDashboard() {
                   variant="outline"
                   onClick={refresh}
                   disabled={dataLoading}
-                  className="h-10 px-4 gap-2 rounded-lg border-slate-200 text-slate-600 font-semibold"
+                  className="h-10 px-5 gap-3 rounded-xl border-slate-200 bg-white/70 backdrop-blur-md text-slate-700 font-bold hover:bg-white hover:border-primary/30 hover:text-primary transition-all shadow-sm hover:shadow-md active:scale-95 group"
                 >
                   <RefreshCw
-                    className={`h-4 w-4 ${dataLoading ? "animate-spin" : ""}`}
+                    className={`h-4 w-4 transition-transform duration-500 ${dataLoading ? "animate-spin text-primary" : "group-hover:rotate-180 text-primary/60"}`}
                   />
-                  Sync Data
+                  <span>System Sync</span>
                 </Button>
-
               </div>
             </div>
 
@@ -572,6 +644,9 @@ export default function AdminDashboard() {
                       { id: "assign-courses", label: "Assign Courses", icon: ClipboardList, key: "tab-assign-courses" },
                       { id: "instructors", label: "Instructors", icon: Users, key: "tab-instructors" },
                       { id: "videos", label: "Video Library", icon: VideoIcon, key: "tab-videos" },
+                      { id: "exam-scheduling", label: "Exam Scheduling", icon: Calendar, key: "tab-exam-scheduling" },
+                      { id: "question-repository", label: "Question Repository", icon: Database, key: "tab-question-repository" },
+                      { id: "live-monitoring", label: "Live Monitoring", icon: Activity, key: "tab-live-monitoring" },
                     ].map((tab) => (
                       <TabsTrigger
                         key={tab.key}
@@ -631,7 +706,7 @@ export default function AdminDashboard() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                   >
-                    <GrantStudentAccess profiles={profiles} />
+                    <GrantStudentAccess profiles={profiles} enrollments={enrollments} />
                   </motion.div>
                 </TabsContent>
 
@@ -749,6 +824,36 @@ export default function AdminDashboard() {
                     animate={{ opacity: 1 }}
                   >
                     <ManagerVideoLibrary />
+                  </motion.div>
+                </TabsContent>
+
+                <TabsContent key="tab-exam-scheduling" value="exam-scheduling" className="mt-0 outline-none">
+                  <motion.div
+                    key="motion-exam-scheduling"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <ExamScheduler />
+                  </motion.div>
+                </TabsContent>
+
+                <TabsContent key="tab-question-repository" value="question-repository" className="mt-0 outline-none">
+                  <motion.div
+                    key="motion-question-repository"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <QuestionBankManager />
+                  </motion.div>
+                </TabsContent>
+
+                <TabsContent key="tab-live-monitoring" value="live-monitoring" className="mt-0 outline-none">
+                  <motion.div
+                    key="motion-live-monitoring"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <LiveMonitoring />
                   </motion.div>
                 </TabsContent>
               </div>

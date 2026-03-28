@@ -25,6 +25,11 @@ interface DataSummary {
     exams: number;
     conversations: number;
     messages: number;
+    pendingCourses: number;
+    pendingEnrollments: number;
+    pendingExams: number;
+    highPriorityEvents: number;
+    roleCounts?: Record<string, number>;
 }
 
 interface DeletionStats {
@@ -138,7 +143,7 @@ export function QualityAssurance() {
                     endpoint = '/data/question_bank';
                     break;
                 case 'exams':
-                    endpoint = '/data/exams';
+                    endpoint = '/admin/exams-list';
                     break;
                 case 'conversations':
                     endpoint = '/admin/conversations';
@@ -156,9 +161,16 @@ export function QualityAssurance() {
         }
     };
 
-    const [dataList, setDataList] = useState<(UserItem | QuestionBankItem | any)[]>([]);
+    interface BaseDataItem {
+        id?: string;
+        _id?: string;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        [key: string]: any;
+    }
 
-    const handleIndividualDelete = async (item: UserItem | QuestionBankItem | any) => {
+    const [dataList, setDataList] = useState<BaseDataItem[]>([]);
+
+    const handleIndividualDelete = async (item: BaseDataItem) => {
         const id = getItemId(item, viewingDataType || '');
         if (!id || id === 'N/A') return;
         
@@ -216,30 +228,33 @@ export function QualityAssurance() {
         }
     };
 
-    const getDisplayValue = (item: UserItem | QuestionBankItem | any, dataType: string): string => {
+    const getDisplayValue = (item: BaseDataItem, dataType: string): string => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const i = item as any;
         switch (dataType) {
             case 'users': {
-                const u = item as UserItem;
-                return u.full_name || u.email || (typeof u.user_id === 'object' ? u.user_id?.full_name : u.user_id?.toString()) || 'Unknown';
+                return i.full_name || i.email || (typeof i.user_id === 'object' ? i.user_id?.full_name : i.user_id?.toString()) || 'Unknown';
             }
             case 'courses':
-                return item.title || item.name || 'Untitled Course';
+                return i.title || i.name || 'Untitled Course';
             case 'enrollments':
-                return `${item.user_name || item.user_id?.full_name || 'Student'} - ${item.course_title || item.course_id?.title || 'Course'}`;
+                return `${i.user_name || i.user_id?.full_name || 'Student'} - ${i.course_title || i.course_id?.title || 'Course'}`;
             case 'questionBanks':
             case 'question_bank':
-                return (item as QuestionBankItem).topic || (item as QuestionBankItem).question_text?.substring(0, 50) || 'Question';
+                return i.topic || i.question_text?.substring(0, 50) || 'Question';
             case 'exams':
-                return item.title || item.topic || 'Untitled Exam';
+                return i.title || i.topic || 'Untitled Exam';
             case 'conversations':
-                return item.id?.toString() || 'Conversation';
+                return i.id?.toString() || 'Conversation';
             default:
-                return item.title || item.name || item.topic || 'Record';
+                return i.title || i.name || i.topic || 'Record';
         }
     };
 
-    const getItemId = (item: UserItem | QuestionBankItem | any, dataType: string): string => {
-        return item.id || item._id?.toString() || item.user_id?.toString() || item.course_id?.toString() || 'N/A';
+    const getItemId = (item: BaseDataItem, dataType: string): string => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const i = item as any;
+        return i.id || i._id?.toString() || i.user_id?.toString() || i.course_id?.toString() || 'N/A';
     };
 
     if (loading && summary.users === 0 && summary.courses === 0) {

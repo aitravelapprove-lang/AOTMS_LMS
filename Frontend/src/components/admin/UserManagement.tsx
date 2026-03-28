@@ -241,12 +241,12 @@ export function UserManagement({
                         <div className="flex flex-col gap-1">
                             <Badge
                                 variant="destructive"
-                                className="h-5 px-1.5 py-0 text-[10px] w-fit"
+                                className="h-5 px-1.5 py-0 text-[10px] w-fit bg-red-600 text-white animate-pulse font-black"
                             >
                                 Suspended
                             </Badge>
                             {user.suspended_until && (
-                                <span className="text-[9px] font-mono text-rose-600 font-bold animate-pulse">
+                                <span className="text-[9px] font-black text-red-600 uppercase tracking-tighter">
                                     Ends {new Date(user.suspended_until).toLocaleDateString()}
                                 </span>
                             )}
@@ -449,12 +449,6 @@ export function UserManagement({
                     className="rounded-lg h-10 font-medium hover:bg-slate-50"
                   >
                     Manager
-                  </SelectItem>
-                  <SelectItem
-                    value="admin"
-                    className="rounded-lg h-10 font-medium hover:bg-slate-50 text-rose-600 focus:text-rose-700"
-                  >
-                    Admin
                   </SelectItem>
                 </SelectContent>
               </Select>

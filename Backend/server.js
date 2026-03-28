@@ -65,7 +65,8 @@ const MODEL_MAP = {
     'instructor_applications': InstructorApplication,
     'instructor_progress': InstructorProgress,
     'video_progress': VideoProgress,
-    'guest_credentials': GuestCredential
+    'guest_credentials': GuestCredential,
+    'users': User
 };
 
 const ALLOWED_TABLES = Object.keys(MODEL_MAP);
@@ -599,6 +600,137 @@ app.post('/api/run-code', authenticateToken, async (req, res) => {
     }
 });
 
+// --- Video Progress Tracking ---
+
+/**
+ * @route GET /api/progress/:videoId
+ * @desc Fetch video progress for the logged-in user
+ */
+app.get('/api/progress/:videoId', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const videoId = req.params.videoId;
+        
+        // Find existing progress for this user and video
+        const progress = await VideoProgress.findOne({ user_id: userId, video_id: videoId });
+        
+        if (!progress) {
+            return res.json({ 
+                last_watched_time: 0, 
+                watched_percentage: 0, 
+                completed: false 
+            });
+        }
+        
+        res.json(progress);
+    } catch (err) {
+        handleError(res, err, 'get-progress');
+    }
+});
+
+/**
+ * @route POST /api/progress/save
+ * @desc Save or update video progress
+ */
+app.post('/api/progress/save', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { videoId, courseId, watchedPercentage, lastWatchedTime, completed } = req.body;
+        
+        if (!videoId || !courseId) {
+            return res.status(400).json({ error: 'videoId and courseId are required.' });
+        }
+
+        console.log(`[Progress] Saving: User=${userId}, Course=${courseId}, Video=${videoId}, %=${watchedPercentage}`);
+
+        const progress = await VideoProgress.findOneAndUpdate(
+            { user_id: userId, video_id: videoId },
+            {
+                $set: {
+                    user_id: userId,
+                    course_id: courseId,
+                    video_id: videoId,
+                    watched_percentage: watchedPercentage || 0,
+                    last_watched_time: lastWatchedTime || 0,
+                    completed: completed || (watchedPercentage >= 95),
+                    updated_at: new Date()
+                }
+            },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+
+        // Update overall course progress on every update
+        if (courseId) {
+             const allVideos = await Video.find({ course_id: courseId }).select('_id').lean();
+             const totalVideos = allVideos.length;
+             
+             console.log(`[Progress Recalc] Course=${courseId}, TotalVideos=${totalVideos}`);
+
+             if (totalVideos > 0) {
+                 const allProgress = await VideoProgress.find({ 
+                     user_id: userId, 
+                     course_id: courseId 
+                 }).lean();
+
+                 let totalProgressSum = 0;
+                 const progressMap = new Map();
+                 allProgress.forEach(p => {
+                     // Normalize key for comparison
+                     const key = p.video_id?.toString();
+                     if (key) progressMap.set(key, p);
+                 });
+
+                 allVideos.forEach(v => {
+                     const vIdStr = v._id.toString();
+                     const p = progressMap.get(vIdStr);
+                     if (p) {
+                         let vidPercent = 0;
+                         if (p.completed) vidPercent = 100;
+                         else if (p.watched_percentage !== undefined) vidPercent = p.watched_percentage;
+                         else if (p.total_seconds > 0) vidPercent = (p.watched_seconds / p.total_seconds) * 100;
+                         
+                         totalProgressSum += Math.min(100, Math.max(0, vidPercent));
+                     }
+                 });
+
+                 const coursePercent = Math.round(totalProgressSum / totalVideos);
+                 console.log(`[Progress] Course ${courseId} Recalculated: ${coursePercent}% (User=${userId})`);
+                 
+                 const updatedEnrollment = await Enrollment.findOneAndUpdate(
+                     { user_id: userId, course_id: courseId },
+                     { $set: { progress_percentage: coursePercent, last_accessed_at: new Date() } },
+                     { new: true }
+                 );
+
+                 if (!updatedEnrollment) {
+                     console.warn(`[Progress] Enrollment NOT FOUND for user ${userId} and course ${courseId}`);
+                 }
+
+                 // Real-time update to the student
+                 io.to(userId.toString()).emit('progress_updated', {
+                     course_id: courseId,
+                     progress: coursePercent,
+                     videoId,
+                     watchedPercentage
+                 });
+
+                 // Also notify admins/managers
+                 io.emit('course_enrollments_changed', { courseId, userId });
+             } else {
+                 // Even if 0 videos, update last_accessed_at
+                 await Enrollment.findOneAndUpdate(
+                     { user_id: userId, course_id: courseId },
+                     { $set: { last_accessed_at: new Date() } }
+                 );
+             }
+        }
+
+        res.json({ success: true, progress });
+    } catch (err) {
+        handleError(res, err, 'save-progress');
+    }
+});
+
 // --- Auth Routes ---
 
 app.post('/api/auth/send-otp', async (req, res) => {
@@ -850,6 +982,16 @@ app.put('/api/admin/update-user-status', authenticateToken, requireAdmin, async 
             updateData,
             { new: true }
         );
+
+        // Notify user via socket for real-time suspension/approval
+        if (status === 'suspended') {
+            io.to(userId.toString()).emit('user_suspended', { 
+                suspended_until: updateData.suspended_until 
+            });
+        } else if (status === 'approved') {
+            io.to(userId.toString()).emit('user_approved');
+        }
+
         res.json({ message: `User status updated to ${status}` });
     } catch (err) {
         handleError(res, err, 'update-user-status');
@@ -1190,18 +1332,39 @@ app.delete('/api/admin/delete-user/:userId', authenticateToken, requireAdmin, as
     }
 });
 
-// Quality Assurance - Data Summary
-app.get('/api/admin/data-summary', authenticateToken, requireAdmin, async (req, res) => {
+// Quality Assurance - Data Summary (Enhanced for Admin Dashboard)
+app.get('/api/admin/data-summary', authenticateToken, requireAdminOrManager, async (req, res) => {
     try {
-        const [users, courses, enrollments, questionBanks, exams, conversations, messages] = await Promise.all([
+        const [
+            users, 
+            courses, 
+            enrollments, 
+            questionBanks, 
+            exams, 
+            securityEvents,
+            pendingCourses,
+            pendingEnrollments,
+            pendingExams,
+            highPriorityEvents
+        ] = await Promise.all([
             User.countDocuments(),
             Course.countDocuments(),
             Enrollment.countDocuments(),
             QuestionBank.countDocuments(),
             Exam.countDocuments(),
-            Conversation.countDocuments(),
-            Message.countDocuments()
+            SecurityEvent.countDocuments(),
+            Course.countDocuments({ status: 'pending' }),
+            Enrollment.countDocuments({ status: 'pending' }),
+            Exam.countDocuments({ approval_status: 'pending' }),
+            SecurityEvent.countDocuments({ risk_level: { $in: ['high', 'critical'] }, resolved: false })
         ]);
+
+        // Aggregate role counts
+        const roleCountsRaw = await UserRole.aggregate([
+            { $group: { _id: "$role", count: { $sum: 1 } } }
+        ]);
+        const roleCounts = {};
+        roleCountsRaw.forEach(r => roleCounts[r._id] = r.count);
 
         res.json({
             users,
@@ -1209,16 +1372,35 @@ app.get('/api/admin/data-summary', authenticateToken, requireAdmin, async (req, 
             enrollments,
             questionBanks,
             exams,
-            conversations,
-            messages
+            securityEvents,
+            pendingCourses,
+            pendingEnrollments,
+            pendingExams,
+            highPriorityEvents,
+            roleCounts
         });
     } catch (err) {
         handleError(res, err, 'data-summary');
     }
 });
 
+app.get('/api/admin/exams-list', authenticateToken, requireAdminOrManager, async (req, res) => {
+    try {
+        const exams = await Exam.find()
+            .sort({ created_at: -1 })
+            .limit(100)
+            .lean();
+        
+        // Transformed for frontend compatibility
+        const transformedExams = exams.map(e => ({ ...e, id: e._id }));
+        res.json(transformedExams);
+    } catch (err) {
+        handleError(res, err, 'exams-list');
+    }
+});
+
 // Quality Assurance - Get Data Lists
-app.get('/api/admin/users-list', authenticateToken, requireAdmin, async (req, res) => {
+app.get('/api/admin/users-list', authenticateToken, requireAdminOrManager, async (req, res) => {
     try {
         const users = await Profile.find()
             .populate('user_id', 'email created_at')
@@ -1231,7 +1413,7 @@ app.get('/api/admin/users-list', authenticateToken, requireAdmin, async (req, re
     }
 });
 
-app.get('/api/admin/courses-list', authenticateToken, requireAdmin, async (req, res) => {
+app.get('/api/admin/courses-list', authenticateToken, requireAdminOrManager, async (req, res) => {
     try {
         const courses = await Course.find()
             .sort({ created_at: -1 })
@@ -1243,7 +1425,7 @@ app.get('/api/admin/courses-list', authenticateToken, requireAdmin, async (req, 
     }
 });
 
-app.get('/api/admin/enrollments-list', authenticateToken, requireAdmin, async (req, res) => {
+app.get('/api/admin/enrollments-list', authenticateToken, requireAdminOrManager, async (req, res) => {
     try {
         const enrollments = await Enrollment.find()
             .populate('user_id', 'full_name email')
@@ -1834,72 +2016,58 @@ app.post('/api/upload/course-resources', authenticateToken, requireInstructor, u
     }
 });
 
-// --- Video Progress Tracking ---
+// Handled by consolidated /api/progress/save route
 
 app.post('/api/student/video-progress', authenticateToken, async (req, res) => {
-    const { courseId, videoId, watchedSeconds, totalSeconds } = req.body;
-    
-    if (!videoId) return res.status(400).json({ error: 'Video ID required' });
-
     try {
-        const completed = totalSeconds > 0 && (watchedSeconds / totalSeconds) >= 0.90; // 90% threshold for completion
+        const { courseId, videoId, watchedPercentage, lastWatchedTime, completed } = req.body;
+        const userId = req.user.id;
 
-        const progress = await VideoProgress.findOneAndUpdate(
-            { user_id: req.user.id, video_id: videoId },
-            { 
-                course_id: courseId,
-                watched_seconds: watchedSeconds,
-                total_seconds: totalSeconds,
-                completed: completed ? true : undefined, // Only update to true, never back to false
-                last_watched_at: new Date()
-            },
-            { upsert: true, new: true, setDefaultsOnInsert: true }
-        );
-
-        // Update overall course progress on every update (not just completion)
-        if (courseId) {
-             const allVideos = await Video.find({ course_id: courseId }).select('_id duration');
-             const totalVideos = allVideos.length;
-             
-             if (totalVideos > 0) {
-                 const allProgress = await VideoProgress.find({ 
-                     user_id: req.user.id, 
-                     course_id: courseId 
-                 });
-
-                 let totalProgressSum = 0;
-                 
-                 // Create a map for quick lookup
-                 const progressMap = new Map();
-                 allProgress.forEach(p => progressMap.set(p.video_id.toString(), p));
-
-                 allVideos.forEach(v => {
-                     const p = progressMap.get(v._id.toString());
-                     if (p) {
-                         // Calculate percentage for this video
-                         let vidPercent = 0;
-                         if (p.completed) {
-                             vidPercent = 100;
-                         } else if (p.total_seconds > 0) {
-                             vidPercent = (p.watched_seconds / p.total_seconds) * 100;
-                         }
-                         // Cap at 100
-                         totalProgressSum += Math.min(100, vidPercent);
-                     }
-                 });
-
-                 const coursePercent = Math.round(totalProgressSum / totalVideos);
-                 
-                 await Enrollment.findOneAndUpdate(
-                     { user_id: req.user.id, course_id: courseId },
-                     { progress_percentage: coursePercent, last_accessed_at: new Date() }
-                 );
-             }
+        if (!courseId || !videoId) {
+            return res.status(400).json({ error: 'courseId and videoId are required' });
         }
 
-        res.json(progress);
+        // 1. Update/Create Video Progress
+        await VideoProgress.findOneAndUpdate(
+            { user_id: userId, course_id: courseId, video_id: videoId },
+            { 
+                watched_percentage: watchedPercentage,
+                last_watched_time: lastWatchedTime,
+                completed: !!completed,
+                updated_at: new Date()
+            },
+            { upsert: true, new: true }
+        );
+
+        // 2. Calculate and update overall enrollment progress
+        const [allVideos, watchedVideos] = await Promise.all([
+            Video.find({ course_id: courseId }).select('_id').lean(),
+            VideoProgress.find({ user_id: userId, course_id: courseId, watched_percentage: { $gt: 0 } }).lean()
+        ]);
+
+        if (allVideos.length > 0) {
+            // Formula: Sum of (watched_percentage / 100) / total_videos * 100
+            // We simplify to Sum(watched_percentage) / total_videos 
+            const totalPercentage = watchedVideos.reduce((acc, vp) => {
+                // Find if this vp belongs to a current video in course
+                const exists = allVideos.some(v => v._id.toString() === vp.video_id.toString());
+                return exists ? acc + (vp.watched_percentage || 0) : acc;
+            }, 0);
+
+            const progress = Math.min(100, Math.round(totalPercentage / allVideos.length));
+            
+            await Enrollment.findOneAndUpdate(
+                { user_id: userId, course_id: courseId },
+                { 
+                    progress_percentage: progress,
+                    last_accessed_at: new Date()
+                }
+            );
+        }
+
+        res.json({ success: true });
     } catch (err) {
-        handleError(res, err, 'update-video-progress');
+        handleError(res, err, 'save-video-progress');
     }
 });
 
@@ -2071,7 +2239,7 @@ app.get('/api/instructor/courses', authenticateToken, requireInstructor, async (
 app.get('/api/courses/enrollments', authenticateToken, requireAdminOrManager, async (req, res) => {
     try {
         const enrollments = await Enrollment.find()
-            .populate('user_id', 'full_name email') // Populate user details
+            .populate('user_id', 'full_name email mobile_number') // Populate user details
             .populate('course_id', 'title price')   // Populate course details
             .sort({ enrolled_at: -1 });
 
@@ -2084,12 +2252,16 @@ app.get('/api/courses/enrollments', authenticateToken, requireAdminOrManager, as
             enrollment_date: e.enrolled_at,
             profile: {
                 full_name: e.user_id?.full_name,
-                email: e.user_id?.email
+                email: e.user_id?.email,
+                mobile_number: e.user_id?.mobile_number
             },
             course: {
                 title: e.course_id?.title,
                 price: e.course_id?.price
-            }
+            },
+            progress_percentage: e.progress_percentage || 0,
+            utr_number: e.utr_number,
+            payment_proof_url: e.payment_proof_url
         }));
 
         res.json(data);
@@ -2098,8 +2270,26 @@ app.get('/api/courses/enrollments', authenticateToken, requireAdminOrManager, as
     }
 });
 
+app.post('/api/upload', authenticateToken, upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+        
+        const b64 = Buffer.from(req.file.buffer).toString('base64');
+        let dataURI = 'data:' + req.file.mimetype + ';base64,' + b64;
+        
+        const result = await cloudinary.uploader.upload(dataURI, {
+            resource_type: 'auto',
+            folder: 'payment_proofs'
+        });
+        
+        res.json({ url: result.secure_url, public_id: result.public_id });
+    } catch (err) {
+        handleError(res, err, 'upload-file');
+    }
+});
+
 app.post('/api/courses/enroll', authenticateToken, async (req, res) => {
-    const { course_id, courseId } = req.body;
+    const { course_id, courseId, payment_proof_url, utr_number } = req.body;
     const finalCourseId = course_id || courseId;
     if (!finalCourseId) return res.status(400).json({ error: 'Course ID required' });
 
@@ -2112,7 +2302,9 @@ app.post('/api/courses/enroll', authenticateToken, async (req, res) => {
             { 
                 status: 'pending', // Reverted to pending for manual admin approval
                 enrolled_at: new Date(),
-                progress_percentage: 0 
+                progress_percentage: 0,
+                payment_proof_url: payment_proof_url || null,
+                utr_number: utr_number || null
             },
             { upsert: true, new: true }
         );
@@ -2129,6 +2321,21 @@ app.post('/api/courses/enroll', authenticateToken, async (req, res) => {
                 courseId: finalCourseId
             });
         }
+
+        // Notify Admin/Manager for Approval
+        const admins = await User.find({ role: { $in: ['admin', 'manager'] } });
+        admins.forEach(admin => {
+            sendNotification(admin._id.toString(), {
+                type: 'enrollment_request_admin',
+                title: 'Enrollment Approval Needed',
+                message: `New payment proof submitted for ${course.title}. Click to review.`,
+                courseId: finalCourseId,
+                severity: 'high'
+            });
+        });
+
+        // Emit Socket Event for Real-time Dashboard Updates
+        io.emit('course_enrollments_changed', { courseId: finalCourseId });
     } catch (err) {
         handleError(res, err, 'enroll-course');
     }
@@ -2171,6 +2378,8 @@ app.get('/api/student/my-courses', authenticateToken, async (req, res) => {
                 enrollmentStatus: e.status, // active, pending, rejected
                 progress: e.progress_percentage || 0,
                 enrolled_at: e.enrolled_at,
+                price: course.price,
+                original_price: course.original_price,
                 // Virtual/Helper fields for UI badges
                 is_active: course.is_active !== false
             };
@@ -2179,6 +2388,168 @@ app.get('/api/student/my-courses', authenticateToken, async (req, res) => {
         res.json(data);
     } catch (err) {
         handleError(res, err, 'student-my-courses');
+    }
+});
+
+app.get('/api/student/dashboard-data', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const enrollments = await Enrollment.find({ user_id: userId, status: 'active' }).populate('course_id').lean();
+        const activeCourseIds = enrollments.map(e => e.course_id?._id).filter(id => id);
+
+        if (activeCourseIds.length === 0) {
+            return res.json({ resources: [], activity: [], skills: [] });
+        }
+
+        // 1. Get Recent Resources (top 5 across all active courses)
+        const resources = await Resource.find({ 
+            course_id: { $in: activeCourseIds } 
+        }).sort({ created_at: -1 }).limit(5).lean();
+
+        // 2. Generate Real Activity Data (last 7 days)
+        // Groups updated_at counts from VideoProgress
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        
+        const videoProgress = await VideoProgress.find({
+            user_id: userId,
+            course_id: { $in: activeCourseIds },
+            updated_at: { $gt: sevenDaysAgo }
+        }).select('updated_at watched_percentage').lean();
+
+        // Aggregate by weekday
+        const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const activityMap = {};
+        weekdays.forEach(day => activityMap[day] = 0);
+
+        videoProgress.forEach(p => {
+            const dayName = weekdays[new Date(p.updated_at).getDay()];
+            // Weight: Every 1% watched is 1 "intensity unit", plus base for interaction
+            activityMap[dayName] += (p.watched_percentage || 0) + 10;
+        });
+
+        const activity = weekdays.map(day => ({ 
+            name: day, 
+            minutes: Math.min(300, Math.round(activityMap[day] / 2)) // Scaled for chart
+        }));
+
+        // 3. Skill Mastery (Categorized Progress)
+        const categories = {};
+        enrollments.forEach(e => {
+            const cat = e.course_id?.category || 'General';
+            if (!categories[cat]) categories[cat] = { sum: 0, count: 0 };
+            categories[cat].sum += e.progress_percentage || 0;
+            categories[cat].count += 1;
+        });
+
+        const skills = Object.keys(categories).map(cat => ({
+            name: cat,
+            progress: Math.round(categories[cat].sum / categories[cat].count)
+        })).slice(0, 4);
+
+        // 4. Mock Test / Exam Performance History (Recent 5)
+        const recentResults = await ExamResult.find({ student_id: userId })
+            .populate('exam_id', 'title')
+            .populate('mock_paper_id', 'title')
+            .sort({ submitted_at: -1 })
+            .limit(5)
+            .lean();
+
+        res.json({ 
+            resources, 
+            activity, 
+            skills, 
+            results: recentResults.map(r => ({
+                id: r._id,
+                title: r.exam_id?.title || r.mock_paper_id?.title || 'Assessment',
+                percentage: Math.round(r.percentage || 0),
+                score: r.score,
+                total: r.total_questions,
+                date: r.submitted_at
+            }))
+        });
+    } catch (err) {
+        handleError(res, err, 'student-dashboard-data');
+    }
+});
+
+app.get('/api/admin/live-monitoring', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        // 1. Fetch All Enrollments with Progress
+        const enrollments = await Enrollment.find()
+            .populate('user_id', 'full_name email')
+            .populate('course_id', 'title category')
+            .sort({ updated_at: -1, enrolled_at: -1 })
+            .lean();
+
+        // 2. Fetch All Exam/Mock Results
+        const examResults = await ExamResult.find()
+            .populate('student_id', 'full_name email')
+            .populate('exam_id', 'title exam_type')
+            .populate('mock_paper_id', 'title')
+            .sort({ submitted_at: -1 })
+            .limit(200)
+            .lean();
+
+        res.json({
+            enrollments: enrollments.map(e => ({
+                id: e._id,
+                student: e.user_id?.full_name || 'Deleted User',
+                email: e.user_id?.email || 'N/A',
+                course: e.course_id?.title || 'Unknown Course',
+                category: e.course_id?.category || 'General',
+                progress: e.progress_percentage || 0,
+                status: e.status,
+                last_accessed: e.last_accessed_at || e.enrolled_at
+            })),
+            results: examResults.map(r => ({
+                id: r._id,
+                student: r.student_id?.full_name || 'Deleted User',
+                email: r.student_id?.email || 'N/A',
+                test_title: r.exam_id?.title || r.mock_paper_id?.title || 'System Generated Test',
+                type: r.exam_id?.exam_type || 'mock',
+                score: r.score,
+                total: r.total_questions,
+                percentage: Math.round(r.percentage || 0),
+                time_spent: r.time_spent,
+                submitted_at: r.submitted_at
+            }))
+        });
+    } catch (err) {
+        handleError(res, err, 'admin-live-monitoring');
+    }
+});
+
+app.get('/api/student/all-resources', authenticateToken, async (req, res) => {
+    try {
+        const enrollments = await Enrollment.find({ user_id: req.user.id, status: 'active' }).select('course_id').lean();
+        const courseIds = enrollments.map(e => e.course_id);
+
+        if (courseIds.length === 0) return res.json([]);
+
+        // Fetch resources for these courses
+        const resources = await Resource.find({ 
+            course_id: { $in: courseIds } 
+        }).sort({ created_at: -1 }).limit(20).lean();
+
+        // Transform S3 keys into signed URLs
+        const processedResources = await Promise.all(resources.map(async (item) => {
+            if (item.file_url && !item.file_url.startsWith('http')) {
+                try {
+                    item.view_url = await generateViewUrl(item.file_url);
+                } catch (e) {
+                    console.error('Error signing file_url:', e);
+                }
+            } else {
+                item.view_url = item.file_url;
+            }
+            if (item._id) item.id = item._id.toString();
+            return item;
+        }));
+
+        res.json(processedResources);
+    } catch (err) {
+        handleError(res, err, 'get-all-student-resources');
     }
 });
 
@@ -2447,6 +2818,108 @@ app.get('/api/manager/approved-question-banks', authenticateToken, requireAdminO
         res.json(banks);
     } catch (err) {
         handleError(res, err, 'get-approved-questions-grouped');
+    }
+});
+
+app.get('/api/admin/question-bank-summary', authenticateToken, requireAdminOrManager, async (req, res) => {
+    try {
+        const [banks, accessCounts] = await Promise.all([
+            QuestionBank.aggregate([
+                { 
+                    $group: {
+                        _id: { topic: '$topic', status: '$approval_status' },
+                        topic: { $first: '$topic' },
+                        status: { $first: '$approval_status' },
+                        count: { $sum: 1 },
+                        created_by: { $first: '$created_by' },
+                        created_at: { $max: '$created_at' }
+                    }
+                },
+                { $sort: { created_at: -1 } }
+            ]),
+            StudentExamAccess.aggregate([
+                { $match: { access_type: 'question_bank' } },
+                { $group: { _id: '$question_bank_topic', count: { $sum: 1 } } }
+            ])
+        ]);
+
+        // Map access counts for quick lookup
+        const accessMap = {};
+        accessCounts.forEach(a => { if (a._id) accessMap[a._id] = a.count; });
+
+        // Format the summary response
+        const summary = banks.map(b => ({
+            topic: b.topic,
+            approval_status: b.status,
+            count: b.count,
+            created_by: b.created_by,
+            created_at: b.created_at,
+            access_count: accessMap[b.topic] || 0
+        }));
+
+        res.json(summary);
+    } catch (err) {
+        handleError(res, err, 'question-bank-summary');
+    }
+});
+
+app.get('/api/admin/question-bank/:topic/access-list', authenticateToken, requireAdminOrManager, async (req, res) => {
+    try {
+        const { topic } = req.params;
+        
+        // 1. Get explicit access from StudentExamAccess
+        const explicitAccess = await StudentExamAccess.find({ 
+            question_bank_topic: topic,
+            access_type: 'question_bank'
+        })
+        .populate('student_id', 'full_name email avatar_url')
+        .populate('assigned_by', 'full_name')
+        .lean();
+
+        // 2. Get implicit access via courses
+        // Find courses where this topic is used in QuestionBank
+        const qbs = await QuestionBank.find({ topic, approval_status: 'approved', course_id: { $ne: null } }).select('course_id').lean();
+        const courseIds = qbs.map(q => q.course_id).filter(id => id);
+        
+        const courseEnrollments = await Enrollment.find({ 
+            course_id: { $in: courseIds },
+            status: 'active'
+        })
+        .populate('user_id', 'full_name email avatar_url')
+        .lean();
+
+        // 3. Combine and Deduplicate
+        const studentMap = new Map();
+
+        explicitAccess.forEach(a => {
+            if (a.student_id) {
+                studentMap.set(a.student_id._id.toString(), {
+                    student_id: a.student_id._id,
+                    student_name: a.student_id.full_name || 'Unknown Student',
+                    student_email: a.student_id.email || 'N/A',
+                    student_avatar: a.student_id.avatar_url,
+                    assigned_by: a.assigned_by?.full_name || 'System',
+                    granted_at: a.granted_at
+                });
+            }
+        });
+
+        courseEnrollments.forEach(e => {
+            if (e.user_id && !studentMap.has(e.user_id._id.toString())) {
+                studentMap.set(e.user_id._id.toString(), {
+                    student_id: e.user_id._id,
+                    student_name: e.user_id.full_name || 'Unknown Student',
+                    student_email: e.user_id.email || 'N/A',
+                    student_avatar: e.user_id.avatar_url,
+                    assigned_by: 'Course Enrollment',
+                    granted_at: e.enrolled_at
+                });
+            }
+        });
+
+        res.json({ students: Array.from(studentMap.values()) });
+    } catch (err) {
+        handleError(res, err, 'get-qb-access-list');
     }
 });
 
@@ -2854,15 +3327,32 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
         let limit = 100;
         let skip = 0;
 
+        // Utility to convert hex strings to ObjectId if they look like one
+        const tryConvertId = (val) => {
+            if (typeof val === 'string' && val.length === 24 && /^[0-9a-fA-F]{24}$/.test(val)) {
+                try { return new mongoose.Types.ObjectId(val); } catch (e) { return val; }
+            }
+            return val;
+        };
+
         // Filter Logic
         for (const [key, value] of Object.entries(req.query)) {
             if (['sort', 'order', 'limit', 'offset', 'select'].includes(key)) continue;
 
-            if (value.toString().startsWith('eq.')) query[key] = value.slice(3);
-            else if (value.toString().startsWith('in.')) query[key] = { $in: value.slice(4, -1).split(',') };
-            else if (value.toString().startsWith('lt.')) query[key] = { $lt: value.slice(3) };
-            else if (value.toString().startsWith('gt.')) query[key] = { $gt: value.slice(3) };
-            else query[key] = value; // Default exact match
+            const filterKey = key === 'id' ? '_id' : key;
+            const valStr = value.toString();
+            if (valStr.startsWith('eq.')) {
+                query[filterKey] = tryConvertId(valStr.slice(3));
+            } else if (valStr.startsWith('in.')) {
+                const ids = valStr.slice(4, -1).split(',');
+                query[filterKey] = { $in: ids.map(id => tryConvertId(id.trim())) };
+            } else if (valStr.startsWith('lt.')) {
+                query[filterKey] = { $lt: valStr.slice(3) };
+            } else if (valStr.startsWith('gt.')) {
+                query[filterKey] = { $gt: valStr.slice(3) };
+            } else {
+                query[filterKey] = tryConvertId(valStr); // Default exact match
+            }
         }
 
         // Authorization Scoping
@@ -2897,10 +3387,9 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
         if (req.query.limit) limit = parseInt(req.query.limit);
         if (req.query.offset) skip = parseInt(req.query.offset);
 
-        // Use lean queries for performance; Map _id to id for frontend compatibility with existing interfaces
-        const data = await Model.find(query).lean().sort(sort).limit(limit).skip(skip);
-        const transformedData = (data || []).map(item => ({ ...item, id: item._id }));
-        res.json(transformedData);
+        // Execute query (WITHOUT .lean() to allow toJSON transforms/virtuals)
+        const data = await Model.find(query).sort(sort).limit(limit).skip(skip);
+        res.json(data);
 
     } catch (err) {
         handleError(res, err, `data-get-${table}`);

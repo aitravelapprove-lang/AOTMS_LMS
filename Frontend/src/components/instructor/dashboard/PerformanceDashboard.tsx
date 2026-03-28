@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   BarChart3,
@@ -34,7 +34,8 @@ import {
 import {
   useInstructorCourses,
   useInstructorStats,
-  useInstructorStudentStats
+  useInstructorStudentStats,
+  useInstructorAllStudents
 } from '@/hooks/useInstructorData';
 import { PerformanceCharts } from './PerformanceCharts';
 import { SmartAlerts } from './SmartAlerts';
@@ -44,18 +45,36 @@ const PerformanceDashboard: React.FC = () => {
   const { data: courses = [], isLoading: coursesLoading } = useInstructorCourses();
   const { data: generalStats, isLoading: statsLoading } = useInstructorStats();
   const { stats: studentStats, isLoading: studentStatsLoading } = useInstructorStudentStats();
+  const { data: students = [] } = useInstructorAllStudents();
   const [timeRange, setTimeRange] = useState('30d');
   const [searchQuery, setSearchQuery] = useState('');
 
   const isLoading = coursesLoading || statsLoading || studentStatsLoading;
 
-  // Mock trend data
+  // Use real data or fallbacks
   const trends = [
-    { label: 'Revenue', value: '$12,450', trend: '+12.5%', isUp: true },
-    { label: 'Enrollments', value: studentStats.totalEnrollments.toString(), trend: '+8.2%', isUp: true },
-    { label: 'Avg. Progress', value: `${studentStats.avgProgress}%`, trend: '+2.4%', isUp: true },
-    { label: 'Completed', value: studentStats.completedStudents.toString(), trend: '-1.5%', isUp: false },
+    { label: 'Platform Students', value: studentStats.totalStudents.toString(), trend: '+5.2%', isUp: true },
+    { label: 'Active Enrollments', value: studentStats.totalEnrollments.toString(), trend: '+8.2%', isUp: true },
+    { label: 'Avg. Course Progress', value: `${studentStats.avgProgress}%`, trend: '+2.4%', isUp: true },
+    { label: 'Completed Students', value: studentStats.completedStudents.toString(), trend: '+1.5%', isUp: true },
   ];
+
+  // Calculate course-specific stats from the students data
+  const coursePerformanceMap = useMemo(() => {
+    const map: Record<string, { count: number; totalProgress: number }> = {};
+    
+    students.forEach(student => {
+      student.courseEnrollments.forEach(enrollment => {
+        if (!map[enrollment.courseId]) {
+          map[enrollment.courseId] = { count: 0, totalProgress: 0 };
+        }
+        map[enrollment.courseId].count += 1;
+        map[enrollment.courseId].totalProgress += enrollment.progress;
+      });
+    });
+    
+    return map;
+  }, [students]);
 
   const filteredCourses = courses.filter(course =>
     course.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -194,32 +213,37 @@ const PerformanceDashboard: React.FC = () => {
                         </td>
                       </tr>
                     ) : (
-                      filteredCourses.map((course) => (
-                        <tr key={course.id} className="hover:bg-muted/30 transition-colors">
-                          <td className="px-4 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="h-8 w-8 rounded bg-primary/10 flex items-center justify-center">
-                                <BookOpen className="h-4 w-4 text-primary" />
+                      filteredCourses.map((course) => {
+                        const perf = coursePerformanceMap[course.id] || { count: 0, totalProgress: 0 };
+                        const avgProgress = perf.count > 0 ? Math.round(perf.totalProgress / perf.count) : 0;
+                        
+                        return (
+                          <tr key={course.id} className="hover:bg-muted/30 transition-colors">
+                            <td className="px-4 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="h-8 w-8 rounded bg-primary/10 flex items-center justify-center">
+                                  <BookOpen className="h-4 w-4 text-primary" />
+                                </div>
+                                <span className="font-medium">{course.title}</span>
                               </div>
-                              <span className="font-medium">{course.title}</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-4 font-mono">124</td>
-                          <td className="px-4 py-4">
-                            <div className="flex flex-col gap-1.5 items-center">
-                              <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden max-w-[120px]">
-                                <div className="h-full bg-primary" style={{ width: '65%' }} />
+                            </td>
+                            <td className="px-4 py-4 font-mono">{perf.count}</td>
+                            <td className="px-4 py-4">
+                              <div className="flex flex-col gap-1.5 items-center">
+                                <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden max-w-[120px]">
+                                  <div className="h-full bg-primary" style={{ width: `${avgProgress}%` }} />
+                                </div>
+                                <span className="text-[10px] font-medium text-muted-foreground">{avgProgress}% complete</span>
                               </div>
-                              <span className="text-[10px] font-medium text-muted-foreground">65% complete</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-4 text-right">
-                            <Badge variant={course.status === 'published' ? 'default' : 'secondary'} className="capitalize text-[10px]">
-                              {course.status || 'Active'}
-                            </Badge>
-                          </td>
-                        </tr>
-                      ))
+                            </td>
+                            <td className="px-4 py-4 text-right">
+                              <Badge variant={course.status === 'published' ? 'default' : 'secondary'} className="capitalize text-[10px]">
+                                {course.status || 'Active'}
+                              </Badge>
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>

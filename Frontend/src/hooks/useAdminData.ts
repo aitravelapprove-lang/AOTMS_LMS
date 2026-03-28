@@ -1,7 +1,6 @@
 import { fetchWithAuth } from '@/lib/api';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth'; // Import useAuth
 
 // Types for admin data
 export interface Profile {
@@ -79,41 +78,60 @@ export interface SystemLog {
   created_at: string;
 }
 
+export interface MonitoringEnrollment {
+  id: string;
+  student: string;
+  email: string;
+  course: string;
+  category: string;
+  progress: number;
+  status: string;
+  last_accessed: string;
+}
+
+export interface MonitoringResult {
+  id: string;
+  student: string;
+  email: string;
+  test_title: string;
+  type: string;
+  score: number;
+  total: number;
+  percentage: number;
+  time_spent: number;
+  submitted_at: string;
+}
+
 export interface AdminStats {
   totalUsers: number;
   activeCourses: number;
   pendingCourses: number;
-  pendingEnrollments: number; // Added field
+  pendingEnrollments: number;
   securityEvents: number;
   highPriorityEvents: number;
   roleCounts: Record<string, number>;
 }
 
-
 export function useAdminData(userRole?: string | null) {
   const { toast } = useToast();
-  // Removed useAuth hook call here to prevent hook order errors
   const [loading, setLoading] = useState(true);
   const [profiles, setProfiles] = useState<Profile[]>([]);
-
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
-  const [enrollments, setEnrollments] = useState<CourseEnrollment[]>([]); // Typed
+  const [enrollments, setEnrollments] = useState<CourseEnrollment[]>([]);
   const [securityEvents, setSecurityEvents] = useState<SecurityEvent[]>([]);
   const [systemLogs, setSystemLogs] = useState<SystemLog[]>([]);
   const [stats, setStats] = useState<AdminStats>({
     totalUsers: 0,
     activeCourses: 0,
     pendingCourses: 0,
-    pendingEnrollments: 0, // Added field
+    pendingEnrollments: 0,
     securityEvents: 0,
     highPriorityEvents: 0,
     roleCounts: {},
   });
 
-  // Fetch all admin data
   const fetchAllData = useCallback(async () => {
-    // Only fetch if role is explicitly admin or manager
     if (!userRole || (userRole !== 'admin' && userRole !== 'manager')) {
       console.warn(`[AdminData] Fetch skipped: current role is "${userRole}"`);
       setLoading(false);
@@ -122,92 +140,79 @@ export function useAdminData(userRole?: string | null) {
 
     setLoading(true);
     try {
-      // Fetch in parallel with sensible limits
-      const [profilesData, rolesData, coursesData, eventsData, logsData, enrollmentsData] = await Promise.all([
-        fetchWithAuth('/data/profiles?sort=created_at&order=desc&limit=100'),
-        fetchWithAuth('/data/user_roles?limit=500'), // Roles are small, but we still limit
-        fetchWithAuth('/data/courses?sort=created_at&order=desc&limit=100'),
-        fetchWithAuth('/data/security_events?sort=created_at&order=desc&limit=50'),
-        fetchWithAuth('/data/system_logs?sort=created_at&order=desc&limit=100'),
-        fetchWithAuth('/courses/enrollments'), // Custom endpoint already limits internally or fetches recent
-      ]);
+      // 1. Fetch Summary (Dashboard Stats)
+      fetchWithAuth('/admin/data-summary')
+        .then(summaryData => {
+          if (summaryData) {
+            setStats({
+              totalUsers: summaryData.users || 0,
+              activeCourses: (summaryData.courses || 0) - (summaryData.pendingCourses || 0),
+              pendingCourses: summaryData.pendingCourses || 0,
+              pendingEnrollments: summaryData.pendingEnrollments || 0,
+              securityEvents: summaryData.securityEvents || 0,
+              highPriorityEvents: summaryData.highPriorityEvents || 0,
+              roleCounts: summaryData.roleCounts || {}
+            });
+          }
+        }).catch(err => console.error('Summary Fetch Error:', err));
 
-      if (profilesData && rolesData) {
-        const rolesMap = (rolesData as UserRole[]).reduce((acc, r) => {
-          acc[r.user_id] = r.role;
-          return acc;
-        }, {} as Record<string, string>);
+      // 2. Fetch Profiles and Roles
+      fetchWithAuth('/data/profiles?sort=created_at&order=desc&limit=100')
+        .then(async (profilesData) => {
+          const rolesData = await fetchWithAuth('/data/user_roles?limit=500');
+          if (profilesData && rolesData) {
+            const rolesMap = (rolesData as UserRole[]).reduce((acc, r) => {
+              acc[r.user_id] = r.role;
+              return acc;
+            }, {} as Record<string, string>);
 
-        const mergedProfiles = (profilesData as Profile[]).map(p => ({
-          ...p,
-          role: rolesMap[p.id] || 'student',
-          approval_status: p.approval_status || 'pending'
-        }));
+            const mergedProfiles = (profilesData as Profile[]).map(p => ({
+              ...p,
+              role: rolesMap[p.id] || 'student',
+              approval_status: p.approval_status || 'pending'
+            }));
 
-        setProfiles(mergedProfiles as Profile[]);
-        setUserRoles(rolesData as UserRole[]);
+            setProfiles(mergedProfiles as Profile[]);
+            setUserRoles(rolesData as UserRole[]);
+          }
+        }).catch(err => console.error('Profiles Fetch Error:', err));
 
-        // Calculate role counts
-        const counts: Record<string, number> = {};
-        (rolesData as UserRole[]).forEach((r) => {
-          counts[r.role] = (counts[r.role] || 0) + 1;
-        });
-        setStats((prev) => ({ ...prev, roleCounts: counts }));
-      }
-      if (coursesData) {
-        setCourses(coursesData as Course[]);
-        const pending = (coursesData as Course[]).filter((c) => c.status?.toLowerCase() === 'pending').length;
-        const approved = (coursesData as Course[]).filter((c) => c.status?.toLowerCase() === 'approved' || c.status?.toLowerCase() === 'published').length;
-        setStats((prev) => ({ ...prev, pendingCourses: pending, activeCourses: approved }));
-      }
-      if (enrollmentsData) {
-        setEnrollments(enrollmentsData as CourseEnrollment[]);
-        const pendingEnrollmentsCount = (enrollmentsData as CourseEnrollment[]).filter(e => e.status === 'pending').length;
-        setStats(prev => ({ ...prev, pendingEnrollments: pendingEnrollmentsCount }));
-      }
-      if (eventsData) {
-        setSecurityEvents(eventsData as SecurityEvent[]);
-        const highPriority = (eventsData as SecurityEvent[]).filter(
-          (e) => e.risk_level === 'high' || e.risk_level === 'critical'
-        ).length;
-        setStats((prev) => ({
-          ...prev,
-          securityEvents: eventsData?.length || 0,
-          highPriorityEvents: highPriority,
-        }));
-      }
-      if (logsData) setSystemLogs(logsData as SystemLog[]);
+      // 3. Independent Fetches
+      fetchWithAuth('/data/courses?sort=created_at&order=desc&limit=200')
+        .then(data => data && setCourses(data as Course[]))
+        .catch(err => console.error('Courses Fetch Error:', err));
 
-      // Update total users count
-      setStats((prev) => ({ ...prev, totalUsers: profilesData?.length || 0 }));
+      fetchWithAuth('/courses/enrollments')
+        .then(data => data && setEnrollments(data as CourseEnrollment[]))
+        .catch(err => console.error('Enrollments Fetch Error:', err));
+
+      fetchWithAuth('/data/security_events?sort=created_at&order=desc&limit=50')
+        .then(data => data && setSecurityEvents(data as SecurityEvent[]))
+        .catch(err => console.error('Security Fetch Error:', err));
+
+      fetchWithAuth('/data/system_logs?sort=created_at&order=desc&limit=100')
+        .then(data => data && setSystemLogs(data as SystemLog[]))
+        .catch(err => console.error('Logs Fetch Error:', err));
+
     } catch (error: unknown) {
-      const err = error as Error;
-      console.error('Error fetching admin data:', err);
-      
-      // Handle 403 specifically
-      if (err.message && err.message.includes('Administrative access required')) {
-        toast({
-          title: 'Access Denied',
-          description: 'Your account does not have admin permissions. Please contact support or re-login.',
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'Error',
-          description: 'Failed to load admin data',
-          variant: 'destructive',
-        });
+      if (error instanceof Error) {
+        console.error('Error fetching admin data:', error);
+        if (error.message?.includes('403') || error.message?.includes('Access denied')) {
+          toast({
+            title: 'Authorization Required',
+            description: 'Managers/Admins only. Please re-login if this is an error.',
+            variant: 'destructive',
+          });
+        }
       }
     } finally {
       setLoading(false);
     }
   }, [toast, userRole]);
 
-  // Set up polling instead of realtime
   useEffect(() => {
     fetchAllData();
-    // Poll every 15 seconds for more responsive updates
-    const interval = setInterval(fetchAllData, 15000);
+    const interval = setInterval(fetchAllData, 30000);
     return () => clearInterval(interval);
   }, [fetchAllData]);
 
@@ -217,12 +222,11 @@ export function useAdminData(userRole?: string | null) {
         method: 'PUT',
         body: JSON.stringify({ courseId, status: 'approved' })
       });
-      
-      toast({ title: 'Success', description: 'Course approved and published' });
+      toast({ title: 'Success', description: 'Course approved' });
       fetchAllData();
       return true;
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to approve course', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed to approve', variant: 'destructive' });
       return false;
     }
   };
@@ -233,12 +237,11 @@ export function useAdminData(userRole?: string | null) {
         method: 'PUT',
         body: JSON.stringify({ courseId, status: 'rejected', rejectionReason: reason })
       });
-
       toast({ title: 'Success', description: 'Course rejected' });
       fetchAllData();
       return true;
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to reject course', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed to reject', variant: 'destructive' });
       return false;
     }
   };
@@ -249,189 +252,135 @@ export function useAdminData(userRole?: string | null) {
         method: 'PUT',
         body: JSON.stringify({ courseId, status })
       });
-
-      toast({ title: 'Success', description: `Course status updated to ${status}` });
+      toast({ title: 'Success', description: `Status updated to ${status}` });
       fetchAllData();
       return true;
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to update course status', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed update', variant: 'destructive' });
       return false;
     }
   };
 
-  // Admin actions
-  const updateUserStatus = async (userId: string, status: 'approved' | 'rejected' | 'suspended' | 'active', suspensionDays?: string) => {
+  const updateUserStatus = async (userId: string, status: string, suspensionDays?: string) => {
     try {
       await fetchWithAuth('/admin/update-user-status', {
         method: 'PUT',
-        body: JSON.stringify({ 
-            userId, 
-            status: status === 'active' ? 'approved' : status,
-            suspensionDays 
-        })
+        body: JSON.stringify({ userId, status: status === 'active' ? 'approved' : status, suspensionDays })
       });
-
-      // Log action
-      await fetchWithAuth('/rpc/log_admin_action', {
-        method: 'POST',
-        body: JSON.stringify({
-          _module: 'User',
-          _action: `User status changed to ${status}`,
-          _details: { user_id: userId, status },
-        })
-      });
-
-      toast({ title: 'Success', description: `User status updated to ${status}` });
-      fetchAllData(); // Refresh data
+      toast({ title: 'Success', description: `User status updated` });
+      fetchAllData();
       return true;
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to update user status', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed status update', variant: 'destructive' });
       return false;
     }
   };
 
-  const updateUserRole = async (userId: string, newRole: 'admin' | 'manager' | 'instructor' | 'student') => {
+  const updateUserRole = async (userId: string, newRole: string) => {
     try {
       await fetchWithAuth('/admin/update-user-role', {
         method: 'PUT',
         body: JSON.stringify({ userId, role: newRole })
       });
-
-      // Log action
-      await fetchWithAuth('/rpc/log_admin_action', {
-        method: 'POST',
-        body: JSON.stringify({
-          _module: 'Role',
-          _action: `Role changed to ${newRole}`,
-          _details: { user_id: userId, new_role: newRole },
-        })
-      });
-
-      toast({ title: 'Success', description: `User role updated to ${newRole}` });
+      toast({ title: 'Success', description: `User role updated` });
       fetchAllData();
       return true;
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to update user role', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed role update', variant: 'destructive' });
       return false;
     }
   };
 
   const sendApprovalEmail = async (userId: string) => {
     try {
-      await fetchWithAuth('/admin/send-approval-email', {
-        method: 'POST',
-        body: JSON.stringify({ userId })
-      });
-      toast({ title: 'Success', description: 'Approval email sent via N8N' });
+      await fetchWithAuth('/admin/send-approval-email', { method: 'POST', body: JSON.stringify({ userId }) });
+      toast({ title: 'Success', description: 'Email sent' });
       return true;
     } catch (error) {
-      const err = error as Error;
-      toast({
-        title: 'Error Notification',
-        description: err.message || 'Failed to send notification email',
-        variant: 'destructive'
-      });
+      toast({ title: 'Error', description: 'Email failed', variant: 'destructive' });
       return false;
     }
   };
 
-  const updateEnrollmentStatus = async (enrollmentId: string, status: 'active' | 'rejected') => {
+  const updateEnrollmentStatus = async (enrollmentId: string, status: string) => {
     try {
-      await fetchWithAuth('/courses/enrollment-status', {
-        method: 'PUT',
-        body: JSON.stringify({ enrollmentId, status })
-      });
-
-      // Log for debugging
-      console.log(`[AdminData] Enrollment ${enrollmentId} updated to ${status}`);
-
-      toast({ 
-        title: status === 'active' ? '✅ Enrollment Approved' : '❌ Enrollment Rejected', 
-        description: `Student enrollment has been ${status === 'active' ? 'approved' : 'rejected'}.` 
-      });
-      
+      await fetchWithAuth('/courses/enrollment-status', { method: 'PUT', body: JSON.stringify({ enrollmentId, status }) });
+      toast({ title: 'Success', description: `Enrollment ${status}` });
       fetchAllData();
       return true;
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to update enrollment status', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed enrollment update', variant: 'destructive' });
       return false;
     }
   };
 
   const deleteEnrollment = async (enrollmentId: string) => {
     try {
-      await fetchWithAuth(`/data/course_enrollments/${enrollmentId}`, {
-        method: 'DELETE'
-      });
-
-      toast({ 
-        title: '🗑️ Enrollment Deleted', 
-        description: 'Student enrollment has been permanently removed.' 
-      });
-      
+      await fetchWithAuth(`/data/course_enrollments/${enrollmentId}`, { method: 'DELETE' });
+      toast({ title: 'Deleted', description: 'Enrollment removed' });
       fetchAllData();
       return true;
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to delete enrollment', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Delete failed', variant: 'destructive' });
       return false;
     }
   };
 
   const deleteCourse = async (courseId: string) => {
     try {
-      await fetchWithAuth(`/data/courses/${courseId}`, {
-        method: 'DELETE'
-      });
-
-      toast({ 
-        title: '🗑️ Course Deleted', 
-        description: 'Course has been permanently removed.' 
-      });
-      
+      await fetchWithAuth(`/data/courses/${courseId}`, { method: 'DELETE' });
+      toast({ title: 'Deleted', description: 'Course removed' });
       fetchAllData();
       return true;
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to delete course', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Delete failed', variant: 'destructive' });
+      return false;
+    }
+  };
+
+  const deleteExamResult = async (resultId: string) => {
+    try {
+      await fetchWithAuth(`/data/exam_results/${resultId}`, { method: 'DELETE' });
+      toast({ title: 'Deleted', description: 'Exam result removed' });
+      fetchAllData();
+      return true;
+    } catch (error) {
+      toast({ title: 'Error', description: 'Delete failed', variant: 'destructive' });
       return false;
     }
   };
 
   const resolveSecurityEvent = async (eventId: string) => {
     try {
-      const { user } = await fetchWithAuth('/user/profile');
-
+      const resp = await fetchWithAuth('/user/profile');
       await fetchWithAuth(`/data/security_events/${eventId}`, {
         method: 'PUT',
-        body: JSON.stringify({
-          resolved: true,
-          resolved_at: new Date().toISOString(),
-          resolved_by: user?.user?.id || user.id,
-        })
+        body: JSON.stringify({ resolved: true, resolved_at: new Date().toISOString(), resolved_by: resp.user?.id || resp.id })
       });
-
-      toast({ title: 'Success', description: 'Security event marked as resolved' });
+      toast({ title: 'Resolved', description: 'Event fixed' });
       fetchAllData();
       return true;
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to resolve security event', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Resolve failed', variant: 'destructive' });
       return false;
     }
   };
 
-  // Get user with their role
-  const getUsersWithRoles = (): Profile[] => {
-    return profiles.map((profile) => {
-      const userRole = userRoles.find((r) => r.user_id === profile.id);
-      return {
-        ...profile,
-        role: userRole?.role || 'student',
-      };
-    });
+  const updateCoursePrice = async (courseId: string, newPrice: string | number) => {
+    try {
+      await fetchWithAuth(`/data/courses/${courseId}`, { method: 'PUT', body: JSON.stringify({ price: newPrice }) });
+      toast({ title: 'Success', description: 'Price updated' });
+      fetchAllData();
+      return true;
+    } catch (error) {
+      toast({ title: 'Error', description: 'Price failed', variant: 'destructive' });
+      return false;
+    }
   };
 
   return {
     loading,
-    profiles: getUsersWithRoles(),
+    profiles,
     courses,
     enrollments,
     securityEvents,
@@ -449,19 +398,47 @@ export function useAdminData(userRole?: string | null) {
     approveCourse,
     rejectCourse,
     updateCourseStatus,
-    updateCoursePrice: async (courseId: string, newPrice: string | number) => {
-      try {
-        await fetchWithAuth(`/data/courses/${courseId}`, {
-          method: 'PUT',
-          body: JSON.stringify({ price: newPrice })
-        });
-        toast({ title: 'Success', description: 'Course price updated successfully' });
-        fetchAllData();
-        return true;
-      } catch (error) {
-        toast({ title: 'Error', description: 'Failed to update price', variant: 'destructive' });
-        return false;
-      }
-    }
+    updateCoursePrice,
+    deleteExamResult
   };
+}
+
+export function useLiveMonitoring() {
+  const [data, setData] = useState<{ enrollments: MonitoringEnrollment[], results: MonitoringResult[] } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchData = useCallback(async () => {
+    try {
+      const resp = await fetchWithAuth('/admin/live-monitoring');
+      setData(resp);
+    } catch (err) {
+      console.error('Failed to fetch monitoring data', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 30000); // 30s refresh
+    return () => clearInterval(interval);
+  }, [fetchData]);
+
+  const deleteEnrollment = async (id: string) => {
+    try {
+      await fetchWithAuth(`/data/course_enrollments/${id}`, { method: 'DELETE' });
+      fetchData();
+      return true;
+    } catch (err) { return false; }
+  };
+
+  const deleteExamResult = async (id: string) => {
+    try {
+      await fetchWithAuth(`/data/exam_results/${id}`, { method: 'DELETE' });
+      fetchData();
+      return true;
+    } catch (err) { return false; }
+  };
+
+  return { data, loading, refresh: fetchData, deleteEnrollment, deleteExamResult };
 }

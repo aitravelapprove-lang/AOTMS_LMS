@@ -35,6 +35,8 @@ const EnrollmentSchema = new Schema({
     course_id: { type: Schema.Types.ObjectId, ref: 'Course', required: true },
     status: { type: String, default: 'pending' }, // active, completed, dropped, pending, rejected
     progress_percentage: { type: Number, default: 0 },
+    payment_proof_url: { type: String }, // New field for payment confirmation
+    utr_number: { type: String }, // Unique Transaction Reference
     enrolled_at: { type: Date, default: Date.now },
     completed_at: { type: Date },
     last_accessed_at: { type: Date }
@@ -142,10 +144,10 @@ module.exports = {
     VideoProgress: mongoose.model('VideoProgress', new Schema({
         user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
         course_id: { type: Schema.Types.ObjectId, ref: 'Course', required: true },
-        video_id: { type: Schema.Types.ObjectId, ref: 'Video', required: true },
-        watched_seconds: { type: Number, default: 0 },
-        total_seconds: { type: Number, default: 0 }, // Duration of video
+        video_id: { type: String, required: true }, // Can be video MongoDB ID or S3 URL
+        watched_percentage: { type: Number, default: 0 },
+        last_watched_time: { type: Number, default: 0 }, // in seconds
         completed: { type: Boolean, default: false },
-        last_watched_at: { type: Date, default: Date.now }
+        updated_at: { type: Date, default: Date.now }
     }).set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } }))
 };

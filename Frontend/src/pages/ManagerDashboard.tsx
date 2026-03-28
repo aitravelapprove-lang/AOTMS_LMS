@@ -18,6 +18,7 @@ import { InstructorManagement } from "@/components/manager/InstructorManagement"
 import { ManagerVideoLibrary } from "@/components/manager/ManagerVideoLibrary";
 import { useAdminData } from "@/hooks/useAdminData";
 import { useCourses, CourseEnrollment } from "@/hooks/useCourses";
+import { useSocket } from "@/hooks/useSocket";
 import {
   Card,
   CardContent,
@@ -100,6 +101,24 @@ export default function ManagerDashboard() {
       loadEnrollments();
     }
   }, [user, activeSection, loadEnrollments]);
+
+  // Socket support for real-time enrollment updates
+  const { socket } = useSocket();
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleEnrollmentChange = () => {
+      console.log('[Socket-Manager] Enrollments changed, refreshing...');
+      loadEnrollments();
+    };
+
+    socket.on('course_enrollments_changed', handleEnrollmentChange);
+    
+    return () => {
+      socket.off('course_enrollments_changed', handleEnrollmentChange);
+    };
+  }, [socket, loadEnrollments]);
 
   useEffect(() => {
     if (!loading && !user) {

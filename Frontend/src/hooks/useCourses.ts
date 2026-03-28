@@ -50,6 +50,10 @@ export interface CourseEnrollment {
   created_at: string;
   user_name?: string;
   user_email?: string;
+  progress_percentage?: number;
+  payment_proof_url?: string;
+  utr_number?: string;
+  user_phone?: string;
 }
 
 export function useCourses() {
@@ -138,7 +142,7 @@ export function useCourses() {
     }
   }, [categories.length]);
 
-  const enrollCourse = useCallback(async (courseId: string, courseName: string, price: string) => {
+  const enrollCourse = useCallback(async (courseId: string, courseName: string, price: string, payment_proof_url?: string) => {
     // Backend now handles Firebase/Firestore enrollment
     const insertRes = await fetchWithAuth(
       `/courses/enroll`,
@@ -147,7 +151,8 @@ export function useCourses() {
         body: JSON.stringify({
           course_id: courseId,
           course_name: courseName,
-          price
+          price,
+          payment_proof_url
         })
       }
     );
@@ -170,6 +175,7 @@ export function useCourses() {
           ...item,
           user_name: item.profile?.full_name || 'Unknown',
           user_email: item.profile?.email || 'No Email',
+          user_phone: item.profile?.mobile_number || 'N/A',
           course_name: item.course?.title || 'Unknown Course',
           price: item.course?.price !== undefined ? String(item.course.price) : (item.price !== undefined ? String(item.price) : 'Free')
         }));

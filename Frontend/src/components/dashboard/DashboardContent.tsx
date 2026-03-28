@@ -12,6 +12,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { fetchWithAuth } from '@/lib/api';
 import { 
   Sparkles, 
   Users, 
@@ -36,7 +39,20 @@ import {
   Copy,
   MessageSquare,
   Folder,
-  MonitorPlay
+  MonitorPlay,
+  Cpu,
+  Activity,
+  CheckCircle,
+  CheckCircle2,
+  Download,
+  ArrowRight,
+  Loader2,
+  Upload,
+  Mail,
+  X,
+  Phone,
+  QrCode,
+  Hash
 } from "lucide-react";
 import { UserProfile } from "./UserProfile";
 import { CourseList } from "./CourseList";
@@ -56,11 +72,14 @@ import {
   useStudentStats,
   useEnrolledCourses,
   useEnrollCourse,
+  useStudentDashboardData,
   Announcement,
   LeaderboardEntry,
   LiveClass,
 } from "@/hooks/useStudentData";
-import { useState } from "react";
+import { useSocket } from "@/hooks/useSocket";
+import { useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -76,6 +95,13 @@ function CoursesTab() {
   const { toast } = useToast();
   const enrollMutation = useEnrollCourse();
 
+  // Payment Modal States
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentCourse, setPaymentCourse] = useState<StudentCourse | null>(null);
+  const [paymentProof, setPaymentProof] = useState<File | null>(null);
+  const [utrNumber, setUtrNumber] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+
   if (viewingCourse) {
     return (
       <StudentCourseViewer
@@ -87,14 +113,49 @@ function CoursesTab() {
   }
 
   const handleEnroll = async (course: StudentCourse) => {
+    // Instead of direct enrollment, open the payment modal
+    setPaymentCourse(course);
+    setShowPaymentModal(true);
+  };
+
+  const handleEnrollmentSubmit = async () => {
+    if (!paymentCourse) return;
+    
+    setIsUploading(true);
     try {
-      await enrollMutation.mutateAsync(course.id);
+      let paymentProofUrl = null;
+      
+      // 1. Upload payment proof if provided
+      if (paymentProof) {
+        const formData = new FormData();
+        formData.append('file', paymentProof);
+        
+        const uploadRes = await fetchWithAuth('/upload', {
+          method: 'POST',
+          body: formData,
+          headers: {} // File transfers shouldn't have content-type set manually
+        });
+        
+        paymentProofUrl = uploadRes?.url;
+      }
+
+      // 2. Submit Enrollment Request with the proof and UTR
+      await enrollMutation.mutateAsync({ 
+          courseId: paymentCourse.id, 
+          payment_proof_url: paymentProofUrl,
+          utr_number: utrNumber 
+      });
+
       toast({
         title: "Enrollment Requested",
-        description: `Enrollment for ${course.title} submitted! Waiting for admin approval.`,
+        description: `Enrollment for ${paymentCourse.title} submitted! Waiting for admin approval.`,
         className: "bg-amber-50 border-amber-200"
       });
-      setCourseTab('enrolled'); // Switch back to 'My Courses'
+      
+      setShowPaymentModal(false);
+      setPaymentProof(null);
+      setUtrNumber('');
+      setCourseTab('enrolled');
     } catch (err) {
       const error = err as Error;
       toast({
@@ -102,11 +163,244 @@ function CoursesTab() {
         description: error.message || "An error occurred during enrollment.",
         variant: "destructive"
       });
+    } finally {
+      setIsUploading(false);
     }
   };
 
   return (
     <div className="w-full space-y-8 h-full">
+      {/* Payment Modal JSX */}
+      <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden border-0 rounded-3xl shadow-2xl bg-white">
+          <div className="flex flex-col md:flex-row h-full">
+            {/* Left Column: Course Summary */}
+            <div className="md:w-[400px] bg-slate-900 p-8 text-white flex flex-col justify-between selection:bg-primary/30">
+              <div className="space-y-8">
+                <div className="flex items-center justify-between">
+                  <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/10">
+                    <BookOpen className="h-5 w-5 text-primary" />
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-white/40 hover:text-white hover:bg-white/10 rounded-full md:hidden"
+                    onClick={() => setShowPaymentModal(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="space-y-4">
+                  <h2 className="text-3xl font-black tracking-tight leading-tight">
+                    Review Your <span className="text-primary italic">Enrollment</span>
+                  </h2>
+                  <p className="text-slate-400 text-sm leading-relaxed">
+                    You're one step away from mastering new skills. Complete the secure payment below to unlock full course access.
+                  </p>
+                </div>
+
+                {paymentCourse && (
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4 backdrop-blur-md">
+                    <div className="flex items-start gap-4">
+                      <div className="h-16 w-16 shrink-0 rounded-xl overflow-hidden border border-white/20">
+                        <img 
+                            src={paymentCourse.thumbnail_url?.startsWith('http') ? paymentCourse.thumbnail_url : `${API_URL}/s3/public/${paymentCourse.thumbnail_url}`} 
+                            alt="" 
+                            className="h-full w-full object-cover" 
+                            onError={(e) => { (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=2070&auto=format&fit=crop"; }}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Target Course</div>
+                        <h3 className="font-bold text-sm leading-snug line-clamp-2">{paymentCourse.title}</h3>
+                        <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                          <Clock className="h-3 w-3" />
+                          <span>Lifetime Access</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="pt-4 border-t border-white/10 flex items-center justify-between">
+                      <span className="text-sm font-medium text-slate-400">Course Value</span>
+                      <span className="text-sm line-through text-slate-500">
+                        {paymentCourse.original_price ? `₹${paymentCourse.original_price.toLocaleString('en-IN')}` : "₹00,000"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-slate-400">Total Investment</span>
+                      <span className="text-2xl font-black text-white">
+                        {paymentCourse.price === 0 ? "Free Access" : (paymentCourse.price ? `₹${paymentCourse.price.toLocaleString('en-IN')}` : "Contact Us")}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-12 space-y-6">
+                <div className="flex items-center gap-4 group">
+                  <div className="h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center transition-all group-hover:scale-110 shadow-[0_0_20px_rgba(var(--primary-rgb),0.1)]">
+                    <CheckCircle2 className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-black uppercase tracking-widest text-white/40 mb-0.5">Payment Verified</div>
+                    <div className="text-sm font-bold text-white">Manual Admin Approval</div>
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-500 leading-relaxed font-medium uppercase tracking-[0.1em]">
+                  Secure transactions protected by standard SSL protocols and human verification systems.
+                </p>
+              </div>
+            </div>
+
+            {/* Right Column: Payment Details */}
+            <div className="flex-1 p-8 md:p-12 space-y-8 bg-white selection:bg-slate-100">
+              <div className="flex justify-between items-start">
+                <div className="space-y-1 flex-1">
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Payment Details</h3>
+                  <p className="text-slate-500 text-sm font-medium">Scan the QR code below or use the payment credentials.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded-full hidden md:flex"
+                        onClick={() => setShowPaymentModal(false)}
+                      >
+                        <X className="h-5 w-5" />
+                      </Button>
+                </div>
+              </div>
+
+              {/* QR Section */}
+              <div className="relative group max-w-[280px] mx-auto">
+                <div className="absolute -inset-4 bg-primary/5 rounded-[2rem] blur-2xl opacity-0 group-hover:opacity-100 transition duration-500"></div>
+                <div className="relative bg-slate-50 border-2 border-slate-100 rounded-[2.5rem] p-6 shadow-sm overflow-hidden flex flex-col items-center">
+                  <div className="mb-4 text-center">
+                    <div className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2">Secure UPI Gateway</div>
+                    <div className="flex items-center justify-center gap-2 px-3 py-1 bg-white rounded-full border border-slate-200">
+                      <QrCode className="h-3 w-3 text-primary" />
+                      <span className="text-[10px] font-bold text-slate-600">Scan to Pay</span>
+                    </div>
+                  </div>
+                  
+                  <div className="relative h-44 w-44 bg-white rounded-2xl p-2 shadow-inner border border-slate-200/50 flex items-center justify-center group-hover:scale-[1.02] transition-transform">
+                    {/* The QR Image */}
+                    <img 
+                      src="/scanner.jpeg" 
+                      alt="Payment QR Code" 
+                      className="w-full h-full object-contain"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = "https://placehold.co/400x400?text=QR+CODE+HERE";
+                      }}
+                    />
+                  </div>
+
+                  <div className="mt-6 w-full space-y-3">
+                    <div className="p-3 bg-white rounded-xl border border-dashed border-slate-300 flex items-center justify-between group/code cursor-pointer hover:border-primary transition-colors">
+                      <span className="text-[10px] font-mono font-bold text-slate-500 truncate max-w-[140px]">vyapar.17432781471@hdfcbank</span>
+                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-primary">
+                        <CheckCircle2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <div className="flex items-center justify-center gap-6 saturate-0 opacity-50">
+                        <Phone className="h-4 w-4" />
+                        <span className="text-xs font-bold">+91 80199 42233</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Upload Section */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <label className="text-xs font-black uppercase tracking-widest text-slate-400">Confirmation Proof <span className="text-primary">*</span></label>
+                    {paymentProof && (
+                        <span className="text-[10px] font-bold text-primary flex items-center gap-1">
+                            <CheckCircle2 className="h-3 w-3" /> File Selected
+                        </span>
+                    )}
+                </div>
+                <div 
+                    className={`relative border-2 border-dashed rounded-2xl p-6 transition-all cursor-pointer group flex flex-col items-center justify-center space-y-3 ${paymentProof ? 'border-primary bg-primary/5' : 'border-slate-200 hover:border-primary hover:bg-slate-50'}`}
+                    onClick={() => document.getElementById('payment-proof')?.click()}
+                >
+                    <div className="h-10 w-10 rounded-full bg-white shadow-sm flex items-center justify-center border border-slate-100 group-hover:scale-110 transition-transform">
+                        <Upload className={`h-5 w-5 ${paymentProof ? 'text-primary' : 'text-slate-400'}`} />
+                    </div>
+                    <div className="text-center">
+                        <p className="text-xs font-bold text-slate-900">{paymentProof ? paymentProof.name : 'Upload Payment Screenshot'}</p>
+                        <p className="text-[10px] text-slate-500 mt-1 font-medium">JPEG, PNG only (Max 5MB)</p>
+                    </div>
+                    <input 
+                        id="payment-proof" 
+                        type="file" 
+                        className="hidden" 
+                        accept="image/*"
+                        onChange={(e) => setPaymentProof(e.target.files?.[0] || null)}
+                    />
+                </div>
+              </div>
+
+              {/* UTR Number Section */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <label className="text-xs font-black uppercase tracking-widest text-slate-400">Transaction ID (UTR) <span className="text-primary">*</span></label>
+                </div>
+                <div className="relative group">
+                    <input 
+                        placeholder="Enter 12-digit UTR Number"
+                        value={utrNumber}
+                        onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '').slice(0, 12);
+                            setUtrNumber(val);
+                        }}
+                        className="w-full h-14 rounded-2xl border-2 border-slate-100 bg-slate-50 px-6 font-bold text-slate-900 focus:border-primary focus:outline-none focus:bg-white transition-all shadow-sm"
+                    />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 h-8 w-8 rounded-lg bg-white/50 border border-slate-200 flex items-center justify-center pointer-events-none">
+                        <Hash className="h-4 w-4 text-slate-400" />
+                    </div>
+                </div>
+                <p className="text-[10px] text-slate-400 font-medium px-1">
+                    Please double-check your UTR number from your payment receipt.
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-4 pt-4">
+                <Button
+                    variant="ghost"
+                    size="lg"
+                    className="h-14 rounded-2xl border-2 border-slate-100 font-bold text-slate-600 hover:bg-slate-50 gap-3"
+                    onClick={() => {
+                        window.location.href = `mailto:Info@aotms.in?subject=Enrollment Inquiry: ${paymentCourse?.title}&body=Hello, I have a question about the course enrollment process.`;
+                    }}
+                >
+                    <Mail className="h-5 w-5 text-primary" />
+                    Get in Touch
+                </Button>
+                <Button
+                    size="lg"
+                    className="h-14 rounded-2xl font-black uppercase tracking-widest text-sm shadow-[0_10px_20px_rgba(var(--primary-rgb),0.2)] active:scale-95 transition-all"
+                    disabled={isUploading || !paymentProof || utrNumber.length !== 12}
+                    onClick={handleEnrollmentSubmit}
+                >
+                    {isUploading ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                        'Enroll Course'
+                    )}
+                </Button>
+              </div>
+
+              <p className="text-center text-[10px] text-slate-400 font-medium">
+                After payment, please upload the screenshot to confirm your order details via manual verification.
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <Tabs value={courseTab} onValueChange={(v) => setCourseTab(v as 'enrolled' | 'available')} className="w-full sm:w-auto">
           <TabsList className="bg-slate-100/50 p-1 rounded-xl">
@@ -422,11 +716,31 @@ function LiveClassesTab() {
 
 // ─── Main Dashboard Home ──────────────────────────────────────────────────────
 
+import { 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
+} from 'recharts';
+
+const dummyActivityData = [
+  { name: 'Mon', minutes: 120 },
+  { name: 'Tue', minutes: 80 },
+  { name: 'Wed', minutes: 210 },
+  { name: 'Thu', minutes: 160 },
+  { name: 'Fri', minutes: 190 },
+  { name: 'Sat', minutes: 240 },
+  { name: 'Sun', minutes: 150 },
+];
+
 function DashboardHome() {
   const { data: stats } = useStudentStats();
   const { data: enrolledCourses } = useEnrolledCourses();
+  const { data: dashboardData } = useStudentDashboardData();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const latestCourse = enrolledCourses?.[0];
+
+  const activityData = dashboardData?.activity?.length ? dashboardData.activity : dummyActivityData;
+  const recentResources = dashboardData?.resources || [];
+  const realSkills = dashboardData?.skills || [];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -438,133 +752,245 @@ function DashboardHome() {
             Welcome back, <span className="text-primary italic">{user?.user_metadata?.full_name?.split(" ")[0] || "Student"}</span>.
           </h1>
           <p className="text-slate-600 font-medium mt-2 text-base md:text-lg">
-            Let's continue building your tech career today.
+            Elevate your skills and track your learning journey.
           </p>
         </div>
         <div className="hidden md:flex gap-3">
-           <Button variant="outline" className="h-12 px-6 rounded-xl border-slate-200 text-slate-600 font-semibold" onClick={() => window.location.href='/student-dashboard/courses'}>
-              View All Courses
+           <Button variant="outline" className="h-12 px-6 rounded-xl border-slate-200 text-slate-600 font-semibold shadow-sm hover:shadow-md transition-all" onClick={() => window.location.href='/student-dashboard/courses'}>
+              Browse Library
            </Button>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      {/* KPI Cards - Modified per user request */}
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {[
-          { title: "Active Courses", value: stats?.enrolled_courses || enrolledCourses?.length || 0, icon: BookOpen, color: "blue", desc: "Currently enrolled" },
-          { title: "Completed Modules", value: stats?.completed_courses || 0, icon: Target, color: "orange", desc: "Milestones reached" },
-          { title: "Hours Learned", value: `${stats?.total_watch_minutes ? Math.floor(stats.total_watch_minutes / 60) : 0}h`, icon: Clock, color: "blue", desc: "Total screen time" },
-          { title: "Certificates", value: stats?.certificates_earned || 0, icon: Award, color: "orange", desc: "Verified credentials" },
+          { title: "Active Enrollments", value: enrolledCourses?.length || 0, icon: BookOpen, color: "blue", desc: "Ongoing courses" },
+          { title: "Training Progress", value: stats?.completed_courses || 0, icon: Target, color: "orange", desc: "Modules finished" },
+          { title: "Platform Engagement", value: `${stats?.total_watch_minutes ? Math.floor(stats.total_watch_minutes / 60) : 0}h`, icon: Clock, color: "blue", desc: "Total learning time" },
         ].map((kpi, i) => (
           <motion.div
             key={kpi.title}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: i * 0.1 }}
-            className="pro-card group cursor-default"
+            className="pro-card group cursor-default p-6"
           >
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-bold text-slate-600 uppercase tracking-wider">
-                {kpi.title}
-              </CardTitle>
-              <div className={`h-10 w-10 rounded-xl flex items-center justify-center transition-colors ${kpi.color === 'blue' ? 'bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white' : 'bg-accent/10 text-accent group-hover:bg-accent group-hover:text-white'}`}>
-                <kpi.icon className="h-5 w-5" />
+            <div className="flex items-center gap-4">
+              <div className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-all group-hover:rotate-12 ${kpi.color === 'blue' ? 'bg-primary/10 text-primary' : 'bg-accent/10 text-accent'}`}>
+                <kpi.icon className="h-6 w-6" />
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-black text-slate-900 tracking-tight">
-                {kpi.value}
+              <div className="flex-1">
+                <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">{kpi.title}</p>
+                <div className="flex items-baseline gap-2">
+                   <span className="text-2xl font-black text-slate-900">{kpi.value}</span>
+                   <span className="text-[10px] font-bold text-slate-400">{kpi.desc}</span>
+                </div>
               </div>
-              <p className="text-xs font-medium text-slate-500 mt-1">
-                {kpi.desc}
-              </p>
-            </CardContent>
+            </div>
           </motion.div>
         ))}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Continue Learning - Spans 2 cols */}
+        {/* Continue Learning & Stats - Spans 2 cols */}
         <div className="lg:col-span-2 space-y-6">
-          <Card className="pro-card overflow-hidden">
-            <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-900">
-                    <Play className="h-5 w-5 fill-accent text-accent" />
-                    Continue Learning
-                  </CardTitle>
-                  <CardDescription className="text-slate-600 font-medium mt-1">
-                    Resume your most recent training module
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-6">
-              {!latestCourse ? (
-                <div className="py-12 flex flex-col items-center justify-center text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                  <BookOpen className="h-12 w-12 text-primary/20 mb-4" />
-                  <p className="font-bold text-slate-800 text-lg">Your learning path is clear.</p>
-                  <p className="text-sm font-medium text-slate-600 max-w-sm mt-1 mb-6">
-                    Enroll in a new course to start upgrading your tech skills.
+          {/* Main Content: Continue Learning */}
+          <Card className="pro-card border-none shadow-xl shadow-slate-200/50 overflow-hidden">
+            <div className="p-6 md:p-8 bg-gradient-to-br from-slate-900 to-slate-800 text-white relative">
+               <div className="absolute top-0 right-0 p-8 opacity-10">
+                 <Cpu className="h-32 w-32" />
+               </div>
+               
+               {!latestCourse ? (
+                <div className="relative z-10 py-4 flex flex-col items-center justify-center text-center">
+                  <Badge className="bg-white/10 text-white border-white/20 mb-4 px-4 py-1">New Opportunity</Badge>
+                  <h3 className="text-2xl font-bold mb-4">Start Your Learning Journey</h3>
+                  <p className="text-slate-300 max-w-md mb-8">
+                    Discover professional courses curated by industry experts.
                   </p>
-                  <Button className="pro-button-primary" asChild>
-                    <a href="/student-dashboard/courses">Browse Catalog</a>
+                  <Button className="bg-white text-slate-900 hover:bg-slate-100 h-12 px-8 font-bold rounded-full" asChild>
+                    <a href="/student-dashboard/courses">View Catalog</a>
                   </Button>
                 </div>
               ) : (
-                <div className="flex flex-col md:flex-row gap-6 md:items-center">
-                  <div className="aspect-video md:w-64 shrink-0 rounded-xl overflow-hidden bg-slate-100 relative group cursor-pointer shadow-sm border border-slate-200">
+                <div className="relative z-10 flex flex-col md:flex-row gap-8 items-center">
+                  <div className="w-full md:w-56 aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl shadow-black/40 border-2 border-white/10">
                     <img
                       src={latestCourse.thumbnail_url?.startsWith("http") ? latestCourse.thumbnail_url : `${API_URL}/s3/public/${latestCourse.thumbnail_url}`}
                       alt={latestCourse.title}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      className="w-full h-full object-cover"
                       onError={(e) => { (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=2070&auto=format&fit=crop"; }}
                     />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                       <div className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/50">
-                          <Play className="h-5 w-5 text-white fill-white ml-1" />
-                       </div>
-                    </div>
                   </div>
                   
-                  <div className="flex-1 min-w-0 space-y-4">
-                    <div>
-                      <Badge className="bg-primary/10 hover:bg-primary/20 text-primary border-none text-[10px] font-bold uppercase tracking-widest mb-2">Priority Module</Badge>
-                      <h4 className="font-bold text-slate-900 text-xl md:text-2xl line-clamp-2 leading-tight">
-                        {latestCourse.title}
-                      </h4>
+                  <div className="flex-1 space-y-4">
+                    <div className="flex items-center gap-2 mb-2">
+                       <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                       <span className="text-xs font-bold text-slate-300 uppercase tracking-widest">Currently Playing</span>
                     </div>
+                    <h2 className="text-2xl md:text-3xl font-black leading-tight line-clamp-2">
+                      {latestCourse.title}
+                    </h2>
                     
-                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                      <div className="flex justify-between items-end mb-2">
-                        <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Course Progress</span>
-                        <span className="text-lg font-black text-primary">{latestCourse.progress}%</span>
-                      </div>
-                      <Progress value={latestCourse.progress} className="h-2 bg-slate-200 [&>div]:bg-primary" />
+                    <div className="space-y-2">
+                       <div className="flex justify-between items-end">
+                         <span className="text-xs font-bold text-slate-400">COURSE OVERALL PROGRESS</span>
+                         <span className="text-xl font-black text-white">{latestCourse.progress}%</span>
+                       </div>
+                       <Progress value={latestCourse.progress} className="h-2.5 bg-white/10 [&>div]:bg-white" />
                     </div>
 
-                    {latestCourse.enrollmentStatus === 'pending' ? (
-                      <Button className="w-full sm:w-auto bg-amber-100 text-amber-700 hover:bg-amber-100 cursor-not-allowed">
-                        Pending Admin Approval
-                      </Button>
-                    ) : (
-                      <Button className="pro-button-primary w-full sm:w-auto" asChild>
-                        <a href={`/student-dashboard/courses?courseId=${latestCourse.id}`}>
-                          Resume Training <ChevronRight className="ml-2 h-4 w-4" />
-                        </a>
-                      </Button>
-                    )}
+                    <Button className="bg-white text-slate-900 hover:bg-slate-100 hover:scale-105 transition-all h-12 px-8 font-bold rounded-full mt-4" asChild>
+                      <a href={`/student-dashboard/courses?courseId=${latestCourse.id}`}>
+                        Resume Lesson <ArrowRight className="ml-2 h-4 w-4" />
+                      </a>
+                    </Button>
                   </div>
                 </div>
               )}
+            </div>
+          </Card>
+
+          {/* Learning Activity Chart - New Feature */}
+          <Card className="pro-card border-none shadow-xl shadow-slate-200/20 overflow-hidden">
+            <CardHeader className="pb-2">
+               <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-xl font-black text-slate-900">Learning Intensity</CardTitle>
+                    <CardDescription className="font-medium">Your weekly effort across all modules</CardDescription>
+                  </div>
+                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                    <Activity className="h-5 w-5" />
+                  </div>
+               </div>
+            </CardHeader>
+            <CardContent>
+               <div className="h-[200px] w-full mt-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={activityData}>
+                      <defs>
+                        <linearGradient id="colorMin" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#1e293b" stopOpacity={0.1}/>
+                          <stop offset="95%" stopColor="#1e293b" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
+                      <YAxis hide />
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                        itemStyle={{ color: '#1e293b', fontWeight: 'bold' }}
+                      />
+                      <Area type="monotone" dataKey="minutes" stroke="#1e293b" strokeWidth={3} fillOpacity={1} fill="url(#colorMin)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+               </div>
             </CardContent>
           </Card>
+
+          {/* Skill Blocks - Real Data */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+             {(realSkills.length > 0 ? realSkills : ['Core', 'Technical', 'Soft Skills', 'Labs']).map((skill: any, i) => (
+               <div key={typeof skill === 'string' ? skill : skill.name} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center gap-2">
+                  <div className="h-8 w-8 rounded-full bg-slate-50 flex items-center justify-center">
+                    <CheckCircle className="h-4 w-4 text-emerald-500" />
+                  </div>
+                  <span className="text-xs font-black text-slate-900 uppercase tracking-tighter line-clamp-1">
+                    {typeof skill === 'string' ? skill : skill.name}
+                  </span>
+                  <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-500" style={{ width: `${typeof skill === 'string' ? (40 + (i * 15)) : (skill.progress || 0)}%` }}></div>
+                  </div>
+               </div>
+             ))}
+          </div>
         </div>
 
-        {/* Announcements - Spans 1 col */}
-        <div className="lg:col-span-1 border-none shadow-none">
-          <AnnouncementsSection />
+        {/* Right Sidebar - Spans 1 col */}
+        <div className="lg:col-span-1 space-y-6">
+          {/* Quick Access Documents - Real Data */}
+          <Card className="pro-card border-none shadow-xl shadow-slate-200/20">
+            <CardHeader className="pb-4">
+               <CardTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Resource Library
+               </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+               {recentResources.length === 0 ? (
+                 <div className="py-8 text-center text-xs text-slate-400 font-medium italic">No recent materials</div>
+               ) : (
+                 recentResources.map((res: any, i: number) => (
+                   <div key={i} className="flex items-center justify-between p-3 rounded-xl border border-slate-50 hover:bg-slate-50 transition-colors group cursor-pointer" onClick={() => res.view_url && window.open(res.view_url, '_blank')}>
+                      <div className="flex items-center gap-3">
+                         <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-[10px] font-black group-hover:bg-slate-900 group-hover:text-white transition-all uppercase">
+                           {res.upload_format || res.file_url?.split('.').pop() || 'PDF'}
+                         </div>
+                         <span className="text-sm font-bold text-slate-700 line-clamp-1">{res.asset_title || 'Material'}</span>
+                      </div>
+                      <Download className="h-4 w-4 text-slate-400 group-hover:text-slate-900" />
+                   </div>
+                 ))
+               )}
+               <Button variant="ghost" className="w-full text-primary font-bold text-xs" onClick={() => window.location.href='/student-dashboard/resources'}>
+                 View All Materials
+               </Button>
+            </CardContent>
+          </Card>
+
+          {/* Recent Performance - New Feature */}
+          <Card className="pro-card border-none shadow-xl shadow-slate-200/20">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-amber-500" />
+                Recent Performance
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {dashboardData?.results?.length === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-400 font-medium italic">No recent test attempts</div>
+              ) : (
+                dashboardData?.results?.map((res: any, i: number) => (
+                  <div key={i} className="flex flex-col gap-2 p-3 rounded-2xl bg-slate-50/50 border border-slate-100 group hover:border-primary/20 transition-all">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-black text-slate-900 line-clamp-1 uppercase tracking-tighter">{res.title}</p>
+                        <p className="text-[10px] font-bold text-slate-400 italic">Performed on {new Date(res.date).toLocaleDateString()}</p>
+                      </div>
+                      <Badge className={`h-6 text-[10px] font-black italic rounded-lg shadow-inner ${res.percentage >= 70 ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
+                        {res.percentage}%
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-3">
+                       <div className="flex-1 h-1.5 bg-white rounded-full overflow-hidden border border-slate-100 shadow-inner">
+                         <div className={`h-full ${res.percentage >= 70 ? 'bg-emerald-500' : 'bg-primary'}`} style={{ width: `${res.percentage}%` }}></div>
+                       </div>
+                       <span className="text-[10px] font-black text-slate-600 whitespace-nowrap">{res.score}/{res.total} PTS</span>
+                    </div>
+                  </div>
+                ))
+              )}
+              <Button variant="ghost" className="w-full text-slate-500 font-bold text-xs hover:text-primary" onClick={() => navigate('/student-dashboard/history')}>
+                Review Exam History
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Announcements - Existing component */}
+          <div className="border-none shadow-none">
+            <AnnouncementsSection />
+          </div>
+
+          {/* Student Support Section - New Feature */}
+          <Card className="bg-primary text-white p-6 rounded-3xl relative overflow-hidden group">
+             <div className="absolute -bottom-4 -right-4 h-24 w-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-1000"></div>
+             <h4 className="text-lg font-black mb-1">Need Help?</h4>
+             <p className="text-white/80 text-xs font-medium mb-4">Chat with our senior instructors anytime</p>
+             <Button className="w-full bg-white text-primary hover:bg-slate-100 font-bold rounded-xl h-10 shadow-lg" onClick={() => window.location.href='/student-dashboard/chat'}>
+               Open Career Support
+             </Button>
+          </Card>
         </div>
       </div>
     </div>
@@ -645,6 +1071,25 @@ const routeConfig: Record<string, { title: string; description: string; icon: Re
 export function DashboardContent() {
   const location = useLocation();
   const currentPath = location.pathname;
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { socket } = useSocket();
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleProgressUpdate = () => {
+      console.log('[Socket-Student] Progress changed, invalidating student queries...');
+      queryClient.invalidateQueries({ queryKey: ['enrolled-courses-details'] });
+      queryClient.invalidateQueries({ queryKey: ['student-stats'] });
+    };
+
+    socket.on('progress_updated', handleProgressUpdate);
+    
+    return () => {
+      socket.off('progress_updated', handleProgressUpdate);
+    };
+  }, [socket, queryClient]);
 
   if (currentPath === "/student-dashboard" || currentPath === "/student-dashboard/") {
     return <DashboardHome />;

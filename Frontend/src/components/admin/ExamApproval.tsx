@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { fetchWithAuth } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CheckCircle2, 
@@ -18,7 +19,9 @@ import {
   ShieldAlert,
   ArrowUpRight,
   RefreshCw,
-  Trash2
+  Trash2,
+  Loader2,
+  Settings
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -52,7 +55,8 @@ import {
 import { format } from 'date-fns';
 
 export function ExamApproval() {
-  const { data: exams, isLoading, refetch } = useExams();
+  const [exams, setExams] = useState<Exam[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { data: courses = [] } = useCourses();
   const updateExam = useUpdateExam();
   const deleteExam = useDeleteExam();
@@ -64,21 +68,29 @@ export function ExamApproval() {
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
   const [selectedCourseId, setSelectedCourseId] = useState<string>('');
 
+  const fetchExams = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await fetchWithAuth('/admin/exams-list');
+      setExams(data);
+    } catch (error) {
+       toast({ title: 'Fetch Error', description: 'Slow network or system lag detected.', variant: 'destructive' });
+    } finally {
+       setIsLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchExams();
+  }, [fetchExams]);
+
   const filteredExams = (exams || []).filter(e => {
     const matchesSearch = e.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = filter === 'all' || e.approval_status === filter;
+    const matchesFilter = filter === 'all' || (e.approval_status || 'pending') === filter;
     return matchesSearch && matchesFilter;
   });
 
   const handleAction = async (id: string, approval_status: 'approved' | 'rejected') => {
-    // Courses are now optional for approval to allow faster deployment
-    /*
-    if (approval_status === 'approved' && !selectedCourseId && !selectedExam?.course_id) {
-        toast({ title: 'Course Required', description: 'Please associate this exam with a course before publishing.', variant: 'destructive' });
-        return;
-    }
-    */
-
     try {
       await updateExam.mutateAsync({ 
         id, 
@@ -93,7 +105,7 @@ export function ExamApproval() {
       });
       setIsDetailOpen(false);
       setSelectedCourseId('');
-      refetch();
+      fetchExams();
     } catch (error) {
        toast({ title: 'System Error', description: 'Failed to update approval status.', variant: 'destructive' });
     }
@@ -110,7 +122,7 @@ export function ExamApproval() {
         variant: 'destructive'
       });
       setIsDetailOpen(false);
-      refetch();
+      fetchExams();
     } catch (error) {
        toast({ title: 'System Error', description: 'Failed to delete assessment.', variant: 'destructive' });
     }
@@ -127,6 +139,17 @@ export function ExamApproval() {
         </div>
         
         <div className="flex items-center gap-3">
+           <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-11 px-4 rounded-xl border-slate-100 bg-white shadow-sm text-[10px] font-black uppercase tracking-widest text-slate-400 gap-2 hover:bg-slate-50 transition-all active:scale-95"
+            onClick={fetchExams}
+            disabled={isLoading}
+           >
+             <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin text-primary")} />
+             Manual Audit Sync
+           </Button>
+
            <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
               <Input 
@@ -233,10 +256,15 @@ export function ExamApproval() {
                   </div>
              </motion.div>
             )) : isLoading ? (
-              // Inline skeleton for instant framework display
-              Array(3).fill(0).map((_, i) => (
-                <div key={i} className="h-32 w-full bg-slate-50/50 animate-pulse rounded-[2.5rem] border-4 border-dashed border-slate-100/30" />
-              ))
+              <div className="py-24 text-center">
+                 <div className="relative inline-block">
+                    <div className="h-20 w-20 rounded-full border-4 border-slate-100 animate-[spin_3s_linear_infinite]" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                       <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                    </div>
+                 </div>
+                 <h4 className="text-sm font-black text-slate-400 uppercase tracking-[0.3em] mt-6 animate-pulse">Running Integrity Audit...</h4>
+              </div>
             ) : (
               <div className="py-32 text-center border-4 border-dashed border-slate-50 rounded-[4rem] bg-slate-50/20">
                  <ShieldAlert className="h-16 w-16 text-slate-200 mx-auto mb-6 opacity-30" />

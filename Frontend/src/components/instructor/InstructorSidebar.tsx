@@ -56,7 +56,6 @@ const contentNavItems = [
 
 const analyticNavItems = [
   { title: "Performance", url: "/instructor/performance", icon: BarChart3 },
-  { title: "Class Schedule", url: "/instructor/schedule", icon: Calendar },
 ];
 
 export function InstructorSidebar() {

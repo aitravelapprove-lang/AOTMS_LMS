@@ -20,6 +20,8 @@ export interface Course {
   level?: string | null;
   duration?: string | null;
   duration_hours?: number;
+  price?: number;
+  original_price?: number;
 }
 
 export interface LiveClass {
@@ -933,7 +935,7 @@ export function useInstructorAllStudents() {
 
       allEnrollments.forEach((enrollment: {
         id: string;
-        user_id: any;
+        user_id: string | { _id: string };
         course_id: string;
         user_name?: string;
         user_email?: string;
@@ -941,8 +943,12 @@ export function useInstructorAllStudents() {
         last_accessed_at?: string;
         enrolled_at?: string;
       }) => {
-        const userId = enrollment.user_id?.toString() || enrollment.user_id;
+        const userId = typeof enrollment.user_id === 'string' 
+            ? enrollment.user_id 
+            : enrollment.user_id?._id?.toString();
         
+        if (!userId) return;
+
         // Skip if the student is the instructor themselves
         if (userId === user.id?.toString()) return;
 
@@ -1009,26 +1015,26 @@ export function useInstructorAllStudents() {
         }
       });
       
-      // Fetch profiles for enriched info (actual names/emails from Profiles table)
+      // Fetch core account info from Users collection and additional info from Profiles
       const studentIds = Array.from(studentMap.keys());
       if (studentIds.length > 0) {
-          const profiles = await fetchWithAuth(`/data/profiles?user_id=in.(${studentIds.join(',')})`);
-          profiles.forEach((p: {
-              id: string; // The primary ID (mapped to user_id by transform)
-              user_id: string; // fallback
-              full_name?: string;
-              email?: string;
-              avatar_url?: string;
-              mobile_number?: string;
-              phone?: string;
-          }) => {
-              const student = studentMap.get(p.id?.toString() || p.user_id?.toString());
+          const [usersBatch, profilesBatch] = await Promise.all([
+              fetchWithAuth(`/data/users?id=in.(${studentIds.join(',')})`),
+              fetchWithAuth(`/data/profiles?user_id=in.(${studentIds.join(',')})`)
+          ]);
 
+          const profileMap = new Map();
+          profilesBatch.forEach((p: { id?: string; user_id?: string; [key: string]: unknown }) => profileMap.set((p.id || p.user_id)?.toString(), p));
+
+          usersBatch.forEach((u: { id?: string; _id?: string; full_name?: string; email?: string; avatar_url?: string; [key: string]: unknown }) => {
+              const userIdStr = (u.id || u._id)?.toString();
+              const student = studentMap.get(userIdStr);
               if (student) {
-                  student.name = p.full_name || student.name;
-                  student.email = p.email || student.email; 
-                  student.avatarUrl = p.avatar_url;
-                  student.mobileNumber = p.mobile_number || p.phone || student.mobileNumber;
+                  const profile = profileMap.get(userIdStr);
+                  student.name = u.full_name || profile?.full_name || u.user_name || student.name;
+                  student.email = u.email || profile?.email || student.email;
+                  student.avatarUrl = u.avatar_url || profile?.avatar_url || student.avatarUrl;
+                  student.mobileNumber = profile?.mobile_number || profile?.phone || u.phone || student.mobileNumber;
               }
           });
       }
@@ -1060,10 +1066,12 @@ export function useInstructorAllStudents() {
 
         let status: InstructorStudent['status'] = student.status;
         if (status !== 'completed') {
-          if (daysSinceActive > 7) {
-            status = 'at-risk';
-          } else if (daysSinceActive > 14) {
+          if (daysSinceActive > 14) {
             status = 'inactive';
+          } else if (daysSinceActive > 7) {
+            status = 'at-risk';
+          } else if (daysSinceActive <= 1) {
+            status = 'active';
           }
         }
 

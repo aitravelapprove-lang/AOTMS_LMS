@@ -179,7 +179,8 @@ export function useAvailableCourses() {
         queryKey: ['available-courses'],
         queryFn: async () => {
             try {
-                const data: Course[] = await fetchWithAuth('/data/courses?status=published&limit=20');
+                // Unlimited view for all courses (published, pending, or active) for catalog discovery
+                const data: Course[] = await fetchWithAuth('/data/courses?limit=100&sort=created_at&order=desc');
                 let enrolledCourseIds = new Set<string>();
 
                 if (user?.id) {
@@ -202,6 +203,8 @@ export function useAvailableCourses() {
                         thumbnail_url: course.thumbnail_url,
                         instructor_id: course.instructor_id,
                         created_at: course.created_at,
+                        price: course.price,
+                        original_price: course.original_price,
                         progress: 0
                     } as StudentCourse));
             } catch (error) {
@@ -217,12 +220,14 @@ export function useEnrollCourse() {
     const { user } = useAuth();
 
     return useMutation({
-        mutationFn: async (courseId: string) => {
+        mutationFn: async ({ courseId, payment_proof_url, utr_number }: { courseId: string, payment_proof_url?: string | null, utr_number?: string | null }) => {
             if (!user?.id) throw new Error("Not logged in");
             return fetchWithAuth('/courses/enroll', {
                 method: 'POST',
                 body: JSON.stringify({
-                    courseId: courseId
+                    courseId,
+                    payment_proof_url,
+                    utr_number
                 })
             });
         },
@@ -285,6 +290,17 @@ export function useStudentResources(courseId: string | null) {
             return await fetchWithAuth(`/courses/${courseId}/resources`);
         },
         enabled: !!courseId,
+    });
+}
+
+export function useStudentDashboardData() {
+    const { user } = useAuth();
+
+    return useQuery({
+        queryKey: ['student-dashboard-stats', user?.id],
+        queryFn: () => fetchWithAuth('/student/dashboard-data'),
+        enabled: !!user?.id,
+        refetchInterval: 60000,
     });
 }
 

@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { fetchWithAuth } from '@/lib/api';
-import { Loader2, CheckCircle, XCircle, FileText, AlertCircle, LayoutGrid, Clock, History, Eye, Users, Trash2, ShieldCheck, BrainCircuit } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, FileText, AlertCircle, LayoutGrid, Clock, History, Eye, Users, Trash2, ShieldCheck, BrainCircuit, RefreshCw } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -69,9 +70,10 @@ export function QuestionBankApproval() {
     const [showCourseDialog, setShowCourseDialog] = useState(false);
     const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
     const [selectedCourseId, setSelectedCourseId] = useState<string>("");
-    const [viewTab, setViewTab] = useState<'pending' | 'library'>('pending');
+    const [viewTab, setViewTab] = useState<'pending' | 'library' | 'rejected'>('pending');
     const { data: courses } = useCourses();
     const [approvedBanks, setApprovedBanks] = useState<PendingQuestionBank[]>([]);
+    const [rejectedBanks, setRejectedBanks] = useState<PendingQuestionBank[]>([]);
 
     const [showAccessDialog, setShowAccessDialog] = useState(false);
     const [accessingTopic, setAccessingTopic] = useState<string | null>(null);
@@ -85,38 +87,23 @@ export function QuestionBankApproval() {
     const fetchPendingBanks = async (showLoading = true) => {
         try {
             if (showLoading && pendingBanks.length === 0 && approvedBanks.length === 0) setLoading(true);
-            const questions = await fetchWithAuth('/data/question_bank') as QuestionBankResponse[];
             
-            const groupData = (data: QuestionBankResponse[], status: string) => {
-                return data.filter(q => q.approval_status === status).reduce((acc: Record<string, PendingQuestionBank>, q) => {
-                    if (!acc[q.topic]) {
-                        acc[q.topic] = {
-                            topic: q.topic,
-                            count: 0,
-                            created_by: q.created_by,
-                            created_at: q.created_at
-                        };
-                    }
-                    acc[q.topic].count++;
-                    return acc;
-                }, {});
-            };
-
-            setPendingBanks(Object.values(groupData(questions, 'pending')));
-            setApprovedBanks(Object.values(groupData(questions, 'approved')));
+            // Optimized summary fetch instead of fetching ALL questions and looping access lists
+            const summary = await fetchWithAuth('/admin/question-bank-summary') as (PendingQuestionBank & { approval_status: string, access_count: number })[];
+            
+            setPendingBanks(summary.filter(s => s.approval_status === 'pending'));
+            setApprovedBanks(summary.filter(s => s.approval_status === 'approved'));
+            setRejectedBanks(summary.filter(s => s.approval_status === 'rejected'));
 
             const counts: Record<string, number> = {};
-            for (const bank of Object.values(groupData(questions, 'approved'))) {
-                try {
-                    const res = await fetchWithAuth<{ total_count: number }>(`/admin/question-bank/${encodeURIComponent(bank.topic)}/access-list`);
-                    counts[bank.topic] = res?.total_count || 0;
-                } catch {
-                    counts[bank.topic] = 0;
+            summary.forEach(s => {
+                if (s.approval_status === 'approved') {
+                    counts[s.topic] = s.access_count || 0;
                 }
-            }
+            });
             setAccessCount(counts);
         } catch (err) {
-            console.error('Failed to fetch question banks', err);
+            console.error('Failed to fetch question banks summary', err);
         } finally {
             setLoading(false);
         }
@@ -249,9 +236,14 @@ export function QuestionBankApproval() {
 
     if (loading && pendingBanks.length === 0 && approvedBanks.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center p-12 gap-3">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground">Fetching pending approvals...</p>
+            <div className="py-24 text-center">
+                 <div className="relative inline-block">
+                    <div className="h-20 w-20 rounded-full border-4 border-slate-100 animate-[spin_3s_linear_infinite]" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                       <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                    </div>
+                 </div>
+                 <h4 className="text-sm font-black text-slate-400 uppercase tracking-[0.3em] mt-6 animate-pulse">Running Integrity Audit...</h4>
             </div>
         );
     }
@@ -267,10 +259,21 @@ export function QuestionBankApproval() {
                     <p className="text-muted-foreground text-sm font-medium">Review and activate curated question repositories.</p>
                 </div>
                 <div className="flex items-center gap-4">
-                    <Tabs value={viewTab} onValueChange={(v) => setViewTab(v as 'pending' | 'library')} className="bg-slate-100 p-1 rounded-xl">
+                    <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-11 px-4 rounded-xl border-slate-100 bg-white shadow-sm text-[10px] font-black uppercase tracking-widest text-slate-400 gap-2 hover:bg-slate-50 transition-all active:scale-95"
+                        onClick={() => fetchPendingBanks(true)}
+                        disabled={loading}
+                    >
+                        <RefreshCw className={cn("h-4 w-4", loading && "animate-spin text-primary")} />
+                        Manual Audit Sync
+                    </Button>
+                    <Tabs value={viewTab} onValueChange={(v) => setViewTab(v as 'pending' | 'library' | 'rejected')} className="bg-slate-100 p-1 rounded-xl">
                         <TabsList className="bg-transparent border-none">
                             <TabsTrigger value="pending" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Pending</TabsTrigger>
                             <TabsTrigger value="library" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Library</TabsTrigger>
+                            <TabsTrigger value="rejected" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Rejected</TabsTrigger>
                         </TabsList>
                     </Tabs>
                     <Badge variant="secondary" className="h-7 px-3 bg-primary/10 text-primary border-none font-bold">
@@ -420,14 +423,6 @@ export function QuestionBankApproval() {
                                             <div className="p-6 lg:bg-slate-50/50 flex flex-row lg:flex-col justify-center gap-3 border-l border-slate-100 min-w-[200px]">
                                                 <Button
                                                     variant="outline"
-                                                    onClick={() => handleViewAccess(bank.topic)}
-                                                    className="w-full h-11 rounded-xl border-slate-200 text-slate-600 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-100 transition-all font-bold"
-                                                >
-                                                    <Eye className="h-4 w-4 mr-2" />
-                                                    View ({accessCount[bank.topic] || 0})
-                                                </Button>
-                                                <Button
-                                                    variant="outline"
                                                     onClick={() => handleRemoveClick(bank.topic)}
                                                     disabled={!!processing}
                                                     className="w-full h-11 rounded-xl border-slate-200 text-red-600 hover:bg-red-50 hover:border-red-100 transition-all font-bold"
@@ -438,6 +433,78 @@ export function QuestionBankApproval() {
                                                         <Trash2 className="h-4 w-4 mr-2" />
                                                     )}
                                                     Remove
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    )}
+                </TabsContent>
+
+                <TabsContent value="rejected" className="mt-0">
+                    {rejectedBanks.length === 0 ? (
+                        <Card className="border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-[2rem]">
+                            <CardContent className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+                                <div className="h-20 w-20 rounded-full bg-white flex items-center justify-center shadow-inner border border-slate-100">
+                                    <XCircle className="h-10 w-10 text-slate-200" />
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-xl font-bold text-slate-900">No rejected banks!</p>
+                                    <p className="text-sm font-medium text-slate-500 max-w-sm">There are no question banks with a rejected status.</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <div className="grid gap-4">
+                            {rejectedBanks.map((bank) => (
+                                <Card key={bank.topic} className="overflow-hidden border-slate-200/60 shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+                                    <CardContent className="p-0">
+                                        <div className="flex flex-col lg:flex-row items-stretch lg:items-center">
+                                            <div className="bg-rose-50 p-6 flex flex-col justify-center border-r border-rose-100 min-w-[160px]">
+                                                <div className="h-10 w-10 rounded-xl bg-white shadow-sm flex items-center justify-center mb-3">
+                                                    <XCircle className="h-5 w-5 text-rose-600" />
+                                                </div>
+                                                <Badge variant="secondary" className="w-fit bg-rose-100 text-rose-700 border-none font-bold px-2 py-0 text-xs">
+                                                    {bank.count} Questions
+                                                </Badge>
+                                            </div>
+
+                                            <div className="flex-1 p-6 space-y-2">
+                                                <div className="flex items-center gap-3">
+                                                    <h3 className="font-bold text-lg text-slate-900">{bank.topic}</h3>
+                                                    <Badge className="bg-rose-100 text-rose-700 hover:bg-rose-100 border-none px-2 py-0 text-[10px] uppercase tracking-wider font-black">Rejected</Badge>
+                                                </div>
+                                                <div className="flex items-center gap-4 text-xs font-semibold text-slate-500">
+                                                    <div className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
+                                                        <Clock className="h-3.5 w-3.5 text-primary" />
+                                                        <span>Processed: {new Date(bank.created_at).toLocaleDateString()}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="p-6 lg:bg-slate-50/50 flex flex-row lg:flex-col justify-center gap-3 border-l border-slate-100 min-w-[200px]">
+                                                <Button
+                                                    onClick={() => handleApproveClick(bank.topic)}
+                                                    disabled={!!processing}
+                                                    className="w-full h-11 rounded-xl pro-button-primary shadow-lg shadow-primary/20 font-bold"
+                                                >
+                                                    {processing === bank.topic ? (
+                                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                    ) : (
+                                                        <CheckCircle className="h-4 w-4 mr-2" />
+                                                    )}
+                                                    Re-Approve
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    onClick={() => handleRemoveClick(bank.topic)}
+                                                    disabled={!!processing}
+                                                    className="w-full h-11 rounded-xl border-slate-200 text-red-600 hover:bg-red-50 hover:border-red-100 transition-all font-bold"
+                                                >
+                                                    <Trash2 className="h-4 w-4 mr-2" />
+                                                    Delete permanently
                                                 </Button>
                                             </div>
                                         </div>

@@ -22,7 +22,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchWithAuth } from '@/lib/api';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Profile } from '@/hooks/useAdminData';
+import { Profile, CourseEnrollment } from '@/hooks/useAdminData';
 
 interface Course {
   id: string;
@@ -32,9 +32,10 @@ interface Course {
 
 interface GrantStudentAccessProps {
     profiles?: Profile[];
+    enrollments?: CourseEnrollment[];
 }
 
-export function GrantStudentAccess({ profiles = [] }: GrantStudentAccessProps) {
+export function GrantStudentAccess({ profiles = [], enrollments = [] }: GrantStudentAccessProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [studentUuid, setStudentUuid] = useState('');
@@ -54,13 +55,23 @@ export function GrantStudentAccess({ profiles = [] }: GrantStudentAccessProps) {
     }
   });
 
-  // Filter profiles to show only students and instructors
+  // Filter profiles to show only students
   const filteredStudents = profiles.filter(profile => {
       const role = profile.role?.toLowerCase();
-      const isAllowedRole = role === 'student' || role === 'instructor';
+      const isAllowedRole = role === 'student'; // Strictly students only
       const matchesSearch = (profile.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
                              profile.email?.toLowerCase().includes(searchQuery.toLowerCase()));
       return isAllowedRole && matchesSearch;
+  });
+
+  // Get available courses for selected student (exclude those already enrolled)
+  const availableCourses = courses.filter(course => {
+      if (!selectedStudent) return true;
+      return !enrollments.some(e => 
+          e.user_id === selectedStudent.id && 
+          e.course_id === course.id && 
+          e.status === 'active'
+      );
   });
 
   // Grant access mutation
@@ -91,7 +102,7 @@ export function GrantStudentAccess({ profiles = [] }: GrantStudentAccessProps) {
   });
 
   const handleCourseSelect = (courseId: string) => {
-    const course = courses.find(c => c.id === courseId);
+    const course = availableCourses.find(c => c.id === courseId);
     setSelectedCourse(course || null);
   };
 
@@ -146,7 +157,7 @@ export function GrantStudentAccess({ profiles = [] }: GrantStudentAccessProps) {
                       onChange={(e) => handleCourseSelect(e.target.value)}
                     >
                       <option value="">Select a course...</option>
-                      {courses.map(course => (
+                      {availableCourses.map(course => (
                         <option key={course.id} value={course.id}>
                           {course.title}
                         </option>

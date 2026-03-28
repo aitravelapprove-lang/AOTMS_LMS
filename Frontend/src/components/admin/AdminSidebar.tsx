@@ -28,6 +28,7 @@ import {
   Calendar,
   Database,
   TrendingUp,
+  Ticket
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useAuth } from "@/hooks/useAuth";
@@ -46,6 +47,7 @@ const mainNavItems = [
   { title: "Exam Scheduling", url: "/admin/exam-scheduling", icon: Calendar },
   { title: "Question Repository", url: "/admin/question-repository", icon: Database },
   { title: "Live Monitoring", url: "/admin/live-monitoring", icon: TrendingUp },
+  { title: "Rewards & Coupons", url: "/admin/coupons", icon: Ticket },
 ];
 
 

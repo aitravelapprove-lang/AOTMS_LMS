@@ -52,7 +52,8 @@ import {
   X,
   Phone,
   QrCode,
-  Hash
+  Hash,
+  Ticket
 } from "lucide-react";
 import { UserProfile } from "./UserProfile";
 import { CourseList } from "./CourseList";
@@ -98,6 +99,9 @@ function CoursesTab() {
   // Payment Modal States
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentCourse, setPaymentCourse] = useState<StudentCourse | null>(null);
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedPrice, setAppliedPrice] = useState<number | null>(null);
+  const [isValidating, setIsValidating] = useState(false);
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const [utrNumber, setUtrNumber] = useState('');
   const [isUploading, setIsUploading] = useState(false);
@@ -112,9 +116,39 @@ function CoursesTab() {
     );
   }
 
+  const handleApplyCoupon = async () => {
+    if (!couponCode) return;
+    setIsValidating(true);
+    try {
+      const res = await fetchWithAuth('/coupons/validate', {
+        method: 'POST',
+        body: JSON.stringify({ code: couponCode })
+      });
+      if (res.success) {
+        setAppliedPrice(res.discounted_price);
+        toast({
+          title: "Coupon Applied! 🎁",
+          description: `Price updated to ₹${res.discounted_price.toLocaleString('en-IN')}`,
+          className: "bg-emerald-50 border-emerald-200"
+        });
+      }
+    } catch (err) {
+      toast({
+        title: "Invalid Coupon",
+        description: "This code is invalid or assigned to another user.",
+        variant: "destructive"
+      });
+      setAppliedPrice(null);
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
   const handleEnroll = async (course: StudentCourse) => {
     // Instead of direct enrollment, open the payment modal
     setPaymentCourse(course);
+    setCouponCode("");
+    setAppliedPrice(null);
     setShowPaymentModal(true);
   };
 
@@ -139,11 +173,12 @@ function CoursesTab() {
         paymentProofUrl = uploadRes?.url;
       }
 
-      // 2. Submit Enrollment Request with the proof and UTR
+      // 2. Submit Enrollment Request with the proof, UTR, and Coupon
       await enrollMutation.mutateAsync({ 
           courseId: paymentCourse.id, 
           payment_proof_url: paymentProofUrl,
-          utr_number: utrNumber 
+          utr_number: utrNumber,
+          coupon_code: appliedPrice ? couponCode : undefined
       });
 
       toast({
@@ -228,9 +263,22 @@ function CoursesTab() {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-slate-400">Total Investment</span>
-                      <span className="text-2xl font-black text-white">
-                        {paymentCourse.price === 0 ? "Free Access" : (paymentCourse.price ? `₹${paymentCourse.price.toLocaleString('en-IN')}` : "Contact Us")}
-                      </span>
+                      <div className="text-right">
+                        {appliedPrice !== null ? (
+                          <div className="space-y-0.5">
+                            <span className="text-sm line-through text-slate-500 block">
+                              ₹{paymentCourse.price?.toLocaleString('en-IN')}
+                            </span>
+                            <span className="text-2xl font-black text-emerald-400 block animate-in zoom-in duration-300">
+                              ₹{appliedPrice.toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-2xl font-black text-white block">
+                            {paymentCourse.price === 0 ? "Free Access" : (paymentCourse.price ? `₹${paymentCourse.price.toLocaleString('en-IN')}` : "Contact Us")}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -342,29 +390,61 @@ function CoursesTab() {
                 </div>
               </div>
 
-              {/* UTR Number Section */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <label className="text-xs font-black uppercase tracking-widest text-slate-400">Transaction ID (UTR) <span className="text-primary">*</span></label>
-                </div>
-                <div className="relative group">
-                    <input 
-                        placeholder="Enter 12-digit UTR Number"
-                        value={utrNumber}
-                        onChange={(e) => {
-                            const val = e.target.value.replace(/\D/g, '').slice(0, 12);
-                            setUtrNumber(val);
-                        }}
-                        className="w-full h-14 rounded-2xl border-2 border-slate-100 bg-slate-50 px-6 font-bold text-slate-900 focus:border-primary focus:outline-none focus:bg-white transition-all shadow-sm"
-                    />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 h-8 w-8 rounded-lg bg-white/50 border border-slate-200 flex items-center justify-center pointer-events-none">
-                        <Hash className="h-4 w-4 text-slate-400" />
+                {/* Coupon Code Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                      <label className="text-xs font-black uppercase tracking-widest text-slate-400">Apply Coupon Code</label>
+                      {appliedPrice !== null && (
+                         <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[10px] font-bold">SAVED ₹{(paymentCourse!.price as number) - appliedPrice}</Badge>
+                      )}
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="relative flex-1 group">
+                        <input 
+                            placeholder="Enter Code (e.g. AOTMS12345)"
+                            value={couponCode}
+                            onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                            disabled={appliedPrice !== null}
+                            className="w-full h-12 rounded-xl border-2 border-slate-100 bg-slate-50 px-4 font-bold text-slate-900 focus:border-primary focus:outline-none focus:bg-white transition-all shadow-sm disabled:opacity-50"
+                        />
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                           <Ticket className={`h-4 w-4 ${appliedPrice ? 'text-emerald-500' : 'text-slate-300'}`} />
+                        </div>
                     </div>
+                    <Button 
+                      type="button"
+                      onClick={handleApplyCoupon}
+                      disabled={!couponCode || isValidating || appliedPrice !== null}
+                      className="h-12 px-6 rounded-xl font-bold transition-all"
+                    >
+                      {isValidating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Apply'}
+                    </Button>
+                  </div>
                 </div>
-                <p className="text-[10px] text-slate-400 font-medium px-1">
-                    Please double-check your UTR number from your payment receipt.
-                </p>
-              </div>
+
+                {/* UTR Number Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                      <label className="text-xs font-black uppercase tracking-widest text-slate-400">Transaction ID (UTR) <span className="text-primary">*</span></label>
+                  </div>
+                  <div className="relative group">
+                      <input 
+                          placeholder="Enter 12-digit UTR Number"
+                          value={utrNumber}
+                          onChange={(e) => {
+                              const val = e.target.value.replace(/\D/g, '').slice(0, 12);
+                              setUtrNumber(val);
+                          }}
+                          className="w-full h-14 rounded-2xl border-2 border-slate-100 bg-slate-50 px-6 font-bold text-slate-900 focus:border-primary focus:outline-none focus:bg-white transition-all shadow-sm"
+                      />
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 h-8 w-8 rounded-lg bg-white/50 border border-slate-200 flex items-center justify-center pointer-events-none">
+                          <Hash className="h-4 w-4 text-slate-400" />
+                      </div>
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-medium px-1">
+                      Please double-check your UTR number from your payment receipt.
+                  </p>
+                </div>
 
               {/* Action Buttons */}
               <div className="grid grid-cols-2 gap-4 pt-4">

@@ -220,14 +220,15 @@ export function useEnrollCourse() {
     const { user } = useAuth();
 
     return useMutation({
-        mutationFn: async ({ courseId, payment_proof_url, utr_number }: { courseId: string, payment_proof_url?: string | null, utr_number?: string | null }) => {
+        mutationFn: async ({ courseId, payment_proof_url, utr_number, coupon_code }: { courseId: string, payment_proof_url?: string | null, utr_number?: string | null, coupon_code?: string }) => {
             if (!user?.id) throw new Error("Not logged in");
             return fetchWithAuth('/courses/enroll', {
                 method: 'POST',
                 body: JSON.stringify({
                     courseId,
                     payment_proof_url,
-                    utr_number
+                    utr_number,
+                    coupon_code
                 })
             });
         },

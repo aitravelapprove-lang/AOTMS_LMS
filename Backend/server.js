@@ -24,7 +24,7 @@ const { User, Profile, UserRole, OTP, VerifiedEmail, InstructorApplication, Gues
 const { Course, Enrollment, Topic, Module, Video, Announcement, Timeline, Resource, InstructorProgress, VideoProgress } = require('./models/Course');
 const { Exam, QuestionBank, ExamSchedule, StudentExamAccess, ExamResult, MockPaper, ExamRule, MockTestConfig } = require('./models/Exam');
 const { Assignment, Submission, Playlist, LiveClass } = require('./models/Content');
-const { SystemLog, SecurityEvent, LeaderboardStat } = require('./models/System');
+const { SystemLog, SecurityEvent, LeaderboardStat, Notification, Coupon } = require('./models/System');
 const { Conversation, Message } = require('./models/Chat');
 const { Doubt, DoubtReply } = require('./models/Doubt');
 
@@ -62,10 +62,12 @@ const MODEL_MAP = {
     'security_events': SecurityEvent,
     'leaderboard_stats': LeaderboardStat,
     'leaderboard': LeaderboardStat, // Alias
+    'leaderboard': LeaderboardStat, // Alias
     'instructor_applications': InstructorApplication,
     'instructor_progress': InstructorProgress,
     'video_progress': VideoProgress,
     'guest_credentials': GuestCredential,
+    'notifications': Notification,
     'users': User
 };
 
@@ -2261,7 +2263,9 @@ app.get('/api/courses/enrollments', authenticateToken, requireAdminOrManager, as
             },
             progress_percentage: e.progress_percentage || 0,
             utr_number: e.utr_number,
-            payment_proof_url: e.payment_proof_url
+            payment_proof_url: e.payment_proof_url,
+            applied_coupon: e.applied_coupon,
+            final_price: e.final_price || e.course_id?.price
         }));
 
         res.json(data);
@@ -2289,7 +2293,7 @@ app.post('/api/upload', authenticateToken, upload.single('file'), async (req, re
 });
 
 app.post('/api/courses/enroll', authenticateToken, async (req, res) => {
-    const { course_id, courseId, payment_proof_url, utr_number } = req.body;
+    const { course_id, courseId, payment_proof_url, utr_number, coupon_code } = req.body;
     const finalCourseId = course_id || courseId;
     if (!finalCourseId) return res.status(400).json({ error: 'Course ID required' });
 
@@ -2297,14 +2301,33 @@ app.post('/api/courses/enroll', authenticateToken, async (req, res) => {
         const course = await Course.findById(finalCourseId);
         if (!course) return res.status(404).json({ error: 'Course not found' });
 
+        let finalPrice = course.price || 0;
+        let couponApplied = null;
+
+        if (coupon_code) {
+            const coupon = await Coupon.findOne({ 
+                code: coupon_code.toUpperCase(), 
+                user_id: req.user.id, 
+                is_used: false 
+            });
+            if (coupon) {
+                finalPrice = coupon.discounted_price;
+                couponApplied = coupon.code;
+                coupon.is_used = true;
+                await coupon.save();
+            }
+        }
+
         await Enrollment.findOneAndUpdate(
             { user_id: req.user.id, course_id: finalCourseId },
             { 
-                status: 'pending', // Reverted to pending for manual admin approval
+                status: 'pending', 
                 enrolled_at: new Date(),
                 progress_percentage: 0,
                 payment_proof_url: payment_proof_url || null,
-                utr_number: utr_number || null
+                utr_number: utr_number || null,
+                applied_coupon: couponApplied,
+                final_price: finalPrice
             },
             { upsert: true, new: true }
         );
@@ -3314,6 +3337,104 @@ app.get('/api/courses/:courseId/roster', authenticateToken, requireInstructor, a
 
 
 // --- Generic Data Proxy (The "Supabase" style API) ---
+
+// --- Coupon & Notification endpoints ---
+
+app.post('/api/admin/coupons/generate', authenticateToken, requireAdminOrManager, async (req, res) => {
+    const { userId, amount } = req.body;
+    if (!userId || !amount) return res.status(400).json({ error: 'User ID and discounted amount required' });
+
+    // Format: AOTMS + 5 random digits = 10 chars total
+    const randomDigits = Math.floor(10000 + Math.random() * 90000);
+    const code = `AOTMS${randomDigits}`;
+
+    try {
+        // Save coupon record
+        const coupon = new Coupon({
+            code,
+            user_id: userId,
+            discounted_price: amount
+        });
+        await coupon.save();
+
+        const notification = new Notification({
+            user_id: userId,
+            type: 'coupon',
+            title: `Special Gift Coupon: ${code} 🎁`,
+            message: `Admin has assigned you a special course price: ₹${amount}. Use code ${code} at checkout to apply this offer!`,
+            data: { code, amount },
+            created_at: new Date()
+        });
+        await notification.save();
+
+        sendNotification(userId, {
+            type: 'coupon',
+            title: 'New Coupon Received! 🎁',
+            message: `You received a coupon for ₹${amount}: ${code}`,
+            code,
+            amount
+        });
+
+        res.json({ success: true, code });
+    } catch (err) {
+        handleError(res, err, 'generate-coupon');
+    }
+});
+
+app.post('/api/coupons/validate', authenticateToken, async (req, res) => {
+    const { code } = req.body;
+    if (!code) return res.status(400).json({ error: 'Coupon code required' });
+
+    try {
+        const coupon = await Coupon.findOne({ 
+            code: code.toUpperCase(), 
+            user_id: req.user.id,
+            is_used: false 
+        });
+
+        if (!coupon) {
+            return res.status(404).json({ error: 'Invalid, assigned to someone else, or already used coupon.' });
+        }
+
+        res.json({ 
+            success: true, 
+            discounted_price: coupon.discounted_price 
+        });
+    } catch (err) {
+        handleError(res, err, 'validate-coupon');
+    }
+});
+
+app.get('/api/notifications', authenticateToken, async (req, res) => {
+    try {
+        const notifications = await Notification.find({ user_id: req.user.id })
+            .sort({ created_at: -1 })
+            .limit(50);
+        res.json(notifications);
+    } catch (err) {
+        handleError(res, err, 'get-notifications');
+    }
+});
+
+app.post('/api/notifications/mark-read', authenticateToken, async (req, res) => {
+    try {
+        await Notification.updateMany({ user_id: req.user.id, is_read: false }, { is_read: true });
+        res.json({ success: true });
+    } catch (err) {
+        handleError(res, err, 'mark-notifications-read');
+    }
+});
+
+app.get('/api/admin/students', authenticateToken, requireAdminOrManager, async (req, res) => {
+    try {
+        const studentRoles = await UserRole.find({ role: 'student' }).select('user_id');
+        const studentIds = studentRoles.map(r => r.user_id);
+        const students = await User.find({ _id: { $in: studentIds } }).select('full_name email phone');
+        res.json(students);
+    } catch (err) {
+        handleError(res, err, 'get-admin-students');
+    }
+});
 
 app.get('/api/data/:table', authenticateToken, async (req, res) => {
     const { table } = req.params;

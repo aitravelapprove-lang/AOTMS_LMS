@@ -48,6 +48,8 @@ export interface CourseEnrollment {
   status: 'pending' | 'active' | 'rejected';
   enrollment_date: string;
   created_at: string;
+  final_price?: number;
+  applied_coupon?: string;
   user_name?: string;
   user_email?: string;
   progress_percentage?: number;

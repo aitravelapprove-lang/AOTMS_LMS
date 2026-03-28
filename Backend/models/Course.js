@@ -37,6 +37,8 @@ const EnrollmentSchema = new Schema({
     progress_percentage: { type: Number, default: 0 },
     payment_proof_url: { type: String }, // New field for payment confirmation
     utr_number: { type: String }, // Unique Transaction Reference
+    applied_coupon: { type: String }, // The code used
+    final_price: { type: Number }, // The price after discount
     enrolled_at: { type: Date, default: Date.now },
     completed_at: { type: Date },
     last_accessed_at: { type: Date }

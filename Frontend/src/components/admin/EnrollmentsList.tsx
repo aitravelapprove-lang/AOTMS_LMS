@@ -326,9 +326,16 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-sm font-bold text-green-700">
-                          {enrollment.price}
-                        </span>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-sm font-bold text-green-700">
+                            ₹{(enrollment.final_price ?? enrollment.price)?.toLocaleString('en-IN')}
+                          </span>
+                          {enrollment.applied_coupon && (
+                            <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 text-[8px] uppercase tracking-tighter w-fit">
+                              Code: {enrollment.applied_coupon}
+                            </Badge>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">

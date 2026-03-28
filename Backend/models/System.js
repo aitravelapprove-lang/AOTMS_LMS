@@ -28,8 +28,31 @@ const LeaderboardStatSchema = new Schema({
 });
 LeaderboardStatSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
 
+const NotificationSchema = new Schema({
+    user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    type: { type: String, required: true }, // enrollment, coupon, system
+    title: { type: String, required: true },
+    message: { type: String, required: true },
+    data: { type: Object },
+    is_read: { type: Boolean, default: false },
+    created_at: { type: Date, default: Date.now, index: true }
+});
+NotificationSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
+
+const CouponSchema = new Schema({
+    code: { type: String, required: true, unique: true, index: true },
+    user_id: { type: Schema.Types.ObjectId, ref: 'User', index: true }, // assigned to specific user
+    discounted_price: { type: Number, required: true }, // The price they should pay
+    is_used: { type: Boolean, default: false },
+    created_at: { type: Date, default: Date.now },
+    expires_at: { type: Date }
+});
+CouponSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
+
 module.exports = {
     SystemLog: mongoose.model('SystemLog', SystemLogSchema),
     SecurityEvent: mongoose.model('SecurityEvent', SecurityEventSchema),
-    LeaderboardStat: mongoose.model('LeaderboardStat', LeaderboardStatSchema)
+    LeaderboardStat: mongoose.model('LeaderboardStat', LeaderboardStatSchema),
+    Notification: mongoose.model('Notification', NotificationSchema),
+    Coupon: mongoose.model('Coupon', CouponSchema)
 };

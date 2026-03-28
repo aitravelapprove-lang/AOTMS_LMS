@@ -14,7 +14,7 @@ import {
   Ticket
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { fetchWithAuth } from "@/lib/api";
 import { toast } from "sonner";
@@ -33,7 +33,7 @@ interface Notification {
   created_at: string;
 }
 
-export function Notifications() {
+export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -45,11 +45,10 @@ export function Notifications() {
     setLoading(true);
     try {
       const data = await fetchWithAuth('/notifications');
-      setNotifications(data || []);
+      setNotifications(data);
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
-      // Fallback to empty to prevent crash
-      setNotifications([]);
+      toast.error("Failed to load notifications");
     } finally {
       setLoading(false);
     }
@@ -62,7 +61,6 @@ export function Notifications() {
       toast.success("All caught up!");
     } catch (err) {
       console.error(err);
-      toast.error("Failed to mark as read");
     }
   };
 
@@ -73,14 +71,13 @@ export function Notifications() {
 
   if (loading) {
     return (
-      <div className="py-20 flex flex-col items-center justify-center gap-4 text-center">
-         <div className="h-16 w-16 bg-primary/10 rounded-3xl flex items-center justify-center animate-pulse">
-            <Bell className="h-8 w-8 text-primary animate-bounce" />
-         </div>
-         <div className="space-y-1">
-            <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Inboxing your data...</p>
-            <p className="text-xs text-slate-400">Synchronizing with AOTMS Communications Network</p>
-         </div>
+      <div className="h-screen flex items-center justify-center p-20 bg-slate-50/50">
+        <div className="flex flex-col items-center gap-4">
+           <div className="h-16 w-16 bg-primary/10 rounded-3xl flex items-center justify-center animate-pulse">
+              <Bell className="h-8 w-8 text-primary animate-bounce" />
+           </div>
+           <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Inboxing your data...</p>
+        </div>
       </div>
     );
   }
@@ -88,47 +85,53 @@ export function Notifications() {
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-700">
-      {/* Action Bar */}
-      <div className="flex items-center justify-between">
-         <div className="flex bg-white p-1 rounded-xl shadow-sm border border-slate-100">
-            <Badge variant="secondary" className="bg-primary/5 text-primary border-transparent px-4 py-1.5 rounded-lg font-bold">
-                {unreadCount} Unread
-            </Badge>
-         </div>
-         
-         {notifications.length > 0 && (
+    <div className="max-w-4xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-700 p-4 md:p-8">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
+                <Bell className="h-5 w-5 text-white" />
+              </div>
+              <h1 className="text-3xl font-black text-slate-900 tracking-tight">Notification Center</h1>
+            </div>
+            <p className="text-slate-500 font-medium">Updates, rewards, and system alerts tailored for you.</p>
+        </div>
+        
+        {notifications.length > 0 && (
           <Button 
-            variant="ghost" 
-            size="sm"
+            variant="outline" 
             onClick={markAllRead}
             disabled={unreadCount === 0}
-            className="rounded-xl h-10 px-4 font-bold text-slate-500 hover:text-primary transition-all gap-2"
+            className="rounded-xl h-12 px-6 font-bold border-slate-200 bg-white shadow-sm hover:shadow-md transition-all gap-3"
           >
-            <MailOpen className="h-4 w-4" />
-            Clear New Activity
+            <MailOpen className="h-4 w-4 text-primary" />
+            Mark all as read
           </Button>
         )}
       </div>
 
       {notifications.length === 0 ? (
-        <div className="py-24 text-center space-y-4 opacity-70">
-            <div className="h-24 w-24 bg-slate-50 rounded-[2.5rem] flex items-center justify-center mx-auto shadow-inner border border-slate-100/50">
-               <Archive className="h-10 w-10 text-slate-300" />
+        <Card className="border-slate-200 shadow-sm overflow-hidden rounded-[2.5rem] bg-slate-50 border-dashed py-24 text-center">
+            <div className="space-y-4 max-w-sm mx-auto">
+               <div className="h-20 w-20 bg-white rounded-3xl flex items-center justify-center mx-auto shadow-sm border border-slate-100">
+                  <Archive className="h-10 w-10 text-slate-300" />
+               </div>
+               <div className="space-y-1">
+                  <h3 className="text-xl font-bold text-slate-900 tracking-tight">Your Inbox is Clear</h3>
+                  <p className="text-slate-500 font-medium">When you receive new rewards or enrollment updates, they'll appear here.</p>
+               </div>
             </div>
-            <div className="space-y-1">
-               <h3 className="text-xl font-bold text-slate-900 tracking-tight">Quiet for Now</h3>
-               <p className="text-sm font-medium text-slate-500 max-w-sm mx-auto">Updates about your rewards and course requests will appear here when available.</p>
-            </div>
-        </div>
+        </Card>
       ) : (
         <div className="space-y-4">
           <AnimatePresence mode="popLayout">
             {notifications.map((notification, index) => (
               <motion.div
                 key={notification.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0, transition: { delay: index * 0.05 } }}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0, transition: { delay: index * 0.1 } }}
+                exit={{ opacity: 0, scale: 0.95 }}
                 className={`group relative overflow-hidden rounded-3xl border transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${notification.is_read ? 'bg-white border-slate-100' : 'bg-gradient-to-r from-primary/[0.03] to-white border-primary/20 shadow-md shadow-primary/5'}`}
               >
                   {/* Status Indicator */}
@@ -207,6 +210,15 @@ export function Notifications() {
           </AnimatePresence>
         </div>
       )}
+
+      {/* Footer Info */}
+      <div className="text-center pb-10">
+         <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em] flex items-center justify-center gap-4">
+            <span className="h-px w-20 bg-slate-100" />
+            End of Intelligence Feed
+            <span className="h-px w-20 bg-slate-100" />
+         </p>
+      </div>
     </div>
   );
 }

@@ -58,7 +58,10 @@ import {
   Pencil,
   Video as VideoIcon,
   Database,
+  Ticket,
+  Gift
 } from "lucide-react";
+import { CouponManager } from "@/components/admin/CouponManager";
 import { useSocket } from "@/hooks/useSocket";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Course as InstructorCourse } from "@/hooks/useInstructorData";
@@ -442,6 +445,7 @@ export default function AdminDashboard() {
         "/admin/exam-scheduling": "exam-scheduling",
         "/admin/question-repository": "question-repository",
         "/admin/live-monitoring": "live-monitoring",
+        "/admin/coupons": "coupons",
       };
     const path = location.pathname;
     const tab = tabUrlMap[path];
@@ -628,6 +632,7 @@ export default function AdminDashboard() {
                     {[
                       { id: "users", label: "User Management", icon: Users, key: "tab-users" },
                       { id: "enrollments", label: "Student Enrollments", icon: GraduationCap, key: "tab-enrollments" },
+                      { id: "coupons", label: "Rewards & Coupons", icon: Ticket, key: "tab-coupons" },
                       { id: "grant-access", label: "Grant Access", icon: UserCheck, key: "tab-grant-access" },
                       { id: "instructor-courses", label: "Instructor Courses", icon: BookOpen, key: "tab-instructor-courses" },
                       { id: "all-courses", label: "All Courses", icon: LayoutGrid, key: "tab-all-courses" },
@@ -697,6 +702,16 @@ export default function AdminDashboard() {
                       onUpdateStatus={updateEnrollmentStatus}
                       onDelete={deleteEnrollment}
                     />
+                  </motion.div>
+                </TabsContent>
+
+                <TabsContent key="tab-coupons" value="coupons" className="mt-0 outline-none">
+                  <motion.div
+                    key="motion-coupons"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <CouponManager />
                   </motion.div>
                 </TabsContent>
 

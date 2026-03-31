@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { fetchWithAuth } from '@/lib/api';
 
 export default function CoursesPage() {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -49,12 +49,12 @@ export default function CoursesPage() {
       fetchCourses(1, selectedCategory, true);
       initialLoadDone.current = true;
     }
-  }, []);
+  }, [fetchCategories, fetchCourses, selectedCategory]);
 
   // Load more when category changes
   useEffect(() => {
     fetchCourses(1, selectedCategory, true);
-  }, [selectedCategory]);
+  }, [fetchCourses, selectedCategory]);
 
   // Infinite scroll observer
   const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
@@ -430,7 +430,7 @@ export default function CoursesPage() {
               onEnroll={() => handleEnroll(course)}
               isEnrolling={enrolling === course.id}
               isLoggedIn={isLoggedIn}
-              userRole={user?.role}
+              userRole={userRole || undefined}
             />
           ))}
         </div>

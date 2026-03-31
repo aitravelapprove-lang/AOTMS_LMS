@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Clock, BookOpen, ArrowRight, User, ChevronDown, CheckCircle2, Upload, Mail, X, Phone, QrCode } from 'lucide-react';
+import { Loader2, Star, Clock, BookOpen, ArrowRight, ArrowLeft, User, ChevronDown, CheckCircle2, Upload, Mail, X, Phone, QrCode } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { fetchWithAuth } from '@/lib/api';
@@ -162,6 +162,19 @@ export default function CoursesPage() {
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       {/* Hero Section - Taller */}
       <div className="relative bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 py-20 md:py-32">
+        {/* Back to Home Button */}
+        <div className="container mx-auto px-4 absolute top-8 left-0 right-0 z-20">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => navigate('/')}
+            className="group gap-2 text-slate-600 hover:text-primary hover:bg-primary/5 transition-all rounded-full px-4"
+          >
+            <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+            <span className="font-bold text-xs uppercase tracking-widest">Back to Home</span>
+          </Button>
+        </div>
+
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl mx-auto text-center space-y-6">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 tracking-tight">

@@ -225,7 +225,11 @@ export default function CoursesPage() {
                     </div>
                     <div className="pt-4 border-t border-white/10 flex items-center justify-between">
                       <span className="text-sm font-medium text-slate-400">Total Investment</span>
-                      <span className="text-2xl font-black text-white">{paymentCourse.price}</span>
+                      <span className="text-2xl font-black text-white">
+                        {paymentCourse.price?.toString().includes('$') 
+                          ? paymentCourse.price.replace('$', '₹') 
+                          : `₹${paymentCourse.price}`}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -526,10 +530,18 @@ function CourseCard({
 
         {/* Price */}
         <div className="flex items-baseline gap-3 pt-2">
-          <span className="text-3xl font-bold text-primary">{course.price}</span>
+          <span className="text-3xl font-bold text-primary">
+            {course.price?.toString().includes('$') 
+              ? course.price.replace('$', '₹') 
+              : `₹${course.price}`}
+          </span>
           {course.original_price && (
             <>
-              <span className="text-base text-slate-400 line-through">{course.original_price}</span>
+              <span className="text-base text-slate-400 line-through">
+                {course.original_price?.toString().includes('$') 
+                  ? course.original_price.replace('$', '₹') 
+                  : `₹${course.original_price}`}
+              </span>
               <Badge variant="destructive" className="text-xs font-semibold">
                 {Math.round((1 - parsePrice(course.price) / parsePrice(course.original_price)) * 100)}% OFF
               </Badge>

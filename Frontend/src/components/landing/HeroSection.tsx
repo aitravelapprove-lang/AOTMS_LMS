@@ -31,6 +31,10 @@ const LowPolyBackground = () => (
         <feBlend in="SourceGraphic" mode="multiply" result="blend" />
         <feComposite in="blend" in2="SourceGraphic" operator="in" />
       </filter>
+      <radialGradient id="vignette-shadow" cx="50%" cy="50%" r="70%">
+        <stop offset="0%" stopColor="transparent" />
+        <stop offset="100%" stopColor="#011B33" stopOpacity="0.4" />
+      </radialGradient>
     </defs>
     {/* Base gradient fill */}
     <rect width="1200" height="700" fill="url(#bg-grad)" />
@@ -115,6 +119,7 @@ const LowPolyBackground = () => (
     <polygon points="500,700 700,700 600,700" fill="#E34D14" opacity="0.8" />
     <polygon points="700,700 900,700 800,700" fill="#B23C0F" opacity="0.85" />
     <polygon points="900,700 1000,700 1200,700" fill="#E34D14" opacity="0.8" />
+    <rect width="1200" height="700" fill="url(#vignette-shadow)" pointerEvents="none" />
   </svg>
 );
 

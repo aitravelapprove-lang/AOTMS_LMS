@@ -1,174 +1,195 @@
-"use client";
 import { useEffect, useRef, useState } from "react";
 import { MeshGradient, PulsingBorder } from "@paper-design/shaders-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import {
+  FaReact,
+  FaAws,
+  FaDocker,
+  FaNodeJs,
+  FaGithub,
+  FaTwitter,
+  FaLinkedin,
+  FaInstagram,
+  FaGoogle,
+  FaApple,
+} from "react-icons/fa";
+import {
+  SiNextdotjs,
+  SiVercel,
+  SiRedux,
+  SiTypescript,
+  SiFacebook,
+} from "react-icons/si";
+
+const iconConfigs = [
+  { Icon: FaReact, color: "#61DAFB" },
+  { Icon: FaAws, color: "#FF9900" },
+  { Icon: FaDocker, color: "#2496ED" },
+  { Icon: FaNodeJs, color: "#339933" },
+  { Icon: SiNextdotjs, color: "#FFFFFF" },
+  { Icon: SiVercel, color: "#FFFFFF" },
+  { Icon: SiRedux, color: "#764ABC" },
+  { Icon: SiTypescript, color: "#3178C6" },
+  { Icon: FaGithub, color: "#FFFFFF" },
+  { Icon: FaTwitter, color: "#1DA1F2" },
+  { Icon: FaLinkedin, color: "#0077B5" },
+  { Icon: FaInstagram, color: "#E1306C" },
+  { Icon: FaGoogle, color: "#DB4437" },
+  { Icon: FaApple, color: "#FFFFFF" },
+  { Icon: SiFacebook, color: "#1877F2" },
+];
 
 export default function ShaderShowcase() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isActive, setIsActive] = useState(false);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const handleMouseEnter = () => setIsActive(true);
-    const handleMouseLeave = () => setIsActive(false);
-
-    const container = containerRef.current;
-    if (container) {
-      container.addEventListener("mouseenter", handleMouseEnter);
-      container.addEventListener("mouseleave", handleMouseLeave);
-    }
-
-    return () => {
-      if (container) {
-        container.removeEventListener("mouseenter", handleMouseEnter);
-        container.removeEventListener("mouseleave", handleMouseLeave);
-      }
-    };
-  }, []);
+  const orbitCount = 3;
+  const iconsPerOrbit = 5;
 
   return (
     <div
       ref={containerRef}
-      className="min-h-screen relative overflow-hidden flex items-center justify-center"
+      className="min-h-screen relative overflow-hidden flex items-center justify-center bg-[#011B33]"
     >
-      {/* Dynamic Background Mesh Component */}
+      {/* Optimized Background Mesh Component */}
       <MeshGradient
-        className="absolute inset-0 w-full h-full"
+        className="absolute inset-0 w-full h-full opacity-60"
         colors={["#011B33", "#0075cf", "#3391d9", "#fd8c5e", "#fd5a1a"]}
-        speed={0.15}
-      />
-      <MeshGradient
-        className="absolute inset-0 w-full h-full opacity-30 mix-blend-overlay"
-        colors={["#000000", "#ffffff", "#0075cf", "#fd5a1a"]}
-        speed={0.1}
+        speed={0.08}
       />
 
-      {/* SVG Definitions for Shaders */}
-      <svg className="absolute inset-0 w-0 h-0">
-        <defs>
-          <filter
-            id="glass-effect"
-            x="-50%"
-            y="-50%"
-            width="200%"
-            height="200%"
+      <main className="relative z-20 container-width mx-auto px-6 flex flex-col lg:flex-row items-center justify-between gap-12 w-full py-20">
+        {/* Left side: Content */}
+        <div className="w-full lg:w-1/2 text-center lg:text-left">
+          <motion.h1
+            className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-white mb-8 leading-[0.95] tracking-tight drop-shadow-2xl"
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
           >
-            <feTurbulence baseFrequency="0.005" numOctaves="1" result="noise" />
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale="0.3" />
-            <feColorMatrix
-              type="matrix"
-              values="1 0 0 0 0.02
-                      0 1 0 0 0.02
-                      0 0 1 0 0.05
-                      0 0 0 0.9 0"
-              result="tint"
-            />
-          </filter>
-          <filter id="text-glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-            <feMerge>
-              <feMergeNode in="coloredBlur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-      </svg>
+            SMART <br className="hidden md:block" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/60">
+              LEARNING
+            </span>
+            <br className="hidden md:block" />
+            <span className="text-[#FD5A1A]">SYSTEM</span>
+          </motion.h1>
 
-      <main className="relative z-20 max-w-5xl mx-auto px-6 text-center w-full pt-10">
-        <motion.h1
-          className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-white mb-8 leading-[0.95] tracking-tight drop-shadow-2xl"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-        >
-          SMART LEARNING
-          <br className="hidden md:block" />
-          <span className="block font-black text-white drop-shadow-[0_10px_20px_rgba(0,0,0,0.4)]">
-            MANAGEMENT SYSTEM
-          </span>
-        </motion.h1>
-
-        <motion.p
-          className="text-lg md:text-xl font-medium text-white/90 mb-12 leading-relaxed max-w-3xl mx-auto drop-shadow-md px-4"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.8 }}
-        >
-          AOTMS is Vijayawada's premier learning management system offering
-          interactive courses, live classes, secure exams, and ATS-driven skill
-          evaluation mapped to actual industry needs.
-        </motion.p>
-
-        <motion.div
-          className="flex items-center justify-center gap-6 flex-wrap"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 1.0 }}
-        >
-          <motion.button
-            className="px-12 py-5 rounded-2xl bg-gradient-to-r from-[#0075CF] to-[#3391D9] text-white font-black text-lg transition-all duration-300 hover:scale-105 active:scale-95 shadow-xl hover:shadow-[0_10px_40px_rgba(0,117,207,0.5)] cursor-pointer tracking-wider"
-            onClick={() => navigate("/auth")}
+          <motion.p
+            className="text-lg md:text-xl font-medium text-white/80 mb-12 leading-relaxed max-w-xl mx-auto lg:mx-0"
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
           >
-            Get Started
-          </motion.button>
-          <motion.button
-            className="px-12 py-5 rounded-2xl bg-white/10 border-2 border-white/20 text-white font-black text-lg transition-all duration-300 hover:bg-white/20 hover:border-white/40 cursor-pointer backdrop-blur-md hover:scale-105 active:scale-95 tracking-wider"
-            onClick={() => navigate("/student-dashboard")}
+            AOTMS is Vijayawada's premier learning platform offering interactive
+            courses, live classes, and industry-mapped skill evaluation.
+          </motion.p>
+
+          <motion.div
+            className="flex items-center justify-center lg:justify-start gap-6 flex-wrap"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
           >
-            Explore Platform
-          </motion.button>
-        </motion.div>
+            <Button
+              size="lg"
+              className="h-16 px-10 rounded-2xl bg-white text-[#0075CF] font-black text-lg hover:bg-slate-100 transition-all shadow-xl hover:scale-105"
+              onClick={() => navigate("/auth")}
+            >
+              Get Started
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="h-16 px-10 rounded-2xl bg-white/10 border-white/20 text-white font-black text-lg hover:bg-white/20 transition-all backdrop-blur-md hover:scale-105"
+              onClick={() => navigate("/courses")}
+            >
+              Explore Catalog
+            </Button>
+          </motion.div>
+        </div>
+
+        {/* Right side: Orbit Animation */}
+        <div className="w-full lg:w-1/2 flex items-center justify-center relative min-h-[400px] lg:min-h-[600px]">
+          <div className="relative w-full max-w-[500px] aspect-square flex items-center justify-center scale-75 sm:scale-100">
+            {/* Center Node */}
+            <motion.div
+              className="w-24 h-24 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl flex items-center justify-center z-30 p-2"
+              animate={{ scale: [1, 1.08, 1] }}
+              transition={{ duration: 4, repeat: Infinity }}
+            >
+              <img src="/favicon.png" alt="AOTMS Favicon" className="w-full h-full object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]" />
+            </motion.div>
+
+            {/* Generate Orbits */}
+            {[...Array(orbitCount)].map((_, orbitIdx) => {
+              const radius = 100 + orbitIdx * 60; // Responsive radius
+              const duration = 15 + orbitIdx * 10;
+              const angleStep = (2 * Math.PI) / iconsPerOrbit;
+
+              return (
+                <motion.div
+                  key={orbitIdx}
+                  className="absolute rounded-full border border-white/10 border-dashed"
+                  style={{
+                    width: radius * 2,
+                    height: radius * 2,
+                  }}
+                  animate={{ rotate: orbitIdx % 2 ? -360 : 360 }}
+                  transition={{
+                    duration: duration,
+                    repeat: Infinity,
+                    ease: "linear",
+                  }}
+                >
+                  {iconConfigs
+                    .slice(
+                      orbitIdx * iconsPerOrbit,
+                      (orbitIdx + 1) * iconsPerOrbit,
+                    )
+                    .map((cfg, iconIdx) => {
+                      const angle = iconIdx * angleStep;
+                      const x = 50 + 50 * Math.cos(angle);
+                      const y = 50 + 50 * Math.sin(angle);
+
+                      return (
+                        <div
+                          key={iconIdx}
+                          className="absolute bg-white/5 backdrop-blur-lg border border-white/10 rounded-full p-2 shadow-xl hover:scale-125 transition-transform duration-300"
+                          style={{
+                            left: `${x}%`,
+                            top: `${y}%`,
+                            transform: "translate(-50%, -50%)",
+                          }}
+                        >
+                          {cfg.Icon && (
+                            <cfg.Icon
+                              className="w-6 h-6 sm:w-8 sm:h-8"
+                              style={{ color: cfg.color }}
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
       </main>
 
-      {/* Decorative Rotating Orbital Logo at bottom right */}
-      <div className="absolute bottom-10 right-10 md:bottom-16 md:right-16 z-30 opacity-70 hover:opacity-100 transition-opacity hidden md:flex">
+      {/* Decorative Rotating Orbital Logo at bottom right - Simplified for Performance */}
+      <div className="absolute bottom-10 right-10 z-30 opacity-40 hidden md:flex pointer-events-none">
         <div className="relative w-24 h-24 flex items-center justify-center">
           <PulsingBorder
-            colors={[
-              "#0075CF",
-              "#3391D9",
-              "#FDFEFE",
-              "#FD5A1A",
-              "#FD8C5E",
-              "#E6F2FA",
-              "#ffffff",
-            ]}
-            speed={1.5}
+            colors={["#0075CF", "#FD5A1A", "#ffffff"]}
+            speed={2}
             roundness={1}
-            thickness={0.15}
-            softness={0.2}
-            intensity={4}
-            style={{
-              width: "70px",
-              height: "70px",
-              borderRadius: "50%",
-            }}
+            thickness={0.1}
+            intensity={2}
+            style={{ width: "60px", height: "60px", borderRadius: "50%" }}
           />
-
-          <motion.svg
-            className="absolute inset-0 w-full h-full"
-            viewBox="0 0 100 100"
-            animate={{ rotate: 360 }}
-            transition={{
-              duration: 25,
-              repeat: Number.POSITIVE_INFINITY,
-              ease: "linear",
-            }}
-            style={{ transform: "scale(1.5)" }}
-          >
-            <defs>
-              <path
-                id="orbital-path"
-                d="M 50, 50 m -35, 0 a 35,35 0 1,1 70,0 a 35,35 0 1,1 -70,0"
-              />
-            </defs>
-            <text className="text-[12px] fill-white/90 font-black tracking-widest uppercase">
-              <textPath href="#orbital-path" startOffset="0%">
-                Advance Online Training • Management System •
-              </textPath>
-            </text>
-          </motion.svg>
         </div>
       </div>
     </div>

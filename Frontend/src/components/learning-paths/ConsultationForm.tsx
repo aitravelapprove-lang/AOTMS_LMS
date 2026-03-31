@@ -111,40 +111,40 @@ const ConsultationForm = () => {
               {/* Animated Glow Border */}
               <div className="absolute -inset-1 bg-gradient-to-r from-[#0075CF] via-[#FD5A1A] to-[#0075CF] rounded-[3rem] opacity-20 blur-xl group-hover:opacity-40 transition-opacity duration-1000" />
 
-                <div className="relative bg-white/95 backdrop-blur-3xl border border-slate-200/60 rounded-[2.9rem] p-8 md:p-12 shadow-2xl overflow-hidden">
+                <div className="relative bg-white border border-slate-300 rounded-[2.9rem] p-8 md:p-12 shadow-2xl overflow-hidden">
                   {/* Visual ID Tag */}
-                  <div className="absolute top-0 right-0 px-6 py-2 bg-slate-100/50 border-b border-l border-slate-200/50 rounded-bl-2xl">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                      FORM: AOTMS
+                  <div className="absolute top-0 right-0 px-6 py-2 bg-slate-100 border-b border-l border-slate-300 rounded-bl-2xl">
+                    <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                      FORM: AOTMS-001
                     </span>
                   </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                      <label className="text-[11px] font-black text-slate-700 uppercase tracking-widest ml-1">
                         Full Identity
                       </label>
                       <div className="relative group/field">
-                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within/field:text-[#0075CF] transition-colors" />
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within/field:text-[#0075CF] transition-colors" />
                         <Input
                           required
                           placeholder="Your Legal Name"
-                          className="pl-12 h-14 rounded-2xl bg-slate-50 border-slate-200 focus:border-[#0075CF] focus:ring-[#0075CF]/20 font-bold transition-all placeholder:text-slate-400"
+                          className="pl-12 h-14 rounded-2xl bg-slate-100/50 border-slate-300 focus:border-[#0075CF] focus:ring-[#0075CF]/20 font-bold transition-all placeholder:text-slate-500 text-slate-900"
                         />
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                      <label className="text-[11px] font-black text-slate-700 uppercase tracking-widest ml-1">
                         Communication Relay
                       </label>
                       <div className="relative group/field">
-                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within/field:text-[#FD5A1A] transition-colors" />
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within/field:text-[#FD5A1A] transition-colors" />
                         <Input
                           required
                           type="email"
                           placeholder="example@aotms.com"
-                          className="pl-12 h-14 rounded-2xl bg-slate-50 border-slate-200 focus:border-[#FD5A1A] focus:ring-[#FD5A1A]/20 font-bold transition-all placeholder:text-slate-400"
+                          className="pl-12 h-14 rounded-2xl bg-slate-100/50 border-slate-300 focus:border-[#FD5A1A] focus:ring-[#FD5A1A]/20 font-bold transition-all placeholder:text-slate-500 text-slate-900"
                         />
                       </div>
                     </div>
@@ -152,24 +152,24 @@ const ConsultationForm = () => {
 
                   <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                      <label className="text-[11px] font-black text-slate-700 uppercase tracking-widest ml-1">
                         Phone Signal
                       </label>
                       <div className="relative group/field">
-                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within/field:text-[#0075CF] transition-colors" />
+                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within/field:text-[#0075CF] transition-colors" />
                         <Input
                           required
                           type="tel"
                           placeholder="+91 - XXXXX - XXXXX"
-                          className="pl-12 h-14 rounded-2xl bg-slate-50 border-slate-200 focus:border-[#0075CF] focus:ring-[#0075CF]/20 font-bold transition-all placeholder:text-slate-400"
+                          className="pl-12 h-14 rounded-2xl bg-slate-100/50 border-slate-300 focus:border-[#0075CF] focus:ring-[#0075CF]/20 font-bold transition-all placeholder:text-slate-500 text-slate-900"
                         />
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                      <label className="text-[11px] font-black text-slate-700 uppercase tracking-widest ml-1">
                         Target Trajectory
                       </label>
-                      <select className="flex h-14 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#FD5A1A]/20 focus:border-[#FD5A1A] disabled:cursor-not-allowed disabled:opacity-50 transition-all appearance-none cursor-pointer">
+                      <select className="flex h-14 w-full rounded-2xl border border-slate-300 bg-slate-100/50 px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#FD5A1A]/20 focus:border-[#FD5A1A] disabled:cursor-not-allowed disabled:opacity-50 transition-all appearance-none cursor-pointer text-slate-900">
                         <option>Choose Desired Program</option>
                         <option>Full Stack Developer</option>
                         <option>Data Science & AI</option>
@@ -180,12 +180,12 @@ const ConsultationForm = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                    <label className="text-[11px] font-black text-slate-700 uppercase tracking-widest ml-1">
                       Mission Requirement (Optional)
                     </label>
                     <textarea
                       placeholder="Briefly describe your career goals and technical interest..."
-                      className="w-full min-h-[120px] rounded-[2rem] bg-slate-50 border border-slate-200 p-6 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0075CF]/20 focus:border-[#0075CF] transition-all placeholder:text-slate-400"
+                      className="w-full min-h-[120px] rounded-[2rem] bg-slate-100/50 border border-slate-300 p-6 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0075CF]/20 focus:border-[#0075CF] transition-all placeholder:text-slate-500 text-slate-900"
                     />
                   </div>
 
@@ -193,14 +193,14 @@ const ConsultationForm = () => {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     disabled={loading}
-                    className="w-full h-16 rounded-[2rem] bg-gradient-to-r from-[#0075CF] to-[#3391D9] text-white font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 shadow-xl hover:shadow-[#0075CF]/30 transition-all disabled:opacity-50"
+                    className="w-full h-16 rounded-[2rem] bg-gradient-to-r from-[#0075CF] to-[#3391D9] text-white font-black uppercase tracking-[0.2em] text-[13px] flex items-center justify-center gap-3 shadow-xl hover:shadow-[#0075CF]/30 transition-all disabled:opacity-50"
                   >
                     {loading ? (
                       <Zap className="w-5 h-5 animate-spin" />
                     ) : (
                       <>
                         Initialize Consultation
-                        <Send className="w-4 h-4" />
+                        <Send className="w-5 h-5" />
                       </>
                     )}
                   </motion.button>

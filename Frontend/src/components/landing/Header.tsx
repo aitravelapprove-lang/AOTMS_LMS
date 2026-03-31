@@ -21,7 +21,6 @@ import logo from "@/assets/logo.png";
 
 // Pages with light backgrounds that need dark navbar text
 const lightBgPages = [
-  "/learning-paths",
   "/auth",
   "/student-dashboard",
   "/instructor",
@@ -34,7 +33,6 @@ const lightBgPages = [
 const navLinks = [
   { name: "Home", href: "/" },
   { name: "Courses", href: "/courses" },
-  { name: "Learning Paths", href: "/learning-paths" },
   { name: "About", href: "https://www.aotms.in/#/about-us" },
   { name: "FAQ", href: "https://www.aotms.in/#/faq" },
 ];

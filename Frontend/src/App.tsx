@@ -8,7 +8,6 @@ import { SocketProvider } from "@/hooks/useSocket";
 import { useEffect, useRef } from "react";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
-import LearningPaths from "./pages/LearningPaths";
 import InstructorRegister from "./pages/InstructorRegister";
 import Dashboard from "./pages/Dashboard";
 import InstructorDashboard from "./pages/InstructorDashboard";
@@ -100,7 +99,6 @@ const App = () => (
               <Route path="/faq" element={<FAQ />} />
               <Route path="/pending-approval" element={<ProtectedRoute><PendingApproval /></ProtectedRoute>} />
               <Route path="/become-instructor" element={<InstructorRegister />} />
-              <Route path="/learning-paths" element={<LearningPaths />} />
 
               <Route
                 path="/student-dashboard/*"

@@ -113,13 +113,13 @@ const Testimonials = () => {
           viewport={{ once: true }} 
           className="text-center mb-20 lg:mb-32"
         >
-          <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-white border border-[#0075CF]/10 shadow-xl shadow-slate-200/50 text-[#0075CF] text-xs font-black uppercase tracking-[0.3em] mb-8">
+          <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mb-8 shadow-sm">
             <span className="w-2 h-2 rounded-full bg-[#FD5A1A] animate-ping" />
             Verified Career Results
           </div>
-          <h2 className="text-4xl sm:text-5xl md:text-7xl font-black text-slate-900 mb-8 leading-[1.1] tracking-tighter">
+          <h2 className="text-4xl sm:text-5xl md:text-7xl font-black text-slate-950 mb-8 leading-[1.05] tracking-tighter">
             Impact That <span className="text-[#0075CF]">Speaks</span> <br className="hidden md:block"/>
-            <span className="text-[#FD5A1A]">For Itself</span>
+            <span className="text-[#FD5A1A]">For Itself</span>.
           </h2>
           <p className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-medium">
             Join the elite circle of graduates in Vijayawada who transformed their aspirations into career-defining roles.

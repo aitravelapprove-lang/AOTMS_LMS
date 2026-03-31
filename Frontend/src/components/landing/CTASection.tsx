@@ -78,12 +78,12 @@ const CTASection = () => {
               </span>
             </div>
 
-            <h2 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-[#FDFEFE] mb-6 md:mb-8 leading-tight tracking-tight">
+            <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-black text-white mb-6 md:mb-10 leading-[0.95] tracking-tighter">
               Launch Your <br className="hidden sm:block" />
-              <span className="text-white">Future In Tech</span>
+              <span className="text-white">Future In Tech</span>.
             </h2>
             
-            <p className="text-[#FDFEFE]/80 text-lg md:text-xl max-w-2xl mx-auto mb-12 leading-relaxed font-medium">
+            <p className="text-white/80 text-lg md:text-2xl max-w-2xl mx-auto mb-16 leading-relaxed font-medium font-jakarta">
               Join the elite circle of graduates in Vijayawada who transformed their careers through our industry-backed learning ecosystem.
             </p>
 

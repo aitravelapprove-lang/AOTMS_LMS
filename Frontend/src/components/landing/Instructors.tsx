@@ -130,23 +130,23 @@ const Instructors = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-20 md:mb-24"
-        >
-          <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-[#E6F2FA] border border-[#0075CF]/10 text-[#0075CF] text-xs font-black uppercase tracking-[0.2em] mb-6">
-            <Users className="w-4 h-4" /> Global Tech Mentors
-          </span>
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-black text-slate-900 mb-6 leading-tight tracking-tight">
-            Learn From The <br />
-            <span className="text-[#0075CF]">Best in Tech</span>
-          </h2>
-          <p className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-medium">
-            Our mentors are industry veterans who have built systems used by
-            millions.
-          </p>
-        </motion.div>
+           initial={{ opacity: 0, y: 30 }}
+           whileInView={{ opacity: 1, y: 0 }}
+           viewport={{ once: true }}
+           className="text-center mb-16 md:mb-24"
+         >
+           <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-6 shadow-sm">
+             <Users className="w-4 h-4 text-[#0075CF]" /> Global Tech Mentors
+           </span>
+           <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-slate-950 mb-6 leading-[1.05] tracking-tighter">
+             Learn From The <br className="hidden sm:block" />
+             <span className="text-[#0075CF]">Best in Tech</span>.
+           </h2>
+           <p className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-medium">
+             Our mentors are industry veterans who have built systems used by
+             millions.
+           </p>
+         </motion.div>
 
         <div className="relative">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-10">

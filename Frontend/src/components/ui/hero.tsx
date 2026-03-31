@@ -22,6 +22,7 @@ import {
   SiTypescript,
   SiFacebook,
 } from "react-icons/si";
+import logo from "@/assets/logo.png";
 
 const iconConfigs = [
   { Icon: FaReact, color: "#61DAFB" },
@@ -52,11 +53,11 @@ export default function ShaderShowcase() {
       ref={containerRef}
       className="min-h-screen relative overflow-hidden flex items-center justify-center bg-[#011B33]"
     >
-      {/* Optimized Background Mesh Component */}
+      {/* Optimized Background Mesh Component - Logo Branded Colors */}
       <MeshGradient
         className="absolute inset-0 w-full h-full opacity-60"
-        colors={["#011B33", "#0075cf", "#3391d9", "#fd8c5e", "#fd5a1a"]}
-        speed={0.08}
+        colors={["#011B33", "#0075CF", "#004B8D", "#FD5A1A", "#E34D14"]}
+        speed={0.06}
       />
 
       <main className="relative z-20 container-width mx-auto px-6 flex flex-col lg:flex-row items-center justify-between gap-12 w-full py-20">
@@ -115,11 +116,15 @@ export default function ShaderShowcase() {
           <div className="relative w-full max-w-[500px] aspect-square flex items-center justify-center scale-75 sm:scale-100">
             {/* Center Node */}
             <motion.div
-              className="w-24 h-24 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl flex items-center justify-center z-30 p-2"
-              animate={{ scale: [1, 1.08, 1] }}
+              className="w-24 h-24 rounded-full bg-white backdrop-blur-xl border border-white/20 shadow-[0_0_40px_rgba(255,255,255,0.3)] flex items-center justify-center z-30 p-2"
+              animate={{ scale: [1, 1.05, 1] }}
               transition={{ duration: 4, repeat: Infinity }}
             >
-              <img src="/favicon.png" alt="AOTMS Favicon" className="w-full h-full object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]" />
+              <img
+                src={logo}
+                alt="AOTMS Logo"
+                className="w-full h-full object-contain"
+              />
             </motion.div>
 
             {/* Generate Orbits */}

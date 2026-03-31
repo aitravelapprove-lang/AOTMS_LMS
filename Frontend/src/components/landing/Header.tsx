@@ -29,7 +29,6 @@ const lightBgPages = [
   "/admin",
   "/about",
   "/courses",
-  "/faq",
 ];
 
 const navLinks = [

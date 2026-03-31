@@ -1,10 +1,9 @@
 import Header from "@/components/landing/Header";
 import HeroSection from "@/components/landing/HeroSection";
 import WhyAOTMS from "@/components/landing/WhyAOTMS";
-import HowItWorks from "@/components/landing/HowItWorks";
 import KeyFeatures from "@/components/landing/KeyFeatures";
 import FeaturedCourses from "@/components/landing/FeaturedCourses";
-
+import CareerRoadmap from "@/components/landing/CareerRoadmap";
 import Instructors from "@/components/landing/Instructors";
 import Testimonials from "@/components/landing/Testimonials";
 import CTASection from "@/components/landing/CTASection";
@@ -23,7 +22,7 @@ const Home = () => {
           </div>
           <WhyAOTMS />
           <FeaturedCourses />
-          <HowItWorks />
+          <CareerRoadmap />
           <KeyFeatures />
 
           <Instructors />

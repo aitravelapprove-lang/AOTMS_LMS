@@ -70,7 +70,7 @@ export default function FeaturedCourses() {
               className="w-[300px] sm:w-[360px] flex-shrink-0 group/card"
             >
               <Card 
-                className="pro-card h-[520px] overflow-hidden border border-slate-100 shadow-lg hover:shadow-2xl hover:border-primary/20 transition-all duration-500 cursor-pointer bg-white group-hover/card:-translate-y-2"
+                className="pro-card h-[520px] overflow-hidden border border-slate-200 shadow-lg hover:shadow-2xl hover:border-primary/20 transition-all duration-500 cursor-pointer bg-white group-hover/card:-translate-y-2"
                 onClick={() => navigate('/courses')}
               >
                 <div className="relative h-56 overflow-hidden">

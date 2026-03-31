@@ -49,7 +49,7 @@ const CTASection = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="py-20 lg:py-32 bg-transparent overflow-hidden">
+    <section className="py-20 lg:py-32 bg-white overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         
         {/* Floating Decoration Card (Behind main) */}
@@ -62,7 +62,7 @@ const CTASection = () => {
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7 }}
-          className="relative overflow-hidden rounded-[2.5rem] md:rounded-[3rem] md:rounded-tl-[10rem] md:rounded-br-[10rem] min-h-[400px] md:min-h-[500px] flex items-center justify-center shadow-[0_40px_100px_-20px_rgba(0,117,207,0.3)] bg-[#0075CF]/85 backdrop-blur-2xl border border-white/20"
+          className="relative overflow-hidden rounded-[2.5rem] md:rounded-[3rem] md:rounded-tl-[10rem] md:rounded-br-[10rem] min-h-[400px] md:min-h-[500px] flex items-center justify-center shadow-2xl bg-[#0075CF] border border-white/20"
         >
           <CTABackground />
 

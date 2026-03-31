@@ -78,8 +78,7 @@ const features = [
 ];
 
 const WhyAOTMS = () => (
-  <section id="about" className="relative py-16 md:py-24 overflow-hidden bg-transparent">
-    <div className="absolute inset-0 bg-white/5 backdrop-blur-[2px]" />
+  <section id="about" className="relative py-16 md:py-24 overflow-hidden bg-white">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
       <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.55 }} className="text-center mb-12 md:mb-16">
         <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#E6F2FA] text-[#0075CF] text-xs font-bold uppercase tracking-widest mb-5">
@@ -105,7 +104,7 @@ const WhyAOTMS = () => (
               {/* Abstract Glass Shard */}
               <div className="absolute -top-3 -left-3 w-16 h-16 bg-gradient-to-br from-[#0075CF]/20 to-transparent rounded-full blur-xl group-hover:blur-2xl transition-all duration-500" />
               
-              <div className="relative h-full bg-white/70 backdrop-blur-2xl border border-slate-900/10 rounded-[2.5rem] rounded-tr-none p-8 shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-[#0075CF]/10 hover:-translate-y-2 transition-all duration-500 flex flex-col overflow-hidden">
+              <div className="relative h-full bg-slate-50 border border-slate-200 rounded-[2.5rem] rounded-tr-none p-8 shadow-sm hover:shadow-xl hover:shadow-[#0075CF]/10 hover:-translate-y-2 transition-all duration-500 flex flex-col overflow-hidden">
                 
                 {/* Tech ID Stamp */}
                 <div className="absolute top-0 right-0 px-4 py-2 bg-slate-50 border-b border-l border-slate-100 rounded-bl-2xl">

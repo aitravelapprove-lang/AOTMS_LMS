@@ -44,92 +44,93 @@ export default function FeaturedCourses() {
             </p>
           </motion.div>
         </div>
+      </div>
 
-        {/* Continuous Auto-Play Marquee — Ultra Professional Loop */}
-        <div className="relative -mx-4 sm:-mx-6 lg:-mx-8 overflow-hidden group/marquee py-10">
-          {/* Faded edges for depth */}
-          <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-white to-transparent z-20 pointer-events-none" />
-          <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-white to-transparent z-20 pointer-events-none" />
-          
-          <motion.div 
-            className="flex gap-8 px-4"
-            animate={{ 
-              x: [0, -1 * (featured.length * 360 + featured.length * 32)] 
-            }}
-            transition={{ 
-              duration: 35, 
-              repeat: Infinity, 
-              ease: "linear" 
-            }}
-            whileHover={{ transition: { duration: 120 } }} // Slow down significantly on hover to simulate "pause"
-          >
-            {/* We render the list 3 times to ensure seamless infinite looping */}
-            {[...featured, ...featured, ...featured].map((course, idx) => (
-              <div
-                key={`${course.id}-${idx}`}
-                className="w-[300px] sm:w-[360px] flex-shrink-0 group/card"
+      {/* Continuous Auto-Play Marquee — Ultra Professional Loop (Edge-to-Edge) */}
+      <div className="relative w-full overflow-hidden group/marquee py-10 mt-10">
+        {/* Faded edges for depth */}
+        <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-white to-transparent z-20 pointer-events-none" />
+        <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-white to-transparent z-20 pointer-events-none" />
+        
+        <motion.div 
+          className="flex gap-8 px-4"
+          animate={{ 
+            x: [0, -1 * (featured.length * 360 + featured.length * 32)] 
+          }}
+          transition={{ 
+            duration: 50, 
+            repeat: Infinity, 
+            ease: "linear" 
+          }}
+          whileHover={{ transition: { duration: 150 } }}
+        >
+          {[...featured, ...featured].map((course, idx) => (
+            <div
+              key={`${course.id}-${idx}`}
+              className="w-[300px] sm:w-[360px] flex-shrink-0 group/card"
+            >
+              <Card 
+                className="pro-card h-[520px] overflow-hidden border border-slate-100 shadow-lg hover:shadow-2xl hover:border-primary/20 transition-all duration-500 cursor-pointer bg-white group-hover/card:-translate-y-2"
+                onClick={() => navigate('/courses')}
               >
-                <Card 
-                  className="pro-card h-[520px] overflow-hidden border border-slate-100 shadow-lg hover:shadow-2xl hover:border-primary/20 transition-all duration-500 cursor-pointer bg-white group-hover/card:-translate-y-2"
-                  onClick={() => navigate('/courses')}
-                >
-                  <div className="relative h-56 overflow-hidden">
-                    <img
-                      src={course.image}
-                      alt={course.title}
-                      className="w-full h-full object-cover group-hover/card:scale-110 transition-transform duration-700"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80" />
-                    
-                    <Badge 
-                      className="absolute top-4 left-4 border-none font-black shadow-lg text-[10px] tracking-widest uppercase py-1 px-3"
-                      style={{ backgroundColor: course.theme_color || '#0075CF' }}
-                    >
-                      {course.category}
-                    </Badge>
+                <div className="relative h-56 overflow-hidden">
+                  <img
+                    src={course.image}
+                    alt={course.title}
+                    className="w-full h-full object-cover group-hover/card:scale-110 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80" />
+                  
+                  <Badge 
+                    className="absolute top-4 left-4 border-none font-black shadow-lg text-[10px] tracking-widest uppercase py-1 px-3"
+                    style={{ backgroundColor: course.theme_color || '#0075CF' }}
+                  >
+                    {course.category}
+                  </Badge>
   
-                    <div className="absolute bottom-4 left-4 flex items-center gap-1.5 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-full shadow-lg">
-                      <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-                      <span className="text-xs font-black text-slate-800">{course.rating}</span>
+                  <div className="absolute bottom-4 left-4 flex items-center gap-1.5 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-full shadow-lg">
+                    <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                    <span className="text-xs font-black text-slate-800">{course.rating}</span>
+                  </div>
+                </div>
+  
+                <CardContent className="p-8 space-y-6 flex flex-col justify-between h-[calc(100%-14rem)]">
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                       <div className="w-8 h-1 rounded-full bg-primary/20" />
+                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{course.level}</span>
                     </div>
+                    <h3 className="font-bold text-xl md:text-2xl text-slate-900 group-hover/card:text-primary transition-colors line-clamp-2 leading-tight">
+                      {course.title}
+                    </h3>
+                    <p className="text-sm text-slate-500 mt-3 line-clamp-2 font-medium leading-relaxed">
+                      Industry-recognized certification program with hands-on lab sessions and real-world project builds.
+                    </p>
                   </div>
   
-                  <CardContent className="p-8 space-y-6 flex flex-col justify-between h-[calc(100%-14rem)]">
-                    <div>
-                      <div className="flex items-center gap-2 mb-3">
-                         <div className="w-8 h-1 rounded-full bg-primary/20" />
-                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{course.level}</span>
-                      </div>
-                      <h3 className="font-bold text-xl md:text-2xl text-slate-900 group-hover/card:text-primary transition-colors line-clamp-2 leading-tight">
-                        {course.title}
-                      </h3>
-                      <p className="text-sm text-slate-500 mt-3 line-clamp-2 font-medium leading-relaxed">
-                        Industry-recognized certification program with hands-on lab sessions and real-world project builds.
-                      </p>
+                  <div className="space-y-6 pt-4 border-t border-slate-50">
+                    <div className="flex items-center justify-between text-xs font-black text-slate-600 uppercase tracking-widest">
+                       <span className="flex items-center gap-2"><Clock className="h-4 w-4 text-primary" /> {course.duration}</span>
+                       <span className="text-primary text-sm">
+                         {course.price?.toString().includes('$') 
+                           ? course.price.replace('$', '₹') 
+                           : `₹${course.price}`}
+                       </span>
                     </div>
   
-                    <div className="space-y-6 pt-4 border-t border-slate-50">
-                      <div className="flex items-center justify-between text-xs font-black text-slate-600 uppercase tracking-widest">
-                         <span className="flex items-center gap-2"><Clock className="h-4 w-4 text-primary" /> {course.duration}</span>
-                         <span className="text-primary text-sm">
-                           {course.price?.toString().includes('$') 
-                             ? course.price.replace('$', '₹') 
-                             : `₹${course.price}`}
-                         </span>
-                      </div>
-  
-                      <Button variant="ghost" className="w-full justify-between px-0 hover:bg-transparent text-[#0075CF] font-black group/btn text-xs uppercase tracking-widest">
-                         Enroll Progress
-                         <ArrowRight className="h-4 w-4 group-hover/btn:translate-x-2 transition-transform" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            ))}
-          </motion.div>
-        </div>
+                    <Button variant="ghost" className="w-full justify-between px-0 hover:bg-transparent text-[#0075CF] font-black group/btn text-xs uppercase tracking-widest">
+                       Enroll Progress
+                       <ArrowRight className="h-4 w-4 group-hover/btn:translate-x-2 transition-transform" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ))}
+        </motion.div>
+      </div>
 
+      <div className="container-width section-padding relative z-10">
         <div className="text-center mt-6">
           <Button 
             size="xl" 

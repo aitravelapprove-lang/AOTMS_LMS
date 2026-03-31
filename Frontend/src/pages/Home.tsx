@@ -10,15 +10,12 @@ import Testimonials from "@/components/landing/Testimonials";
 import CTASection from "@/components/landing/CTASection";
 import Footer from "@/components/landing/Footer";
 import ScrollBot from "@/components/landing/ScrollBot";
-import LowPolyBackground from "@/components/landing/LowPolyBackground";
+
 const Home = () => {
 
   return (
-    <div className="min-h-screen relative overflow-x-hidden">
-      {/* GLOBAL FIXED BACKGROUND */}
-      <LowPolyBackground />
-      
-      <div id="home-content" className="relative z-10 w-full">
+    <div className="min-h-screen relative overflow-x-hidden bg-white">
+      <div id="home-content" className="relative z-10 w-full bg-white">
         <Header />
         <main>
           <div id="main-content">

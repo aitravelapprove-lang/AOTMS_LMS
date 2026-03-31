@@ -53,11 +53,11 @@ export default function ShaderShowcase() {
       ref={containerRef}
       className="min-h-screen relative overflow-hidden flex items-center justify-center bg-[#011B33]"
     >
-      {/* Optimized Background Mesh Component - Logo Branded Colors */}
+      {/* Branded Background Mesh - Pure Logo Colors: Blue & Orange */}
       <MeshGradient
-        className="absolute inset-0 w-full h-full opacity-60"
-        colors={["#011B33", "#0075CF", "#004B8D", "#FD5A1A", "#E34D14"]}
-        speed={0.06}
+        className="absolute inset-0 w-full h-full opacity-80"
+        colors={["#011B33", "#0075CF", "#FD5A1A", "#011B33", "#0075CF"]}
+        speed={0.07}
       />
 
       <main className="relative z-20 container-width mx-auto px-6 flex flex-col lg:flex-row items-center justify-between gap-12 w-full py-20">
@@ -116,13 +116,13 @@ export default function ShaderShowcase() {
           <div className="relative w-full max-w-[500px] aspect-square flex items-center justify-center scale-75 sm:scale-100">
             {/* Center Node */}
             <motion.div
-              className="w-24 h-24 rounded-full bg-white backdrop-blur-xl border border-white/20 shadow-[0_0_40px_rgba(255,255,255,0.3)] flex items-center justify-center z-30 p-2"
-              animate={{ scale: [1, 1.05, 1] }}
+              className="w-24 h-24 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 shadow-[0_0_50px_rgba(0,117,207,0.3)] flex items-center justify-center z-30 p-4"
+              animate={{ scale: [1, 1.1, 1] }}
               transition={{ duration: 4, repeat: Infinity }}
             >
               <img
-                src={logo}
-                alt="AOTMS Logo"
+                src="/favicon.png"
+                alt="AOTMS Favicon"
                 className="w-full h-full object-contain"
               />
             </motion.div>

@@ -1,34 +1,37 @@
-"use client"
-import { useEffect, useRef, useState } from "react"
-import { MeshGradient, PulsingBorder } from "@paper-design/shaders-react"
-import { motion } from "framer-motion"
-import { useNavigate } from "react-router-dom"
+"use client";
+import { useEffect, useRef, useState } from "react";
+import { MeshGradient, PulsingBorder } from "@paper-design/shaders-react";
+import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 export default function ShaderShowcase() {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [isActive, setIsActive] = useState(false)
-  const navigate = useNavigate()
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isActive, setIsActive] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const handleMouseEnter = () => setIsActive(true)
-    const handleMouseLeave = () => setIsActive(false)
+    const handleMouseEnter = () => setIsActive(true);
+    const handleMouseLeave = () => setIsActive(false);
 
-    const container = containerRef.current
+    const container = containerRef.current;
     if (container) {
-      container.addEventListener("mouseenter", handleMouseEnter)
-      container.addEventListener("mouseleave", handleMouseLeave)
+      container.addEventListener("mouseenter", handleMouseEnter);
+      container.addEventListener("mouseleave", handleMouseLeave);
     }
 
     return () => {
       if (container) {
-        container.removeEventListener("mouseenter", handleMouseEnter)
-        container.removeEventListener("mouseleave", handleMouseLeave)
+        container.removeEventListener("mouseenter", handleMouseEnter);
+        container.removeEventListener("mouseleave", handleMouseLeave);
       }
-    }
-  }, [])
+    };
+  }, []);
 
   return (
-    <div ref={containerRef} className="min-h-screen relative overflow-hidden flex items-center justify-center">
+    <div
+      ref={containerRef}
+      className="min-h-screen relative overflow-hidden flex items-center justify-center"
+    >
       {/* Dynamic Background Mesh Component */}
       <MeshGradient
         className="absolute inset-0 w-full h-full"
@@ -44,7 +47,13 @@ export default function ShaderShowcase() {
       {/* SVG Definitions for Shaders */}
       <svg className="absolute inset-0 w-0 h-0">
         <defs>
-          <filter id="glass-effect" x="-50%" y="-50%" width="200%" height="200%">
+          <filter
+            id="glass-effect"
+            x="-50%"
+            y="-50%"
+            width="200%"
+            height="200%"
+          >
             <feTurbulence baseFrequency="0.005" numOctaves="1" result="noise" />
             <feDisplacementMap in="SourceGraphic" in2="noise" scale="0.3" />
             <feColorMatrix
@@ -67,22 +76,6 @@ export default function ShaderShowcase() {
       </svg>
 
       <main className="relative z-20 max-w-5xl mx-auto px-6 text-center w-full pt-10">
-        <motion.div
-          className="inline-flex items-center px-5 py-2.5 rounded-full bg-white/10 backdrop-blur-xl mb-10 relative border border-white/20 shadow-xl mx-auto"
-          style={{
-            filter: "url(#glass-effect)",
-          }}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-        >
-          <div className="absolute top-0 left-1 right-1 h-px bg-gradient-to-r from-transparent via-[#3391d9]/50 to-transparent rounded-full" />
-          <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse shadow-[0_0_12px_#ffffff] mr-3" />
-          <span className="text-white text-sm font-bold relative z-10 tracking-[0.1em] uppercase">
-            Vijayawada's #1 Skill Engineering Platform
-          </span>
-        </motion.div>
-
         <motion.h1
           className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-white mb-8 leading-[0.95] tracking-tight drop-shadow-2xl"
           initial={{ opacity: 0, y: 30 }}
@@ -102,8 +95,9 @@ export default function ShaderShowcase() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.8 }}
         >
-          AOTMS is Vijayawada's premier learning management system offering interactive 
-          courses, live classes, secure exams, and ATS-driven skill evaluation mapped to actual industry needs.
+          AOTMS is Vijayawada's premier learning management system offering
+          interactive courses, live classes, secure exams, and ATS-driven skill
+          evaluation mapped to actual industry needs.
         </motion.p>
 
         <motion.div
@@ -131,7 +125,15 @@ export default function ShaderShowcase() {
       <div className="absolute bottom-10 right-10 md:bottom-16 md:right-16 z-30 opacity-70 hover:opacity-100 transition-opacity hidden md:flex">
         <div className="relative w-24 h-24 flex items-center justify-center">
           <PulsingBorder
-            colors={["#0075CF", "#3391D9", "#FDFEFE", "#FD5A1A", "#FD8C5E", "#E6F2FA", "#ffffff"]}
+            colors={[
+              "#0075CF",
+              "#3391D9",
+              "#FDFEFE",
+              "#FD5A1A",
+              "#FD8C5E",
+              "#E6F2FA",
+              "#ffffff",
+            ]}
             speed={1.5}
             roundness={1}
             thickness={0.15}
@@ -156,7 +158,10 @@ export default function ShaderShowcase() {
             style={{ transform: "scale(1.5)" }}
           >
             <defs>
-              <path id="orbital-path" d="M 50, 50 m -35, 0 a 35,35 0 1,1 70,0 a 35,35 0 1,1 -70,0" />
+              <path
+                id="orbital-path"
+                d="M 50, 50 m -35, 0 a 35,35 0 1,1 70,0 a 35,35 0 1,1 -70,0"
+              />
             </defs>
             <text className="text-[12px] fill-white/90 font-black tracking-widest uppercase">
               <textPath href="#orbital-path" startOffset="0%">
@@ -167,5 +172,5 @@ export default function ShaderShowcase() {
         </div>
       </div>
     </div>
-  )
+  );
 }

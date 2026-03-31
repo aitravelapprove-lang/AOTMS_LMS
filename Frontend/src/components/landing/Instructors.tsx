@@ -58,51 +58,35 @@ const InstBg = () => (
 const initialInstructors = [
   {
     id: 1,
-    name: "Dr. Rajesh Kumar",
-    expertise: "Full Stack Dev",
-    exp: "15+ Yrs",
+    name: "V. Adilakshmi",
+    expertise: "Data Analytics Expert",
+    exp: "8+ Yrs",
     image:
-      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face",
+      "https://res.cloudinary.com/dbhuezxh0/image/upload/v1769142934/mentos-1_ch1jur_yyy4gk.jpg",
   },
   {
     id: 2,
-    name: "Priya Menon",
-    expertise: "Data Science & AI",
-    exp: "12+ Yrs",
+    name: "Intiaz Shaik",
+    expertise: "Cyber Security Specialist",
+    exp: "6+ Yrs",
     image:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop&crop=face",
+      "https://res.cloudinary.com/dbhuezxh0/image/upload/v1769142934/mentos-2_hod2iu_stcqlv.jpg",
   },
   {
     id: 3,
-    name: "Amit Sharma",
-    expertise: "Cloud & DevOps",
-    exp: "10+ Yrs",
+    name: "B.Rohith",
+    expertise: "QA Automation Expert",
+    exp: "12+ Yrs",
     image:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face",
+      "https://res.cloudinary.com/dbhuezxh0/image/upload/v1774935695/Mentor_dvgns5_cumvsj.png",
   },
   {
     id: 4,
-    name: "Sneha Reddy",
-    expertise: "UI/UX Design",
-    exp: "8+ Yrs",
+    name: "Divya Rani",
+    expertise: "Software Development",
+    exp: "10+ Yrs",
     image:
-      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop&crop=face",
-  },
-  {
-    id: 5,
-    name: "Vikram Singh",
-    expertise: "Cyber Security",
-    exp: "11+ Yrs",
-    image:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop&crop=face",
-  },
-  {
-    id: 6,
-    name: "Ananya Rao",
-    expertise: "Digital Marketing",
-    exp: "7+ Yrs",
-    image:
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=400&fit=crop&crop=face",
+      "https://res.cloudinary.com/dbhuezxh0/image/upload/v1769142934/mentor-5_a4t9yq_xvspck.jpg",
   },
 ];
 
@@ -130,23 +114,23 @@ const Instructors = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <motion.div
-           initial={{ opacity: 0, y: 30 }}
-           whileInView={{ opacity: 1, y: 0 }}
-           viewport={{ once: true }}
-           className="text-center mb-16 md:mb-24"
-         >
-           <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-6 shadow-sm">
-             <Users className="w-4 h-4 text-[#0075CF]" /> Global Tech Mentors
-           </span>
-           <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-slate-950 mb-6 leading-[1.05] tracking-tighter">
-             Learn From The <br className="hidden sm:block" />
-             <span className="text-[#0075CF]">Best in Tech</span>.
-           </h2>
-           <p className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-medium">
-             Our mentors are industry veterans who have built systems used by
-             millions.
-           </p>
-         </motion.div>
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-16 md:mb-24"
+        >
+          <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-6 shadow-sm">
+            <Users className="w-4 h-4 text-[#0075CF]" /> Global Tech Mentors
+          </span>
+          <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-slate-950 mb-6 leading-[1.05] tracking-tighter">
+            Learn From The <br className="hidden sm:block" />
+            <span className="text-[#0075CF]">Best in Tech</span>.
+          </h2>
+          <p className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-medium">
+            Our mentors are industry veterans who have built systems used by
+            millions.
+          </p>
+        </motion.div>
 
         <div className="relative">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-10">

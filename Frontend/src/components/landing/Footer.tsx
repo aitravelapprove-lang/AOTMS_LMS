@@ -7,7 +7,17 @@ const Footer = () => {
   const links = {
     Platform: ["Live Classes", "Recorded Videos", "Secure Exams", "Leaderboard", "ATS Resume Score"],
     Company:  ["About Us", "Our Trainers", "Blog", "Careers", "Press"],
-    Support:  ["Help Center", "Documentation", "Contact Us", "Privacy Policy", "Terms of Service"],
+    Support:  ["FAQ", "Documentation", "Contact Us", "Privacy Policy", "Terms of Service"],
+  };
+
+  const supportLinks: {[key: string]: string} = {
+    "FAQ": "https://www.aotms.in/#/faq",
+    "About Us": "https://www.aotms.in/#/about-us",
+    "Help Center": "https://www.aotms.in/#/faq",
+    "Documentation": "/docs",
+    "Contact Us": "/contact",
+    "Privacy Policy": "/privacy",
+    "Terms of Service": "/terms"
   };
 
   const socials = [
@@ -63,7 +73,11 @@ const Footer = () => {
               <ul className="space-y-3">
                 {items.map((item) => (
                   <li key={item}>
-                    <a href="#" className="text-[#FDFEFE]/85 hover:text-white font-medium text-sm transition-colors leading-relaxed">
+                    <a 
+                      href={supportLinks[item] || "#"} 
+                      target="_self"
+                      className="text-[#FDFEFE]/85 hover:text-white font-medium text-sm transition-colors leading-relaxed"
+                    >
                       {item}
                     </a>
                   </li>

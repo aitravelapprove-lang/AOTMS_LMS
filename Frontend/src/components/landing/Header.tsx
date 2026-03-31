@@ -35,8 +35,8 @@ const navLinks = [
   { name: "Home", href: "/" },
   { name: "Courses", href: "/courses" },
   { name: "Learning Paths", href: "/learning-paths" },
-  { name: "About", href: "/about" },
-  { name: "FAQ", href: "/faq" },
+  { name: "About", href: "https://www.aotms.in/#/about-us" },
+  { name: "FAQ", href: "https://www.aotms.in/#/faq" },
 ];
 
 const Header = () => {
@@ -86,6 +86,10 @@ const Header = () => {
   };
 
   const handleNavClick = (href: string) => {
+    if (href.startsWith("http")) {
+      window.location.href = href;
+      return;
+    }
     if (href.startsWith("/#")) {
       const sectionId = href.replace("/#", "");
       const element = document.getElementById(sectionId);
@@ -264,16 +268,16 @@ const Header = () => {
                   <nav className="flex-1 p-4">
                     <ul className="space-y-1">
                       {navLinks.map((link) => (
-                        <li key={link.name}>
+                        <div key={link.name}>
                           <SheetClose asChild>
                             <button
                               onClick={() => handleNavClick(link.href)}
-                              className="w-full text-left px-4 py-3 rounded-lg text-base font-bold text-foreground hover:bg-[#0075CF]/10 hover:text-[#0075CF] transition-colors"
+                              className="w-full text-left p-4 rounded-xl text-lg font-bold text-foreground hover:bg-muted hover:text-primary transition-all active:scale-[0.98]"
                             >
                               {link.name}
                             </button>
                           </SheetClose>
-                        </li>
+                        </div>
                       ))}
                     </ul>
                   </nav>

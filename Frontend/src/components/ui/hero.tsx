@@ -136,7 +136,7 @@ export default function ShaderShowcase() {
               return (
                 <motion.div
                   key={orbitIdx}
-                  className="absolute rounded-full border border-white/10 border-dashed"
+                  className="absolute rounded-full border border-white/40 border-dashed"
                   style={{
                     width: radius * 2,
                     height: radius * 2,

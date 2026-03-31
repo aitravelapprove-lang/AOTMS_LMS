@@ -28,16 +28,16 @@ const lightBgPages = [
   "/manager",
   "/admin",
   "/about",
-  "/assignments",
   "/courses",
+  "/faq",
 ];
 
 const navLinks = [
   { name: "Home", href: "/" },
   { name: "Courses", href: "/courses" },
   { name: "Learning Paths", href: "/learning-paths" },
-  { name: "Assignments", href: "/assignments" },
   { name: "About", href: "/about" },
+  { name: "FAQ", href: "/faq" },
 ];
 
 const Header = () => {

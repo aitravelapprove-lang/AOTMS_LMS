@@ -7,7 +7,6 @@ import FeaturedCourses from "@/components/landing/FeaturedCourses";
 
 import Instructors from "@/components/landing/Instructors";
 import Testimonials from "@/components/landing/Testimonials";
-import FAQSection from "@/components/landing/FAQSection";
 import CTASection from "@/components/landing/CTASection";
 import Footer from "@/components/landing/Footer";
 import ScrollBot from "@/components/landing/ScrollBot";
@@ -32,7 +31,6 @@ const Home = () => {
 
           <Instructors />
           <Testimonials />
-          <FAQSection />
           <CTASection />
         </main>
         <Footer />

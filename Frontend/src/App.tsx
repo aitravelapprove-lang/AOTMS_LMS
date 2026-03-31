@@ -19,6 +19,7 @@ import NotFound from "./pages/NotFound";
 import About from "./pages/About";
 import PendingApproval from "./pages/PendingApproval";
 import Courses from "./pages/Courses";
+import FAQ from "./pages/FAQ";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import ScrollToTop from "@/components/ScrollToTop";
 import { SuspensionOverlay } from "@/components/auth/SuspensionOverlay";
@@ -96,6 +97,7 @@ const App = () => (
               <Route path="/courses" element={<Courses />} />
               <Route path="/about" element={<About />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/faq" element={<FAQ />} />
               <Route path="/pending-approval" element={<ProtectedRoute><PendingApproval /></ProtectedRoute>} />
               <Route path="/become-instructor" element={<InstructorRegister />} />
               <Route path="/learning-paths" element={<LearningPaths />} />

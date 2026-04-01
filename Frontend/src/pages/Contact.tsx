@@ -92,13 +92,16 @@ const Contact = () => {
                         ))}
                     </div>
                     {/* Google Maps Section */}
-                    <div className="mb-20 rounded-[3rem] overflow-hidden shadow-2xl border border-slate-100 h-[350px] md:h-[450px] relative z-0">
+                    <div className="mb-20 rounded-[3rem] overflow-hidden shadow-2xl border border-slate-100 h-[350px] md:h-[500px] relative z-10 bg-slate-100">
                         <iframe 
-                            src="https://www.google.co.in/maps/embed?pb=!1m18!1m12!1m3!1d3825.5237806079026!2d80.6485184!3d16.4996341!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a35fb43b8f6af1d%3A0x18151e18505cbaf8!2sAcademy%20Of%20Tech%20Masters!5e0!3m2!1sen!2sin!4v1775024509855!5m2!1sen!2sin" 
+                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3825.5237806079026!2d80.6485184!3d16.4996341!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a35fb43b8f6af1d%3A0x18151e18505cbaf8!2sAcademy%20Of%20Tech%20Masters!5e0!3m2!1sen!2sin!4v1775024509855!5m2!1sen!2sin" 
                             width="100%" 
                             height="100%" 
                             style={{ border: 0 }} 
                             allowFullScreen={true}
+                            loading="lazy"
+                            referrerPolicy="no-referrer-when-downgrade"
+                            title="AOTMS Academy Location"
                         />
                     </div>
 

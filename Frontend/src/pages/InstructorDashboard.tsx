@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   useInstructorCourses,
   useInstructorStats,
+  Course,
 } from "@/hooks/useInstructorData";
 import { useSocket } from "@/hooks/useSocket";
 import { useToast } from "@/hooks/use-toast";
@@ -45,10 +46,13 @@ import {
 
 interface DashboardStats {
   totalStudents: number;
-  upcomingClasses?: number;
+  contentItems: number;
+  avgCompletion: number;
+  activeStudents?: number;
   pendingAssignments?: number;
+  upcomingClasses?: number;
+  avgRating?: number;
   totalEarnings?: number;
-  avgCompletion?: number;
 }
 
 // ─── Welcome Component ────────────────────────────────────────────────────────
@@ -119,11 +123,15 @@ export default function InstructorDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
   const {
-    data: courses = [],
+    data: courses = [] as Course[],
     isLoading: coursesLoading,
     refetch,
-  } = useInstructorCourses();
-  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useInstructorStats();
+  } = useInstructorCourses() as { data: Course[]; isLoading: boolean; refetch: () => void };
+  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useInstructorStats() as { 
+    data: DashboardStats; 
+    isLoading: boolean; 
+    refetch: () => void 
+  };
   const { socket } = useSocket();
   const { toast } = useToast();
 

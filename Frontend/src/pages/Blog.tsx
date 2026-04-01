@@ -136,7 +136,7 @@ const Blog = () => {
                                     <h3 className="text-2xl font-black text-slate-900 mb-4 leading-snug group-hover:text-[#0075CF] transition-colors line-clamp-2">
                                         {post.title}
                                     </h3>
-                                    <p className="text-slate-500 font-medium text-sm leading-relaxed mb-8 line-clamp-3">
+                                    <p className="text-slate-500 font-medium text-sm leading-relaxed mb-8 line-clamp-3 text-balance">
                                         {post.excerpt}
                                     </p>
                                     <div className="flex items-center justify-between pt-6 border-t border-slate-50">
@@ -157,23 +157,24 @@ const Blog = () => {
                         ))}
                     </div>
 
-                    {/* Featured / Newsletter Section */}
-                    <div className="bg-slate-900 rounded-[3.5rem] p-10 md:p-20 relative overflow-hidden text-center shadow-2xl">
+                    {/* Newsletter / Subscription Section */}
+                    <div className="bg-gradient-to-br from-[#0075CF] to-[#005CAD] rounded-[3.5rem] p-10 md:p-20 relative overflow-hidden text-center shadow-2xl shadow-[#0075CF]/20">
                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
-                        <div className="absolute top-0 right-0 w-96 h-96 bg-[#0075CF]/20 rounded-full blur-[100px] -mr-48 -mt-48" />
+                        <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-[100px] -mr-48 -mt-48" />
+                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#FD5A1A]/20 rounded-full blur-[80px] -ml-32 -mb-32" />
                         
                         <div className="relative z-10 max-w-2xl mx-auto">
-                            <h2 className="text-3xl md:text-5xl font-black text-white mb-6 leading-tight">Master Tech Every Week</h2>
-                            <p className="text-white/70 text-lg md:text-xl font-medium mb-12">
+                            <h2 className="text-3xl md:text-5xl font-black text-white mb-6 leading-tight tracking-tight font-heading">Master Tech Every Week</h2>
+                            <p className="text-white/80 text-lg md:text-xl font-medium mb-12 leading-relaxed">
                                 Get the latest blog posts and exclusive career guides delivered straight to your inbox. No spam, only insights.
                             </p>
                             <div className="flex flex-col sm:flex-row gap-4 max-w-lg mx-auto">
                                 <input 
                                     type="email" 
                                     placeholder="Enter your work email"
-                                    className="flex-1 h-16 px-8 rounded-2xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-[#0075CF] font-bold"
+                                    className="flex-1 h-16 px-8 rounded-2xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-[#FD5A1A] font-bold transition-all text-sm"
                                 />
-                                <button className="h-16 px-10 rounded-2xl bg-[#0075CF] hover:bg-blue-600 text-white font-black uppercase tracking-widest shadow-xl shadow-black/20 transition-all active:scale-95">
+                                <button className="h-16 px-10 rounded-2xl bg-gradient-to-r from-[#FD5A1A] to-[#FF7A00] text-white font-black uppercase tracking-widest shadow-xl shadow-orange-500/20 transition-all hover:scale-105 active:scale-95 whitespace-nowrap">
                                     Join List
                                 </button>
                             </div>

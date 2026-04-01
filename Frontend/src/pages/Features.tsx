@@ -114,7 +114,7 @@ const Features = () => {
                                         ))}
                                     </ul>
                                     <div className="pt-4">
-                                        <button className="h-14 px-8 rounded-2xl bg-slate-900 text-white font-black uppercase tracking-widest hover:bg-[#0075CF] transition-colors flex items-center gap-2 group active:scale-95">
+                                        <button className="h-14 px-8 rounded-2xl bg-gradient-to-r from-[#0075CF] to-[#3391D9] text-white font-black uppercase tracking-widest hover:shadow-lg hover:shadow-blue-500/20 transition-all flex items-center gap-2 group active:scale-95">
                                             Try it Now <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                                         </button>
                                     </div>
@@ -134,11 +134,13 @@ const Features = () => {
                     </div>
 
                     {/* Final CTA */}
-                    <div className="mt-40 bg-slate-900 rounded-[4rem] p-12 md:p-20 text-center relative overflow-hidden shadow-2xl">
+                    <div className="mt-40 bg-gradient-to-br from-[#0075CF] to-[#005CAD] rounded-[4rem] p-12 md:p-20 text-center relative overflow-hidden shadow-2xl shadow-[#0075CF]/20">
                         <div className="absolute inset-0 bg-[#0075CF]/10 blur-[120px] -mr-64 -mt-64" />
-                        <h2 className="text-3xl md:text-5xl font-black text-white mb-8 leading-tight">Ready to experience <br /> the future of learning?</h2>
-                        <div className="flex flex-col sm:flex-row justify-center gap-4">
-                            <button className="h-16 px-12 rounded-2xl bg-[#0075CF] text-white font-black uppercase tracking-widest shadow-xl hover:scale-105 transition-all">Sign Up Free</button>
+                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#FD5A1A]/20 rounded-full blur-[80px] -ml-32 -mb-32" />
+
+                        <h2 className="relative z-10 text-3xl md:text-6xl font-black text-white mb-10 leading-[1.1] tracking-tight font-heading">Ready to experience <br /> the future of learning?</h2>
+                        <div className="relative z-10 flex flex-col sm:flex-row justify-center gap-4">
+                            <button className="h-16 px-12 rounded-2xl bg-gradient-to-r from-[#FD5A1A] to-[#FF7A00] text-white font-black uppercase tracking-widest shadow-xl shadow-orange-500/20 hover:scale-105 transition-all active:scale-95">Sign Up Free</button>
                             <button className="h-16 px-12 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-white font-black uppercase tracking-widest hover:bg-white/20 transition-all">Request Demo</button>
                         </div>
                     </div>

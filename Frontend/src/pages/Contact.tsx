@@ -93,26 +93,17 @@ const Contact = () => {
                         ))}
                     </div>
                     {/* Google Maps Section */}
-                    <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3 }}
-                        className="mb-20 rounded-[3rem] overflow-hidden shadow-2xl border border-slate-100 bg-slate-50 relative group"
-                    >
-                        {/* Map Overlay for brand touch */}
-                        <div className="absolute inset-0 pointer-events-none border-[12px] border-white/50 rounded-[3rem] z-10" />
-                        
+                    <div className="mb-20 rounded-[3rem] overflow-hidden shadow-2xl border border-slate-100 h-[350px] md:h-[450px] relative z-0">
                         <iframe 
                             src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3825.5237806079026!2d80.6485184!3d16.4996341!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a35fb43b8f6af1d%3A0x18151e18505cbaf8!2sAcademy%20Of%20Tech%20Masters!5e0!3m2!1sen!2sin!4v1775024174320!5m2!1sen!2sin" 
-                            width="100%" 
+                            className="absolute inset-0 w-full h-full"
                             style={{ border: 0 }} 
-                            allowFullScreen={true} 
+                            allowFullScreen={true}
                             loading="lazy" 
                             referrerPolicy="no-referrer-when-downgrade"
                             title="AOTMS Academy Location"
-                            className="h-[350px] md:h-[450px] grayscale-[0.2] contrast-[1.1] hover:grayscale-0 transition-all duration-700"
                         />
-                    </motion.div>
+                    </div>
 
                     <div className="grid lg:grid-cols-2 gap-12 items-start">
                         {/* Contact Form */}

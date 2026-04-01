@@ -42,6 +42,42 @@ const queryClient = new QueryClient({
   },
 });
 
+const BackNavigationHandler = () => {
+  const { userRole, user, loading } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (loading) return;
+
+    const handlePopState = (event: PopStateEvent) => {
+      const dashboardMap: Record<string, string> = {
+        student: "/student-dashboard",
+        instructor: "/instructor",
+        admin: "/admin",
+        manager: "/manager",
+      };
+      
+      const portalPath = user ? (dashboardMap[userRole || "student"] || "/") : "/";
+
+      // If we're not at the main portal entry point, handle the redirect
+      if (location.pathname !== portalPath) {
+        navigate(portalPath, { replace: true });
+      }
+    };
+
+    // Add a state to history so we can intercept the back button
+    window.history.pushState(null, "", window.location.href);
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [user, userRole, loading, navigate, location.pathname]);
+
+  return null;
+};
+
 const RoleRedirector = () => {
   const { userRole, user, loading } = useAuth();
   const navigate = useNavigate();
@@ -99,6 +135,7 @@ const App = () => (
           <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <SuspensionOverlay />
             <ScrollToTop />
+            <BackNavigationHandler />
             <RoleRedirector />
             <Routes>
               <Route path="/" element={<Home />} />

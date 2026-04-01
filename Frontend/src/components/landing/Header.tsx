@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Settings, LogOut, LayoutDashboard, Menu, X } from "lucide-react";
+import { Settings, LogOut, LayoutDashboard, Menu, X, ExternalLink } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -42,7 +42,7 @@ const lightBgPages = [
 
 const navLinks = [
   { name: "Home", href: "/" },
-  { name: "Courses", href: "/courses" },
+  { name: "Courses", href: "https://www.aotms.in/#/courses" },
   { name: "About", href: "/about" },
   { name: "FAQ", href: "/faq" },
 ];
@@ -95,7 +95,7 @@ const Header = () => {
 
   const handleNavClick = (href: string) => {
     if (href.startsWith("http")) {
-      window.location.href = href;
+      window.open(href, "_blank", "noopener,noreferrer");
       return;
     }
     if (href.startsWith("/#")) {
@@ -146,7 +146,12 @@ const Header = () => {
                     : "text-[#FDFEFE] hover:text-[#FD5A1A]"
                 }`}
               >
-                {link.name}
+                <span className="flex items-center gap-1">
+                  {link.name}
+                  {link.href.startsWith("http") && (
+                    <ExternalLink className="h-3 w-3 opacity-70" />
+                  )}
+                </span>
               </button>
             ))}
           </nav>
@@ -282,7 +287,12 @@ const Header = () => {
                               onClick={() => handleNavClick(link.href)}
                               className="w-full text-left p-4 rounded-xl text-lg font-bold text-foreground hover:bg-muted hover:text-primary transition-all active:scale-[0.98]"
                             >
-                              {link.name}
+                              <span className="flex items-center justify-between">
+                                {link.name}
+                                {link.href.startsWith("http") && (
+                                  <ExternalLink className="h-4 w-4 opacity-50" />
+                                )}
+                              </span>
                             </button>
                           </SheetClose>
                         </div>

@@ -104,7 +104,7 @@ export default function ShaderShowcase() {
               size="lg"
               variant="outline"
               className="h-16 px-10 rounded-2xl bg-white/10 border-white/20 text-white font-black text-lg hover:bg-white/20 transition-all backdrop-blur-md hover:scale-105"
-              onClick={() => navigate("/courses")}
+              onClick={() => window.open("https://www.aotms.in/#/courses", "_blank", "noopener,noreferrer")}
             >
               Explore Catalog
             </Button>

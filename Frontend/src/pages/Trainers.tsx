@@ -161,9 +161,9 @@ const Trainers = () => {
                         ))}
                     </div>
 
-                    <div className="max-w-6xl mx-auto bg-gradient-to-br from-slate-950 via-[#001E35] to-slate-950 rounded-[2.5rem] md:rounded-[4rem] p-8 md:p-16 lg:p-20 text-white relative overflow-hidden shadow-2xl flex flex-col lg:flex-row items-center gap-12 lg:gap-16 border border-white/5">
-                        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#0075CF]/10 rounded-full blur-[120px] -mr-64 -mt-64" />
-                        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[#FD5A1A]/5 rounded-full blur-[100px] -ml-48 -mb-48" />
+                    <div className="max-w-6xl mx-auto bg-gradient-to-br from-[#0075CF] to-[#005CAD] rounded-[2.5rem] md:rounded-[4rem] p-8 md:p-16 lg:p-20 text-white relative overflow-hidden shadow-2xl flex flex-col lg:flex-row items-center gap-12 lg:gap-16 border border-white/5">
+                        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/10 rounded-full blur-[120px] -mr-64 -mt-64" />
+                        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[#FD5A1A]/20 rounded-full blur-[100px] -ml-48 -mb-48" />
                         
                         <div className="relative z-10 flex-1 space-y-6 md:space-y-8 text-center lg:text-left">
                             <motion.div
@@ -182,7 +182,7 @@ const Trainers = () => {
                                 Share your industry expertise and empower the next generation of engineers. Our platform allows professionals to teach part-time or full-time with global reach.
                             </p>
                             <div className="flex flex-col sm:flex-row gap-4 pt-4 justify-center lg:justify-start">
-                                <button className="h-14 md:h-16 px-8 md:px-10 rounded-2xl bg-gradient-to-r from-[#0075CF] to-[#3391D9] hover:shadow-[0_0_30px_rgba(0,117,207,0.3)] text-white font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 group whitespace-nowrap active:scale-95">
+                                <button className="h-14 md:h-16 px-8 md:px-10 rounded-2xl bg-gradient-to-r from-[#FD5A1A] to-[#FF7A00] hover:shadow-[0_0_30px_rgba(253,90,26,0.3)] text-white font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 group whitespace-nowrap active:scale-95">
                                     Become Instructor <ChevronRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                                 </button>
                                 <button className="h-14 md:h-16 px-8 md:px-10 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 text-white font-black uppercase tracking-widest transition-all hover:bg-white/10 active:scale-95 whitespace-nowrap">

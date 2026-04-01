@@ -36,7 +36,7 @@ const Terms = () => {
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="inline-flex items-center px-4 py-1.5 rounded-full bg-[#FD5A1A]/10 border border-[#FD5A1A]/20 text-[#FD5A1A] text-[10px] font-black uppercase tracking-[0.2em] mb-6 shadow-sm"
+                            className="inline-flex items-center px-4 py-1.5 rounded-full bg-[#0075CF]/10 border border-[#0075CF]/20 text-[#0075CF] text-[10px] font-black uppercase tracking-[0.2em] mb-6 shadow-sm"
                         >
                             <Gavel className="w-4 h-4 mr-2" />
                             LEGAL FRAMEWORK
@@ -47,7 +47,7 @@ const Terms = () => {
                             transition={{ delay: 0.1 }}
                             className="text-4xl md:text-6xl font-black text-slate-900 mb-6 leading-tight"
                         >
-                            Terms <span className="text-[#FD5A1A]">of Service</span>
+                            Terms <span className="text-[#0075CF]">of Service</span>
                         </motion.h1>
                         <motion.p 
                             initial={{ opacity: 0, y: 20 }}
@@ -67,10 +67,10 @@ const Terms = () => {
                                 initial={{ opacity: 0, y: 20 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.5 }}
-                                className="bg-white/80 backdrop-blur-md p-8 md:p-12 rounded-[2.5rem] shadow-xl shadow-slate-200/40 border border-slate-100 hover:border-[#FD5A1A]/20 transition-all duration-300"
+                                className="bg-white/80 backdrop-blur-md p-8 md:p-12 rounded-[2.5rem] shadow-xl shadow-slate-200/40 border border-slate-100 hover:border-[#0075CF]/20 transition-all duration-300"
                             >
                                 <div className="flex items-center gap-4 mb-8">
-                                    <div className="w-14 h-14 rounded-2xl bg-slate-50 text-[#FD5A1A] flex items-center justify-center shadow-inner border border-slate-100">
+                                    <div className="w-14 h-14 rounded-2xl bg-slate-50 text-[#0075CF] flex items-center justify-center shadow-inner border border-slate-100">
                                         <term.icon className="w-6 h-6" />
                                     </div>
                                     <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">{term.title}</h2>
@@ -84,8 +84,9 @@ const Terms = () => {
                             </motion.section>
                         ))}
 
-                        <div className="bg-slate-900 rounded-[3rem] p-12 text-white relative overflow-hidden shadow-2xl">
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-[#FD5A1A]/10 rounded-full blur-3xl -mr-32 -mt-32" />
+                        <div className="bg-gradient-to-br from-[#0075CF] to-[#005CAD] rounded-[3rem] p-12 text-white relative overflow-hidden shadow-2xl shadow-[#0075CF]/20">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32" />
+                            <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#FD5A1A]/20 rounded-full blur-3xl -ml-24 -mb-24" />
                             <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 justify-between">
                                 <div className="max-w-xl text-center md:text-left">
                                     <h3 className="text-2xl md:text-3xl font-black mb-4">Have Questions?</h3>
@@ -93,7 +94,7 @@ const Terms = () => {
                                         Our legal and support team is available to clarify any aspects of our service agreements.
                                     </p>
                                 </div>
-                                <button className="h-16 px-10 rounded-2xl bg-[#FD5A1A] hover:bg-orange-600 text-white font-black uppercase tracking-widest transition-all shadow-xl shadow-orange-900/20 active:scale-95 whitespace-nowrap">
+                                <button className="h-16 px-10 rounded-2xl bg-gradient-to-r from-[#FD5A1A] to-[#FF7A00] text-white font-black uppercase tracking-widest transition-all shadow-xl shadow-orange-900/40 active:scale-95 whitespace-nowrap">
                                     Contact Support
                                 </button>
                             </div>

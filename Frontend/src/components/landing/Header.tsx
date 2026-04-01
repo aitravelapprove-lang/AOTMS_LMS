@@ -95,7 +95,7 @@ const Header = () => {
 
   const handleNavClick = (href: string) => {
     if (href.startsWith("http")) {
-      window.open(href, "_blank", "noopener,noreferrer");
+      window.location.href = href;
       return;
     }
     if (href.startsWith("/#")) {
@@ -115,6 +115,15 @@ const Header = () => {
     }
   };
 
+  const dashboardMap: Record<string, string> = {
+    student: "/student-dashboard",
+    instructor: "/instructor",
+    admin: "/admin",
+    manager: "/manager",
+  };
+
+  const portalPath = user ? (dashboardMap[userRole || "student"] || "/") : null;
+
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out ${isScrolled ? "bg-background/95 backdrop-blur-md shadow-lg border-b border-border" : "bg-transparent border-b border-transparent"}`}
@@ -133,7 +142,7 @@ const Header = () => {
               }`}
             />
           </Link>
-
+ 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-1 xl:gap-2">
             {navLinks.map((link) => (
@@ -154,6 +163,18 @@ const Header = () => {
                 </span>
               </button>
             ))}
+            {portalPath && (
+              <button
+                onClick={() => handleNavClick(portalPath)}
+                className={`px-3 xl:px-4 py-2 rounded-lg text-sm xl:text-base font-black transition-all duration-200 highlight-dashboard-btn ${
+                  isScrolled || hasLightBg
+                    ? "text-[#0075CF] hover:bg-[#0075CF]/10"
+                    : "text-[#FD5A1A] hover:bg-[#FD5A1A]/10"
+                }`}
+              >
+                Dashboard
+              </button>
+            )}
           </nav>
 
           {/* Right Side - Auth & Mobile Menu */}
@@ -280,6 +301,18 @@ const Header = () => {
                   {/* Mobile Navigation */}
                   <nav className="flex-1 p-4">
                     <ul className="space-y-1">
+                      {portalPath && (
+                        <div>
+                          <SheetClose asChild>
+                            <button
+                              onClick={() => handleNavClick(portalPath)}
+                              className="w-full text-left p-4 rounded-xl text-lg font-black text-[#FD5A1A] bg-orange-50 hover:bg-orange-100 transition-all active:scale-[0.98] mb-2 border border-orange-100"
+                            >
+                               Dashboard
+                            </button>
+                          </SheetClose>
+                        </div>
+                      )}
                       {navLinks.map((link) => (
                         <div key={link.name}>
                           <SheetClose asChild>

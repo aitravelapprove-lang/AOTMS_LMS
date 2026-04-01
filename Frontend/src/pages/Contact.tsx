@@ -146,7 +146,7 @@ const Contact = () => {
                     </label>
                     <input
                       type="text"
-                      placeholder="John Doe"
+                      placeholder="Enter Your Name"
                       className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-4 focus:ring-[#0075CF]/10 focus:bg-white transition-all font-bold text-slate-800"
                     />
                   </div>

@@ -8,6 +8,7 @@ import Instructors from "@/components/landing/Instructors";
 import Testimonials from "@/components/landing/Testimonials";
 import Footer from "@/components/landing/Footer";
 import ScrollBot from "@/components/landing/ScrollBot";
+import EnrollmentForm from "@/components/landing/EnrollmentForm";
 
 const Home = () => {
 
@@ -23,6 +24,7 @@ const Home = () => {
           <FeaturedCourses />
           <CareerRoadmap />
           <KeyFeatures />
+          <EnrollmentForm />
 
           <Instructors />
           <Testimonials />

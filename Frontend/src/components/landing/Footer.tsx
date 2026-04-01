@@ -42,7 +42,7 @@ const Footer = () => {
     "Terms of Service": "/terms",
 
     // Company
-    "About Us": "/about",
+    "About Us": "https://www.aotms.in/#/about-us",
     "Our Trainers": "/trainers",
     Blog: "/blog",
     Careers: "/careers",

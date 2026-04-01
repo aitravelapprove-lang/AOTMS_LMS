@@ -43,7 +43,7 @@ const lightBgPages = [
 const navLinks = [
   { name: "Home", href: "/" },
   { name: "Courses", href: "https://www.aotms.in/#/courses" },
-  { name: "About", href: "/about" },
+  { name: "About", href: "https://www.aotms.in/#/about-us" },
   { name: "FAQ", href: "/faq" },
 ];
 

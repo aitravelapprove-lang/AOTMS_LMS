@@ -60,7 +60,7 @@ const Careers = () => {
                             className="text-4xl md:text-7xl font-black text-slate-900 mb-6 leading-tight tracking-tight font-heading"
                         >
                             Build the Future of <br className="hidden md:block" />
-                            <span className="text-[#0075CF]">Education with Us</span>
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] to-[#FD5A1A]">Education with Us</span>
                         </motion.h1>
                         <motion.p 
                             initial={{ opacity: 0, y: 20 }}

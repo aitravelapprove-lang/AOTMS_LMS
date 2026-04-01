@@ -205,11 +205,12 @@ const FAQ = () => {
 
                 {/* Heading with Orange Suffix */}
                 <h1 className="text-4xl sm:text-6xl md:text-[80px] font-bold mb-6 leading-none tracking-tight">
-                  <span className="text-transparent bg-clip-text bg-gradient-to-br from-[#ffffff] via-[#f1f5f9] to-[#cbd5e1]">
-                    Frequently Asked Questi
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-[#cbd5e1]">
+                    Frequently Asked
                   </span>
-                  <span className="text-transparent bg-clip-text bg-gradient-to-br from-[#FF7A00] to-[#FF4500]">
-                    ons
+                  <br className="hidden md:block" />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FD5A1A] to-[#FF7A00]">
+                    Questions
                   </span>
                 </h1>
 
@@ -423,7 +424,7 @@ const FAQ = () => {
               <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-12">
                 <div className="text-center lg:text-left max-w-xl">
                   <h2 className="text-3xl sm:text-5xl font-black text-white mb-6 leading-[1.1] tracking-tight">
-                    Still have questions <br />
+                    Still have <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-[#FD5A1A]">questions</span> <br />
                     about our academy?
                   </h2>
                   <p className="text-white/70 text-lg md:text-xl font-medium">

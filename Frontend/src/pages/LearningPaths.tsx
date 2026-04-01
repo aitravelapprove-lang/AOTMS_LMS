@@ -180,7 +180,7 @@ const LearningPaths = () => {
               className="text-center mb-16"
             >
               <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-4 leading-tight tracking-tight font-heading">
-                Popular <span className="text-[#0075CF]">Learning Paths</span>
+                Popular <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] to-[#FD5A1A]">Learning Paths</span>
               </h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
                 Our most chosen career paths by students across Vijayawada and beyond
@@ -217,7 +217,7 @@ const LearningPaths = () => {
               className="text-center mb-16"
             >
               <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-4 leading-tight tracking-tight font-heading">
-                All <span className="text-[#0075CF]">Learning Paths</span>
+                All <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] to-[#FD5A1A]">Learning Paths</span>
               </h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
                 Explore all available career paths and find the one that matches your goals

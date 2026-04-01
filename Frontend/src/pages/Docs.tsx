@@ -106,7 +106,7 @@ const Docs = () => {
                   DOCUMENTATION HUB
                 </div>
                 <h1 className="text-4xl md:text-7xl font-black text-slate-900 mb-6 leading-tight tracking-tight font-heading">
-                  Platform <span className="text-[#0075CF]">Handbook</span>
+                  Platform <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] to-[#FD5A1A]">Handbook</span>
                 </h1>
                 <p className="text-slate-500 text-xl font-medium leading-relaxed max-w-3xl">
                   Learn how to master AOTMS's tools, maximize your learning experience, 

@@ -73,7 +73,7 @@ const Features = () => {
                             className="text-4xl md:text-7xl font-black text-slate-900 mb-6 leading-tight tracking-tight font-heading"
                         >
                             Powerful Features for <br className="hidden md:block" />
-                            <span className="text-[#0075CF]">Modern Builders</span>
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] to-[#FD5A1A]">Modern Builders</span>
                         </motion.h1>
                         <motion.p 
                           initial={{ opacity: 0, y: 20 }}

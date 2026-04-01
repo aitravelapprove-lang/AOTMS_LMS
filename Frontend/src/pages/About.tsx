@@ -38,8 +38,8 @@ const About = () => {
               transition={{ delay: 0.1 }}
               className="text-4xl sm:text-5xl md:text-7xl font-extrabold text-slate-900 leading-tight tracking-tight font-heading"
             >
-              Building the Future of{" "}
-              <span className="text-[#0075CF]">Learning</span>
+              Building the Future of <br className="hidden md:block" />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] to-[#FD5A1A]">Learning</span>
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -66,7 +66,7 @@ const About = () => {
               <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                 <Target className="w-6 h-6" />
               </div>
-              <h2 className="text-3xl md:text-5xl font-black text-slate-900 leading-tight tracking-tight">
+              <h2 className="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] to-[#FD5A1A] leading-tight tracking-tight">
                 Our Mission
               </h2>
               <p className="text-lg text-slate-600 font-medium leading-relaxed">
@@ -163,7 +163,7 @@ const About = () => {
         <section className="container-width section-padding bg-primary/5 my-12 py-20">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl md:text-5xl font-extrabold text-slate-900 leading-tight tracking-tight mb-4 font-heading">
-              Who Is <span className="text-[#0075CF]">AOTMS LMS</span> For?
+              Who Is <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] to-[#FD5A1A]">AOTMS LMS</span> For?
             </h2>
             <p className="text-muted-foreground">
               Our platform caters to a diverse range of ambitious learners.
@@ -212,7 +212,7 @@ const About = () => {
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div>
               <h2 className="text-3xl md:text-5xl font-extrabold text-slate-900 leading-tight tracking-tight mb-8 font-heading">
-                Why Choose <span className="text-[#0075CF]">AOTMS LMS?</span>
+                Why Choose <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] to-[#FD5A1A]">AOTMS LMS?</span>
               </h2>
               <div className="space-y-6">
                 {[
@@ -249,7 +249,7 @@ const About = () => {
               <div className="absolute -inset-4 bg-gradient-to-r from-primary to-accent opacity-20 blur-2xl rounded-full" />
               <div className="relative bg-white/80 backdrop-blur-3xl border border-slate-900/10 rounded-[2.5rem] p-10 shadow-2xl shadow-slate-200/60">
                 <h3 className="text-3xl font-extrabold text-slate-900 mb-6 tracking-tight font-heading">
-                  The <span className="text-[#0075CF]">AOTMS</span> Advantage
+                  The <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FD5A1A] to-[#FF7A00]">AOTMS</span> Advantage
                 </h3>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-5 bg-[#E6F2FA]/50 rounded-2xl border border-[#0075CF]/5">

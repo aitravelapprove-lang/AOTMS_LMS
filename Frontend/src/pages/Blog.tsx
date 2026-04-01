@@ -74,7 +74,7 @@ const Blog = () => {
                             AOTMS TECH BLOG
                         </motion.div>
                         <h1 className="text-4xl md:text-7xl font-black text-slate-900 mb-6 leading-tight tracking-[0.01em] font-heading">
-                            Insight, Innovation & <span className="text-[#0075CF]">Inspiration</span>
+                            Insight, Innovation & <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] to-[#FD5A1A]">Inspiration</span>
                         </h1>
                         <p className="text-slate-500 text-lg md:text-xl font-medium leading-relaxed max-w-2xl mx-auto mb-12">
                             Stay up to date with the latest industry trends, student stories, 

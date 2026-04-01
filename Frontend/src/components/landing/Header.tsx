@@ -28,13 +28,23 @@ const lightBgPages = [
   "/admin",
   "/about",
   "/courses",
+  "/faq",
+  "/contact",
+  "/privacy",
+  "/terms",
+  "/docs",
+  "/blog",
+  "/careers",
+  "/trainers",
+  "/press",
+  "/features",
 ];
 
 const navLinks = [
   { name: "Home", href: "/" },
   { name: "Courses", href: "/courses" },
-  { name: "About", href: "https://www.aotms.in/#/about-us" },
-  { name: "FAQ", href: "https://www.aotms.in/#/faq" },
+  { name: "About", href: "/about" },
+  { name: "FAQ", href: "/faq" },
 ];
 
 const Header = () => {

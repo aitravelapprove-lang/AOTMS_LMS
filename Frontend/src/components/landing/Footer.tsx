@@ -1,5 +1,5 @@
 import logo from "@/assets/logo.png";
-import { Linkedin, Instagram, Facebook, Mail, Phone, MapPin, Twitter, Compass } from "lucide-react";
+import { Linkedin, Instagram, Facebook, Mail, Phone, MapPin, Twitter, Compass, ExternalLink, Youtube } from "lucide-react";
 
 const Footer = () => {
   const year = new Date().getFullYear();
@@ -11,20 +11,33 @@ const Footer = () => {
   };
 
   const supportLinks: {[key: string]: string} = {
-    "FAQ": "https://www.aotms.in/#/faq",
-    "About Us": "https://www.aotms.in/#/about-us",
-    "Help Center": "https://www.aotms.in/#/faq",
+    // Support
+    "FAQ": "/faq",
     "Documentation": "/docs",
     "Contact Us": "/contact",
     "Privacy Policy": "/privacy",
-    "Terms of Service": "/terms"
+    "Terms of Service": "/terms",
+    
+    // Company
+    "About Us": "/about",
+    "Our Trainers": "/trainers",
+    "Blog": "/blog",
+    "Careers": "/careers",
+    "Press": "/press",
+
+    // Platform
+    "Live Classes": "/features#live",
+    "Recorded Videos": "/features#recorded",
+    "Secure Exams": "/features#exams",
+    "Leaderboard": "/features#leaderboard",
+    "ATS Resume Score": "/features#resume"
   };
 
   const socials = [
-    { icon: Linkedin,  href: "#", label: "LinkedIn",  color: "#0077b5" },
-    { icon: Instagram, href: "#", label: "Instagram", color: "#E4405F" },
+    { icon: Linkedin,  href: "https://www.linkedin.com/in/academy-of-tech-masters-aotms-82274537a/", label: "LinkedIn",  color: "#0077b5" },
+    { icon: Instagram, href: "https://www.instagram.com/academyoftechmasters?igsh=enZ5YjYwOXg1cW80&utm_source=qr", label: "Instagram", color: "#E4405F" },
     { icon: Facebook,  href: "#", label: "Facebook",  color: "#1877F2" },
-    { icon: Twitter,   href: "#", label: "Twitter",   color: "#000000" },
+    { icon: Youtube,   href: "https://www.youtube.com/channel/UC5n8RN-p7ez3i39CCy85OWA", label: "YouTube", color: "#FF0000" },
     { icon: Mail,      href: "mailto:Info@aotms.in", label: "Email", color: "#FD5A1A" },
   ];
 
@@ -59,9 +72,20 @@ const Footer = () => {
               <a href="mailto:Info@aotms.in" className="flex items-center gap-2 text-[#FDFEFE]/90 hover:text-white font-semibold text-sm transition-colors">
                 <Mail className="w-4 h-4 text-[#FD5A1A] flex-shrink-0" /> Info@aotms.in
               </a>
-              <div className="flex items-start gap-2 text-[#FDFEFE]/85 font-medium text-sm">
-                <MapPin className="w-4 h-4 text-[#FD5A1A] flex-shrink-0 mt-0.5" />
-                <span>2nd Floor, Pothuri Towers, MG Rd, near DV Manor Hotel, Chandra Mouli Puram, Sriram Nagar, Vijayawada, Andhra Pradesh 520010</span>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-start gap-2 text-[#FDFEFE]/85 font-medium text-sm">
+                  <MapPin className="w-4 h-4 text-[#FD5A1A] flex-shrink-0 mt-0.5" />
+                  <span>2nd Floor, Pothuri Towers, MG Rd, near DV Manor Hotel, Chandra Mouli Puram, Sriram Nagar, Vijayawada, Andhra Pradesh 520010</span>
+                </div>
+                <a 
+                  href="https://maps.app.goo.gl/TfWZLrSgHVzRruKv7" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 ml-6 text-[#FD5A1A] hover:text-white text-xs font-black uppercase tracking-widest transition-all group"
+                >
+                  <ExternalLink className="w-3 h-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                  Get Directions
+                </a>
               </div>
             </div>
           </div>

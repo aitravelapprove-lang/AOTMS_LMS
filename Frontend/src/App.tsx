@@ -19,6 +19,15 @@ import About from "./pages/About";
 import PendingApproval from "./pages/PendingApproval";
 import Courses from "./pages/Courses";
 import FAQ from "./pages/FAQ";
+import Contact from "./pages/Contact";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+import Docs from "./pages/Docs";
+import Blog from "./pages/Blog";
+import Careers from "./pages/Careers";
+import Trainers from "./pages/Trainers";
+import Press from "./pages/Press";
+import Features from "./pages/Features";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import ScrollToTop from "@/components/ScrollToTop";
 import { SuspensionOverlay } from "@/components/auth/SuspensionOverlay";
@@ -97,6 +106,15 @@ const App = () => (
               <Route path="/about" element={<About />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/faq" element={<FAQ />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/docs" element={<Docs />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/careers" element={<Careers />} />
+              <Route path="/trainers" element={<Trainers />} />
+              <Route path="/press" element={<Press />} />
+              <Route path="/features" element={<Features />} />
               <Route path="/pending-approval" element={<ProtectedRoute><PendingApproval /></ProtectedRoute>} />
               <Route path="/become-instructor" element={<InstructorRegister />} />
 

@@ -73,36 +73,40 @@ const Instructors = () => {
             Learn From The <br className="hidden md:block" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] to-[#3391D9]">
               Elite Builders
-            </span>.
+            </span>
+            .
           </h2>
           <p className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-medium">
-            Our mentors aren't just teachers; they are industry veterans from top tech firms dedicated to your career success.
+            Our mentors aren't just teachers; they are industry veterans from
+            top tech firms dedicated to your career success.
           </p>
         </motion.div>
 
         <motion.div
-           initial={{ opacity: 0, scale: 0.95 }}
-           whileInView={{ opacity: 1, scale: 1 }}
-           viewport={{ once: true }}
-           transition={{ duration: 0.6 }}
-           className="relative"
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="relative"
         >
           {/* Main Slider Integration */}
           <TestimonialSlider reviews={mentors} className="bg-transparent" />
-          
+
           {/* Floating Credentials Decoration */}
           <div className="absolute -top-10 -right-10 hidden xl:flex flex-col gap-4">
-             <div className="bg-white p-6 rounded-3xl shadow-lg border border-slate-100 transform rotate-6 hover:rotate-0 transition-transform duration-500">
-               <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
-                    <Users className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Global Students</p>
-                    <p className="text-xl font-black text-slate-900">50K+</p>
-                  </div>
-               </div>
-             </div>
+            <div className="bg-white p-6 rounded-3xl shadow-lg border border-slate-100 transform rotate-6 hover:rotate-0 transition-transform duration-500">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
+                  <Users className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    Global Students
+                  </p>
+                  <p className="text-xl font-black text-slate-900">2K+</p>
+                </div>
+              </div>
+            </div>
           </div>
         </motion.div>
       </div>

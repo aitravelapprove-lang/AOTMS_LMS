@@ -46,7 +46,7 @@ const Footer = () => {
           {/* Brand Column */}
           <div className="sm:col-span-2 lg:col-span-2">
             <div className="inline-block bg-white px-6 py-3 rounded-xl mb-6 shadow-lg">
-              <img src={logo} alt="AOTMS Logo" className="h-16 w-auto" />
+              <img src={logo} alt="AOTMS Logo" className="h-20 w-auto" />
             </div>
             <p className="text-[#FDFEFE]/85 text-sm md:text-base leading-relaxed mb-6 max-w-sm font-medium">
               Vijayawada's premier LMS platform for skill-based learning, secure exams, and 100% placement support.

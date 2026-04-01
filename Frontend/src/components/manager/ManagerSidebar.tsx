@@ -93,7 +93,7 @@ export function ManagerSidebar({
           <img
             src={logo}
             alt="AOTMS Logo"
-            className="h-10 w-auto object-contain group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8"
+            className="h-12 w-auto object-contain group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8"
           />
           {!collapsed && (
             <span className="text-[10px] font-bold text-primary uppercase tracking-wider">

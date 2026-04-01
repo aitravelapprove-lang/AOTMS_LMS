@@ -116,7 +116,7 @@ const Header = () => {
             <img
               src={logo}
               alt="AOTMS Logo"
-              className={`h-10 sm:h-12 md:h-14 lg:h-16 w-auto transition-all duration-300 ${
+              className={`h-12 sm:h-14 md:h-16 lg:h-20 w-auto transition-all duration-300 ${
                 !isScrolled && !hasLightBg
                   ? "brightness-0 invert opacity-90"
                   : ""
@@ -259,7 +259,7 @@ const Header = () => {
                 <div className="flex flex-col h-full">
                   {/* Mobile Header */}
                   <div className="flex items-center justify-between p-4 border-b border-border">
-                    <img src={logo} alt="AOTMS Logo" className="h-10 w-auto" />
+                    <img src={logo} alt="AOTMS Logo" className="h-12 w-auto" />
                   </div>
 
                   {/* Mobile Navigation */}

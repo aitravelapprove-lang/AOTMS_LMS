@@ -80,7 +80,7 @@ const CTASection = () => {
 
             <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-black text-white mb-6 md:mb-10 leading-[0.95] tracking-tighter">
               Launch Your <br className="hidden sm:block" />
-              <span className="text-white">Future In Tech</span>.
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-[#FD5A1A]">Future In Tech</span>.
             </h2>
             
             <p className="text-white/80 text-lg md:text-2xl max-w-2xl mx-auto mb-16 leading-relaxed font-medium font-jakarta">

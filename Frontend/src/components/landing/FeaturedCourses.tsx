@@ -36,8 +36,9 @@ export default function FeaturedCourses() {
             <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-none px-4 py-1.5 text-sm font-bold tracking-wider uppercase mb-4">
               Explore Programs
             </Badge>
-            <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight">
-              Master In-Demand <span className="text-primary italic">Tech Skills</span>
+            <h2 className="text-3xl md:text-5xl lg:text-6xl font-black text-slate-950 tracking-tighter leading-tight">
+              Master In-Demand <br className="hidden md:block" />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] to-[#FD5A1A]">Tech Skills</span>.
             </h2>
             <p className="text-slate-600 max-w-2xl mx-auto text-lg font-medium mt-4">
               Choose from our curated selection of professional engineering courses designed by industry experts.

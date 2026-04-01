@@ -72,7 +72,7 @@ const KeyFeatures = () => (
         </div>
         <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-slate-950 mb-7 leading-[1.05] tracking-tighter">
           Everything You Need to <br className="hidden md:block" />
-          <span className="text-[#FD5A1A]">Succeed</span>.
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] to-[#FD5A1A]">Succeed</span>.
         </h2>
         <p className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-medium">
           Live classes, secure exams, AI resume scoring, and more — all inside one powerful platform.

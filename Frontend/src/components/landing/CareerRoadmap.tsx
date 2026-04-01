@@ -67,7 +67,7 @@ export default function CareerRoadmap() {
           </span>
           <h2 className="text-4xl sm:text-5xl md:text-7xl font-black text-slate-950 mb-7 leading-[1.05] tracking-tighter">
             Your Journey from <br className="hidden md:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] to-[#3391D9]">Student to Professional</span>.
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] to-[#FD5A1A]">Student to Professional</span>.
           </h2>
           <p className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-medium">
             A structured pathway designed to transform absolute beginners into industry-ready engineers.

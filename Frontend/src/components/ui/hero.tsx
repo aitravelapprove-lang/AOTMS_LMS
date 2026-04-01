@@ -70,11 +70,11 @@ export default function ShaderShowcase() {
             transition={{ duration: 0.8, delay: 0.2 }}
           >
             SMART <br className="hidden md:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/60">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-[#0075CF]">
               LEARNING
             </span>
             <br className="hidden md:block" />
-            <span className="text-[#FD5A1A]">SYSTEM</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FD5A1A] to-[#FF7A00]">SYSTEM</span>
           </motion.h1>
 
           <motion.p

@@ -22,8 +22,8 @@ const Testimonials = () => {
             Verified Career Results
           </div>
           <h2 className="text-4xl sm:text-5xl md:text-7xl font-black text-slate-950 dark:text-white mb-6 leading-[1.05] tracking-tighter">
-            Impact That <span className="text-[#0075CF]">Speaks</span> <br className="hidden md:block"/>
-            <span className="text-[#FD5A1A]">For Itself</span>.
+            Impact That <br className="hidden md:block"/>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] to-[#FD5A1A]">Speaks For Itself</span>.
           </h2>
           <p className="text-slate-500 dark:text-white/60 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-medium">
             Join the elite circle of graduates in Vijayawada who transformed their aspirations into career-defining roles.

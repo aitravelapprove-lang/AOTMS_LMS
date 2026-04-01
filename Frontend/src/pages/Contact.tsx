@@ -7,6 +7,9 @@ import {
   MessageSquare,
   Clock,
   ArrowRight,
+  ChevronDown,
+  BookOpen,
+  User,
 } from "lucide-react";
 import Header from "@/components/landing/Header";
 import Footer from "@/components/landing/Footer";
@@ -108,6 +111,7 @@ const Contact = () => {
               </motion.a>
             ))}
           </div>
+
           {/* Google Maps Section */}
           <div className="mb-20 rounded-[3rem] overflow-hidden shadow-2xl border border-slate-100 h-[350px] md:h-[500px] relative z-10 bg-slate-100">
             <iframe
@@ -123,71 +127,109 @@ const Contact = () => {
           </div>
 
           <div className="grid lg:grid-cols-2 gap-12 items-start">
-            {/* Contact Form */}
+            {/* Contact Form Wrapper - Premium Branded Border */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="bg-white p-8 md:p-12 rounded-[3rem] shadow-2xl border border-slate-100"
+              className="relative p-0.5 rounded-[3.5rem] bg-gradient-to-br from-[#0075CF] via-white to-[#FD5A1A]/30 shadow-[0_32px_64px_-16px_rgba(0,117,207,0.15)] group"
             >
-              <div className="mb-10">
-                <h2 className="text-3xl font-black text-slate-900 mb-4">
-                  Send a Message
-                </h2>
-                <p className="text-slate-500 font-medium">
-                  We'll get back to you within 24 business hours.
-                </p>
-              </div>
+              <div className="bg-white/95 backdrop-blur-3xl p-8 md:p-14 rounded-[calc(3.5rem-2px)] relative overflow-hidden">
+                {/* Visual Decorative Layer */}
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#0075CF] to-[#FD5A1A]" />
+                <div className="absolute -top-24 -right-24 w-64 h-64 bg-[#0075CF]/5 blur-[80px] rounded-full" />
+                <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-[#FD5A1A]/5 blur-[80px] rounded-full" />
 
-              <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-2">
-                      Full Name
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Enter Your Name"
-                      className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-4 focus:ring-[#0075CF]/10 focus:bg-white transition-all font-bold text-slate-800"
-                    />
+                <div className="mb-12 relative z-10">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="h-1 w-10 bg-[#0075CF] rounded-full" />
+                    <span className="text-[10px] font-black text-[#0075CF] uppercase tracking-[0.3em]">Direct Channel</span>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-2">
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      placeholder="john@example.com"
-                      className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-4 focus:ring-[#0075CF]/10 focus:bg-white transition-all font-bold text-slate-800"
-                    />
+                  <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tighter leading-none">
+                    Start a <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] to-[#FD5A1A]">Conversation</span>.
+                  </h2>
+                  <p className="text-slate-500 font-medium leading-relaxed max-w-sm">
+                    Have a vision or a question? Our team translates your goals into a learning roadmap.
+                  </p>
+                </div>
+
+                <form className="space-y-8 relative z-10" onSubmit={(e) => e.preventDefault()}>
+                  <div className="grid md:grid-cols-2 gap-8">
+                    {/* Name field */}
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Your Name</label>
+                      <div className="relative group/field transition-all">
+                        <User className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 group-focus-within/field:text-[#0075CF] group-focus-within/field:scale-110 transition-all duration-300" />
+                        <input
+                          type="text"
+                          placeholder="Full Name"
+                          className="w-full h-16 pl-14 pr-6 rounded-2xl bg-slate-50/50 border-2 border-slate-100 focus:border-[#0075CF] focus:bg-white focus:shadow-[0_0_20px_rgba(0,117,207,0.05)] focus:outline-none transition-all duration-300 font-bold text-slate-900 placeholder:text-slate-300"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Email field */}
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Email Identity</label>
+                      <div className="relative group/field transition-all">
+                        <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 group-focus-within/field:text-[#0075CF] group-focus-within/field:scale-110 transition-all duration-300" />
+                        <input
+                          type="email"
+                          placeholder="john@example.com"
+                          className="w-full h-16 pl-14 pr-6 rounded-2xl bg-slate-50/50 border-2 border-slate-100 focus:border-[#0075CF] focus:bg-white focus:shadow-[0_0_20px_rgba(0,117,207,0.05)] focus:outline-none transition-all duration-300 font-bold text-slate-900 placeholder:text-slate-300"
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-2">
-                    Subject
-                  </label>
-                  <select className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-4 focus:ring-[#0075CF]/10 focus:bg-white transition-all font-bold text-slate-800 appearance-none">
-                    <option>General Inquiry</option>
-                    <option>Course Admissions</option>
-                    <option>Corporate Training</option>
-                    <option>Placement Support</option>
-                    <option>Technical Support</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-2">
-                    How can we help?
-                  </label>
-                  <textarea
-                    rows={4}
-                    placeholder="Tell us about your requirements..."
-                    className="w-full p-6 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-4 focus:ring-[#0075CF]/10 focus:bg-white transition-all font-bold text-slate-800 resize-none"
-                  ></textarea>
-                </div>
-                <button className="w-full h-16 bg-gradient-to-r from-[#0075CF] to-[#3391D9] hover:shadow-[0_0_30px_rgba(0,117,207,0.3)] text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-blue-500/20 transition-all flex items-center justify-center gap-2 group active:scale-[0.98]">
-                  Send Message
-                  <Send className="w-4 h-4 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
-                </button>
-              </form>
+
+                  {/* Subject Selection */}
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Enquiry Category</label>
+                    <div className="relative group/field transition-all">
+                      <BookOpen className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 group-focus-within/field:text-[#0075CF] group-focus-within/field:scale-110 transition-all duration-300 z-10" />
+                      <select className="w-full h-16 pl-14 pr-10 rounded-2xl bg-slate-50/50 border-2 border-slate-100 focus:border-[#0075CF] focus:bg-white focus:shadow-[0_0_20px_rgba(0,117,207,0.05)] focus:outline-none transition-all duration-300 font-bold text-slate-900 appearance-none">
+                        <option>General Inquiry</option>
+                        <option>Course Admissions</option>
+                        <option>Corporate Training</option>
+                        <option>Placement Support</option>
+                        <option>Technical Support</option>
+                      </select>
+                      <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                        <ChevronDown className="w-5 h-5" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Message Textarea */}
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Your Thoughts</label>
+                    <div className="relative group/field transition-all">
+                      <MessageSquare className="absolute left-5 top-6 w-5 h-5 text-slate-300 group-focus-within/field:text-[#FD5A1A] group-focus-within/field:scale-110 transition-all duration-300" />
+                      <textarea
+                        rows={5}
+                        placeholder="How can we help you achieve your goals?"
+                        className="w-full p-6 pl-14 rounded-3xl bg-slate-50/50 border-2 border-slate-100 focus:border-[#FD5A1A] focus:bg-white focus:shadow-[0_0_20px_rgba(253,90,26,0.05)] focus:outline-none transition-all duration-300 font-bold text-slate-900 placeholder:text-slate-300 resize-none leading-relaxed"
+                      ></textarea>
+                    </div>
+                  </div>
+
+                  {/* Submit Action */}
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full h-20 bg-gradient-to-r from-[#0075CF] to-[#FD5A1A] hover:shadow-[0_20px_50px_rgba(0,117,207,0.3)] text-white rounded-[2rem] font-black uppercase tracking-[0.2em] text-sm overflow-hidden transition-all flex items-center justify-center gap-4 relative group/btn"
+                  >
+                    <div className="absolute inset-0 bg-white/10 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
+                    <span className="relative z-10 flex items-center gap-4">
+                      Send Message
+                      <Send className="w-5 h-5 transition-transform group-hover/btn:translate-x-2 group-hover/btn:-translate-y-2 duration-300" />
+                    </span>
+                  </motion.button>
+
+                  <p className="text-center text-[9px] font-black text-slate-300 uppercase tracking-widest">
+                    Data Privacy Protected • Encrypted Connection
+                  </p>
+                </form>
+              </div>
             </motion.div>
 
             {/* Additional Info */}

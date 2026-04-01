@@ -6,7 +6,6 @@ import FeaturedCourses from "@/components/landing/FeaturedCourses";
 import CareerRoadmap from "@/components/landing/CareerRoadmap";
 import Instructors from "@/components/landing/Instructors";
 import Testimonials from "@/components/landing/Testimonials";
-import CTASection from "@/components/landing/CTASection";
 import Footer from "@/components/landing/Footer";
 import ScrollBot from "@/components/landing/ScrollBot";
 
@@ -27,7 +26,6 @@ const Home = () => {
 
           <Instructors />
           <Testimonials />
-          <CTASection />
         </main>
         <Footer />
         <ScrollBot />

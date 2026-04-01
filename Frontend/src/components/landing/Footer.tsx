@@ -35,7 +35,7 @@ const Footer = () => {
 
   const supportLinks: { [key: string]: string } = {
     // Support
-    FAQ: "/faq",
+    FAQ: "https://www.aotms.in/#/faq",
     Documentation: "/docs",
     "Contact Us": "/contact",
     "Privacy Policy": "/privacy",

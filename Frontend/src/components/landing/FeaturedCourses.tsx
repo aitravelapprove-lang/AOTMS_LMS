@@ -26,8 +26,8 @@ export default function FeaturedCourses() {
       <div className="absolute top-40 -left-20 w-80 h-80 bg-primary/5 rounded-full blur-3xl" />
       <div className="absolute bottom-40 -right-20 w-80 h-80 bg-accent/5 rounded-full blur-3xl" />
 
-      <div className="container-width section-padding relative z-10">
-        <div className="text-center mb-16 space-y-4">
+      <div className="container-width pt-16 md:pt-24 lg:pt-32 pb-0 relative z-10">
+        <div className="text-center mb-0 space-y-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -48,7 +48,7 @@ export default function FeaturedCourses() {
       </div>
 
       {/* Continuous Auto-Play Marquee — Ultra Professional Loop (Edge-to-Edge) */}
-      <div className="relative w-full overflow-hidden group/marquee py-10 mt-10">
+      <div className="relative w-full overflow-hidden group/marquee py-6 mt-0">
         {/* Faded edges for depth */}
         <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-white to-transparent z-20 pointer-events-none" />
         <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-white to-transparent z-20 pointer-events-none" />

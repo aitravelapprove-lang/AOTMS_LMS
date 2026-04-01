@@ -43,7 +43,7 @@ export default function PendingApproval() {
 
                     <div className="flex items-center gap-2 justify-center text-primary font-medium text-sm">
                         <Mail className="h-4 w-4" />
-                        <span>Support: admin@aotms.com</span>
+                        <span>Support: Info@aotms.in</span>
                     </div>
 
                     <div className="grid grid-cols-1 gap-3 pt-4">

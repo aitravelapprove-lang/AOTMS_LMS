@@ -106,17 +106,17 @@ const CTASection = () => {
 
             {/* Support Hotline */}
             <div className="mt-16 pt-10 border-t border-white/10 flex flex-wrap items-center justify-center gap-8">
-              <a href="tel:+919876543210" className="flex items-center gap-3 text-[#FDFEFE]/70 hover:text-[#FDFEFE] transition-all group">
+              <a href="tel:+918019952233" className="flex items-center gap-3 text-[#FDFEFE]/70 hover:text-[#FDFEFE] transition-all group">
                 <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-[#FD5A1A] transition-all">
                   <Phone className="w-4 h-4" />
                 </div>
-                <span className="font-bold tracking-widest text-xs">(+91) 98765-43210</span>
+                <span className="font-bold tracking-widest text-xs">+91 80199 52233</span>
               </a>
-              <a href="mailto:hello@aotms.com" className="flex items-center gap-3 text-[#FDFEFE]/70 hover:text-[#FDFEFE] transition-all group">
-                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-[#FD5A1A] transition-all">
-                  <Mail className="w-4 h-4" />
+              <a href="mailto:Info@aotms.in" className="flex items-center gap-3 text-[#FDFEFE]/70 hover:text-[#FDFEFE] transition-all group">
+                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-[#FD5A1A]/10 transition-colors">
+                  <Mail className="w-4 h-4 text-[#FD5A1A]" />
                 </div>
-                <span className="font-bold tracking-widest text-xs">hello@aotms.com</span>
+                <span className="font-bold tracking-widest text-xs">Info@aotms.in</span>
               </a>
             </div>
           </div>

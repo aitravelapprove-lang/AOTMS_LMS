@@ -226,7 +226,7 @@ const FAQ = () => {
                 {/* Info Pills */}
                 <div className="flex flex-wrap justify-center gap-3 mb-12">
                   {[
-                    { icon: "📍", text: "Vijayawada, Andhra Pradesh" },
+                    { icon: "📍", text: "Pothuri Towers, MG Rd" },
                     { icon: "⏰", text: "Mon - Sat: 9 AM - 8 PM" },
                     { icon: "📞", text: "+91 80199 52233" },
                   ].map((item, idx) => (

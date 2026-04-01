@@ -309,11 +309,11 @@ const About = () => {
               <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20 max-w-sm">
                 <h4 className="font-bold text-xl mb-2">Visit Us</h4>
                 <p className="text-white/70">
-                  Auram Creative Center, 19th Floor
+                  2nd Floor, Pothuri Towers
                   <br />
-                  Vijayawada, Andhra Pradesh
+                  MG Rd, Vijayawada, AP
                   <br />
-                  India - 520001
+                  India - 520010
                 </p>
               </div>
             </div>

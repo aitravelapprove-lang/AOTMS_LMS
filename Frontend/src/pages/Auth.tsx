@@ -682,7 +682,7 @@ export default function Auth() {
                               onValueChange={field.onChange}
                               countryCode={detailsForm.watch('countryCode')}
                               onCountryChange={(code) => detailsForm.setValue('countryCode', code)}
-                              placeholder="9876543210"
+                              placeholder="8019952233"
                             />
                           </FormControl>
                           <FormMessage />

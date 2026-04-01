@@ -25,7 +25,7 @@ const Footer = () => {
     { icon: Instagram, href: "#", label: "Instagram", color: "#E4405F" },
     { icon: Facebook,  href: "#", label: "Facebook",  color: "#1877F2" },
     { icon: Twitter,   href: "#", label: "Twitter",   color: "#000000" },
-    { icon: Mail,      href: "mailto:hello@aotms.com", label: "Email", color: "#FD5A1A" },
+    { icon: Mail,      href: "mailto:Info@aotms.in", label: "Email", color: "#FD5A1A" },
   ];
 
   return (
@@ -53,15 +53,15 @@ const Footer = () => {
             </p>
             {/* Contact info */}
             <div className="flex flex-col gap-3">
-              <a href="tel:+919876543210" className="flex items-center gap-2 text-[#FDFEFE]/90 hover:text-white font-semibold text-sm transition-colors">
-                <Phone className="w-4 h-4 text-[#FD5A1A] flex-shrink-0" /> (+91) 98765-43210
+              <a href="tel:+918019952233" className="flex items-center gap-2 text-[#FDFEFE]/90 hover:text-white font-semibold text-sm transition-colors">
+                <Phone className="w-4 h-4 text-[#FD5A1A] flex-shrink-0" /> (+91) 80199 52233
               </a>
-              <a href="mailto:hello@aotms.com" className="flex items-center gap-2 text-[#FDFEFE]/90 hover:text-white font-semibold text-sm transition-colors">
-                <Mail className="w-4 h-4 text-[#FD5A1A] flex-shrink-0" /> hello@aotms.com
+              <a href="mailto:Info@aotms.in" className="flex items-center gap-2 text-[#FDFEFE]/90 hover:text-white font-semibold text-sm transition-colors">
+                <Mail className="w-4 h-4 text-[#FD5A1A] flex-shrink-0" /> Info@aotms.in
               </a>
               <div className="flex items-start gap-2 text-[#FDFEFE]/85 font-medium text-sm">
                 <MapPin className="w-4 h-4 text-[#FD5A1A] flex-shrink-0 mt-0.5" />
-                <span>Auram Creative Center, Vijayawada, AP — 520001</span>
+                <span>2nd Floor, Pothuri Towers, MG Rd, near DV Manor Hotel, Chandra Mouli Puram, Sriram Nagar, Vijayawada, Andhra Pradesh 520010</span>
               </div>
             </div>
           </div>

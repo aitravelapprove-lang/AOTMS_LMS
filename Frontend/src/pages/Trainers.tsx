@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import Header from "@/components/landing/Header";
 import Footer from "@/components/landing/Footer";
 import LowPolyBackground from "@/components/landing/LowPolyBackground";
-import { Linkedin, Twitter, Globe, Star, Users, Brain, BookOpen, GraduationCap, ChevronRight, Mail, Sparkles } from "lucide-react";
+import { Linkedin, Star, Users, Brain, BookOpen, GraduationCap, ChevronRight, Mail, Sparkles } from "lucide-react";
 
 interface Trainer {
   id: number;
@@ -20,35 +20,46 @@ const Trainers = () => {
     const trainers: Trainer[] = [
         {
           id: 1,
-          name: "Venkatesh Prasad",
-          role: "Lead Full Stack Architect",
-          experience: "12+ Years",
-          expertise: ["MERN Stack", "System Design", "Cloud Native"],
-          studentsLabel: "2,500+ Mentored",
-          image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400",
-          bio: "Formerly a Senior Architect at a top-5 tech giant in Bangalore, Venkatesh brings high-level enterprise coding practices directly to our classrooms.",
+          name: "V. Adilakshmi",
+          role: "Data Analytics Expert",
+          experience: "8+ Years",
+          expertise: ["Data Analytics", "SQL", "Python", "Business Insights"],
+          studentsLabel: "1,500+ Mentored",
+          image: "https://res.cloudinary.com/dbhuezxh0/image/upload/v1769142934/mentos-1_ch1jur_yyy4gk.jpg",
+          bio: "Empowering students with the power of data. My goal is to bridge the gap between complex algorithms and real-world business insights.",
           rating: 4.9
         },
         {
           id: 2,
-          name: "Deepika Reddy",
-          role: "AI & Data Science Head",
-          experience: "8+ Years",
-          expertise: ["Python", "TensorFlow", "Pandas", "NLP"],
+          name: "Intiaz Shaik",
+          role: "Cyber Security Specialist",
+          experience: "6+ Years",
+          expertise: ["Ethical Hacking", "Network Security", "Cyber Defense"],
           studentsLabel: "1,200+ Mentored",
-          image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400",
-          bio: "A data science researcher turned educator, Deepika specializes in making complex mathematical models understandable for real-world application.",
+          image: "https://res.cloudinary.com/dbhuezxh0/image/upload/v1769142934/mentos-2_hod2iu_stcqlv.jpg",
+          bio: "In the digital age, security is not an option—it's a necessity. I mentor the next generation of ethical hackers to secure our global future.",
           rating: 4.8
         },
         {
           id: 3,
-          name: "Sai Kiran",
-          role: "DevOps & Cloud Mentor",
+          name: "B. Rohith",
+          role: "QA Automation Expert",
+          experience: "12+ Years",
+          expertise: ["Automation Testing", "System Reliability", "Quality Assurance"],
+          studentsLabel: "2,000+ Mentored",
+          image: "https://res.cloudinary.com/dbhuezxh0/image/upload/v1774935695/Mentor_dvgns5_cumvsj.png",
+          bio: "Precision and automation are the backbones of modern software. I teach the art of building unbreakable systems through rigorous testing.",
+          rating: 4.9
+        },
+        {
+          id: 4,
+          name: "Divya Rani",
+          role: "Software Development Lead",
           experience: "10+ Years",
-          expertise: ["AWS", "Docker", "Kubernetes", "CI/CD"],
+          expertise: ["Software Architecture", "Clean Code", "Design Patterns"],
           studentsLabel: "1,800+ Mentored",
-          image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400",
-          bio: "Expert in scalable infrastructure. Sai ensures our students are job-ready for the world of automated deployment and reliability engineering.",
+          image: "https://res.cloudinary.com/dbhuezxh0/image/upload/v1769142934/mentor-5_a4t9yq_xvspck.jpg",
+          bio: "Coding is about solving problems elegantly. I focus on technical fundamentals and architectural patterns that define world-class engineers.",
           rating: 4.9
         }
     ];
@@ -90,7 +101,7 @@ const Trainers = () => {
                         </motion.p>
                     </div>
 
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10 lg:gap-12 mb-32">
+                    <div className="grid md:grid-cols-2 gap-10 lg:gap-12 mb-32 max-w-6xl mx-auto">
                         {trainers.map((trainer, idx) => (
                             <motion.div
                                 key={trainer.id}
@@ -106,8 +117,13 @@ const Trainers = () => {
                                             alt={trainer.name}
                                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                                         />
-                                        <div className="absolute top-6 left-6 flex items-center gap-2 px-3 py-1 rounded-full bg-white/90 backdrop-blur-md shadow-lg text-[10px] font-black uppercase tracking-widest text-[#FD5A1A]">
-                                            <Star className="w-3 h-3 fill-current" /> {trainer.rating} Rating
+                                        <div className="absolute top-6 left-6 flex flex-col gap-2">
+                                            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/90 backdrop-blur-md shadow-lg text-[10px] font-black uppercase tracking-widest text-[#FD5A1A]">
+                                                <Star className="w-3 h-3 fill-current" /> {trainer.rating} Rating
+                                            </div>
+                                            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/90 backdrop-blur-md shadow-lg text-[10px] font-black uppercase tracking-widest text-[#0075CF]">
+                                                <Users className="w-3 h-3" /> {trainer.studentsLabel}
+                                            </div>
                                         </div>
                                     </div>
                                     <div className="space-y-1">
@@ -145,42 +161,49 @@ const Trainers = () => {
                         ))}
                     </div>
 
-                    <div className="max-w-5xl mx-auto bg-slate-900 rounded-[4rem] p-12 md:p-20 text-white relative overflow-hidden shadow-2xl flex flex-col md:flex-row items-center gap-16">
-                        <div className="absolute top-0 right-0 w-80 h-80 bg-[#0075CF]/20 rounded-full blur-[100px] -mr-40 -mt-40" />
-                        <div className="relative z-10 flex-1 space-y-8 text-center md:text-left">
+                    <div className="max-w-6xl mx-auto bg-gradient-to-br from-slate-950 via-[#001E35] to-slate-950 rounded-[2.5rem] md:rounded-[4rem] p-8 md:p-16 lg:p-20 text-white relative overflow-hidden shadow-2xl flex flex-col lg:flex-row items-center gap-12 lg:gap-16 border border-white/5">
+                        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#0075CF]/10 rounded-full blur-[120px] -mr-64 -mt-64" />
+                        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[#FD5A1A]/5 rounded-full blur-[100px] -ml-48 -mb-48" />
+                        
+                        <div className="relative z-10 flex-1 space-y-6 md:space-y-8 text-center lg:text-left">
                             <motion.div
                                 initial={{ opacity: 0, x: -20 }}
                                 whileInView={{ opacity: 1, x: 0 }}
-                                className="inline-flex items-center px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-white text-[10px] font-black uppercase tracking-[0.2em]"
+                                className="inline-flex items-center px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-[0.2em]"
                             >
-                                <Sparkles className="w-4 h-4 mr-2 text-yellow-400" />
+                                <Sparkles className="w-4 h-4 mr-2 text-[#FD5A1A]" />
                                 JOIN OUR MENTOR PANEL
                             </motion.div>
-                            <h2 className="text-3xl md:text-5xl font-black mb-6 leading-tight">Aspire to teach with us?</h2>
-                            <p className="text-white/70 text-lg md:text-xl font-medium leading-relaxed">
+                            <h2 className="text-3xl md:text-4xl lg:text-5xl font-black mb-6 leading-[1.1] tracking-tight">
+                                Aspire to teach <br className="hidden md:block" />
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] to-[#3391D9]">with us?</span>
+                            </h2>
+                            <p className="text-white/60 text-base md:text-lg font-medium leading-relaxed max-w-xl mx-auto lg:mx-0">
                                 Share your industry expertise and empower the next generation of engineers. Our platform allows professionals to teach part-time or full-time with global reach.
                             </p>
-                            <div className="flex flex-col sm:flex-row gap-4 pt-4 justify-center md:justify-start">
-                                <button className="h-16 px-10 rounded-2xl bg-[#0075CF] hover:bg-blue-600 text-white font-black uppercase tracking-widest shadow-xl shadow-black/20 transition-all flex items-center justify-center gap-2 group whitespace-nowrap active:scale-95">
+                            <div className="flex flex-col sm:flex-row gap-4 pt-4 justify-center lg:justify-start">
+                                <button className="h-14 md:h-16 px-8 md:px-10 rounded-2xl bg-gradient-to-r from-[#0075CF] to-[#3391D9] hover:shadow-[0_0_30px_rgba(0,117,207,0.3)] text-white font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 group whitespace-nowrap active:scale-95">
                                     Become Instructor <ChevronRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                                 </button>
-                                <button className="h-16 px-10 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-white font-black uppercase tracking-widest transition-all hover:bg-white/20 active:scale-95 whitespace-nowrap">
+                                <button className="h-14 md:h-16 px-8 md:px-10 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 text-white font-black uppercase tracking-widest transition-all hover:bg-white/10 active:scale-95 whitespace-nowrap">
                                     Mentor Program
                                 </button>
                             </div>
                         </div>
 
-                        <div className="relative z-10 grid grid-cols-2 gap-4 w-full md:w-auto">
+                        <div className="relative z-10 grid grid-cols-2 gap-3 md:gap-4 w-full sm:w-auto shrink-0">
                             {[
                                 { val: "50+", label: "Instructors", icon: Users },
                                 { val: "100%", label: "Skilled", icon: BookOpen },
                                 { val: "15+", label: "Industries", icon: GraduationCap },
                                 { val: "24/7", label: "Support", icon: Mail }
                             ].map((stat, i) => (
-                                <div key={i} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 text-center shadow-lg hover:-translate-y-1 transition-all duration-300">
-                                    <stat.icon className="w-6 h-6 text-[#FD5A1A] mx-auto mb-3" />
-                                    <div className="text-2xl font-black text-white">{stat.val}</div>
-                                    <div className="text-[10px] font-black uppercase tracking-widest text-white/50">{stat.label}</div>
+                                <div key={i} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] p-5 md:p-6 text-center shadow-lg hover:-translate-y-1 transition-all duration-300 min-w-[140px] md:min-w-[160px]">
+                                    <div className="w-10 h-10 md:w-12 md:h-12 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/5">
+                                        <stat.icon className="w-5 h-5 md:w-6 md:h-6 text-[#FD5A1A]" />
+                                    </div>
+                                    <div className="text-xl md:text-2xl font-black text-white">{stat.val}</div>
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-white/40 mt-1">{stat.label}</div>
                                 </div>
                             ))}
                         </div>

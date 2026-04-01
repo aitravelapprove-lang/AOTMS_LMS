@@ -347,9 +347,9 @@ export default function Auth() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-white">
       {/* Left Panel - Gradient Background */}
-      <div className="lg:w-1/2 bg-gradient-to-br from-accent/30 via-primary/20 to-accent/40 p-6 lg:p-10 flex flex-col relative overflow-hidden pointer-events-none">
+      <div className="lg:w-1/2 bg-gradient-to-br from-[#0075CF]/10 via-white to-[#FD5A1A]/10 p-6 lg:p-10 flex flex-col relative overflow-hidden pointer-events-none">
         {/* Logo */}
         <a href="/" className="flex items-center gap-3 z-10 pointer-events-auto">
           <img src={logo} alt="AOTMS Logo" className="h-8 lg:h-10" />
@@ -357,31 +357,32 @@ export default function Auth() {
 
         {/* Motivational Text */}
         <div className="flex-1 flex flex-col justify-center mt-6 lg:mt-0 z-10">
-          <p className="text-muted-foreground text-sm mb-2">You can easily</p>
-          <h1 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-foreground leading-tight">
-            Get access to your personal hub for learning and growth.
+          <p className="text-[#0075CF] text-[10px] font-black uppercase tracking-[0.2em] mb-4">AOTMS PORTAL</p>
+          <h1 className="text-3xl lg:text-4xl xl:text-5xl font-black text-slate-900 leading-[1.1] tracking-tight">
+            The Hub for <br />
+            <span className="text-[#0075CF]">Learning & Growth</span>.
           </h1>
         </div>
 
         {/* Decorative gradient orbs */}
-        <div className="absolute top-1/3 left-1/4 w-64 h-64 bg-accent/40 rounded-full blur-3xl pointer-events-none -z-10" />
-        <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-primary/30 rounded-full blur-3xl pointer-events-none -z-10" />
+        <div className="absolute top-1/3 left-1/4 w-80 h-80 bg-[#0075CF]/20 rounded-full blur-[100px] pointer-events-none -z-10" />
+        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-[#FD5A1A]/10 rounded-full blur-[80px] pointer-events-none -z-10" />
       </div>
 
       {/* Right Panel - Auth Form */}
       <div className="lg:w-1/2 bg-background p-6 lg:p-8 flex items-center justify-center relative z-50 overflow-y-auto">
         <div className="w-full max-w-md relative z-50 pointer-events-auto py-4">
           {/* Icon */}
-          <div className="flex justify-center mb-4">
-            <div className="w-8 h-8 flex items-center justify-center">
-              <span className="text-accent text-2xl">✦</span>
+          <div className="flex justify-center mb-6">
+            <div className="w-14 h-14 bg-gradient-to-br from-[#0075CF]/10 to-[#FD5A1A]/10 rounded-3xl flex items-center justify-center border border-slate-100 shadow-xl shadow-slate-200/50">
+              <span className="text-[#0075CF] text-2xl font-black">✦</span>
             </div>
           </div>
 
           {/* Header */}
-          <div className="text-center mb-6">
-            <h2 className="text-xl lg:text-2xl font-bold text-foreground mb-1">
-              {isLogin ? 'Welcome back' : registrationStep === 'email' ? 'Create an account' : registrationStep === 'otp' ? 'Verify Email' : 'Complete Registration'}
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-black text-slate-950 mb-2 tracking-tight">
+              {isLogin ? 'Welcome back' : registrationStep === 'email' ? 'Create account' : registrationStep === 'otp' ? 'Verify' : 'Complete'}
             </h2>
             <p className="text-muted-foreground text-sm">
               {isLogin
@@ -409,7 +410,7 @@ export default function Auth() {
                           id="login-email"
                           type="email"
                           placeholder="Enter your email"
-                          className="h-12 bg-muted/30 text-foreground border-0 rounded-xl focus:ring-2 focus:ring-primary/30 focus:bg-background transition-all placeholder:text-muted-foreground/60"
+                          className="h-12 bg-slate-50 text-slate-900 border-slate-200 rounded-2xl focus:ring-4 focus:ring-[#0075CF]/10 focus:bg-white transition-all placeholder:text-slate-400 font-medium"
                           autoComplete="email"
                           {...field}
                         />
@@ -452,7 +453,7 @@ export default function Auth() {
                             id="login-password"
                             type={showLoginPassword ? "text" : "password"}
                             placeholder="Enter your password"
-                            className="h-12 pr-12 bg-muted/30 text-foreground border-0 rounded-xl focus:ring-2 focus:ring-primary/30 focus:bg-background transition-all placeholder:text-muted-foreground/60 relative z-10"
+                            className="h-12 pr-12 bg-slate-50 text-slate-900 border-slate-200 rounded-2xl focus:ring-4 focus:ring-[#0075CF]/10 focus:bg-white transition-all placeholder:text-slate-400 font-medium relative z-10"
                             autoComplete="current-password"
                             {...field}
                           />
@@ -474,7 +475,7 @@ export default function Auth() {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-sm rounded-xl shadow-md hover:shadow-lg transition-all"
+                  className="w-full h-14 bg-gradient-to-r from-[#0075CF] to-[#3391D9] text-white font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-[#0075CF]/20 hover:shadow-[#0075CF]/40 transition-all duration-300 active:scale-[0.98]"
                 >
                   {loading ? 'Signing in...' : 'Sign In'}
                 </Button>
@@ -486,25 +487,25 @@ export default function Auth() {
               {/* Step Indicator */}
               {!isLogin && (
                 <div className="flex items-center justify-center gap-2 mb-4">
-                  <div className={`flex items-center gap-1.5 ${(registrationStep as string) === 'email' ? 'text-primary' : (registrationStep as string) !== 'email' ? 'text-green-600' : 'text-muted-foreground'}`}>
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${(registrationStep as string) === 'email' ? 'bg-primary text-primary-foreground' : (registrationStep as string) !== 'email' ? 'bg-green-600 text-white' : 'bg-muted'}`}>
+                  <div className={`flex items-center gap-1.5 ${(registrationStep as string) === 'email' ? 'text-[#0075CF]' : (registrationStep as string) !== 'email' ? 'text-green-600' : 'text-slate-400'}`}>
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${(registrationStep as string) === 'email' ? 'bg-[#0075CF] text-white shadow-lg shadow-[#0075CF]/30' : (registrationStep as string) !== 'email' ? 'bg-green-600 text-white' : 'bg-slate-100'}`}>
                       {(registrationStep as string) !== 'email' ? <Check className="h-3 w-3" /> : '1'}
                     </div>
-                    <span className="text-xs">Email</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest">Email</span>
                   </div>
-                  <div className="w-8 h-px bg-border" />
-                  <div className={`flex items-center gap-1.5 ${(registrationStep as string) === 'otp' ? 'text-primary' : (registrationStep as string) === 'details' ? 'text-green-600' : 'text-muted-foreground'}`}>
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${(registrationStep as string) === 'otp' ? 'bg-primary text-primary-foreground' : (registrationStep as string) === 'details' ? 'bg-green-600 text-white' : 'bg-muted'}`}>
+                  <div className="w-8 h-px bg-slate-100" />
+                  <div className={`flex items-center gap-1.5 ${(registrationStep as string) === 'otp' ? 'text-[#0075CF]' : (registrationStep as string) === 'details' ? 'text-green-600' : 'text-slate-400'}`}>
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${(registrationStep as string) === 'otp' ? 'bg-[#0075CF] text-white shadow-lg shadow-[#0075CF]/30' : (registrationStep as string) === 'details' ? 'bg-green-600 text-white' : 'bg-slate-100'}`}>
                       {(registrationStep as string) === 'details' ? <Check className="h-3 w-3" /> : '2'}
                     </div>
-                    <span className="text-xs">Verify</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest">Verify</span>
                   </div>
-                  <div className="w-8 h-px bg-border" />
-                  <div className={`flex items-center gap-1.5 ${(registrationStep as string) === 'details' ? 'text-primary' : 'text-muted-foreground'}`}>
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${(registrationStep as string) === 'details' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                  <div className="w-8 h-px bg-slate-100" />
+                  <div className={`flex items-center gap-1.5 ${(registrationStep as string) === 'details' ? 'text-[#0075CF]' : 'text-slate-400'}`}>
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${(registrationStep as string) === 'details' ? 'bg-[#0075CF] text-white shadow-lg shadow-[#0075CF]/30' : 'bg-slate-100'}`}>
                       3
                     </div>
-                    <span className="text-xs">Details</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest">Details</span>
                   </div>
                 </div>
               )}
@@ -569,7 +570,7 @@ export default function Auth() {
                     <Button
                       type="submit"
                       disabled={loading}
-                      className="w-full h-11 bg-foreground text-background hover:bg-foreground/90 font-medium text-sm rounded-lg flex items-center justify-center gap-2"
+                      className="w-full h-14 bg-gradient-to-r from-[#0075CF] to-[#3391D9] text-white font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-[#0075CF]/20 hover:shadow-[#0075CF]/40 transition-all duration-300 active:scale-[0.98] flex items-center justify-center gap-2"
                     >
                       {loading ? 'Sending OTP...' : 'Verify Email'}
                       <ArrowRight className="h-4 w-4" />
@@ -624,7 +625,7 @@ export default function Auth() {
                     <Button
                       type="submit"
                       disabled={loading}
-                      className="w-full h-11 bg-foreground text-background hover:bg-foreground/90 font-medium text-sm rounded-lg"
+                      className="w-full h-14 bg-gradient-to-r from-[#0075CF] to-[#3391D9] text-white font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-[#0075CF]/20 hover:shadow-[#0075CF]/40 transition-all duration-300 active:scale-[0.98]"
                     >
                       {loading ? 'Verifying...' : 'Verify OTP'}
                     </Button>
@@ -796,9 +797,9 @@ export default function Auth() {
                     <Button
                       type="submit"
                       disabled={loading}
-                      className="w-full h-11 bg-foreground text-background hover:bg-foreground/90 font-medium text-sm rounded-lg"
+                      className="w-full h-14 bg-gradient-to-r from-[#0075CF] to-[#3391D9] text-white font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-[#0075CF]/20 hover:shadow-[#0075CF]/40 transition-all duration-300 active:scale-[0.98]"
                     >
-                      {loading ? 'Creating account...' : 'Create Account'}
+                      {loading ? 'Registering...' : 'Complete Registration'}
                     </Button>
 
                     <button

@@ -11,7 +11,7 @@ const Contact = () => {
             title: "Phone Support",
             details: "+91 80199 52233",
             sub: "Mon - Sat: 9 AM - 8 PM",
-            color: "bg-blue-500",
+            color: "bg-[#0075CF]",
             link: "tel:+918019952233"
         },
         {
@@ -19,7 +19,7 @@ const Contact = () => {
             title: "Email Inquiry",
             details: "Info@aotms.in",
             sub: "24/7 Support Response",
-            color: "bg-orange-500",
+            color: "bg-[#FD5A1A]",
             link: "mailto:Info@aotms.in"
         },
         {
@@ -27,7 +27,7 @@ const Contact = () => {
             title: "Main Campus",
             details: "Pothuri Towers, MG Rd",
             sub: "Vijayawada, AP 520010",
-            color: "bg-emerald-500",
+            color: "bg-slate-900",
             link: "https://maps.app.goo.gl/TfWZLrSgHVzRruKv7"
         }
     ];
@@ -112,7 +112,7 @@ const Contact = () => {
                                         <input 
                                             type="text" 
                                             placeholder="John Doe"
-                                            className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:border-[#0075CF] focus:bg-white transition-all font-bold text-slate-800"
+                                            className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-4 focus:ring-[#0075CF]/10 focus:bg-white transition-all font-bold text-slate-800"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -120,13 +120,13 @@ const Contact = () => {
                                         <input 
                                             type="email" 
                                             placeholder="john@example.com"
-                                            className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:border-[#0075CF] focus:bg-white transition-all font-bold text-slate-800"
+                                            className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-4 focus:ring-[#0075CF]/10 focus:bg-white transition-all font-bold text-slate-800"
                                         />
                                     </div>
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-2">Subject</label>
-                                    <select className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:border-[#0075CF] focus:bg-white transition-all font-bold text-slate-800 appearance-none">
+                                    <select className="w-full h-14 px-6 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-4 focus:ring-[#0075CF]/10 focus:bg-white transition-all font-bold text-slate-800 appearance-none">
                                         <option>General Inquiry</option>
                                         <option>Course Admissions</option>
                                         <option>Corporate Training</option>
@@ -139,10 +139,10 @@ const Contact = () => {
                                     <textarea 
                                         rows={4}
                                         placeholder="Tell us about your requirements..."
-                                        className="w-full p-6 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:border-[#0075CF] focus:bg-white transition-all font-bold text-slate-800 resize-none"
+                                        className="w-full p-6 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-4 focus:ring-[#0075CF]/10 focus:bg-white transition-all font-bold text-slate-800 resize-none"
                                     ></textarea>
                                 </div>
-                                <button className="w-full h-16 bg-[#0075CF] hover:bg-[#005CAD] text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-blue-500/20 transition-all flex items-center justify-center gap-2 group">
+                                <button className="w-full h-16 bg-gradient-to-r from-[#0075CF] to-[#3391D9] hover:shadow-[0_0_30px_rgba(0,117,207,0.3)] text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-blue-500/20 transition-all flex items-center justify-center gap-2 group active:scale-[0.98]">
                                     Send Message
                                     <Send className="w-4 h-4 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
                                 </button>
@@ -154,7 +154,7 @@ const Contact = () => {
                             <motion.div 
                                 initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                className="bg-[#0075CF] rounded-[3rem] p-10 text-white relative overflow-hidden"
+                                className="bg-gradient-to-br from-[#0075CF] to-[#005CAD] rounded-[3rem] p-10 text-white relative overflow-hidden shadow-2xl shadow-[#0075CF]/20"
                             >
                                 <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
                                 <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-orange-500/20 rounded-full blur-3xl" />

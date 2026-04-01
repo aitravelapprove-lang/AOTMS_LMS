@@ -53,8 +53,8 @@ export default function Dashboard() {
   const handleUpgrade = async () => {
     try {
       const { fetchWithAuth } = await import('@/lib/api');
-      const resp = await fetchWithAuth('/auth/self-upgrade', { method: 'POST' });
-      if (resp.success) {
+      const resp = await fetchWithAuth<{ success: boolean }>('/auth/self-upgrade', { method: 'POST' });
+      if (resp?.success) {
          window.location.reload(); 
       }
     } catch (err) {
@@ -74,12 +74,12 @@ export default function Dashboard() {
         <main className="flex-1 w-full overflow-y-auto overflow-x-hidden p-4 md:p-8 lg:p-10 custom-scrollbar">
           <div className="max-w-7xl mx-auto">
             {isEligibleForUpgrade && needsUpgrade && (
-              <div className="mb-6 p-4 bg-primary/10 border border-primary/20 rounded-xl flex items-center justify-between animate-in slide-in-from-top duration-500">
+              <div className="mb-6 p-4 bg-[#0075CF]/10 border border-[#0075CF]/20 rounded-xl flex items-center justify-between animate-in slide-in-from-top duration-500">
                 <div className="space-y-1">
-                  <p className="text-sm font-bold text-primary">Owner Detected</p>
-                  <p className="text-xs text-muted-foreground">Click below to activate your Manager Console permissions.</p>
+                  <p className="text-sm font-bold text-[#0075CF]">Owner Detected</p>
+                  <p className="text-xs text-slate-500">Click below to activate your Manager Console permissions.</p>
                 </div>
-                <Button onClick={handleUpgrade} size="sm" className="rounded-lg shadow-sm">
+                <Button onClick={handleUpgrade} size="sm" className="rounded-lg shadow-sm bg-gradient-to-r from-[#0075CF] to-[#005CAD] hover:shadow-lg hover:shadow-blue-500/20">
                    Activate Manager Console
                 </Button>
               </div>

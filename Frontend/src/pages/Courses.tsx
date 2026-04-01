@@ -125,7 +125,7 @@ export default function CoursesPage() {
         const formData = new FormData();
         formData.append('file', paymentProof);
         
-        const uploadRes = await fetchWithAuth('/upload', {
+        const uploadRes = await fetchWithAuth<{ url: string }>('/upload', {
           method: 'POST',
           body: formData,
           headers: {} // File transfers shouldn't have content-type set manually generally, fetch handles it
@@ -196,8 +196,11 @@ export default function CoursesPage() {
         <DialogContent className="max-w-4xl p-0 overflow-hidden border-0 rounded-3xl shadow-2xl bg-white">
           <div className="flex flex-col md:flex-row h-full">
             {/* Left Column: Course Summary */}
-            <div className="md:w-[400px] bg-slate-900 p-8 text-white flex flex-col justify-between selection:bg-primary/30">
-              <div className="space-y-8">
+            <div className="md:w-[400px] bg-gradient-to-br from-[#0075CF] to-[#005CAD] p-8 text-white flex flex-col justify-between selection:bg-white/20 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32" />
+              <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#FD5A1A]/20 rounded-full blur-3xl -ml-24 -mb-24" />
+              
+              <div className="relative z-10 space-y-8">
                 <div className="flex items-center justify-between">
                   <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/10">
                     <BookOpen className="h-5 w-5 text-primary" />
@@ -214,7 +217,7 @@ export default function CoursesPage() {
 
                 <div className="space-y-4">
                   <h2 className="text-3xl font-black tracking-tight leading-tight">
-                    Review Your <span className="text-primary italic">Enrollment</span>
+                    Review Your <span className="text-white italic">Enrollment</span>
                   </h2>
                   <p className="text-slate-400 text-sm leading-relaxed">
                     You're one step away from mastering new skills. Complete the secure payment below to unlock full course access.
@@ -236,8 +239,8 @@ export default function CoursesPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="pt-4 border-t border-white/10 flex items-center justify-between">
-                      <span className="text-sm font-medium text-slate-400">Total Investment</span>
+                    <div className="pt-4 border-t border-white/20 flex items-center justify-between">
+                      <span className="text-sm font-medium text-white/60">Total Investment</span>
                       <span className="text-2xl font-black text-white">
                         {paymentCourse.price?.toString().includes('$') 
                           ? paymentCourse.price.replace('$', '₹') 
@@ -250,8 +253,8 @@ export default function CoursesPage() {
 
               <div className="pt-12 space-y-6">
                 <div className="flex items-center gap-4 group">
-                  <div className="h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center transition-all group-hover:scale-110 shadow-[0_0_20px_rgba(var(--primary-rgb),0.1)]">
-                    <CheckCircle2 className="h-6 w-6 text-primary" />
+                  <div className="h-12 w-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center transition-all group-hover:scale-110 shadow-lg">
+                    <CheckCircle2 className="h-6 w-6 text-[#FD5A1A]" />
                   </div>
                   <div>
                     <div className="text-xs font-black uppercase tracking-widest text-white/40 mb-0.5">Payment Verified</div>
@@ -319,7 +322,7 @@ export default function CoursesPage() {
                   <div className="mt-6 w-full space-y-3">
                     <div className="p-3 bg-white rounded-xl border border-dashed border-slate-300 flex items-center justify-between group/code cursor-pointer hover:border-primary transition-colors">
                       <span className="text-[10px] font-mono font-bold text-slate-500 truncate max-w-[140px]">vyapar.17432781471@hdfcbank</span>
-                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-primary">
+                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-[#0075CF]">
                         <CheckCircle2 className="h-3 w-3" />
                       </Button>
                     </div>
@@ -346,7 +349,7 @@ export default function CoursesPage() {
                     onClick={() => document.getElementById('payment-proof')?.click()}
                 >
                     <div className="h-10 w-10 rounded-full bg-white shadow-sm flex items-center justify-center border border-slate-100 group-hover:scale-110 transition-transform">
-                        <Upload className={`h-5 w-5 ${paymentProof ? 'text-primary' : 'text-slate-400'}`} />
+                        <Upload className={`h-5 w-5 ${paymentProof ? 'text-[#FD5A1A]' : 'text-slate-400'}`} />
                     </div>
                     <div className="text-center">
                         <p className="text-xs font-bold text-slate-900">{paymentProof ? paymentProof.name : 'Upload Payment Screenshot'}</p>
@@ -377,7 +380,7 @@ export default function CoursesPage() {
                 </Button>
                 <Button
                     size="lg"
-                    className="h-14 rounded-2xl font-black uppercase tracking-widest text-sm shadow-[0_10px_20px_rgba(var(--primary-rgb),0.2)] active:scale-95 transition-all"
+                    className="h-14 rounded-2xl bg-gradient-to-r from-[#0075CF] to-[#3391D9] font-black uppercase tracking-widest text-sm shadow-xl shadow-[#0075CF]/20 active:scale-95 transition-all"
                     disabled={isUploading || !paymentProof}
                     onClick={handleEnrollmentSubmit}
                 >

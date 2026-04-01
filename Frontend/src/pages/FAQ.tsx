@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import Header from "@/components/landing/Header";
 import Footer from "@/components/landing/Footer";
-import LowPolyBackground from "@/components/landing/LowPolyBackground";
 
 const faqGroups = [
   {
@@ -433,7 +432,7 @@ const FAQ = () => {
                   </p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <button className="h-16 px-10 rounded-2xl bg-[#FD5A1A] text-white font-black uppercase tracking-widest hover:bg-orange-600 shadow-2xl transition-all hover:-translate-y-1">
+                  <button className="h-16 px-10 rounded-2xl bg-gradient-to-r from-[#FD5A1A] to-[#FF7A00] text-white font-black uppercase tracking-widest hover:shadow-xl hover:shadow-orange-500/20 transition-all hover:-translate-y-1 active:scale-95">
                     Contact Support
                   </button>
                   <button className="h-16 px-10 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-white font-black uppercase tracking-widest hover:bg-white/20 transition-all">

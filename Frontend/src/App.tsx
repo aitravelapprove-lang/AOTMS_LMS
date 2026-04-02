@@ -142,10 +142,8 @@ const App = () => (
               <Route path="/courses" element={<Courses />} />
               <Route path="/about" element={<About />} />
               <Route path="/auth" element={<Auth />} />
-<<<<<<< HEAD
               <Route path="/login" element={<Auth />} />
               <Route path="/signup" element={<Auth />} />
-=======
               <Route path="/faq" element={<FAQ />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/privacy" element={<Privacy />} />
@@ -156,7 +154,6 @@ const App = () => (
               <Route path="/trainers" element={<Trainers />} />
               <Route path="/press" element={<Press />} />
               <Route path="/features" element={<Features />} />
->>>>>>> 64e4f5cb41d8eb1c167ca83c2721a66949b948ed
               <Route path="/pending-approval" element={<ProtectedRoute><PendingApproval /></ProtectedRoute>} />
               <Route path="/become-instructor" element={<InstructorRegister />} />
 

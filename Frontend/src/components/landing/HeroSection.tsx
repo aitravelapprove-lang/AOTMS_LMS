@@ -177,7 +177,7 @@ const HeroSection = () => {
             <Button
               size="xl"
               className="h-14 px-10 rounded-2xl bg-[#0075CF] hover:bg-[#0066B3] text-[#FDFEFE] font-black text-base shadow-2xl hover:scale-105 active:scale-95 transition-all group gap-2"
-              onClick={() => navigate("/auth")}
+              onClick={() => navigate("/login")}
             >
               Get Started
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />

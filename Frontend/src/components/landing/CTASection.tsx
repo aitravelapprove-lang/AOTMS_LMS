@@ -89,18 +89,18 @@ const CTASection = () => {
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
               <button
-                onClick={() => navigate("/auth")}
+                onClick={() => navigate("/signup")}
                 className="group w-full sm:w-auto flex items-center justify-center gap-3 px-10 py-5 rounded-[2rem] bg-white text-[#0075CF] font-black text-lg hover:bg-[#FD5A1A] hover:text-white transition-all duration-500 shadow-2xl hover:shadow-[0_0_40px_rgba(253,90,26,0.6)]"
               >
-                Start My Journey
+                Sign Up
                 <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
               </button>
               
               <button
-                onClick={() => navigate("/auth")}
+                onClick={() => navigate("/login")}
                 className="w-full sm:w-auto flex items-center justify-center gap-3 px-10 py-5 rounded-[2rem] bg-white/10 border border-white/20 text-[#FDFEFE] font-black text-lg hover:bg-white/20 transition-all backdrop-blur-xl"
               >
-                <BookOpen className="w-6 h-6" /> Explore Track
+                <BookOpen className="w-6 h-6" /> Sign In
               </button>
             </div>
 

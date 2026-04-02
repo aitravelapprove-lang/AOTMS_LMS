@@ -2540,7 +2540,7 @@ app.get('/api/student/dashboard-data', authenticateToken, async (req, res) => {
     }
 });
 
-app.get('/api/admin/live-monitoring', authenticateToken, requireAdmin, async (req, res) => {
+app.get('/api/admin/live-monitoring', authenticateToken, requireAdminOrManager, async (req, res) => {
     try {
         // 1. Fetch All Enrollments with Progress
         const enrollments = await Enrollment.find()

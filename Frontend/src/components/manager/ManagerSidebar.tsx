@@ -51,7 +51,6 @@ const managementItems = [
 
 const monitoringItems = [
   { id: "monitoring", title: "Live Monitoring", icon: MonitorPlay },
-  { id: "course-monitoring", title: "Course Progress", icon: BarChart3 },
   { id: "enrollments", title: "Enrollments", icon: BookOpen },
   { id: "course-assignment", title: "Assign Courses", icon: GraduationCap },
   { id: "courses", title: "All Courses", icon: GraduationCap },

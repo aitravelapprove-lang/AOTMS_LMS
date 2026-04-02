@@ -222,7 +222,7 @@ const Header = () => {
                   }`}
                   asChild
                 >
-                  <Link to="/auth">Login</Link>
+                  <Link to="/login">Login</Link>
                 </Button>
                 <Button
                   variant="ghost"
@@ -234,7 +234,7 @@ const Header = () => {
                   }`}
                   asChild
                 >
-                  <Link to="/auth">Sign Up</Link>
+                  <Link to="/signup">Sign Up</Link>
                 </Button>
               </div>
             )}
@@ -288,7 +288,7 @@ const Header = () => {
                           className="w-full font-bold border-border hover:text-[#0075CF] hover:border-[#0075CF]"
                           asChild
                         >
-                          <Link to="/auth">Login</Link>
+                          <Link to="/login">Login</Link>
                         </Button>
                       </SheetClose>
                       <SheetClose asChild>
@@ -296,7 +296,7 @@ const Header = () => {
                           className="w-full bg-[#FD5A1A] hover:bg-[#E34D14] text-[#FDFEFE] font-black"
                           asChild
                         >
-                          <Link to="/auth">Sign Up</Link>
+                          <Link to="/signup">Sign Up</Link>
                         </Button>
                       </SheetClose>
                     </div>

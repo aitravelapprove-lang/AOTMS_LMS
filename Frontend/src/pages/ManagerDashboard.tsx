@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate, useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { ManagerSidebar } from "@/components/manager/ManagerSidebar";
@@ -8,8 +9,7 @@ import { ManagerHeader } from "@/components/manager/ManagerHeader";
 import { ExamScheduler } from "@/components/manager/ExamScheduler";
 import { QuestionBankManager } from "@/components/manager/QuestionBankManager";
 import { LeaderboardManager } from "@/components/manager/LeaderboardManager";
-import { ExamMonitoring } from "@/components/manager/ExamMonitoring";
-import { CourseMonitoring } from "@/components/manager/CourseMonitoring";
+import { LiveMonitoring } from "@/components/admin/LiveMonitoring";
 import { ExamRulesManager } from "@/components/manager/ExamRulesManager";
 import { ManagerCourses } from "@/components/manager/ManagerCourses";
 import { EnrollmentsList } from "@/components/admin/EnrollmentsList";
@@ -62,6 +62,7 @@ export default function ManagerDashboard() {
   const [qbFlowStep, setQbFlowStep] = useState<'rules' | 'container' | 'manager'>('rules');
   const [lastCreatedRule, setLastCreatedRule] = useState<ExamRule | null>(null);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   // Reset flow when changing sections
   useEffect(() => {
@@ -362,9 +363,7 @@ export default function ManagerDashboard() {
       case "leaderboard":
         return <LeaderboardManager />;
       case "monitoring":
-        return <ExamMonitoring />;
-      case "course-monitoring":
-        return <CourseMonitoring />;
+        return <LiveMonitoring />;
       case "enrollments":
         return (
           <div className="space-y-6">
@@ -376,6 +375,14 @@ export default function ManagerDashboard() {
               enrollments={enrollments} 
               loading={enrollmentsLoading} 
               onUpdateStatus={async (id, status) => {
+                if (userRole !== 'admin' && status === 'active') {
+                  toast({
+                    title: "Access Restricted",
+                    description: "Only admin can approve enrollments",
+                    variant: "destructive"
+                  });
+                  return;
+                }
                 const success = await updateEnrollmentStatus(id, status);
                 if (success) {
                   loadEnrollments();

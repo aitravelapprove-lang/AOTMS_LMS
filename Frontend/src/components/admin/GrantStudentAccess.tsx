@@ -55,13 +55,18 @@ export function GrantStudentAccess({ profiles = [], enrollments = [] }: GrantStu
     }
   });
 
-  // Filter profiles to show only students
+  // Filter profiles to show only students who haven't selected any course yet
   const filteredStudents = profiles.filter(profile => {
       const role = profile.role?.toLowerCase();
       const isAllowedRole = role === 'student'; // Strictly students only
+      
+      // Rule: Only show students who have NO enrollments at all
+      const hasNoEnrollments = !enrollments.some(e => e.user_id === profile.id);
+      
       const matchesSearch = (profile.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
                              profile.email?.toLowerCase().includes(searchQuery.toLowerCase()));
-      return isAllowedRole && matchesSearch;
+      
+      return isAllowedRole && hasNoEnrollments && matchesSearch;
   });
 
   // Get available courses for selected student (exclude those already enrolled)
@@ -319,10 +324,13 @@ export function GrantStudentAccess({ profiles = [], enrollments = [] }: GrantStu
                 </div>
             )}
             {filteredStudents.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                    <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p className="font-medium">No students found</p>
-                    <p className="text-sm">Wait for students to register to grant them access.</p>
+                <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-3xl bg-slate-50/50">
+                    <Users className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                    <h3 className="font-bold text-slate-800 text-lg">No Students Awaiting Access</h3>
+                    <p className="text-sm max-w-xs mx-auto mt-2">
+                        Currently, all registered students have already selected a course or were manually enrolled. 
+                        They will appear here once new students register.
+                    </p>
                 </div>
             )}
           </div>

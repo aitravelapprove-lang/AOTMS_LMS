@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
@@ -170,6 +170,7 @@ function StudentRow({ student, onSendMessage, onViewDetails }: {
       {/* 1. Student Identity (col-span-3) */}
       <div className="col-span-12 lg:col-span-3 flex items-center gap-3">
         <Avatar className="h-10 w-10 border-2 border-white shadow-sm ring-1 ring-slate-100">
+          <AvatarImage src={student.avatarUrl ? (student.avatarUrl.startsWith('http') ? student.avatarUrl : `${import.meta.env.VITE_API_URL || 'https://aotms-lms-new.onrender.com/api'}/s3/public/${student.avatarUrl}`) : `https://api.dicebear.com/9.x/avataaars/svg?seed=${student.userId}`} />
           <AvatarFallback className="bg-primary/5 text-primary text-xs font-black">
             {student.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
           </AvatarFallback>
@@ -326,8 +327,8 @@ function ActivityFeed({ activities, students }: { activities: RecentActivity[]; 
                       </span>
                     </p>
                     <p className="text-xs text-muted-foreground truncate">{activity.courseName}</p>
-                    {activity.details && (
-                      <p className="text-xs text-amber-500 mt-0.5">{activity.details}</p>
+                    {('details' in activity) && activity.details && (
+                      <p className="text-xs text-amber-500 mt-0.5">{(activity as any).details}</p>
                     )}
                   </div>
                   <span className="text-xs text-muted-foreground whitespace-nowrap">
@@ -356,8 +357,10 @@ function StudentCourseDetails({ studentId, courseId, courseName, progress }: { s
   // Merge video data with progress
   const videoList = useMemo(() => {
     if (!videos) return [];
-    return videos.map((video: any) => {
-      const p = videoProgress?.find((vp: any) => vp.video_id === video.id);
+    const vds = videos as any[];
+    return vds.map((video: any) => {
+      const vps = videoProgress as any[];
+      const p = vps?.find((vp: any) => vp.video_id === video.id);
       return {
         ...video,
         watched: p?.watched_seconds || 0,
@@ -635,8 +638,8 @@ export function InstructorStudentDashboard() {
                     </div>
                   ))}
                 </div>
-              ) : courses && courses.length > 0 ? (
-                courses.slice(0, 5).map((course) => {
+              ) : (courses as any) && (courses as any).length > 0 ? (
+                (courses as any).slice(0, 5).map((course: any) => {
                   const enrolledCount = students?.filter(s => 
                     s.courseEnrollments.some(e => e.courseId === course.id)
                   ).length || 0;

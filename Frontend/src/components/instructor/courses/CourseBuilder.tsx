@@ -20,26 +20,14 @@ interface CourseBuilderProps {
 }
 
 function ModuleItem({ module, course }: { module: CourseModule, course: Course }) {
-    const { data: videos, refetch } = useModuleVideos(module.id, course.id);
+    const { data: videos = [] as S3CourseVideo[], refetch } = useModuleVideos(module.id, course.id);
     const createVideo = useCreateCourseVideo();
     const deleteVideo = useDeleteCourseVideo();
     const uploadS3 = useS3Upload();
     const { toast } = useToast();
 
     const [isVideoUploadOpen, setIsVideoUploadOpen] = useState(false);
-    const [videoTitle, setVideoTitle] = useState('');
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [uploadProgress, setUploadProgress] = useState(0);
     const [copiedModule, setCopiedModule] = useState(false);
-    const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
-
-    useEffect(() => {
-        return () => {
-            if (videoPreviewUrl) {
-                URL.revokeObjectURL(videoPreviewUrl);
-            }
-        };
-    }, [videoPreviewUrl]);
 
     const handleCopyModuleId = () => {
         try {
@@ -49,54 +37,6 @@ function ModuleItem({ module, course }: { module: CourseModule, course: Course }
             setTimeout(() => setCopiedModule(false), 2000);
         } catch (err) {
             toast({ title: "Copy Failed", description: "Manual copy required.", variant: "destructive" });
-        }
-    };
-
-    const handleFileChange = (file: File | null) => {
-        if (videoPreviewUrl) URL.revokeObjectURL(videoPreviewUrl);
-        setSelectedFile(file);
-        if (file) {
-            setVideoPreviewUrl(URL.createObjectURL(file));
-            if (!videoTitle) setVideoTitle(file.name.replace(/\.[^/.]+$/, ""));
-        } else {
-            setVideoPreviewUrl(null);
-        }
-    };
-
-    const clearForm = () => {
-        if (videoPreviewUrl) URL.revokeObjectURL(videoPreviewUrl);
-        setSelectedFile(null);
-        setVideoPreviewUrl(null);
-        setVideoTitle('');
-        setUploadProgress(0);
-    };
-
-    const handleUploadVideo = async () => {
-        if (!selectedFile || !videoTitle) return;
-        try {
-            const bucketUrl = await uploadS3.mutateAsync({
-                file: selectedFile,
-                customTitle: videoTitle,
-                folder: 'LMS VIDEOS',
-                onProgress: setUploadProgress,
-                courseId: course.id
-            });
-
-            await createVideo.mutateAsync({
-                moduleId: module.id,
-                courseId: course.id,
-                title: videoTitle,
-                video_type: 's3',
-                video_url: bucketUrl,
-                order_index: (videos?.length || 0) + 1
-            });
-
-            clearForm();
-            setIsVideoUploadOpen(false);
-            toast({ title: "Success", description: "Video successfully integrated into this module." });
-        } catch (err: unknown) {
-            console.error('Video upload failed', err);
-            toast({ title: "Upload Failed", description: "Cloud synchronization failed. Please try again.", variant: "destructive" });
         }
     };
 
@@ -110,7 +50,7 @@ function ModuleItem({ module, course }: { module: CourseModule, course: Course }
         }
     };
 
-    const isApproved = course.status === 'approved' || course.status === 'published';
+    const isApproved = course.status === 'approved' || course.status === 'published' || course.status === 'draft' || course.status === 'rejected' || !course.status;
 
     return (
         <Card className="mb-6 overflow-hidden rounded-[2rem] border-slate-200/60 shadow-md hover:shadow-xl transition-all duration-500 bg-white group">
@@ -137,17 +77,14 @@ function ModuleItem({ module, course }: { module: CourseModule, course: Course }
                     </div>
                 </div>
 
-                <Dialog open={isVideoUploadOpen} onOpenChange={(open) => {
-                    setIsVideoUploadOpen(open);
-                    if (!open) clearForm();
-                }}>
+                <Dialog open={isVideoUploadOpen} onOpenChange={setIsVideoUploadOpen}>
                     <DialogTrigger asChild>
                         <Button 
                             className="rounded-2xl h-11 px-6 gap-2 bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm border font-bold text-sm"
                             disabled={!isApproved}
                         >
                             <Plus className="h-4 w-4 text-primary" /> 
-                            Add Content Video
+                            Upload New Video
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-2xl bg-white/95 backdrop-blur-xl border-slate-200 rounded-3xl p-0 overflow-hidden">
@@ -162,87 +99,16 @@ function ModuleItem({ module, course }: { module: CourseModule, course: Course }
                             </DialogHeader>
                             
                             <div className="space-y-6">
-                                <div className="space-y-3">
-                                    <Label className="text-sm font-bold text-slate-700">Display Title</Label>
-                                    <Input
-                                        placeholder="e.g. Chapter 1: Foundations"
-                                        value={videoTitle}
-                                        onChange={(e) => setVideoTitle(e.target.value)}
-                                        className="h-14 bg-slate-50 border-slate-200 rounded-2xl px-5"
-                                    />
-                                </div>
-
-                                <div className="space-y-3">
-                                    <Label className="text-sm font-bold text-slate-700">Media Source</Label>
-                                    <AnimatePresence mode="wait">
-                                        {videoPreviewUrl ? (
-                                            <motion.div 
-                                                initial={{ opacity: 0, scale: 0.95 }}
-                                                animate={{ opacity: 1, scale: 1 }}
-                                                className="relative rounded-[2rem] overflow-hidden bg-black aspect-video border-4 border-white shadow-2xl"
-                                            >
-                                                <video src={videoPreviewUrl} className="w-full h-full object-contain" controls />
-                                                <button
-                                                    onClick={() => handleFileChange(null)}
-                                                    className="absolute top-4 right-4 h-10 w-10 flex items-center justify-center bg-white/20 hover:bg-white/40 backdrop-blur-md rounded-full text-white"
-                                                >
-                                                    <X className="h-5 w-5" />
-                                                </button>
-                                            </motion.div>
-                                        ) : (
-                                            <div
-                                                className="border-2 border-dashed border-slate-200 rounded-[2rem] p-12 text-center cursor-pointer bg-slate-50/50 hover:bg-white transition-all group"
-                                            >
-                                                <input
-                                                    type="file"
-                                                    accept="video/*"
-                                                    className="hidden"
-                                                    id={`video-file-${module.id}`}
-                                                    onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
-                                                />
-                                                <label htmlFor={`video-file-${module.id}`} className="cursor-pointer">
-                                                    <div className="flex flex-col items-center gap-4">
-                                                        <div className="h-16 w-16 bg-white rounded-2xl shadow-lg flex items-center justify-center group-hover:shadow-primary/20 transition-all">
-                                                            <UploadCloud className="h-7 w-7 text-primary" />
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-bold text-slate-900">Select Module Video</p>
-                                                            <p className="text-xs text-slate-500 mt-1 font-medium">MP4 or MOV, up to 500MB</p>
-                                                        </div>
-                                                    </div>
-                                                </label>
-                                            </div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
-
-                                <AnimatePresence>
-                                    {uploadS3.isPending && (
-                                        <motion.div 
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            className="p-5 bg-slate-900 rounded-3xl text-white space-y-3"
-                                        >
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Syncing with AWS S3...</span>
-                                                <span className="text-sm font-black">{uploadProgress}%</span>
-                                            </div>
-                                            <Progress value={uploadProgress} className="h-1.5 bg-white/10" />
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-
-                            <div className="pt-2 flex flex-col sm:flex-row gap-3">
-                                <Button variant="ghost" onClick={() => setIsVideoUploadOpen(false)} disabled={uploadS3.isPending} className="h-14 flex-1 rounded-2xl font-bold">Cancel</Button>
-                                <Button
-                                    onClick={handleUploadVideo}
-                                    disabled={!selectedFile || !videoTitle || uploadS3.isPending}
-                                    className="pro-button-primary h-14 flex-[2] rounded-2xl font-black gap-2"
-                                >
-                                    {uploadS3.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle className="h-5 w-5" />}
-                                    Deploy to Module
-                                </Button>
+                                <VideoUploader 
+                                  courseId={course.id} 
+                                  courseStatus={course.status} 
+                                  initialModuleId={module.id} 
+                                  hideVideoList={true} 
+                                  onSuccess={() => {
+                                    setIsVideoUploadOpen(false);
+                                    refetch();
+                                  }}
+                                />
                             </div>
                         </div>
                     </DialogContent>
@@ -302,7 +168,7 @@ function ModuleItem({ module, course }: { module: CourseModule, course: Course }
 }
 
 export function CourseBuilder({ course, onBack }: CourseBuilderProps) {
-    const { data: modules, isLoading: modulesLoading, isError, refetch: refetchModules } = useCourseModules(course.id);
+    const { data: modules = [] as CourseModule[], isLoading: modulesLoading, isError, refetch: refetchModules } = useCourseModules(course.id);
     const updateStatus = useUpdateCourseStatus();
     const createModule = useCreateCourseModule();
     const { toast } = useToast();

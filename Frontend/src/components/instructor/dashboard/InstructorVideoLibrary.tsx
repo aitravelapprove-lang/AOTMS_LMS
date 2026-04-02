@@ -225,6 +225,10 @@ export function InstructorVideoLibrary() {
                       courseId={uploadCourseId} 
                       courseStatus="published" 
                       hideVideoList={true} 
+                      onSuccess={() => {
+                        setIsUploadOpen(false);
+                        loadVideos();
+                      }}
                     />
                   </div>
                 ) : (

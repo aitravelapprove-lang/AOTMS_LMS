@@ -22,9 +22,11 @@ interface VideoUploaderProps {
   courseId: string;
   courseStatus?: string;
   hideVideoList?: boolean;
+  onSuccess?: () => void;
+  initialModuleId?: string;
 }
 
-export function VideoUploader({ courseId, courseStatus, hideVideoList = false }: VideoUploaderProps) {
+export function VideoUploader({ courseId, courseStatus, hideVideoList = false, onSuccess, initialModuleId }: VideoUploaderProps) {
   const { data: modules, isLoading: modulesLoading } = useCourseModules(courseId);
   // Debug logs for troubleshooting "No modules found"
   console.log("VideoUploader Render Debug:", { 
@@ -40,6 +42,17 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false }:
   const deleteVideo = useDeleteCourseVideo();
   const createModule = useCreateCourseModule();
   const { toast } = useToast();
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+  };
 
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -62,17 +75,19 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false }:
     is_published: true,
   });
 
-  const isCourseApproved = courseStatus === 'approved' || courseStatus === 'published' || courseStatus === 'draft';
+  const isCourseApproved = courseStatus === 'approved' || courseStatus === 'published' || courseStatus === 'draft' || courseStatus === 'rejected' || !courseStatus;
 
-  // Automatically set the first module as destination when modules are loaded
+  // Automatically set the destination module
   useEffect(() => {
-    if (modules && modules.length > 0 && !newVideo.module_id && !isCreatingModule) {
+    if (initialModuleId) {
+      setNewVideo(prev => ({ ...prev, module_id: initialModuleId }));
+    } else if (modules && modules.length > 0 && !newVideo.module_id && !isCreatingModule) {
       setNewVideo(prev => ({ ...prev, module_id: (modules[0] as CourseModule).id }));
     } else if (modules && modules.length === 0 && !modulesLoading) {
         // If no modules exist, default to create mode
         setIsCreatingModule(true);
     }
-  }, [modules, newVideo.module_id, modulesLoading, isCreatingModule]);
+  }, [modules, newVideo.module_id, modulesLoading, isCreatingModule, initialModuleId]);
 
   useEffect(() => {
     return () => {
@@ -197,6 +212,12 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false }:
       console.log('Step 2 complete: Database saved');
 
       setUploadSuccess(true);
+      
+      // Notify parent of success (allows closing dialog)
+      if (onSuccess) {
+          onSuccess();
+      }
+
       setTimeout(() => setUploadSuccess(false), 2000);
 
       // Reset Form
@@ -245,11 +266,12 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false }:
     }
   };
 
+
+
   const getModuleTitle = (moduleId: string) => {
     const module = (modules as CourseModule[]).find((m) => m.id === moduleId);
     return module?.title || 'Unknown Module';
   };
-
   return (
     <div className="space-y-6">
       {/* Upload Form Section */}
@@ -565,6 +587,15 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false }:
                           <p className="text-slate-500 text-sm font-medium line-clamp-2 leading-relaxed">
                             {video.description || "Educational content assets deployed to your module library."}
                           </p>
+                        </div>
+
+                        <div className="mt-4 p-3 bg-slate-50/50 rounded-xl border border-slate-100/50">
+                           <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400">
+                             <div className="flex items-center gap-1.5">
+                               <Clock className="h-3 w-3 text-slate-300" />
+                               <span>Uploaded: {formatDate(video.created_at)}</span>
+                             </div>
+                           </div>
                         </div>
 
                         <div className="mt-6 flex items-center justify-between border-t border-slate-50 pt-5">

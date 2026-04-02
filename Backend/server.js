@@ -3573,8 +3573,13 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
         if (req.query.limit) limit = parseInt(req.query.limit);
         if (req.query.offset) skip = parseInt(req.query.offset);
 
-        // Execute query (WITHOUT .lean() to allow toJSON transforms/virtuals)
-        const data = await Model.find(query).sort(sort).limit(limit).skip(skip);
+        // Execute query
+        let data;
+        if (table === 'leaderboard_stats' || table === 'leaderboard') {
+            data = await Model.find(query).sort(sort).limit(limit).skip(skip).populate('user_id', 'full_name avatar_url email');
+        } else {
+            data = await Model.find(query).sort(sort).limit(limit).skip(skip);
+        }
         res.json(data);
 
     } catch (err) {

@@ -49,8 +49,12 @@ export interface Question {
 
 export interface LeaderboardEntry {
   id: string;
-  student_id: string;
-  student_name: string;
+  user_id: string | {
+    id: string;
+    full_name?: string;
+    avatar_url?: string;
+    email?: string;
+  };
   total_score: number | null;
   exams_completed: number | null;
   average_percentage: number | null;
@@ -329,12 +333,12 @@ export function useDeleteQuestion() {
 // 3. LEADERBOARD — Monitor and validate leaderboard scores
 // ═══════════════════════════════════════════════════════════════════════════
 
-export function useLeaderboard() {
+export const useLeaderboard = () => {
   return useQuery<LeaderboardEntry[]>({
     queryKey: ['leaderboard'],
-    queryFn: () => fetchWithAuth('/data/leaderboard?sort=total_score&order=desc'),
+    queryFn: () => fetchWithAuth<LeaderboardEntry[]>('/data/leaderboard?sort=total_score&order=desc'),
   });
-}
+};
 
 export function useVerifyLeaderboardEntry() {
   const queryClient = useQueryClient();
@@ -526,9 +530,11 @@ export function useExamResults(examId?: string) {
 
 export function useLeaderboardAudit() {
   return useQuery<LeaderboardAuditEntry[]>({
-    queryKey: ['leaderboard-audit'],
-    queryFn: () => safeFetchWithAuth('/data/leaderboard_audit?sort=created_at&order=desc'),
-    retry: false,
+    queryKey: ['leaderboard_audit'],
+    queryFn: async () => {
+      const data = await fetchWithAuth('/data/leaderboard_audit?order=created_at.desc') as LeaderboardAuditEntry[];
+      return data;
+    },
   });
 }
 

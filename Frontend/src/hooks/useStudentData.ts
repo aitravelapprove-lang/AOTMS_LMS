@@ -94,11 +94,9 @@ export function useStudentAnnouncements() {
 export function useLeaderboard() {
     const { user } = useAuth();
 
-    return useQuery({
-        queryKey: ['leaderboard'],
-        queryFn: async () => {
-            return fetchWithAuth('/data/leaderboard_stats?order=total_score.desc&limit=10');
-        },
+    return useQuery<LeaderboardEntry[]>({
+        queryKey: ['leaderboard_stats'],
+        queryFn: () => fetchWithAuth<LeaderboardEntry[]>('/data/leaderboard_stats?order=total_score.desc&limit=10'),
         enabled: !!user?.id,
     });
 }
@@ -131,7 +129,12 @@ export interface Announcement {
 
 export interface LeaderboardEntry {
     id: string;
-    user_id: string;
+    user_id: string | {
+        id: string;
+        full_name?: string;
+        avatar_url?: string;
+        email?: string;
+    };
     exams_completed: number;
     total_score: number;
 }

@@ -123,7 +123,8 @@ function CoursesTab() {
       const res = await fetchWithAuth('/coupons/validate', {
         method: 'POST',
         body: JSON.stringify({ code: couponCode })
-      });
+      }) as { success: boolean; discounted_price: number };
+      
       if (res.success) {
         setAppliedPrice(res.discounted_price);
         toast({
@@ -168,7 +169,7 @@ function CoursesTab() {
           method: 'POST',
           body: formData,
           headers: {} // File transfers shouldn't have content-type set manually
-        });
+        }) as { url: string };
         
         paymentProofUrl = uploadRes?.url;
       }
@@ -613,12 +614,17 @@ function LeaderboardTab() {
               <p className="text-slate-600 font-medium text-lg">Rankings are hidden until exams begin.</p>
             </div>
           ) : (
-            board.map((user: LeaderboardEntry, idx: number) => (
+            board.map((user_entry: LeaderboardEntry, idx: number) => {
+              const userData = typeof user_entry.user_id === 'object' ? user_entry.user_id : { id: user_entry.user_id, full_name: `Scholar ${user_entry.user_id.slice(0,6).toUpperCase()}`, avatar_url: '' };
+              const displayName = userData.full_name || `Scholar ${userData.id.slice(0,6).toUpperCase()}`;
+              const avatarUrl = userData.avatar_url ? (userData.avatar_url.startsWith('http') ? userData.avatar_url : `${API_URL}/s3/public/${userData.avatar_url}`) : `https://api.dicebear.com/9.x/avataaars/svg?seed=${userData.id}`;
+
+              return (
               <motion.div
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: idx * 0.1 }}
-                key={user.id}
+                key={user_entry.id}
                 className={`flex items-center gap-4 md:gap-6 p-4 md:p-6 rounded-2xl transition-all duration-300 hover:shadow-md border ${
                   idx === 0 
                     ? "bg-gradient-to-r from-accent/10 to-transparent border-accent/20 shadow-sm" 
@@ -636,33 +642,34 @@ function LeaderboardTab() {
                 </div>
                 
                 <Avatar className={`h-12 w-12 md:h-14 md:w-14 border-[3px] shadow-sm ${idx === 0 ? 'border-accent' : 'border-white'}`}>
-                  <AvatarImage src={`https://api.dicebear.com/9.x/avataaars/svg?seed=${user.user_id}`} />
+                  <AvatarImage src={avatarUrl} />
                   <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                    {user.user_id.slice(0, 2).toUpperCase()}
+                    {displayName.slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-slate-900 text-base md:text-lg truncate">
-                    Scholar {user.user_id.slice(0, 6)}
+                    {displayName}
                   </p>
                   <div className="flex items-center gap-2 mt-1">
                      <Badge variant="secondary" className="bg-slate-100 hover:bg-slate-200 text-slate-600 border-none font-semibold text-[10px]">
-                        {user.exams_completed} Exams
+                        {user_entry.exams_completed || 0} Exams
                      </Badge>
                   </div>
                 </div>
                 
                 <div className="text-right shrink-0">
                   <p className={`font-black tracking-tight text-xl md:text-3xl ${idx === 0 ? 'text-accent' : 'text-primary'}`}>
-                    {user.total_score}
+                    {user_entry.total_score}
                   </p>
                   <p className="text-[10px] uppercase font-bold text-slate-500 tracking-widest mt-0.5">
                     Credits
                   </p>
                 </div>
               </motion.div>
-            ))
+              );
+            })
           )}
         </div>
       </div>

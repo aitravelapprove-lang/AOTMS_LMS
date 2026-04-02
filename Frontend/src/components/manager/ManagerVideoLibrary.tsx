@@ -50,6 +50,17 @@ export function ManagerVideoLibrary() {
   const deleteVideo = useDeleteCourseVideo();
   const { toast } = useToast();
 
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+  };
+
   const loadData = async () => {
     setLoading(true);
     try {
@@ -224,6 +235,10 @@ export function ManagerVideoLibrary() {
                       courseId={uploadCourseId} 
                       courseStatus="published" 
                       hideVideoList={true} 
+                      onSuccess={() => {
+                        setIsUploadOpen(false);
+                        loadData();
+                      }}
                     />
                   </div>
                 ) : (
@@ -289,9 +304,13 @@ export function ManagerVideoLibrary() {
                 <h3 className="font-semibold text-foreground line-clamp-2 mb-2">
                   {video.title || 'Untitled Video'}
                 </h3>
-                <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                <p className="text-sm text-muted-foreground line-clamp-2 mb-1">
                   {video.description || 'No description'}
                 </p>
+                <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-3">
+                  <Clock className="h-2.5 w-2.5" />
+                  <span>Uploaded: {formatDate(video.created_at)}</span>
+                </div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant="outline" className="text-xs">
                     <BookOpen className="h-3 w-3 mr-1" />

@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useLeaderboard, useVerifyLeaderboardEntry } from '@/hooks/useManagerData';
 import { useAuth } from '@/hooks/useAuth';
-import { Trophy, Medal, CheckCircle, XCircle, TrendingUp, TrendingDown, Minus, Shield } from 'lucide-react';
+import { Trophy, Medal, CheckCircle, Shield, User } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export function LeaderboardManager() {
   const { user } = useAuth();
@@ -104,46 +105,63 @@ export function LeaderboardManager() {
             </div>
           ) : (
             <div className="space-y-2">
-              {leaderboard.map((entry, idx) => (
+              {leaderboard.map((entry, idx) => {
+                const userData = typeof entry.user_id === 'object' ? entry.user_id : (typeof entry.student_id === 'object' ? entry.student_id : null);
+                const displayName = userData?.full_name || entry.student_name || 'Student';
+                const avatarUrl = userData?.avatar_url 
+                  ? (userData.avatar_url.startsWith('http') ? userData.avatar_url : `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/s3/public/${userData.avatar_url}`)
+                  : `https://api.dicebear.com/9.x/avataaars/svg?seed=${userData?.id || entry.id}`;
+
+                return (
                 <div
                   key={entry.id}
-                  className={`flex items-center gap-4 p-4 rounded-lg transition-colors ${
-                    idx < 3 ? 'bg-accent/10' : 'bg-muted/50'
+                  className={`flex items-center gap-4 p-4 rounded-xl transition-all hover:bg-accent/5 ${
+                    idx < 3 ? 'bg-accent/10 border border-accent/20 shadow-sm' : 'bg-muted/50 border border-transparent'
                   }`}
                 >
-                  <div className="w-10 flex items-center justify-center">
+                  <div className="w-8 flex items-center justify-center shrink-0">
                     {getRankIcon(idx + 1)}
                   </div>
-                  <div className="flex-1">
+                  
+                  <Avatar className="h-10 w-10 border-2 border-white shadow-sm flex-shrink-0">
+                    <AvatarImage src={avatarUrl} />
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold font-mono">
+                      {displayName.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-medium">{entry.student_name}</h4>
+                      <h4 className="font-bold text-slate-900 truncate">{displayName}</h4>
                       {entry.is_verified && (
                         <CheckCircle className="h-4 w-4 text-green-500" />
                       )}
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-3 text-[10px] uppercase font-black text-slate-400 tracking-wider">
                       <span>{entry.exams_completed || 0} exams</span>
+                      <span className="w-1 h-1 rounded-full bg-slate-300" />
                       <span>{entry.average_percentage || 0}% avg</span>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-xl font-bold">{entry.total_score || 0}</div>
-                    <p className="text-xs text-muted-foreground">points</p>
+                    <div className="text-xl font-black text-slate-950 tracking-tighter">{entry.total_score || 0}</div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Points</p>
                   </div>
                   {!entry.is_verified && (
                     <Button
                       size="sm"
                       variant="outline"
-                      className="gap-1"
+                      className="gap-2 rounded-full border-2 font-bold px-4"
                       onClick={() => handleVerify(entry.id)}
                       disabled={verifyEntry.isPending}
                     >
-                      <Shield className="h-4 w-4" />
+                      <Shield className="h-3.5 w-3.5" />
                       Verify
                     </Button>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>

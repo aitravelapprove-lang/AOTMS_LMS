@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Settings, LogOut, LayoutDashboard, Menu, X } from "lucide-react";
+import { Settings, LogOut, LayoutDashboard, Menu, X, ExternalLink } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -21,23 +21,30 @@ import logo from "@/assets/logo.png";
 
 // Pages with light backgrounds that need dark navbar text
 const lightBgPages = [
-  "/learning-paths",
   "/auth",
   "/student-dashboard",
   "/instructor",
   "/manager",
   "/admin",
   "/about",
-  "/assignments",
   "/courses",
+  "/faq",
+  "/contact",
+  "/privacy",
+  "/terms",
+  "/docs",
+  "/blog",
+  "/careers",
+  "/trainers",
+  "/press",
+  "/features",
 ];
 
 const navLinks = [
   { name: "Home", href: "/" },
-  { name: "Courses", href: "/courses" },
-  { name: "Learning Paths", href: "/learning-paths" },
-  { name: "Assignments", href: "/assignments" },
-  { name: "About", href: "/about" },
+  { name: "Courses", href: "https://www.aotms.in/#/courses" },
+  { name: "About", href: "https://www.aotms.in/#/about-us" },
+  { name: "FAQ", href: "https://www.aotms.in/#/faq" },
 ];
 
 const Header = () => {
@@ -87,6 +94,10 @@ const Header = () => {
   };
 
   const handleNavClick = (href: string) => {
+    if (href.startsWith("http")) {
+      window.location.href = href;
+      return;
+    }
     if (href.startsWith("/#")) {
       const sectionId = href.replace("/#", "");
       const element = document.getElementById(sectionId);
@@ -104,6 +115,15 @@ const Header = () => {
     }
   };
 
+  const dashboardMap: Record<string, string> = {
+    student: "/student-dashboard",
+    instructor: "/instructor",
+    admin: "/admin",
+    manager: "/manager",
+  };
+
+  const portalPath = user ? (dashboardMap[userRole || "student"] || "/") : null;
+
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out ${isScrolled ? "bg-background/95 backdrop-blur-md shadow-lg border-b border-border" : "bg-transparent border-b border-transparent"}`}
@@ -115,14 +135,14 @@ const Header = () => {
             <img
               src={logo}
               alt="AOTMS Logo"
-              className={`h-10 sm:h-12 md:h-14 lg:h-16 w-auto transition-all duration-300 ${
+              className={`h-12 sm:h-14 md:h-16 lg:h-20 w-auto transition-all duration-300 ${
                 !isScrolled && !hasLightBg
                   ? "brightness-0 invert opacity-90"
                   : ""
               }`}
             />
           </Link>
-
+ 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-1 xl:gap-2">
             {navLinks.map((link) => (
@@ -135,9 +155,26 @@ const Header = () => {
                     : "text-[#FDFEFE] hover:text-[#FD5A1A]"
                 }`}
               >
-                {link.name}
+                <span className="flex items-center gap-1">
+                  {link.name}
+                  {link.href.startsWith("http") && (
+                    <ExternalLink className="h-3 w-3 opacity-70" />
+                  )}
+                </span>
               </button>
             ))}
+            {portalPath && (
+              <button
+                onClick={() => handleNavClick(portalPath)}
+                className={`px-3 xl:px-4 py-2 rounded-lg text-sm xl:text-base font-black transition-all duration-200 highlight-dashboard-btn ${
+                  isScrolled || hasLightBg
+                    ? "text-[#0075CF] hover:bg-[#0075CF]/10"
+                    : "text-[#FD5A1A] hover:bg-[#FD5A1A]/10"
+                }`}
+              >
+                Dashboard
+              </button>
+            )}
           </nav>
 
           {/* Right Side - Auth & Mobile Menu */}
@@ -258,23 +295,40 @@ const Header = () => {
                 <div className="flex flex-col h-full">
                   {/* Mobile Header */}
                   <div className="flex items-center justify-between p-4 border-b border-border">
-                    <img src={logo} alt="AOTMS Logo" className="h-10 w-auto" />
+                    <img src={logo} alt="AOTMS Logo" className="h-12 w-auto" />
                   </div>
 
                   {/* Mobile Navigation */}
                   <nav className="flex-1 p-4">
                     <ul className="space-y-1">
+                      {portalPath && (
+                        <div>
+                          <SheetClose asChild>
+                            <button
+                              onClick={() => handleNavClick(portalPath)}
+                              className="w-full text-left p-4 rounded-xl text-lg font-black text-[#FD5A1A] bg-orange-50 hover:bg-orange-100 transition-all active:scale-[0.98] mb-2 border border-orange-100"
+                            >
+                               Dashboard
+                            </button>
+                          </SheetClose>
+                        </div>
+                      )}
                       {navLinks.map((link) => (
-                        <li key={link.name}>
+                        <div key={link.name}>
                           <SheetClose asChild>
                             <button
                               onClick={() => handleNavClick(link.href)}
-                              className="w-full text-left px-4 py-3 rounded-lg text-base font-bold text-foreground hover:bg-[#0075CF]/10 hover:text-[#0075CF] transition-colors"
+                              className="w-full text-left p-4 rounded-xl text-lg font-bold text-foreground hover:bg-muted hover:text-primary transition-all active:scale-[0.98]"
                             >
-                              {link.name}
+                              <span className="flex items-center justify-between">
+                                {link.name}
+                                {link.href.startsWith("http") && (
+                                  <ExternalLink className="h-4 w-4 opacity-50" />
+                                )}
+                              </span>
                             </button>
                           </SheetClose>
-                        </li>
+                        </div>
                       ))}
                     </ul>
                   </nav>

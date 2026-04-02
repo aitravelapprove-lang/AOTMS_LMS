@@ -6,13 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Clock, BookOpen, ArrowRight, User, ChevronDown, CheckCircle2, Upload, Mail, X, Phone, QrCode } from 'lucide-react';
+import { Loader2, Star, Clock, BookOpen, ArrowRight, ArrowLeft, User, ChevronDown, CheckCircle2, Upload, Mail, X, Phone, QrCode } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { fetchWithAuth } from '@/lib/api';
 
 export default function CoursesPage() {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -49,12 +49,12 @@ export default function CoursesPage() {
       fetchCourses(1, selectedCategory, true);
       initialLoadDone.current = true;
     }
-  }, []);
+  }, [fetchCategories, fetchCourses, selectedCategory]);
 
   // Load more when category changes
   useEffect(() => {
     fetchCourses(1, selectedCategory, true);
-  }, [selectedCategory]);
+  }, [fetchCourses, selectedCategory]);
 
   // Infinite scroll observer
   const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
@@ -125,7 +125,7 @@ export default function CoursesPage() {
         const formData = new FormData();
         formData.append('file', paymentProof);
         
-        const uploadRes = await fetchWithAuth('/upload', {
+        const uploadRes = await fetchWithAuth<{ url: string }>('/upload', {
           method: 'POST',
           body: formData,
           headers: {} // File transfers shouldn't have content-type set manually generally, fetch handles it
@@ -162,6 +162,19 @@ export default function CoursesPage() {
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       {/* Hero Section - Taller */}
       <div className="relative bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 py-20 md:py-32">
+        {/* Back to Home Button */}
+        <div className="container mx-auto px-4 absolute top-8 left-0 right-0 z-20">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => navigate('/')}
+            className="group gap-2 text-slate-600 hover:text-primary hover:bg-primary/5 transition-all rounded-full px-4"
+          >
+            <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+            <span className="font-bold text-xs uppercase tracking-widest">Back to Home</span>
+          </Button>
+        </div>
+
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl mx-auto text-center space-y-6">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 tracking-tight">
@@ -183,8 +196,11 @@ export default function CoursesPage() {
         <DialogContent className="max-w-4xl p-0 overflow-hidden border-0 rounded-3xl shadow-2xl bg-white">
           <div className="flex flex-col md:flex-row h-full">
             {/* Left Column: Course Summary */}
-            <div className="md:w-[400px] bg-slate-900 p-8 text-white flex flex-col justify-between selection:bg-primary/30">
-              <div className="space-y-8">
+            <div className="md:w-[400px] bg-gradient-to-br from-[#0075CF] to-[#005CAD] p-8 text-white flex flex-col justify-between selection:bg-white/20 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32" />
+              <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#FD5A1A]/20 rounded-full blur-3xl -ml-24 -mb-24" />
+              
+              <div className="relative z-10 space-y-8">
                 <div className="flex items-center justify-between">
                   <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/10">
                     <BookOpen className="h-5 w-5 text-primary" />
@@ -201,7 +217,7 @@ export default function CoursesPage() {
 
                 <div className="space-y-4">
                   <h2 className="text-3xl font-black tracking-tight leading-tight">
-                    Review Your <span className="text-primary italic">Enrollment</span>
+                    Review Your <span className="text-white italic">Enrollment</span>
                   </h2>
                   <p className="text-slate-400 text-sm leading-relaxed">
                     You're one step away from mastering new skills. Complete the secure payment below to unlock full course access.
@@ -223,9 +239,13 @@ export default function CoursesPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="pt-4 border-t border-white/10 flex items-center justify-between">
-                      <span className="text-sm font-medium text-slate-400">Total Investment</span>
-                      <span className="text-2xl font-black text-white">{paymentCourse.price}</span>
+                    <div className="pt-4 border-t border-white/20 flex items-center justify-between">
+                      <span className="text-sm font-medium text-white/60">Total Investment</span>
+                      <span className="text-2xl font-black text-white">
+                        {paymentCourse.price?.toString().includes('$') 
+                          ? paymentCourse.price.replace('$', '₹') 
+                          : `₹${paymentCourse.price}`}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -233,8 +253,8 @@ export default function CoursesPage() {
 
               <div className="pt-12 space-y-6">
                 <div className="flex items-center gap-4 group">
-                  <div className="h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center transition-all group-hover:scale-110 shadow-[0_0_20px_rgba(var(--primary-rgb),0.1)]">
-                    <CheckCircle2 className="h-6 w-6 text-primary" />
+                  <div className="h-12 w-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center transition-all group-hover:scale-110 shadow-lg">
+                    <CheckCircle2 className="h-6 w-6 text-[#FD5A1A]" />
                   </div>
                   <div>
                     <div className="text-xs font-black uppercase tracking-widest text-white/40 mb-0.5">Payment Verified</div>
@@ -302,7 +322,7 @@ export default function CoursesPage() {
                   <div className="mt-6 w-full space-y-3">
                     <div className="p-3 bg-white rounded-xl border border-dashed border-slate-300 flex items-center justify-between group/code cursor-pointer hover:border-primary transition-colors">
                       <span className="text-[10px] font-mono font-bold text-slate-500 truncate max-w-[140px]">vyapar.17432781471@hdfcbank</span>
-                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-primary">
+                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-[#0075CF]">
                         <CheckCircle2 className="h-3 w-3" />
                       </Button>
                     </div>
@@ -329,7 +349,7 @@ export default function CoursesPage() {
                     onClick={() => document.getElementById('payment-proof')?.click()}
                 >
                     <div className="h-10 w-10 rounded-full bg-white shadow-sm flex items-center justify-center border border-slate-100 group-hover:scale-110 transition-transform">
-                        <Upload className={`h-5 w-5 ${paymentProof ? 'text-primary' : 'text-slate-400'}`} />
+                        <Upload className={`h-5 w-5 ${paymentProof ? 'text-[#FD5A1A]' : 'text-slate-400'}`} />
                     </div>
                     <div className="text-center">
                         <p className="text-xs font-bold text-slate-900">{paymentProof ? paymentProof.name : 'Upload Payment Screenshot'}</p>
@@ -360,7 +380,7 @@ export default function CoursesPage() {
                 </Button>
                 <Button
                     size="lg"
-                    className="h-14 rounded-2xl font-black uppercase tracking-widest text-sm shadow-[0_10px_20px_rgba(var(--primary-rgb),0.2)] active:scale-95 transition-all"
+                    className="h-14 rounded-2xl bg-gradient-to-r from-[#0075CF] to-[#3391D9] font-black uppercase tracking-widest text-sm shadow-xl shadow-[#0075CF]/20 active:scale-95 transition-all"
                     disabled={isUploading || !paymentProof}
                     onClick={handleEnrollmentSubmit}
                 >
@@ -426,7 +446,7 @@ export default function CoursesPage() {
               onEnroll={() => handleEnroll(course)}
               isEnrolling={enrolling === course.id}
               isLoggedIn={isLoggedIn}
-              userRole={user?.role}
+              userRole={userRole || undefined}
             />
           ))}
         </div>
@@ -526,10 +546,18 @@ function CourseCard({
 
         {/* Price */}
         <div className="flex items-baseline gap-3 pt-2">
-          <span className="text-3xl font-bold text-primary">{course.price}</span>
+          <span className="text-3xl font-bold text-primary">
+            {course.price?.toString().includes('$') 
+              ? course.price.replace('$', '₹') 
+              : `₹${course.price}`}
+          </span>
           {course.original_price && (
             <>
-              <span className="text-base text-slate-400 line-through">{course.original_price}</span>
+              <span className="text-base text-slate-400 line-through">
+                {course.original_price?.toString().includes('$') 
+                  ? course.original_price.replace('$', '₹') 
+                  : `₹${course.original_price}`}
+              </span>
               <Badge variant="destructive" className="text-xs font-semibold">
                 {Math.round((1 - parsePrice(course.price) / parsePrice(course.original_price)) * 100)}% OFF
               </Badge>

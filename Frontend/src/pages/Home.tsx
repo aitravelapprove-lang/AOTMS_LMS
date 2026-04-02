@@ -1,25 +1,20 @@
 import Header from "@/components/landing/Header";
 import HeroSection from "@/components/landing/HeroSection";
 import WhyAOTMS from "@/components/landing/WhyAOTMS";
-import HowItWorks from "@/components/landing/HowItWorks";
 import KeyFeatures from "@/components/landing/KeyFeatures";
 import FeaturedCourses from "@/components/landing/FeaturedCourses";
-
+import CareerRoadmap from "@/components/landing/CareerRoadmap";
 import Instructors from "@/components/landing/Instructors";
 import Testimonials from "@/components/landing/Testimonials";
-import FAQSection from "@/components/landing/FAQSection";
-import CTASection from "@/components/landing/CTASection";
 import Footer from "@/components/landing/Footer";
 import ScrollBot from "@/components/landing/ScrollBot";
-import LowPolyBackground from "@/components/landing/LowPolyBackground";
+import EnrollmentForm from "@/components/landing/EnrollmentForm";
+
 const Home = () => {
 
   return (
-    <div className="min-h-screen relative overflow-x-hidden">
-      {/* GLOBAL FIXED BACKGROUND */}
-      <LowPolyBackground />
-      
-      <div id="home-content" className="relative z-10 w-full">
+    <div className="min-h-screen relative overflow-x-hidden bg-white">
+      <div id="home-content" className="relative z-10 w-full bg-white">
         <Header />
         <main>
           <div id="main-content">
@@ -27,13 +22,12 @@ const Home = () => {
           </div>
           <WhyAOTMS />
           <FeaturedCourses />
-          <HowItWorks />
+          <CareerRoadmap />
           <KeyFeatures />
+          <EnrollmentForm />
 
           <Instructors />
           <Testimonials />
-          <FAQSection />
-          <CTASection />
         </main>
         <Footer />
         <ScrollBot />

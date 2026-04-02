@@ -1,0 +1,224 @@
+"use client";
+
+import * as React from "react";
+import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, ArrowRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+
+// Define the type for a single review
+type Review = {
+  id: string | number;
+  name: string;
+  affiliation: string;
+  quote: string;
+  imageSrc: string;
+  thumbnailSrc: string;
+};
+
+// Define the props for the slider component
+interface TestimonialSliderProps {
+  reviews: Review[];
+  /** Optional class name for the container */
+  className?: string;
+  /** Whether to enable automatic sliding. Default: false */
+  autoplay?: boolean;
+  /** Autoplay interval in milliseconds. Default: 5000 */
+  autoplayInterval?: number;
+}
+
+/**
+ * A reusable, animated testimonial slider component.
+ * It uses framer-motion for animations and is styled with
+ * shadcn/ui theme variables.
+ */
+export const TestimonialSlider = ({
+  reviews,
+  className,
+  autoplay = true,
+  autoplayInterval = 4000,
+}: TestimonialSliderProps) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  // 'direction' helps framer-motion understand slide direction (next vs. prev)
+  const [direction, setDirection] = useState<"left" | "right">("right");
+
+  const activeReview = reviews[currentIndex];
+
+  const handleNext = useCallback(() => {
+    setDirection("right");
+    setCurrentIndex((prev) => (prev + 1) % reviews.length);
+  }, [reviews.length]);
+
+  useEffect(() => {
+    if (autoplay) {
+      const timer = setInterval(() => {
+        handleNext();
+      }, autoplayInterval);
+      return () => clearInterval(timer);
+    }
+  }, [autoplay, autoplayInterval, handleNext]);
+
+  const handlePrev = () => {
+    setDirection("left");
+    setCurrentIndex((prev) => (prev - 1 + reviews.length) % reviews.length);
+  };
+
+  const handleThumbnailClick = (index: number) => {
+    // Determine direction for animation
+    setDirection(index > currentIndex ? "right" : "left");
+    setCurrentIndex(index);
+  };
+
+  // Get the next 3 reviews for the thumbnails, excluding the current one
+  const thumbnailReviews = reviews
+    .filter((_, i) => i !== currentIndex)
+    .slice(0, 3);
+
+  // Animation variants for the main image
+  const imageVariants = {
+    enter: (direction: "left" | "right") => ({
+      y: direction === "right" ? "100%" : "-100%",
+      opacity: 0,
+    }),
+    center: { y: 0, opacity: 1 },
+    exit: (direction: "left" | "right") => ({
+      y: direction === "right" ? "-100%" : "100%",
+      opacity: 0,
+    }),
+  };
+
+  // Animation variants for the text content
+  const textVariants = {
+    enter: (direction: "left" | "right") => ({
+      x: direction === "right" ? 50 : -50,
+      opacity: 0,
+    }),
+    center: { x: 0, opacity: 1 },
+    exit: (direction: "left" | "right") => ({
+      x: direction === "right" ? -50 : 50,
+      opacity: 0,
+    }),
+  };
+
+  return (
+    <div
+      className={cn(
+        "relative w-full min-h-[650px] md:min-h-[600px] overflow-hidden bg-transparent text-foreground p-8 md:p-12",
+        className
+      )}
+    >
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 h-full">
+        {/* === Left Column: Meta and Thumbnails === */}
+        <div className="md:col-span-3 flex flex-col justify-between order-2 md:order-1">
+          <div className="flex flex-row md:flex-col justify-between md:justify-start space-x-4 md:space-x-0 md:space-y-4">
+            {/* Pagination */}
+            <span className="text-sm text-muted-foreground font-mono">
+              {String(currentIndex + 1).padStart(2, "0")} /{" "}
+              {String(reviews.length).padStart(2, "0")}
+            </span>
+            {/* Vertical "Mentors" Text */}
+            <h2 className="text-sm font-black tracking-[0.3em] uppercase [writing-mode:vertical-rl] md:rotate-180 hidden md:block text-primary">
+              Mentors
+            </h2>
+          </div>
+
+          {/* Thumbnail Navigation */}
+          <div className="flex space-x-2 mt-8 md:mt-0">
+            {thumbnailReviews.map((review) => {
+              // Find the original index to navigate to
+              const originalIndex = reviews.findIndex(
+                (r) => r.id === review.id
+              );
+              return (
+                <button
+                  key={review.id}
+                  onClick={() => handleThumbnailClick(originalIndex)}
+                  className="overflow-hidden rounded-xl w-16 h-20 md:w-20 md:h-24 opacity-50 hover:opacity-100 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background border border-white/5 group"
+                  aria-label={`View review from ${review.name}`}
+                >
+                  <img
+                    src={review.thumbnailSrc}
+                    alt={review.name}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* === Center Column: Main Image === */}
+        <div className="md:col-span-4 relative h-80 min-h-[400px] md:min-h-[500px] order-1 md:order-2">
+          <AnimatePresence initial={false} custom={direction}>
+            <motion.img
+              key={currentIndex}
+              src={activeReview.imageSrc}
+              alt={activeReview.name}
+              custom={direction}
+              variants={imageVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }} // Cubic bezier for smooth ease
+              className="absolute inset-0 w-full h-full object-cover rounded-2xl shadow-2xl border border-white/10"
+            />
+          </AnimatePresence>
+        </div>
+
+        {/* === Right Column: Text and Navigation === */}
+        <div className="md:col-span-5 flex flex-col justify-between md:pl-8 order-3 md:order-3">
+          {/* Text Content */}
+          <div className="relative overflow-hidden pt-4 md:pt-24 min-h-[200px]">
+            <AnimatePresence initial={false} custom={direction} mode="wait">
+              <motion.div
+                key={currentIndex}
+                custom={direction}
+                variants={textVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="w-8 h-1 bg-primary rounded-full" />
+                  <p className="text-sm font-black text-primary uppercase tracking-widest">
+                    {activeReview.affiliation}
+                  </p>
+                </div>
+                <h3 className="text-3xl font-black text-foreground tracking-tighter">
+                  {activeReview.name}
+                </h3>
+                <blockquote className="mt-6 text-xl md:text-2xl font-medium leading-relaxed text-muted-foreground italic">
+                  "{activeReview.quote}"
+                </blockquote>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          {/* Navigation Buttons */}
+          <div className="flex items-center space-x-4 mt-8 md:mt-0">
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-full w-14 h-14 border-white/10 hover:bg-primary/20 transition-all duration-300"
+              onClick={handlePrev}
+              aria-label="Previous review"
+            >
+              <ArrowLeft className="w-6 h-6" />
+            </Button>
+            <Button
+              variant="default"
+              size="icon"
+              className="rounded-full w-14 h-14 bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-300 shadow-xl shadow-primary/20"
+              onClick={handleNext}
+              aria-label="Next review"
+            >
+              <ArrowRight className="w-6 h-6" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

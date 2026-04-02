@@ -49,7 +49,7 @@ const CTASection = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="py-20 lg:py-32 bg-transparent overflow-hidden">
+    <section className="py-20 lg:py-32 bg-white overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         
         {/* Floating Decoration Card (Behind main) */}
@@ -62,7 +62,7 @@ const CTASection = () => {
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7 }}
-          className="relative overflow-hidden rounded-[2.5rem] md:rounded-[3rem] md:rounded-tl-[10rem] md:rounded-br-[10rem] min-h-[400px] md:min-h-[500px] flex items-center justify-center shadow-[0_40px_100px_-20px_rgba(0,117,207,0.3)] bg-[#0075CF]/85 backdrop-blur-2xl border border-white/20"
+          className="relative overflow-hidden rounded-[2.5rem] md:rounded-[3rem] md:rounded-tl-[10rem] md:rounded-br-[10rem] min-h-[400px] md:min-h-[500px] flex items-center justify-center shadow-2xl bg-[#0075CF] border border-white/20"
         >
           <CTABackground />
 
@@ -78,12 +78,12 @@ const CTASection = () => {
               </span>
             </div>
 
-            <h2 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-[#FDFEFE] mb-6 md:mb-8 leading-tight tracking-tight">
+            <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-black text-white mb-6 md:mb-10 leading-[0.95] tracking-tighter">
               Launch Your <br className="hidden sm:block" />
-              <span className="text-white">Future In Tech</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-[#FD5A1A]">Future In Tech</span>.
             </h2>
             
-            <p className="text-[#FDFEFE]/80 text-lg md:text-xl max-w-2xl mx-auto mb-12 leading-relaxed font-medium">
+            <p className="text-white/80 text-lg md:text-2xl max-w-2xl mx-auto mb-16 leading-relaxed font-medium font-jakarta">
               Join the elite circle of graduates in Vijayawada who transformed their careers through our industry-backed learning ecosystem.
             </p>
 
@@ -106,17 +106,17 @@ const CTASection = () => {
 
             {/* Support Hotline */}
             <div className="mt-16 pt-10 border-t border-white/10 flex flex-wrap items-center justify-center gap-8">
-              <a href="tel:+919876543210" className="flex items-center gap-3 text-[#FDFEFE]/70 hover:text-[#FDFEFE] transition-all group">
+              <a href="tel:+918019952233" className="flex items-center gap-3 text-[#FDFEFE]/70 hover:text-[#FDFEFE] transition-all group">
                 <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-[#FD5A1A] transition-all">
                   <Phone className="w-4 h-4" />
                 </div>
-                <span className="font-bold tracking-widest text-xs">(+91) 98765-43210</span>
+                <span className="font-bold tracking-widest text-xs">+91 80199 52233</span>
               </a>
-              <a href="mailto:hello@aotms.com" className="flex items-center gap-3 text-[#FDFEFE]/70 hover:text-[#FDFEFE] transition-all group">
-                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-[#FD5A1A] transition-all">
-                  <Mail className="w-4 h-4" />
+              <a href="mailto:Info@aotms.in" className="flex items-center gap-3 text-[#FDFEFE]/70 hover:text-[#FDFEFE] transition-all group">
+                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-[#FD5A1A]/10 transition-colors">
+                  <Mail className="w-4 h-4 text-[#FD5A1A]" />
                 </div>
-                <span className="font-bold tracking-widest text-xs">hello@aotms.com</span>
+                <span className="font-bold tracking-widest text-xs">Info@aotms.in</span>
               </a>
             </div>
           </div>

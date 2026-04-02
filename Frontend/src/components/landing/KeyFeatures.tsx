@@ -58,21 +58,27 @@ const features = [
 ];
 
 const KeyFeatures = () => (
-  <section id="features" className="relative py-16 md:py-24 overflow-hidden bg-transparent">
-    <div className="absolute inset-0 bg-white/5 backdrop-blur-[2px]" />
+  <section id="features" className="relative py-16 md:py-24 overflow-hidden bg-white">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-      <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.55 }} className="text-center mb-12 md:mb-16">
-        <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#FFF2EC] text-[#FD5A1A] text-xs font-bold uppercase tracking-widest mb-5">
-          <Zap className="w-3.5 h-3.5" /> Platform Features
-        </span>
-        <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 mb-4 leading-tight tracking-tight">
-          Everything You Need to <span className="text-[#FD5A1A]">Succeed</span>
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+        className="text-center mb-24 lg:mb-32"
+      >
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-6 shadow-sm">
+          <Zap className="w-3 h-3 text-[#FD5A1A]" /> Platform Features
+        </div>
+        <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-slate-950 mb-7 leading-[1.05] tracking-tighter">
+          Everything You Need to <br className="hidden md:block" />
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] to-[#FD5A1A]">Succeed</span>.
         </h2>
-        <p className="text-slate-600 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
+        <p className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-medium">
           Live classes, secure exams, AI resume scoring, and more — all inside one powerful platform.
         </p>
       </motion.div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-10">
         {features.map((f, i) => (
           <motion.div 
             key={f.title} 
@@ -85,7 +91,7 @@ const KeyFeatures = () => (
               {/* Outer glow/border effect on hover */}
               <div className={`absolute -inset-0.5 bg-gradient-to-br ${f.gradient} rounded-[2.5rem] opacity-0 group-hover:opacity-20 blur-md transition duration-500`} />
               
-              <div className="relative h-full bg-white/70 backdrop-blur-2xl border border-slate-900/10 rounded-[2rem] rounded-tl-[4rem] rounded-br-[4rem] p-8 shadow-xl shadow-slate-200/50 group-hover:shadow-2xl group-hover:shadow-[#0075CF]/20 group-hover:-translate-y-2 transition-all duration-500 flex flex-col overflow-hidden">
+              <div className="relative h-full bg-slate-50 border border-slate-200 rounded-[2rem] rounded-tl-[4rem] rounded-br-[4rem] p-8 shadow-sm group-hover:shadow-xl group-hover:shadow-[#0075CF]/20 group-hover:-translate-y-2 transition-all duration-500 flex flex-col overflow-hidden">
                 
                 {/* Tech chip corner decoration */}
                 <div className="absolute top-0 right-0 w-24 h-24 pointer-events-none opacity-10 group-hover:opacity-20 transition-opacity">

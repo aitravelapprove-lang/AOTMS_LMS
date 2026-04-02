@@ -8,7 +8,6 @@ import { SocketProvider } from "@/hooks/useSocket";
 import { useEffect, useRef } from "react";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
-import LearningPaths from "./pages/LearningPaths";
 import InstructorRegister from "./pages/InstructorRegister";
 import Dashboard from "./pages/Dashboard";
 import InstructorDashboard from "./pages/InstructorDashboard";
@@ -19,6 +18,16 @@ import NotFound from "./pages/NotFound";
 import About from "./pages/About";
 import PendingApproval from "./pages/PendingApproval";
 import Courses from "./pages/Courses";
+import FAQ from "./pages/FAQ";
+import Contact from "./pages/Contact";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+import Docs from "./pages/Docs";
+import Blog from "./pages/Blog";
+import Careers from "./pages/Careers";
+import Trainers from "./pages/Trainers";
+import Press from "./pages/Press";
+import Features from "./pages/Features";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import ScrollToTop from "@/components/ScrollToTop";
 import { SuspensionOverlay } from "@/components/auth/SuspensionOverlay";
@@ -32,6 +41,42 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+const BackNavigationHandler = () => {
+  const { userRole, user, loading } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (loading) return;
+
+    const handlePopState = (event: PopStateEvent) => {
+      const dashboardMap: Record<string, string> = {
+        student: "/student-dashboard",
+        instructor: "/instructor",
+        admin: "/admin",
+        manager: "/manager",
+      };
+      
+      const portalPath = user ? (dashboardMap[userRole || "student"] || "/") : "/";
+
+      // If we're not at the main portal entry point, handle the redirect
+      if (location.pathname !== portalPath) {
+        navigate(portalPath, { replace: true });
+      }
+    };
+
+    // Add a state to history so we can intercept the back button
+    window.history.pushState(null, "", window.location.href);
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [user, userRole, loading, navigate, location.pathname]);
+
+  return null;
+};
 
 const RoleRedirector = () => {
   const { userRole, user, loading } = useAuth();
@@ -90,17 +135,30 @@ const App = () => (
           <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <SuspensionOverlay />
             <ScrollToTop />
+            <BackNavigationHandler />
             <RoleRedirector />
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/courses" element={<Courses />} />
               <Route path="/about" element={<About />} />
               <Route path="/auth" element={<Auth />} />
+<<<<<<< HEAD
               <Route path="/login" element={<Auth />} />
               <Route path="/signup" element={<Auth />} />
+=======
+              <Route path="/faq" element={<FAQ />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/docs" element={<Docs />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/careers" element={<Careers />} />
+              <Route path="/trainers" element={<Trainers />} />
+              <Route path="/press" element={<Press />} />
+              <Route path="/features" element={<Features />} />
+>>>>>>> 64e4f5cb41d8eb1c167ca83c2721a66949b948ed
               <Route path="/pending-approval" element={<ProtectedRoute><PendingApproval /></ProtectedRoute>} />
               <Route path="/become-instructor" element={<InstructorRegister />} />
-              <Route path="/learning-paths" element={<LearningPaths />} />
 
               <Route
                 path="/student-dashboard/*"

@@ -170,9 +170,9 @@ export default function InstructorRegister() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-white">
       {/* Left Panel - Motivational Content */}
-      <div className="lg:w-1/2 bg-gradient-to-br from-primary/20 via-accent/30 to-primary/40 p-6 lg:p-10 flex flex-col relative overflow-hidden">
+      <div className="lg:w-1/2 bg-gradient-to-br from-[#0075CF]/10 via-white to-[#FD5A1A]/10 p-6 lg:p-10 flex flex-col relative overflow-hidden">
         {/* Back Button & Logo */}
         <div className="flex items-center justify-between z-10">
           <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
@@ -187,13 +187,14 @@ export default function InstructorRegister() {
         {/* Motivational Content */}
         <div className="flex-1 flex flex-col justify-center mt-8 lg:mt-0 z-10">
           <div className="max-w-md">
-            <div className="flex items-center gap-2 mb-4">
-              <GraduationCap className="h-8 w-8 text-primary" />
-              <span className="text-sm font-medium text-primary uppercase tracking-wider">Instructor Program</span>
+            <div className="flex items-center gap-2 mb-4 px-4 py-1.5 rounded-full bg-[#0075CF]/10 border border-[#0075CF]/20 w-fit">
+              <GraduationCap className="h-5 w-5 text-[#0075CF]" />
+              <span className="text-[10px] font-black text-[#0075CF] uppercase tracking-[0.2em]">Instructor Program</span>
             </div>
 
-            <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-foreground leading-tight mb-4">
-              Share Your Knowledge, <span className="text-primary">Inspire Minds</span>
+            <h1 className="text-3xl lg:text-4xl xl:text-5xl font-black text-slate-900 leading-tight mb-4 tracking-tight">
+              Share Your Knowledge, <br />
+              <span className="text-[#0075CF]">Inspire Minds</span>.
             </h1>
 
             <p className="text-lg text-muted-foreground mb-8">
@@ -201,34 +202,34 @@ export default function InstructorRegister() {
             </p>
 
             {/* Benefits */}
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Check className="h-4 w-4 text-primary" />
+            <div className="space-y-6">
+              <div className="flex items-start gap-4 group">
+                <div className="w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm group-hover:border-[#0075CF]/30 transition-colors">
+                  <Check className="h-4 w-4 text-[#0075CF]" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground">Flexible Schedule</h3>
-                  <p className="text-sm text-muted-foreground">Teach on your own terms, anytime, anywhere</p>
+                  <h3 className="font-bold text-slate-900">Flexible Schedule</h3>
+                  <p className="text-sm text-slate-500 font-medium">Teach on your own terms, anytime, anywhere</p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Check className="h-4 w-4 text-primary" />
+              <div className="flex items-start gap-4 group">
+                <div className="w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm group-hover:border-[#0075CF]/30 transition-colors">
+                  <Check className="h-4 w-4 text-[#0075CF]" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground">Global Reach</h3>
-                  <p className="text-sm text-muted-foreground">Connect with students from around the world</p>
+                  <h3 className="font-bold text-slate-900">Global Reach</h3>
+                  <p className="text-sm text-slate-500 font-medium">Connect with students from around the world</p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Check className="h-4 w-4 text-primary" />
+              <div className="flex items-start gap-4 group">
+                <div className="w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm group-hover:border-[#0075CF]/30 transition-colors">
+                  <Check className="h-4 w-4 text-[#0075CF]" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground">Competitive Earnings</h3>
-                  <p className="text-sm text-muted-foreground">Earn while doing what you love</p>
+                  <h3 className="font-bold text-slate-900">Competitive Earnings</h3>
+                  <p className="text-sm text-slate-500 font-medium">Earn while doing what you love</p>
                 </div>
               </div>
             </div>
@@ -236,22 +237,22 @@ export default function InstructorRegister() {
         </div>
 
         {/* Decorative gradient orbs */}
-        <div className="absolute top-1/4 right-1/4 w-72 h-72 bg-primary/30 rounded-full blur-3xl pointer-events-none -z-10" />
-        <div className="absolute bottom-1/3 left-1/4 w-56 h-56 bg-accent/40 rounded-full blur-3xl pointer-events-none -z-10" />
+        <div className="absolute top-1/4 right-1/4 w-80 h-80 bg-[#0075CF]/20 rounded-full blur-[100px] pointer-events-none -z-10" />
+        <div className="absolute bottom-1/3 left-1/4 w-64 h-64 bg-[#FD5A1A]/10 rounded-full blur-[80px] pointer-events-none -z-10" />
       </div>
 
       {/* Right Panel - Registration Form */}
       <div className="lg:w-1/2 bg-background p-6 lg:p-8 flex items-center justify-center relative z-50 overflow-y-auto">
         <div className="w-full max-w-lg relative z-50 py-4">
           {/* Header */}
-          <div className="text-center mb-6">
-            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-              <Briefcase className="h-6 w-6 text-primary" />
+          <div className="text-center mb-8">
+            <div className="w-14 h-14 mx-auto mb-4 rounded-3xl bg-[#FD5A1A]/10 border border-[#FD5A1A]/20 flex items-center justify-center shadow-lg shadow-[#FD5A1A]/5">
+              <Briefcase className="h-7 w-7 text-[#FD5A1A]" />
             </div>
-            <h2 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">
-              Become an Instructor
+            <h2 className="text-3xl md:text-3xl font-black text-slate-950 mb-2 tracking-tight">
+              Become an <span className="text-[#0075CF]">Instructor</span>
             </h2>
-            <p className="text-muted-foreground">
+            <p className="text-slate-500 font-medium text-sm">
               Fill in your details to apply as an instructor
             </p>
           </div>
@@ -269,9 +270,9 @@ export default function InstructorRegister() {
                       <div className="relative">
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
                         <FormControl>
-                          <Input
+                            <Input
                             placeholder="John Doe"
-                            className="pl-10 h-11 bg-muted/30 border-0 rounded-xl focus:ring-2 focus:ring-primary/30"
+                            className="pl-10 h-12 bg-slate-50 border-slate-200 rounded-2xl focus:ring-4 focus:ring-[#0075CF]/10 transition-all"
                             {...field}
                           />
                         </FormControl>
@@ -290,10 +291,10 @@ export default function InstructorRegister() {
                       <div className="relative">
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
                         <FormControl>
-                          <Input
+                            <Input
                             type="email"
                             placeholder="instructor@example.com"
-                            className="pl-10 h-11 bg-muted/30 border-0 rounded-xl focus:ring-2 focus:ring-primary/30"
+                            className="pl-10 h-12 bg-slate-50 border-slate-200 rounded-2xl focus:ring-4 focus:ring-[#0075CF]/10 transition-all"
                             {...field}
                           />
                         </FormControl>
@@ -315,10 +316,10 @@ export default function InstructorRegister() {
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
                         <FormControl>
-                          <Input
+                            <Input
                             type={showPassword ? "text" : "password"}
                             placeholder="••••••••"
-                            className="pl-10 pr-10 h-11 bg-muted/30 border-0 rounded-xl focus:ring-2 focus:ring-primary/30"
+                            className="pl-10 pr-10 h-12 bg-slate-50 border-slate-200 rounded-2xl focus:ring-4 focus:ring-[#0075CF]/10 transition-all"
                             {...field}
                           />
                         </FormControl>
@@ -348,7 +349,7 @@ export default function InstructorRegister() {
                           <Input
                             type={showConfirmPassword ? "text" : "password"}
                             placeholder="••••••••"
-                            className="pl-10 pr-10 h-11 bg-muted/30 border-0 rounded-xl focus:ring-2 focus:ring-primary/30"
+                            className="pl-10 pr-10 h-12 bg-slate-50 border-slate-200 rounded-2xl focus:ring-4 focus:ring-[#0075CF]/10 transition-all"
                             {...field}
                           />
                         </FormControl>
@@ -369,7 +370,7 @@ export default function InstructorRegister() {
 
               {/* Password Strength Indicator */}
               {watchPassword && (
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 p-3 bg-muted/30 rounded-xl">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 p-4 bg-slate-50 rounded-2xl border border-slate-100">
                   <PasswordRequirement met={passwordStrength.checks.length} text="8+ characters" />
                   <PasswordRequirement met={passwordStrength.checks.uppercase} text="Uppercase letter" />
                   <PasswordRequirement met={passwordStrength.checks.lowercase} text="Lowercase letter" />
@@ -387,7 +388,7 @@ export default function InstructorRegister() {
                       <FormLabel className="text-sm font-medium">Area of Expertise</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
-                          <SelectTrigger className="h-11 bg-muted/30 border-0 rounded-xl focus:ring-2 focus:ring-primary/30">
+                          <SelectTrigger className="h-12 bg-slate-50 border-slate-200 rounded-2xl focus:ring-4 focus:ring-[#0075CF]/10 transition-all">
                             <SelectValue placeholder="Select expertise" />
                           </SelectTrigger>
                         </FormControl>
@@ -412,7 +413,7 @@ export default function InstructorRegister() {
                       <FormLabel className="text-sm font-medium">Experience</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
-                          <SelectTrigger className="h-11 bg-muted/30 border-0 rounded-xl focus:ring-2 focus:ring-primary/30">
+                          <SelectTrigger className="h-12 bg-slate-50 border-slate-200 rounded-2xl focus:ring-4 focus:ring-[#0075CF]/10 transition-all">
                             <SelectValue placeholder="Select experience" />
                           </SelectTrigger>
                         </FormControl>
@@ -441,7 +442,7 @@ export default function InstructorRegister() {
                       <FormControl>
                         <Input
                           placeholder="e.g., Blockchain Development, Game Design..."
-                          className="h-11 bg-muted/30 border-0 rounded-xl focus:ring-2 focus:ring-primary/30"
+                          className="h-12 bg-slate-50 border-slate-200 rounded-2xl focus:ring-4 focus:ring-[#0075CF]/10 transition-all"
                           {...field}
                         />
                       </FormControl>
@@ -468,9 +469,9 @@ export default function InstructorRegister() {
                           aria-label="Upload Resume"
                           title="Upload Resume"
                         />
-                        <div className="flex items-center gap-3 h-11 px-4 bg-muted/30 rounded-xl border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 transition-colors">
-                          <Upload className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground">
+                        <div className="flex items-center gap-3 h-12 px-4 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 hover:border-[#0075CF]/30 transition-all group-hover:bg-[#0075CF]/5">
+                          <Upload className="h-4 w-4 text-slate-400" />
+                          <span className="text-sm text-slate-500 font-medium">
                             {resumeFile ? resumeFile.name : 'Upload your resume (PDF, DOC)'}
                           </span>
                         </div>
@@ -500,7 +501,7 @@ export default function InstructorRegister() {
                         <button
                           type="button"
                           onClick={() => setShowTermsDialog(true)}
-                          className="text-primary hover:underline font-medium"
+                          className="text-[#0075CF] hover:underline font-bold"
                         >
                           Terms of Service
                         </button>
@@ -508,7 +509,7 @@ export default function InstructorRegister() {
                         <button
                           type="button"
                           onClick={() => setShowPrivacyDialog(true)}
-                          className="text-primary hover:underline font-medium"
+                          className="text-[#0075CF] hover:underline font-bold"
                         >
                           Privacy Policy
                         </button>
@@ -523,7 +524,7 @@ export default function InstructorRegister() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-xl shadow-md hover:shadow-lg transition-all"
+                className="w-full h-14 bg-gradient-to-r from-[#0075CF] to-[#3391D9] text-white font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-[#0075CF]/20 hover:shadow-[#0075CF]/40 transition-all duration-300 active:scale-[0.98]"
               >
                 {loading ? 'Submitting Application...' : 'Submit Application'}
               </Button>

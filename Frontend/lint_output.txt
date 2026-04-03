@@ -1,0 +1,95 @@
+
+> vite_react_shadcn_ts@0.0.0 lint
+> eslint .
+
+
+C:\Users\DV.PRASAD\Aotms_LMS_New\Frontend\src\components\auth\ProtectedRoute.tsx
+  60:8   warning  React Hook useEffect has a missing dependency: 'allowedRoles'. Either include it or remove the dependency array                           react-hooks/exhaustive-deps
+  60:54  warning  React Hook useEffect has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked  react-hooks/exhaustive-deps
+
+C:\Users\DV.PRASAD\Aotms_LMS_New\Frontend\src\components\instructor\VideoUploader.tsx
+  450:70  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\DV.PRASAD\Aotms_LMS_New\Frontend\src\components\instructor\courses\CourseBuilder.tsx
+  218:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\DV.PRASAD\Aotms_LMS_New\Frontend\src\components\instructor\dashboard\InstructorStudentDashboard.tsx
+  331:82  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  360:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  361:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  362:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  363:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  371:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  371:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  393:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  641:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  641:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  642:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  642:59  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\DV.PRASAD\Aotms_LMS_New\Frontend\src\components\instructor\dashboard\InstructorVideoLibrary.tsx
+  67:6  warning  React Hook useEffect has a missing dependency: 'loadVideos'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\DV.PRASAD\Aotms_LMS_New\Frontend\src\components\manager\CourseMonitoring.tsx
+  428:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\DV.PRASAD\Aotms_LMS_New\Frontend\src\components\manager\ExamScheduler.tsx
+  354:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  356:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  362:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\DV.PRASAD\Aotms_LMS_New\Frontend\src\components\manager\ManagerVideoUploader.tsx
+  131:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  289:64  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  303:64  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\DV.PRASAD\Aotms_LMS_New\Frontend\src\components\manager\QuestionBankManager.tsx
+  215:48  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  224:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  236:57  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  247:55  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  495:55  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  495:89  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  506:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  506:73  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  532:70  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\DV.PRASAD\Aotms_LMS_New\Frontend\src\components\ui\badge.tsx
+  29:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\DV.PRASAD\Aotms_LMS_New\Frontend\src\components\ui\button.tsx
+  52:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\DV.PRASAD\Aotms_LMS_New\Frontend\src\components\ui\form.tsx
+  129:10  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\DV.PRASAD\Aotms_LMS_New\Frontend\src\components\ui\navigation-menu.tsx
+  111:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\DV.PRASAD\Aotms_LMS_New\Frontend\src\components\ui\phone-input.tsx
+  172:22  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\DV.PRASAD\Aotms_LMS_New\Frontend\src\components\ui\sidebar.tsx
+  636:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\DV.PRASAD\Aotms_LMS_New\Frontend\src\components\ui\sonner.tsx
+  27:19  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\DV.PRASAD\Aotms_LMS_New\Frontend\src\components\ui\toggle.tsx
+  37:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\DV.PRASAD\Aotms_LMS_New\Frontend\src\hooks\useAuth.tsx
+  254:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\DV.PRASAD\Aotms_LMS_New\Frontend\src\hooks\useCourses.ts
+  176:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\DV.PRASAD\Aotms_LMS_New\Frontend\src\hooks\useManagerData.ts
+  41:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\DV.PRASAD\Aotms_LMS_New\Frontend\src\pages\LiveSession.tsx
+  100:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  108:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+Γ£û 46 problems (34 errors, 12 warnings)
+

@@ -8,100 +8,104 @@ import {
   Briefcase,
   Award,
   Search,
+  LayoutDashboard,
 } from "lucide-react";
 import Header from "@/components/landing/Header";
 import Footer from "@/components/landing/Footer";
 
 const faqGroups = [
   {
-    category: "Admissions",
-    icon: GraduationCap,
+    category: "General",
+    icon: LayoutDashboard,
     color: "bg-[#0075CF]",
     questions: [
       {
-        q: "What is the eligibility to join AOTMS?",
-        a: "We welcome students from all backgrounds. Basic computer knowledge is helpful but not mandatory — we start from zero.",
+        q: "What is the AOTMS LMS portal?",
+        a: "The Academy of Tech Masters' Learning Management System (LMS) is a professional ecosystem designed to deliver high-quality technical education through secure video streaming, AI-driven assessments, and real-time mentor interaction.",
       },
       {
-        q: "Do I need a technical background?",
-        a: "No! Our curriculum is designed for complete beginners. We start from fundamentals and build up progressively.",
+        q: "Who can enroll in AOTMS courses?",
+        a: "Our courses are open to students, working professionals, and engineering graduates looking to master in-demand technical skills. We specifically focus on building practical expertise from the ground up.",
       },
       {
-        q: "How do I register for a course?",
-        a: "Register online via our website or visit our Vijayawada campus. Counselors will guide you.",
-      },
-      {
-        q: "Can I join with a career gap?",
-        a: "Absolutely! We focus on skills and dedication, not your history.",
+        q: "Does AOTMS offer placement assistance?",
+        a: "Yes! Every enrolled student receives 100% placement support, including resume building, mock HR/Technical interviews, and direct referrals to our network of 250+ hiring partners.",
       },
     ],
   },
   {
-    category: "Training",
-    icon: BookOpen,
+    category: "LMS Access",
+    icon: GraduationCap,
     color: "bg-[#FD5A1A]",
     questions: [
       {
-        q: "Are classes online or offline?",
-        a: "We offer both. Online for flexibility or offline at our campus — same quality either way.",
+        q: "How do I activate my LMS account?",
+        a: "New accounts are automatically set to 'Pending' after signup. Our administration team verifies every registration within 2-4 hours. You will receive an email once your account is 'Approved' for full access.",
       },
       {
-        q: "Do you provide hands-on projects?",
-        a: "Yes! Every course includes 3–5 real-world portfolio projects you can show to employers.",
+        q: "What user roles are available in the portal?",
+        a: "The portal supports four primary roles: Students (learning/exams), Instructors (teaching/grading), Managers (operations/approvals), and Admins (system control).",
       },
       {
-        q: "What if I miss a class?",
-        a: "Recorded sessions are always available. You can also attend the same topic in a different batch.",
-      },
-      {
-        q: "Do you have weekend batches?",
-        a: "Yes, dedicated weekend batches are available for working professionals.",
+        q: "Can I use the same account on multiple devices?",
+        a: "Yes, you can access your account from any device. However, for security reasons, active exam sessions and secure video playback are restricted to one active device at a time.",
       },
     ],
   },
   {
-    category: "Placements",
-    icon: Briefcase,
+    category: "Courses",
+    icon: BookOpen,
     color: "bg-[#0075CF]",
     questions: [
       {
-        q: "Do you offer placement assistance?",
-        a: "Yes — 100% placement support including job referrals, interview scheduling, and career counseling.",
+        q: "How can I track my course progress?",
+        a: "Our specialized tracking engine monitors your video watch-time and assessment scores in real-time. You can view your completion percentage for each module in the 'Academic Grid' on your dashboard.",
       },
       {
-        q: "Which companies hire from AOTMS?",
-        a: "TCS, Infosys, Wipro, Accenture, Amazon and many high-growth startups actively hire our graduates.",
+        q: "Where are the course materials located?",
+        a: "Every course contains a 'Resources' tab. Here you will find downloadable PDFs, code repositories, and engineering guides provided by your instructors.",
       },
       {
-        q: "Do you conduct mock interviews?",
-        a: "Yes! Regular HR and technical mock interviews with industry experts are part of preparation.",
-      },
-      {
-        q: "Will you help with resume building?",
-        a: "Yes. Our team creates ATS-friendly resumes and optimizes your LinkedIn for maximum visibility.",
+        q: "How do I join a Live Session?",
+        a: "Scheduled live classes appear as active alerts on your dashboard and sidebar. Simply click 'Join Room' or 'Enter Bridge' to join the secure video conference.",
       },
     ],
   },
   {
-    category: "Fees & Certification",
+    category: "Payments",
     icon: Award,
     color: "bg-[#FD5A1A]",
     questions: [
       {
-        q: "Do you offer EMI or installments?",
-        a: "Yes, flexible EMI plans with 3–6 installments at zero extra charge.",
+        q: "How do I pay for a course enrollment?",
+        a: "Navigate to the 'Courses' page, select your desired path, and click 'Purchase'. You can scan the secure UPI QR code and upload your transaction receipt for manual admin verification.",
       },
       {
-        q: "Will I receive a certificate?",
-        a: "Yes — industry-recognized course completion + project certificates are issued upon finishing.",
+        q: "How long does payment verification take?",
+        a: "Once you upload your transaction proof, our billing department verifies the receipt against our bank records. This typically takes between 30 minutes to 3 hours during business hours.",
       },
       {
-        q: "Are there any scholarships?",
-        a: "Merit-based scholarships up to 30% and regular early-bird discounts are offered.",
+        q: "Are there any hidden charges for certificates?",
+        a: "No. Your course enrollment fee covers the training, resources, placement support, and your official industry-recognized completion certificate.",
+      },
+    ],
+  },
+  {
+    category: "Technical Support",
+    icon: Briefcase,
+    color: "bg-[#0075CF]",
+    questions: [
+      {
+        q: "What should I do if a video is buffering?",
+        a: "Our encrypted player requires a stable connection of at least 2Mbps. Try lowering the resolution in the player settings or clearing your browser cache if the issue persists.",
       },
       {
-        q: "What is included in the course fee?",
-        a: "Training, materials, project guidance, placement support, and lifetime resource access.",
+        q: "How does 'Quantum Persistence' protect my exam?",
+        a: "In case of an internet outage during an assessment, our system locally buffers your answers and synchronizes them with the server automatically as soon as your connection is restored.",
+      },
+      {
+        q: "How do I report a bug in the portal?",
+        a: "Please use the 'Internal Support Ticket' system found in your User Settings menu. Provide a screenshot and a brief description of the issue for our dev team to investigate.",
       },
     ],
   },
@@ -216,11 +220,11 @@ const FAQ = () => {
 
                 {/* Description */}
                 <p className="text-[#FDFEFE]/80 text-sm sm:text-base md:text-lg max-w-3xl mx-auto font-medium mb-12 leading-relaxed">
-                  Your trusted IT training partner in Vijayawada. Find answers
-                  to common <br className="hidden md:block" />
-                  questions about our courses, admissions, placement support,
-                  facilities, and <br className="hidden md:block" />
-                  more at AOTMS Vijayawada.
+                  Welcome to the AOTMS LMS Help Center. Find answers to common
+                  questions about navigating your <br className="hidden md:block" />
+                  dashboard, accessing course materials, tracking progress, 
+                  and mastering our <br className="hidden md:block" />
+                  advanced assessment tools.
                 </p>
 
                 {/* Info Pills */}
@@ -264,7 +268,7 @@ const FAQ = () => {
               <div className="flex flex-col lg:flex-row gap-10 lg:gap-16">
                 {/* Category Sidebar — Professional Dashboard Style */}
                 <div className="w-full lg:w-1/3">
-                  <div className="sticky top-28 space-y-3 flex lg:flex-col gap-3 lg:gap-0 overflow-x-auto lg:overflow-visible pb-4 lg:pb-0 scrollbar-hide">
+                  <div className="sticky top-28 space-y-3 flex flex-col gap-3 overflow-visible pb-4 lg:pb-0 scrollbar-hide">
                     {filteredGroups.map((group, i) => (
                       <button
                         key={group.category}
@@ -272,7 +276,7 @@ const FAQ = () => {
                           setActiveTab(i);
                           setOpenId(null);
                         }}
-                        className={`group relative flex-shrink-0 flex items-center gap-4 px-6 py-5 rounded-2xl border transition-all duration-500 text-left w-full ${
+                        className={`group relative flex items-center gap-4 px-6 py-5 rounded-2xl border transition-all duration-500 text-left w-full ${
                           activeTab === i
                             ? "bg-white border-[#0075CF]/20 shadow-[0_20px_50px_rgba(0,117,207,0.12)] -translate-y-1"
                             : "bg-slate-50/50 border-slate-100/50 hover:bg-white hover:border-slate-200 hover:shadow-lg"
@@ -428,16 +432,13 @@ const FAQ = () => {
                     about our academy?
                   </h2>
                   <p className="text-white/70 text-lg md:text-xl font-medium">
-                    Our counselors are available 24/7 to help you choose the
-                    right path and answer any technical queries.
+                    Our technical support team is available to help you navigate
+                    the portal and maximize your learning experience.
                   </p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <button className="h-16 px-10 rounded-2xl bg-gradient-to-r from-[#FD5A1A] to-[#FF7A00] text-white font-black uppercase tracking-widest hover:shadow-xl hover:shadow-orange-500/20 transition-all hover:-translate-y-1 active:scale-95">
                     Contact Support
-                  </button>
-                  <button className="h-16 px-10 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-white font-black uppercase tracking-widest hover:bg-white/20 transition-all">
-                    Chat with AI
                   </button>
                 </div>
               </div>

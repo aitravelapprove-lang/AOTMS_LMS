@@ -25,7 +25,7 @@ const ScrollBot = () => {
       // Chatbot visibility logic (show after scrolling past 400px or if not on home page)
       const currentScrollY = window.scrollY;
       const isHome = location.pathname === "/";
-      
+
       if (!isHome || currentScrollY > 400) {
         setIsVisible(true);
       } else {
@@ -102,85 +102,174 @@ const ScrollBot = () => {
                 className="relative"
               >
                 {isChatOpen ? (
-                  /* OPEN CHAT WINDOW */
+                  /* OPEN CHAT WINDOW — PREMIUM GLASSMORPHISM */
                   <motion.div
-                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    className="bg-[#FDFEFE] border-2 border-white shadow-[0_20px_50px_rgba(0,117,207,0.2)] rounded-3xl w-80 sm:w-96 overflow-hidden flex flex-col mb-4"
+                    initial={{ opacity: 0, y: 50, scale: 0.9, rotate: -2 }}
+                    animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
+                    exit={{ opacity: 0, y: 50, scale: 0.9, rotate: 2 }}
+                    className="relative bg-white/95 backdrop-blur-2xl border-2 border-white/50 shadow-[0_40px_100px_-20px_rgba(0,117,207,0.3)] rounded-[2.5rem] w-[320px] sm:w-[360px] overflow-hidden flex flex-col mb-4"
+                    style={{ borderRadius: "2rem 4rem 2rem 4rem" }}
                   >
-                    {/* Header */}
-                    <div className="bg-[#0075CF] p-4 flex items-center justify-between text-[#FDFEFE]">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                          <Bot size={18} />
+                    {/* Header — Quantum Gradient */}
+                    <div className="bg-gradient-to-r from-[#0075CF] via-[#0057B7] to-[#FD5A1A] p-6 flex items-center justify-between text-white relative overflow-hidden">
+                      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
+                      <div className="flex items-center gap-4 relative z-10">
+                        <div className="relative">
+                          <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 rotate-3 group-hover:rotate-0 transition-transform">
+                            <Bot
+                              size={24}
+                              className="text-white drop-shadow-lg"
+                            />
+                          </div>
+                          <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full animate-pulse" />
                         </div>
                         <div>
-                          <p className="font-bold text-sm">AOTMS Assistant</p>
-                          <p className="text-[10px] opacity-80 uppercase tracking-widest font-bold">
-                            Online
+                          <p className="font-black text-base tracking-tight italic">
+                            AOTMS{" "}
+                            <span className="font-normal opacity-80 not-italic">
+                              Assistant
+                            </span>
                           </p>
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 bg-white/60 rounded-full animate-ping" />
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">
+                              System Live
+                            </p>
+                          </div>
                         </div>
                       </div>
                       <button
                         onClick={() => setIsChatOpen(false)}
-                        className="hover:bg-white/10 p-1 rounded-lg transition-colors"
+                        className="relative z-10 bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-all hover:scale-110 active:scale-95"
                       >
                         <X size={20} />
                       </button>
                     </div>
 
-                    {/* Messages */}
-                    <div className="h-80 overflow-y-auto p-4 flex flex-col gap-4 bg-slate-50">
+                    {/* Messages with Custom Scrollbar */}
+                    <div className="h-[320px] overflow-y-auto p-5 flex flex-col gap-5 bg-gradient-to-b from-slate-50/50 to-white">
                       {messages.map((m, i) => (
-                        <div
+                        <motion.div
                           key={i}
+                          initial={{
+                            opacity: 0,
+                            x: m.role === "user" ? 20 : -20,
+                          }}
+                          animate={{ opacity: 1, x: 0 }}
                           className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
                         >
                           <div
-                            className={`max-w-[80%] p-3 rounded-2xl text-sm ${
+                            className={`max-w-[85%] px-5 py-4 text-sm font-medium leading-relaxed ${
                               m.role === "user"
-                                ? "bg-[#0075CF] text-[#FDFEFE] rounded-br-none"
-                                : "bg-[#FDFEFE] border border-slate-100 text-slate-700 shadow-sm rounded-bl-none"
+                                ? "bg-gradient-to-br from-[#0075CF] to-[#0057B7] text-white rounded-[1.5rem] rounded-br-none shadow-[0_10px_20px_rgba(0,117,207,0.15)]"
+                                : "bg-white border border-slate-100 text-slate-700 rounded-[1.5rem] rounded-bl-none shadow-[0_10px_20px_rgba(0,0,0,0.03)]"
                             }`}
                           >
                             {m.text}
                           </div>
-                        </div>
+                        </motion.div>
                       ))}
                     </div>
 
-                    {/* Input */}
-                    <div className="p-4 bg-[#FDFEFE] border-t border-slate-100 flex gap-2">
-                      <Input
-                        value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
-                        onKeyPress={(e) => e.key === "Enter" && handleSend()}
-                        placeholder="Type a message..."
-                        className="flex-1 bg-slate-50 border-none focus:ring-1 focus:ring-[#0075CF]"
-                      />
-                      <Button
-                        onClick={handleSend}
-                        size="icon"
-                        className="bg-[#0075CF] hover:bg-[#0066B3]"
-                      >
-                        <Send size={18} />
-                      </Button>
+                    {/* Input — Floating Style */}
+                    <div className="p-6 bg-white border-t border-slate-100/50">
+                      <div className="flex gap-3 bg-slate-50 p-2 rounded-2xl border border-slate-100 focus-within:border-[#0075CF]/30 focus-within:bg-white transition-all">
+                        <Input
+                          value={inputValue}
+                          onChange={(e) => setInputValue(e.target.value)}
+                          onKeyPress={(e) => e.key === "Enter" && handleSend()}
+                          placeholder="Ask about courses, exams..."
+                          className="flex-1 bg-transparent border-none focus-visible:ring-0 text-slate-800 placeholder:text-slate-400 font-medium"
+                        />
+                        <Button
+                          onClick={handleSend}
+                          size="icon"
+                          className="bg-gradient-to-tr from-[#0075CF] to-[#FD5A1A] hover:scale-105 transition-transform rounded-xl shadow-lg"
+                        >
+                          <Send size={18} className="text-white" />
+                        </Button>
+                      </div>
+                      <p className="text-center text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-4">
+                        AOTMS Proprietary AI System
+                      </p>
                     </div>
                   </motion.div>
                 ) : (
-                  /* FLOATING CHAT BUBBLE */
+                  /* FLOATING CHAT BUBBLE — UNIQUE ASYMMETRIC SHAPE */
                   <button
                     onClick={() => setIsChatOpen(true)}
-                    className="w-14 h-14 rounded-full bg-[#0075CF] text-[#FDFEFE] shadow-lg flex items-center justify-center hover:scale-110 active:scale-95 transition-transform group relative overflow-hidden border-2 border-white"
+                    className="relative w-16 h-16 group outline-none"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-tr from-[#0075CF] to-[#FD5A1A] opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <MessageSquare className="relative z-10 w-6 h-6" />
+                    {/* Background Blob 1 */}
+                    <motion.div
+                      animate={{
+                        borderRadius: [
+                          "40% 60% 70% 30% / 40% 50% 60% 50%",
+                          "30% 70% 50% 50% / 50% 40% 60% 50%",
+                          "40% 60% 70% 30% / 40% 50% 60% 50%",
+                        ],
+                        rotate: [0, 90, 0],
+                      }}
+                      transition={{
+                        duration: 8,
+                        repeat: Infinity,
+                        ease: "linear",
+                      }}
+                      className="absolute inset-0 bg-gradient-to-tr from-[#0075CF] via-[#0057B7] to-[#FD5A1A] opacity-20 blur-xl group-hover:opacity-40 transition-opacity"
+                    />
 
-                    {/* Scroll Indicator Pulse */}
+                    {/* Background Blob 2 */}
+                    <motion.div
+                      animate={{
+                        borderRadius: [
+                          "30% 70% 50% 50% / 50% 40% 60% 50%",
+                          "40% 60% 70% 30% / 40% 50% 60% 50%",
+                          "30% 70% 50% 50% / 50% 40% 60% 50%",
+                        ],
+                        rotate: [0, -90, 0],
+                      }}
+                      transition={{
+                        duration: 10,
+                        repeat: Infinity,
+                        ease: "linear",
+                      }}
+                      className="absolute inset-0 bg-gradient-to-bl from-[#FD5A1A] via-[#FF7A00] to-[#0075CF] opacity-20 blur-xl group-hover:opacity-40 transition-opacity"
+                    />
+
+                    {/* Main Button Body - Asymmetric Capsule */}
+                    <motion.div
+                      whileHover={{ scale: 1.05, rotate: 5 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="relative z-10 w-full h-full bg-[#0075CF] text-white shadow-[0_10px_30px_rgba(0,117,207,0.3)] flex items-center justify-center overflow-hidden border-2 border-white/30 backdrop-blur-md"
+                      style={{
+                        borderRadius: "30% 70% 70% 30% / 30% 30% 70% 70%",
+                      }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent pointer-events-none" />
+                      <div className="flex flex-col items-center gap-1">
+                        <MessageSquare className="w-6 h-6 drop-shadow-md" />
+                        <span className="text-[8px] font-black uppercase tracking-tighter opacity-80">
+                          Help
+                        </span>
+                      </div>
+
+                      {/* Inner Flow Effect */}
+                      <motion.div
+                        animate={{ x: ["-100%", "100%"] }}
+                        transition={{
+                          duration: 3,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                        }}
+                        className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 pointer-events-none"
+                      />
+                    </motion.div>
+
+                    {/* Notification Badge */}
                     {!isScrolling && (
-                      <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                      <span className="absolute top-2 right-2 z-20 flex h-4 w-4">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FD5A1A] opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-4 w-4 bg-[#FD5A1A]"></span>
+                        <span className="relative inline-flex rounded-full h-4 w-4 bg-[#FD5A1A] border-2 border-white"></span>
                       </span>
                     )}
                   </button>

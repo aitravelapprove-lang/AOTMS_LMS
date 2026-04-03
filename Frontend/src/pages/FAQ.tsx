@@ -8,100 +8,104 @@ import {
   Briefcase,
   Award,
   Search,
+  LayoutDashboard,
 } from "lucide-react";
 import Header from "@/components/landing/Header";
 import Footer from "@/components/landing/Footer";
 
 const faqGroups = [
   {
-    category: "LMS & Access",
+    category: "General",
+    icon: LayoutDashboard,
+    color: "bg-[#0075CF]",
+    questions: [
+      {
+        q: "What is the AOTMS LMS portal?",
+        a: "The Academy of Tech Masters' Learning Management System (LMS) is a professional ecosystem designed to deliver high-quality technical education through secure video streaming, AI-driven assessments, and real-time mentor interaction.",
+      },
+      {
+        q: "Who can enroll in AOTMS courses?",
+        a: "Our courses are open to students, working professionals, and engineering graduates looking to master in-demand technical skills. We specifically focus on building practical expertise from the ground up.",
+      },
+      {
+        q: "Does AOTMS offer placement assistance?",
+        a: "Yes! Every enrolled student receives 100% placement support, including resume building, mock HR/Technical interviews, and direct referrals to our network of 250+ hiring partners.",
+      },
+    ],
+  },
+  {
+    category: "LMS Access",
     icon: GraduationCap,
-    color: "bg-[#0075CF]",
+    color: "bg-[#FD5A1A]",
     questions: [
       {
-        q: "How do I log in to the LMS portal?",
-        a: "Use your registered email and password on the Login page. If you are a new student, your account will be activated after manager approval to ensure secure access.",
+        q: "How do I activate my LMS account?",
+        a: "New accounts are automatically set to 'Pending' after signup. Our administration team verifies every registration within 2-4 hours. You will receive an email once your account is 'Approved' for full access.",
       },
       {
-        q: "What should I do if I forget my password?",
-        a: "Click on 'Forgot Password' on the login screen to reset it via a secure link sent to your registered email address.",
+        q: "What user roles are available in the portal?",
+        a: "The portal supports four primary roles: Students (learning/exams), Instructors (teaching/grading), Managers (operations/approvals), and Admins (system control).",
       },
       {
-        q: "What are the different user roles in the portal?",
-        a: "The portal supports specific roles: Students (learning/exams), Instructors (content/scheduling), Managers (ops/approvals), and Admins (system control).",
-      },
-      {
-        q: "Why is my account status showing as 'Pending'?",
-        a: "All new registrations require a one-time verification by our administration team. This process usually takes 2-4 hours during business days.",
+        q: "Can I use the same account on multiple devices?",
+        a: "Yes, you can access your account from any device. However, for security reasons, active exam sessions and secure video playback are restricted to one active device at a time.",
       },
     ],
   },
   {
-    category: "Courses & Learning",
+    category: "Courses",
     icon: BookOpen,
-    color: "bg-[#FD5A1A]",
-    questions: [
-      {
-        q: "How can I access my enrolled courses?",
-        a: "Once logged in, navigate to your Student Dashboard. All your active and completed courses will be listed under the 'My Academic Grid' section.",
-      },
-      {
-        q: "Can I watch course videos offline?",
-        a: "Our videos are streamed through a secure encrypted player to protect intellectual property. An active internet connection is required for learning.",
-      },
-      {
-        q: "How is my module progress tracked?",
-        a: "Our specialized tracking engine monitors your video watch-time and quiz scores in real-time, updating your progress bars as you learn.",
-      },
-      {
-        q: "Where can I find course-related resources?",
-        a: "Each course module has a dedicated 'Resources' tab where you can access PDFs, code repositories, and supplementary engineering guides.",
-      },
-    ],
-  },
-  {
-    category: "Exams & Results",
-    icon: Award,
     color: "bg-[#0075CF]",
     questions: [
       {
-        q: "How do I enter an exam session?",
-        a: "Go to the 'Assessments' tab in your dashboard. You will see scheduled live exams and practice mocks. Click 'Start' to enter the secure environment.",
+        q: "How can I track my course progress?",
+        a: "Our specialized tracking engine monitors your video watch-time and assessment scores in real-time. You can view your completion percentage for each module in the 'Academic Grid' on your dashboard.",
       },
       {
-        q: "What is the AI Question Bank?",
-        a: "Our instructors use advanced AI to generate unique, high-quality assessment items tailored to your specific course curriculum and difficulty level.",
+        q: "Where are the course materials located?",
+        a: "Every course contains a 'Resources' tab. Here you will find downloadable PDFs, code repositories, and engineering guides provided by your instructors.",
       },
       {
-        q: "What happens if I lose internet during an exam?",
-        a: "Our portal features 'Quantum Persistence'—your current progress is saved locally and synced automatically once your connection is restored.",
-      },
-      {
-        q: "When will I see my results and analytics?",
-        a: "Objective scores are available instantly. Detailed performance analytics and the leaderboard update immediately after you submit your session.",
+        q: "How do I join a Live Session?",
+        a: "Scheduled live classes appear as active alerts on your dashboard and sidebar. Simply click 'Join Room' or 'Enter Bridge' to join the secure video conference.",
       },
     ],
   },
   {
-    category: "Support & Tools",
-    icon: Briefcase,
+    category: "Payments",
+    icon: Award,
     color: "bg-[#FD5A1A]",
     questions: [
       {
-        q: "How do I communicate with my instructor?",
-        a: "Use the integrated Chat Interface to send direct messages to your mentors or join collaborative doubt-clearing rooms within the portal.",
+        q: "How do I pay for a course enrollment?",
+        a: "Navigate to the 'Courses' page, select your desired path, and click 'Purchase'. You can scan the secure UPI QR code and upload your transaction receipt for manual admin verification.",
       },
       {
-        q: "What is the AOTMS Leaderboard?",
-        a: "The leaderboard tracks top performers based on course milestones, exam accuracy, and portal engagement, fostering healthy competition.",
+        q: "How long does payment verification take?",
+        a: "Once you upload your transaction proof, our billing department verifies the receipt against our bank records. This typically takes between 30 minutes to 3 hours during business hours.",
       },
       {
-        q: "How do I join a Live Class?",
-        a: "Scheduled live sessions appear as active notifications on your dashboard. Simply click 'Join Room' to enter the secure video bridge.",
+        q: "Are there any hidden charges for certificates?",
+        a: "No. Your course enrollment fee covers the training, resources, placement support, and your official industry-recognized completion certificate.",
+      },
+    ],
+  },
+  {
+    category: "Technical Support",
+    icon: Briefcase,
+    color: "bg-[#0075CF]",
+    questions: [
+      {
+        q: "What should I do if a video is buffering?",
+        a: "Our encrypted player requires a stable connection of at least 2Mbps. Try lowering the resolution in the player settings or clearing your browser cache if the issue persists.",
       },
       {
-        q: "Who do I contact for technical issues?",
-        a: "For portal-related technical glitches, please use the internal Support Ticket system found in your User Settings menu.",
+        q: "How does 'Quantum Persistence' protect my exam?",
+        a: "In case of an internet outage during an assessment, our system locally buffers your answers and synchronizes them with the server automatically as soon as your connection is restored.",
+      },
+      {
+        q: "How do I report a bug in the portal?",
+        a: "Please use the 'Internal Support Ticket' system found in your User Settings menu. Provide a screenshot and a brief description of the issue for our dev team to investigate.",
       },
     ],
   },
@@ -264,7 +268,7 @@ const FAQ = () => {
               <div className="flex flex-col lg:flex-row gap-10 lg:gap-16">
                 {/* Category Sidebar — Professional Dashboard Style */}
                 <div className="w-full lg:w-1/3">
-                  <div className="sticky top-28 space-y-3 flex lg:flex-col gap-3 lg:gap-0 overflow-x-auto lg:overflow-visible pb-4 lg:pb-0 scrollbar-hide">
+                  <div className="sticky top-28 space-y-3 flex flex-col gap-3 overflow-visible pb-4 lg:pb-0 scrollbar-hide">
                     {filteredGroups.map((group, i) => (
                       <button
                         key={group.category}
@@ -272,7 +276,7 @@ const FAQ = () => {
                           setActiveTab(i);
                           setOpenId(null);
                         }}
-                        className={`group relative flex-shrink-0 flex items-center gap-4 px-6 py-5 rounded-2xl border transition-all duration-500 text-left w-full ${
+                        className={`group relative flex items-center gap-4 px-6 py-5 rounded-2xl border transition-all duration-500 text-left w-full ${
                           activeTab === i
                             ? "bg-white border-[#0075CF]/20 shadow-[0_20px_50px_rgba(0,117,207,0.12)] -translate-y-1"
                             : "bg-slate-50/50 border-slate-100/50 hover:bg-white hover:border-slate-200 hover:shadow-lg"

@@ -7,6 +7,7 @@ import {
   BookOpen,
   Briefcase,
   Award,
+  LayoutDashboard,
 } from "lucide-react";
 
 /**
@@ -143,70 +144,77 @@ const FAQBg = () => {
 
 const faqGroups = [
   {
-    category: "LMS & Access",
+    category: "General",
+    icon: LayoutDashboard,
+    color: "bg-[#0075CF]",
+    questions: [
+      {
+        q: "What is the AOTMS LMS portal?",
+        a: "A professional ecosystem designed to deliver high-quality technical education through secure video streaming, AI assessments, and real-time mentor interaction.",
+      },
+      {
+        q: "Does AOTMS offer placement assistance?",
+        a: "Yes! Every student receives 100% placement support, including resume building, mock interviews, and referrals to our 250+ hiring partners.",
+      },
+    ],
+  },
+  {
+    category: "LMS Access",
     icon: GraduationCap,
-    color: "bg-[#0075CF]",
+    color: "bg-[#FD5A1A]",
     questions: [
       {
-        q: "How do I log in to the LMS portal?",
-        a: "Use your registered email and password on the Login page. New student accounts are activated after manager approval for secure access.",
+        q: "How do I activate my LMS account?",
+        a: "New accounts are set to 'Pending' after signup. Our administration verifies registration within 2-4 hours before granting full access.",
       },
       {
-        q: "What should I do if I forget my password?",
-        a: "Click 'Forgot Password' on the login screen to reset it via a secure link sent to your registered email.",
-      },
-      {
-        q: "What are the user roles in the portal?",
-        a: "The portal supports Students (learning), Instructors (content), Managers (approvals), and Admins (system control).",
+        q: "What user roles are available in the portal?",
+        a: "The portal supports Students (learning), Instructors (teaching), Managers (ops), and Admins (system control).",
       },
     ],
   },
   {
-    category: "Learning",
+    category: "Courses",
     icon: BookOpen,
-    color: "bg-[#FD5A1A]",
-    questions: [
-      {
-        q: "How can I access my courses?",
-        a: "Once logged in, go to your Student Dashboard. All enrolled courses are listed under 'My Academic Grid'.",
-      },
-      {
-        q: "Are videos available offline?",
-        a: "Videos are streamed via a secure encrypted player. An active internet connection is required to protect content.",
-      },
-      {
-        q: "How is my progress tracked?",
-        a: "Our tracking engine monitors video watch-time and quiz scores in real-time, updating your progress automatically.",
-      },
-    ],
-  },
-  {
-    category: "Exams",
-    icon: Award,
     color: "bg-[#0075CF]",
     questions: [
       {
-        q: "How do I start an exam?",
-        a: "Navigate to the 'Assessments' tab in your dashboard and click 'Start' on any scheduled live or mock exam.",
+        q: "How can I track my course progress?",
+        a: "Our tracking engine monitors video watch-time and assessment scores in real-time. View your progress in the 'Academic Grid' on your dashboard.",
       },
       {
-        q: "What is the AI Question Bank?",
-        a: "We use advanced AI to generate unique assessment items tailored to your specific course curriculum and difficulty level.",
+        q: "Where are the course materials located?",
+        a: "Every course contains a 'Resources' tab with downloadable PDFs, code repositories, and engineering guides.",
       },
     ],
   },
   {
-    category: "Support",
-    icon: Briefcase,
+    category: "Payments",
+    icon: Award,
     color: "bg-[#FD5A1A]",
     questions: [
       {
-        q: "How do I contact my instructor?",
-        a: "Use the integrated Chat Interface to message mentors directly or join collaborative doubt-clearing rooms.",
+        q: "How do I pay for a course enrollment?",
+        a: "Navigate to 'Courses', select your path, and click 'Purchase'. Scan the secure UPI QR code and upload your transaction receipt.",
       },
       {
-        q: "What is the Leaderboard?",
-        a: "It ranks students based on course milestones, exam accuracy, and portal engagement to foster growth.",
+        q: "How long does verification take?",
+        a: "Billing verifies your receipt against bank records. This typically takes 30 minutes to 3 hours during business hours.",
+      },
+    ],
+  },
+  {
+    category: "Technical Support",
+    icon: Briefcase,
+    color: "bg-[#0075CF]",
+    questions: [
+      {
+        q: "What should I do if a video is buffering?",
+        a: "Our player requires a stable 2Mbps connection. Try lowering the resolution or clearing your browser cache if the issue persists.",
+      },
+      {
+        q: "How does 'Quantum Persistence' protect my exam?",
+        a: "If your internet fails during an exam, progress is saved locally and synced automatically once your connection returns.",
       },
     ],
   },
@@ -248,7 +256,7 @@ const FAQSection = () => {
         <div className="flex flex-col lg:flex-row gap-10 lg:gap-16">
           {/* Category Sidebar */}
           <div className="w-full lg:w-1/3">
-            <div className="sticky top-24 flex lg:flex-col gap-3 overflow-x-auto lg:overflow-visible pb-4 lg:pb-0 scrollbar-hide">
+            <div className="sticky top-24 flex flex-col gap-3 overflow-visible pb-4 lg:pb-0 scrollbar-hide">
               {faqGroups.map((group, i) => (
                 <button
                   key={group.category}
@@ -256,7 +264,7 @@ const FAQSection = () => {
                     setActiveTab(i);
                     setOpenId(null);
                   }}
-                  className={`flex-shrink-0 flex items-center gap-4 px-6 py-5 rounded-[1.5rem] border transition-all duration-300 text-left ${
+                  className={`flex items-center gap-4 px-6 py-5 rounded-[1.5rem] border transition-all duration-300 text-left w-full ${
                     activeTab === i
                       ? "bg-white/80 border-[#0075CF] shadow-xl shadow-[#0075CF]/10 scale-[1.02]"
                       : "bg-white/30 border-slate-900/10 hover:bg-white/50 backdrop-blur-sm"

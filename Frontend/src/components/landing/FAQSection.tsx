@@ -143,94 +143,70 @@ const FAQBg = () => {
 
 const faqGroups = [
   {
-    category: "Admissions",
+    category: "LMS & Access",
     icon: GraduationCap,
     color: "bg-[#0075CF]",
     questions: [
       {
-        q: "What is the eligibility to join AOTMS?",
-        a: "We welcome students from all backgrounds. Basic computer knowledge is helpful but not mandatory — we start from zero.",
+        q: "How do I log in to the LMS portal?",
+        a: "Use your registered email and password on the Login page. New student accounts are activated after manager approval for secure access.",
       },
       {
-        q: "Do I need a technical background?",
-        a: "No! Our curriculum is designed for complete beginners. We start from fundamentals and build up progressively.",
+        q: "What should I do if I forget my password?",
+        a: "Click 'Forgot Password' on the login screen to reset it via a secure link sent to your registered email.",
       },
       {
-        q: "How do I register for a course?",
-        a: "Register online via our website or visit our Vijayawada campus. Counselors will guide you.",
-      },
-      {
-        q: "Can I join with a career gap?",
-        a: "Absolutely! We focus on skills and dedication, not your history.",
+        q: "What are the user roles in the portal?",
+        a: "The portal supports Students (learning), Instructors (content), Managers (approvals), and Admins (system control).",
       },
     ],
   },
   {
-    category: "Training",
+    category: "Learning",
     icon: BookOpen,
     color: "bg-[#FD5A1A]",
     questions: [
       {
-        q: "Are classes online or offline?",
-        a: "We offer both. Online for flexibility or offline at our campus — same quality either way.",
+        q: "How can I access my courses?",
+        a: "Once logged in, go to your Student Dashboard. All enrolled courses are listed under 'My Academic Grid'.",
       },
       {
-        q: "Do you provide hands-on projects?",
-        a: "Yes! Every course includes 3–5 real-world portfolio projects you can show to employers.",
+        q: "Are videos available offline?",
+        a: "Videos are streamed via a secure encrypted player. An active internet connection is required to protect content.",
       },
       {
-        q: "What if I miss a class?",
-        a: "Recorded sessions are always available. You can also attend the same topic in a different batch.",
-      },
-      {
-        q: "Do you have weekend batches?",
-        a: "Yes, dedicated weekend batches are available for working professionals.",
+        q: "How is my progress tracked?",
+        a: "Our tracking engine monitors video watch-time and quiz scores in real-time, updating your progress automatically.",
       },
     ],
   },
   {
-    category: "Placements",
-    icon: Briefcase,
+    category: "Exams",
+    icon: Award,
     color: "bg-[#0075CF]",
     questions: [
       {
-        q: "Do you offer placement assistance?",
-        a: "Yes — 100% placement support including job referrals, interview scheduling, and career counseling.",
+        q: "How do I start an exam?",
+        a: "Navigate to the 'Assessments' tab in your dashboard and click 'Start' on any scheduled live or mock exam.",
       },
       {
-        q: "Which companies hire from AOTMS?",
-        a: "TCS, Infosys, Wipro, Accenture, Amazon and many high-growth startups actively hire our graduates.",
-      },
-      {
-        q: "Do you conduct mock interviews?",
-        a: "Yes! Regular HR and technical mock interviews with industry experts are part of preparation.",
-      },
-      {
-        q: "Will you help with resume building?",
-        a: "Yes. Our team creates ATS-friendly resumes and optimizes your LinkedIn for maximum visibility.",
+        q: "What is the AI Question Bank?",
+        a: "We use advanced AI to generate unique assessment items tailored to your specific course curriculum and difficulty level.",
       },
     ],
   },
   {
-    category: "Fees & Certification",
-    icon: Award,
+    category: "Support",
+    icon: Briefcase,
     color: "bg-[#FD5A1A]",
     questions: [
       {
-        q: "Do you offer EMI or installments?",
-        a: "Yes, flexible EMI plans with 3–6 installments at zero extra charge.",
+        q: "How do I contact my instructor?",
+        a: "Use the integrated Chat Interface to message mentors directly or join collaborative doubt-clearing rooms.",
       },
       {
-        q: "Will I receive a certificate?",
-        a: "Yes — industry-recognized course completion + project certificates are issued upon finishing.",
-      },
-      {
-        q: "Are there any scholarships?",
-        a: "Merit-based scholarships up to 30% and regular early-bird discounts are offered.",
-      },
-      {
-        q: "What is included in the course fee?",
-        a: "Training, materials, project guidance, placement support, and lifetime resource access.",
+        q: "What is the Leaderboard?",
+        a: "It ranks students based on course milestones, exam accuracy, and portal engagement to foster growth.",
       },
     ],
   },

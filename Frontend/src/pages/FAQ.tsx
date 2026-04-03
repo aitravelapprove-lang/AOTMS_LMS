@@ -14,94 +14,94 @@ import Footer from "@/components/landing/Footer";
 
 const faqGroups = [
   {
-    category: "Admissions",
+    category: "LMS & Access",
     icon: GraduationCap,
     color: "bg-[#0075CF]",
     questions: [
       {
-        q: "What is the eligibility to join AOTMS?",
-        a: "We welcome students from all backgrounds. Basic computer knowledge is helpful but not mandatory — we start from zero.",
+        q: "How do I log in to the LMS portal?",
+        a: "Use your registered email and password on the Login page. If you are a new student, your account will be activated after manager approval to ensure secure access.",
       },
       {
-        q: "Do I need a technical background?",
-        a: "No! Our curriculum is designed for complete beginners. We start from fundamentals and build up progressively.",
+        q: "What should I do if I forget my password?",
+        a: "Click on 'Forgot Password' on the login screen to reset it via a secure link sent to your registered email address.",
       },
       {
-        q: "How do I register for a course?",
-        a: "Register online via our website or visit our Vijayawada campus. Counselors will guide you.",
+        q: "What are the different user roles in the portal?",
+        a: "The portal supports specific roles: Students (learning/exams), Instructors (content/scheduling), Managers (ops/approvals), and Admins (system control).",
       },
       {
-        q: "Can I join with a career gap?",
-        a: "Absolutely! We focus on skills and dedication, not your history.",
+        q: "Why is my account status showing as 'Pending'?",
+        a: "All new registrations require a one-time verification by our administration team. This process usually takes 2-4 hours during business days.",
       },
     ],
   },
   {
-    category: "Training",
+    category: "Courses & Learning",
     icon: BookOpen,
     color: "bg-[#FD5A1A]",
     questions: [
       {
-        q: "Are classes online or offline?",
-        a: "We offer both. Online for flexibility or offline at our campus — same quality either way.",
+        q: "How can I access my enrolled courses?",
+        a: "Once logged in, navigate to your Student Dashboard. All your active and completed courses will be listed under the 'My Academic Grid' section.",
       },
       {
-        q: "Do you provide hands-on projects?",
-        a: "Yes! Every course includes 3–5 real-world portfolio projects you can show to employers.",
+        q: "Can I watch course videos offline?",
+        a: "Our videos are streamed through a secure encrypted player to protect intellectual property. An active internet connection is required for learning.",
       },
       {
-        q: "What if I miss a class?",
-        a: "Recorded sessions are always available. You can also attend the same topic in a different batch.",
+        q: "How is my module progress tracked?",
+        a: "Our specialized tracking engine monitors your video watch-time and quiz scores in real-time, updating your progress bars as you learn.",
       },
       {
-        q: "Do you have weekend batches?",
-        a: "Yes, dedicated weekend batches are available for working professionals.",
+        q: "Where can I find course-related resources?",
+        a: "Each course module has a dedicated 'Resources' tab where you can access PDFs, code repositories, and supplementary engineering guides.",
       },
     ],
   },
   {
-    category: "Placements",
-    icon: Briefcase,
+    category: "Exams & Results",
+    icon: Award,
     color: "bg-[#0075CF]",
     questions: [
       {
-        q: "Do you offer placement assistance?",
-        a: "Yes — 100% placement support including job referrals, interview scheduling, and career counseling.",
+        q: "How do I enter an exam session?",
+        a: "Go to the 'Assessments' tab in your dashboard. You will see scheduled live exams and practice mocks. Click 'Start' to enter the secure environment.",
       },
       {
-        q: "Which companies hire from AOTMS?",
-        a: "TCS, Infosys, Wipro, Accenture, Amazon and many high-growth startups actively hire our graduates.",
+        q: "What is the AI Question Bank?",
+        a: "Our instructors use advanced AI to generate unique, high-quality assessment items tailored to your specific course curriculum and difficulty level.",
       },
       {
-        q: "Do you conduct mock interviews?",
-        a: "Yes! Regular HR and technical mock interviews with industry experts are part of preparation.",
+        q: "What happens if I lose internet during an exam?",
+        a: "Our portal features 'Quantum Persistence'—your current progress is saved locally and synced automatically once your connection is restored.",
       },
       {
-        q: "Will you help with resume building?",
-        a: "Yes. Our team creates ATS-friendly resumes and optimizes your LinkedIn for maximum visibility.",
+        q: "When will I see my results and analytics?",
+        a: "Objective scores are available instantly. Detailed performance analytics and the leaderboard update immediately after you submit your session.",
       },
     ],
   },
   {
-    category: "Fees & Certification",
-    icon: Award,
+    category: "Support & Tools",
+    icon: Briefcase,
     color: "bg-[#FD5A1A]",
     questions: [
       {
-        q: "Do you offer EMI or installments?",
-        a: "Yes, flexible EMI plans with 3–6 installments at zero extra charge.",
+        q: "How do I communicate with my instructor?",
+        a: "Use the integrated Chat Interface to send direct messages to your mentors or join collaborative doubt-clearing rooms within the portal.",
       },
       {
-        q: "Will I receive a certificate?",
-        a: "Yes — industry-recognized course completion + project certificates are issued upon finishing.",
+        q: "What is the AOTMS Leaderboard?",
+        a: "The leaderboard tracks top performers based on course milestones, exam accuracy, and portal engagement, fostering healthy competition.",
       },
       {
-        q: "Are there any scholarships?",
-        a: "Merit-based scholarships up to 30% and regular early-bird discounts are offered.",
+        q: "How do I join a Live Class?",
+        a: "Scheduled live sessions appear as active notifications on your dashboard. Simply click 'Join Room' to enter the secure video bridge.",
       },
       {
-        q: "What is included in the course fee?",
-        a: "Training, materials, project guidance, placement support, and lifetime resource access.",
+        q: "Who do I contact for technical issues?",
+        a: "For portal-related technical glitches, please use the internal Support Ticket system found in your User Settings menu.",
       },
     ],
   },
@@ -216,11 +216,11 @@ const FAQ = () => {
 
                 {/* Description */}
                 <p className="text-[#FDFEFE]/80 text-sm sm:text-base md:text-lg max-w-3xl mx-auto font-medium mb-12 leading-relaxed">
-                  Your trusted IT training partner in Vijayawada. Find answers
-                  to common <br className="hidden md:block" />
-                  questions about our courses, admissions, placement support,
-                  facilities, and <br className="hidden md:block" />
-                  more at AOTMS Vijayawada.
+                  Welcome to the AOTMS LMS Help Center. Find answers to common
+                  questions about navigating your <br className="hidden md:block" />
+                  dashboard, accessing course materials, tracking progress, 
+                  and mastering our <br className="hidden md:block" />
+                  advanced assessment tools.
                 </p>
 
                 {/* Info Pills */}
@@ -428,8 +428,8 @@ const FAQ = () => {
                     about our academy?
                   </h2>
                   <p className="text-white/70 text-lg md:text-xl font-medium">
-                    Our counselors are available 24/7 to help you choose the
-                    right path and answer any technical queries.
+                    Our technical support team is available to help you navigate
+                    the portal and maximize your learning experience.
                   </p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4">

@@ -343,13 +343,13 @@ export default function Auth() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-white relative overflow-hidden">
+    <div className="min-h-screen flex flex-col md:flex-row bg-white relative overflow-hidden">
       {/* 
           Global Spline Background Layer - Brand Identity
           Hidden on mobile (sm) for performance, visible on tablet (md) and desktop (lg).
       */}
       <div className="absolute inset-0 z-0 w-full h-full pointer-events-none overflow-hidden text-center bg-gradient-to-br from-[#0075CF]/20 via-white to-[#FD5A1A]/20">
-        <div className="hidden md:block w-[150vw] h-[150vh] absolute -top-[20vh] -left-[25vw] lg:w-[220vw] lg:-top-[15vh] lg:-left-[75vw] pointer-events-auto transition-all duration-700 ease-out mix-blend-multiply">
+        <div className="hidden md:block w-[150vw] h-[120vh] absolute -top-[10vh] -left-[30vw] lg:w-[220vw] lg:-top-[15vh] lg:-left-[75vw] pointer-events-auto transition-all duration-700 ease-out mix-blend-multiply">
           <Spline 
             scene="https://prod.spline.design/atHJsNeB45CbbiBU/scene.splinecode" 
           />
@@ -360,8 +360,8 @@ export default function Auth() {
       </div>
 
       {/* Left Panel — Purely Visual Spacing */}
-      <div className="lg:w-1/2 relative flex flex-col pointer-events-none min-h-0 lg:min-h-screen">
-        <div className="relative lg:absolute top-0 left-0 w-full p-8 lg:p-12 z-20 flex justify-center lg:justify-start pointer-events-none">
+      <div className="md:w-1/2 relative flex flex-col pointer-events-none min-h-0 md:min-h-screen">
+        <div className="relative md:absolute top-0 left-0 w-full p-8 lg:p-12 z-20 flex justify-center lg:justify-start pointer-events-none">
           <a href="/" className="pointer-events-auto transition-transform hover:scale-105 active:scale-95 inline-block">
             <img src={logo} alt="Logo" className="h-10 lg:h-12" />
           </a>
@@ -369,7 +369,7 @@ export default function Auth() {
       </div>
 
       {/* Right Panel — Interactive Form Area */}
-      <div className="lg:w-1/2 flex items-center justify-center p-6 lg:p-12 relative z-10 min-h-screen">
+      <div className="md:w-1/2 flex items-center justify-center p-6 lg:p-12 relative z-10 min-h-screen">
         <div className="w-full max-w-md space-y-8 bg-white/80 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/40 shadow-2xl shadow-slate-200/50 relative">
           {/* Icon */}
           <div className="flex justify-center mb-6">

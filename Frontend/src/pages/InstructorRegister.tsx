@@ -234,10 +234,10 @@ export default function InstructorRegister() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-white relative overflow-hidden">
+    <div className="min-h-screen flex flex-col md:flex-row bg-white relative overflow-hidden">
       {/* Global Spline Background Layer - Restored for Tablet (md+) */}
       <div className="absolute inset-0 z-0 w-full h-full pointer-events-none overflow-hidden bg-gradient-to-br from-[#0075CF]/20 via-white to-[#FD5A1A]/20">
-        <div className="hidden md:block w-[150vw] h-[150vh] absolute -top-[20vh] -left-[25vw] lg:w-[220vw] lg:-top-[15vh] lg:-left-[75vw] pointer-events-auto transition-all duration-700 ease-out mix-blend-multiply">
+        <div className="hidden md:block w-[150vw] h-[120vh] absolute -top-[10vh] -left-[30vw] lg:w-[220vw] lg:-top-[15vh] lg:-left-[75vw] pointer-events-auto transition-all duration-700 ease-out mix-blend-multiply">
           <Spline scene="https://prod.spline.design/atHJsNeB45CbbiBU/scene.splinecode" />
         </div>
         {/* Subtle Brand Orbs for Depth */}
@@ -246,8 +246,8 @@ export default function InstructorRegister() {
       </div>
 
       {/* Left Panel — Visual Spacing */}
-      <div className="lg:w-1/2 relative flex flex-col pointer-events-none min-h-0 lg:min-h-screen">
-        <div className="relative lg:absolute top-0 left-0 w-full p-8 lg:p-12 z-20 flex flex-col lg:flex-row items-center justify-between pointer-events-none gap-6">
+      <div className="md:w-1/2 relative flex flex-col pointer-events-none min-h-0 md:min-h-screen">
+        <div className="relative md:absolute top-0 left-0 w-full p-8 lg:p-12 z-20 flex flex-col md:flex-row items-center justify-between pointer-events-none gap-6">
           <Link
             to="/"
             className="pointer-events-auto flex items-center gap-2 text-slate-400 hover:text-[#0075CF] transition-colors"
@@ -267,7 +267,7 @@ export default function InstructorRegister() {
       </div>
 
       {/* Right Panel - Registration Form */}
-      <div className="lg:w-1/2 flex items-center justify-center p-6 lg:p-12 relative z-10 min-h-screen">
+      <div className="md:w-1/2 flex items-center justify-center p-6 lg:p-12 relative z-10 min-h-screen">
         <div className="w-full max-w-2xl bg-white/80 backdrop-blur-xl p-10 rounded-[3rem] border border-white shadow-2xl relative">
           <div className="flex flex-col items-center text-center mb-10">
             <div className="w-16 h-16 bg-gradient-to-br from-[#0075CF]/10 to-[#FD5A1A]/10 rounded-3xl flex items-center justify-center border border-slate-100 shadow-xl mb-6">

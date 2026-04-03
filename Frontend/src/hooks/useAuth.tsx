@@ -6,6 +6,8 @@ interface User {
   id: string;
   email?: string;
   role?: string;
+  full_name?: string;
+  avatar_url?: string;
   user_metadata?: {
     full_name?: string;
     avatar_url?: string;
@@ -40,19 +42,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Initialize state from localStorage for instant persistence on refresh
   const [user, setUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('user');
-    return saved ? JSON.parse(saved) : null;
+    if (!saved || saved === 'undefined') return null;
+    try {
+      return JSON.parse(saved);
+    } catch (e) {
+      console.error('Failed to parse user from storage:', e);
+      return null;
+    }
   });
   const [session, setSession] = useState<Session | null>(() => {
     const token = localStorage.getItem('access_token');
-    if (!token) return null;
+    if (!token || token === 'undefined') return null;
     const savedUser = localStorage.getItem('user');
+    let parsedUser = null;
+    if (savedUser && savedUser !== 'undefined') {
+      try {
+        parsedUser = JSON.parse(savedUser);
+      } catch (e) {
+        console.error('Failed to parse user for session:', e);
+      }
+    }
     return {
       access_token: token,
-      user: savedUser ? JSON.parse(savedUser) : null
+      user: parsedUser
     } as Session;
   });
   const [userRole, setUserRole] = useState<UserRole | null>(() => {
-    return localStorage.getItem('user_role') as UserRole | null;
+    const role = localStorage.getItem('user_role');
+    return (role && role !== 'undefined') ? (role as UserRole) : null;
   });
 
   const [loading, setLoading] = useState(true);
@@ -121,7 +138,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Update local state and storage with fresh profile data
       setUser(userData);
       setSession({ access_token: token, user: userData } as Session);
-      localStorage.setItem('user', JSON.stringify(userData));
+      if (userData) {
+        localStorage.setItem('user', JSON.stringify(userData));
+      }
 
       // Use the role returned from profile endpoint
       if (userData.role) {
@@ -188,7 +207,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           localStorage.setItem('refresh_token', data.session.refresh_token);
         }
         const newUser = { ...data.user, approval_status: 'pending' };
-        localStorage.setItem('user', JSON.stringify(newUser));
+        if (newUser) {
+          localStorage.setItem('user', JSON.stringify(newUser));
+        }
         localStorage.setItem('user_role', 'student');
 
         setUser(newUser);
@@ -227,7 +248,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userData = data.user;
         const role = userData.role || 'student';
         
-        localStorage.setItem('user', JSON.stringify(userData));
+        if (userData) {
+          localStorage.setItem('user', JSON.stringify(userData));
+        }
         localStorage.setItem('user_role', role);
 
         setUser(userData);

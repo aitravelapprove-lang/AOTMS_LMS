@@ -20,11 +20,15 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
+import { useNotifications } from "@/hooks/useNotifications";
+import { useNavigate } from "react-router-dom";
 
 export function AdminHeader() {
   const { user, signOut, userRole } = useAuth();
+  const { unreadCount } = useNotifications();
+  const navigate = useNavigate();
   const initials =
-    user?.user_metadata?.full_name
+    (user?.full_name || user?.user_metadata?.full_name)
       ?.split(" ")
       .map((n: string) => n[0])
       .join("")
@@ -61,13 +65,16 @@ export function AdminHeader() {
           <Button
             variant="ghost"
             size="icon"
+            onClick={() => navigate("/admin/notifications")}
             className="h-11 w-11 rounded-full bg-slate-100/50 border border-slate-200/60 hover:bg-slate-100 hover:border-slate-300 transition-all active:scale-95 group overflow-hidden text-slate-600 hover:text-slate-700"
           >
             <Bell className="h-5 w-5 transition-transform group-hover:rotate-12" />
           </Button>
-          <span className="absolute top-0 right-0 h-4 w-4 rounded-full bg-primary border-2 border-white text-[9px] font-bold text-white flex items-center justify-center shadow-sm">
-            3
-          </span>
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary border-2 border-white text-[10px] font-bold text-white flex items-center justify-center shadow-sm animate-in zoom-in duration-300">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
         </div>
 
         <div className="hidden md:block h-8 w-px bg-slate-200 mx-1" />
@@ -81,7 +88,7 @@ export function AdminHeader() {
             >
               <div className="relative">
                 <Avatar className="h-10 w-10 border-2 border-primary/30 shadow-md transition-all duration-300 group-hover:border-primary/60 group-hover:shadow-lg group-hover:scale-105">
-                  <AvatarImage src={user?.user_metadata?.avatar_url} />
+                  <AvatarImage src={user?.avatar_url || user?.user_metadata?.avatar_url} />
                   <AvatarFallback className="bg-primary text-white font-bold text-xs">
                     {initials}
                   </AvatarFallback>
@@ -90,7 +97,7 @@ export function AdminHeader() {
               </div>
               <div className="hidden lg:block text-left">
                 <p className="text-sm font-bold text-slate-800 group-hover:text-primary transition-colors">
-                  {user?.user_metadata?.full_name || "Administrator"}
+                  {user?.full_name || user?.user_metadata?.full_name || "Administrator"}
                 </p>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${getRoleBadge()}`}>
@@ -108,14 +115,14 @@ export function AdminHeader() {
             <div className="px-3 py-3 mb-2 rounded-xl bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/10">
               <div className="flex items-center gap-3">
                 <Avatar className="h-12 w-12 border-2 border-primary/30 shadow-sm">
-                  <AvatarImage src={user?.user_metadata?.avatar_url} />
+                  <AvatarImage src={user?.avatar_url || user?.user_metadata?.avatar_url} />
                   <AvatarFallback className="bg-primary text-white font-bold">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
                 <div>
                   <p className="text-sm font-bold text-slate-800">
-                    {user?.user_metadata?.full_name || "Administrator"}
+                    {user?.full_name || user?.user_metadata?.full_name || "Administrator"}
                   </p>
                   <p className="text-xs text-slate-500 truncate max-w-[150px]">
                     {user?.email}

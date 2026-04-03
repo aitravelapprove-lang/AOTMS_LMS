@@ -20,51 +20,16 @@ import { fetchWithAuth } from "@/lib/api";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
-
-interface Notification {
-  id: string;
-  type: 'coupon' | 'system' | 'enrollment';
-  title: string;
-  message: string;
-  data?: {
-    code?: string;
-  };
-  is_read: boolean;
-  created_at: string;
-}
+import { useNotifications, Notification } from "@/hooks/useNotifications";
 
 export function Notifications() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchNotifications();
-  }, []);
-
-  const fetchNotifications = async () => {
-    setLoading(true);
-    try {
-      const data = await fetchWithAuth('/notifications');
-      setNotifications(data || []);
-    } catch (err) {
-      console.error('Failed to fetch notifications:', err);
-      // Fallback to empty to prevent crash
-      setNotifications([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const markAllRead = async () => {
-    try {
-      await fetchWithAuth('/notifications/mark-read', { method: 'POST' });
-      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-      toast.success("All caught up!");
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to mark as read");
-    }
-  };
+  const { 
+    notifications, 
+    unreadCount, 
+    loading, 
+    markAllAsRead, 
+    markAsRead 
+  } = useNotifications();
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -85,8 +50,6 @@ export function Notifications() {
     );
   }
 
-  const unreadCount = notifications.filter(n => !n.is_read).length;
-
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-700">
       {/* Action Bar */}
@@ -101,7 +64,7 @@ export function Notifications() {
           <Button 
             variant="ghost" 
             size="sm"
-            onClick={markAllRead}
+            onClick={markAllAsRead}
             disabled={unreadCount === 0}
             className="rounded-xl h-10 px-4 font-bold text-slate-500 hover:text-primary transition-all gap-2"
           >
@@ -129,7 +92,8 @@ export function Notifications() {
                 key={notification.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0, transition: { delay: index * 0.05 } }}
-                className={`group relative overflow-hidden rounded-3xl border transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${notification.is_read ? 'bg-white border-slate-100' : 'bg-gradient-to-r from-primary/[0.03] to-white border-primary/20 shadow-md shadow-primary/5'}`}
+                onClick={() => !notification.is_read && markAsRead(notification.id)}
+                className={`group relative overflow-hidden rounded-3xl border transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer ${notification.is_read ? 'bg-white border-slate-100' : 'bg-gradient-to-r from-primary/[0.03] to-white border-primary/20 shadow-md shadow-primary/5'}`}
               >
                   {/* Status Indicator */}
                   {!notification.is_read && (

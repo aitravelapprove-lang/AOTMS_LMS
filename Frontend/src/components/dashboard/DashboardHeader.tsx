@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { useNotifications } from "@/hooks/useNotifications";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +27,7 @@ import {
 export function DashboardHeader() {
   const { user, userRole, signOut } = useAuth();
   const navigate = useNavigate();
+  const { unreadCount } = useNotifications();
 
   const getUserInitials = () => {
     if (user?.user_metadata?.full_name) {
@@ -70,21 +72,25 @@ export function DashboardHeader() {
             onClick={() => navigate("/student-dashboard/notifications")}
           >
             <Bell className="h-5 w-5 group-hover:rotate-12 transition-transform" />
-            <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-accent shadow-sm" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-600 border-2 border-white text-[10px] font-bold text-white flex items-center justify-center shadow-lg animate-in zoom-in duration-300">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
           </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-3 pl-2 pr-4 h-12 rounded-2xl bg-white border border-slate-200 hover:border-primary/30 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/10 group shadow-sm">
-                <Avatar className="h-8 w-8 rounded-lg group-hover:scale-105 transition-transform">
-                  <AvatarImage src={user?.user_metadata?.avatar_url} />
-                  <AvatarFallback className="bg-primary/10 text-primary font-black text-xs rounded-lg rounded-xl">
+                <Avatar className="h-8 w-8 rounded-xl group-hover:scale-105 transition-transform">
+                  <AvatarImage src={user?.avatar_url || user?.user_metadata?.avatar_url} />
+                  <AvatarFallback className="bg-primary/10 text-primary font-black text-xs rounded-xl">
                     {getUserInitials()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden md:flex flex-col items-start space-y-0.5">
                   <span className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors tracking-tight leading-none">
-                    {user?.user_metadata?.full_name || "User"}
+                    {user?.full_name || user?.user_metadata?.full_name || "User"}
                   </span>
                   <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider leading-none">
                     {userRole || "Student"}
@@ -110,7 +116,7 @@ export function DashboardHeader() {
                   </div>
                   <div>
                     <p className="text-sm font-bold text-slate-900 leading-none mb-1">
-                      {user?.user_metadata?.full_name || "Enrolled Student"}
+                      {user?.full_name || user?.user_metadata?.full_name || "Enrolled Student"}
                     </p>
                     <p className="text-[10px] font-medium text-slate-600 truncate max-w-[150px]">
                       {user?.email}

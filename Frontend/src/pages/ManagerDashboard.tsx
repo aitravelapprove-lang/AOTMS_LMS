@@ -159,13 +159,6 @@ export default function ManagerDashboard() {
         </div>
         <div className="flex items-center gap-2">
           <Button
-            variant="outline"
-            size="sm"
-            className="hidden sm:flex gap-2 rounded-lg"
-          >
-            <Settings className="h-4 w-4" /> System Settings
-          </Button>
-          <Button
             size="sm"
             onClick={() => setActiveSection("exams")}
             className="rounded-lg"

@@ -132,15 +132,6 @@ export function ManagerSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              onClick={() => onSectionChange("settings")}
-              className="flex items-center gap-3 cursor-pointer justify-start group-data-[collapsible=icon]:justify-center"
-            >
-              <Settings className="h-5 w-5 shrink-0" />
-              {!collapsed && <span>Settings</span>}
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton
               onClick={signOut}
               className="text-destructive hover:text-destructive cursor-pointer justify-start group-data-[collapsible=icon]:justify-center"
             >

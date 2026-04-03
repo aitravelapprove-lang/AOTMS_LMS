@@ -275,7 +275,7 @@ export function StudentProgressTracker({
             </div>
             <div>
                 <CardTitle className="text-lg font-bold text-slate-900">Student Progress</CardTitle>
-                <CardDescription>Monitor class performance and engagement</CardDescription>
+                <CardDescription>Monitor class progress and engagement</CardDescription>
             </div>
           </div>
           <Badge variant="outline" className="h-8 px-3">

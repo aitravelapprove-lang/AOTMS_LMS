@@ -183,8 +183,8 @@ export function CouponManager() {
            <Card className="border-slate-200 shadow-xl overflow-hidden rounded-3xl bg-slate-900 text-white">
               <CardHeader className="border-b border-white/10">
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <Gift className="h-5 w-5 text-primary" />
-                  Step 2: Reward Controls
+                  <Gift className="h-5 w-5 text-primary text" />
+                  Reward Controls
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-8 space-y-8 text-center">
@@ -200,13 +200,13 @@ export function CouponManager() {
                         </div>
                         
                         <div className="space-y-2 text-left">
-                           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Target Discounted Price (₹)</label>
+                           <label className="text-[11px] font-black uppercase tracking-widest text-white/90">Target Discounted Price (₹)</label>
                            <Input 
                               type="number"
                               placeholder="e.g. 28000"
                               value={discountAmount}
                               onChange={(e) => setDiscountAmount(e.target.value)}
-                              className="bg-white/5 border-white/10 h-12 text-lg font-bold text-primary focus:border-primary rounded-xl"
+                              className="bg-white/5 border-white/10 h-12 text-lg font-black !text-white placeholder:text-white/30 focus:border-primary rounded-xl [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all"
                            />
                         </div>
                       </div>

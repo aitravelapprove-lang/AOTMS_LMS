@@ -12,13 +12,11 @@ import {
 import { useSocket } from "@/hooks/useSocket";
 import { useToast } from "@/hooks/use-toast";
 import { InstructorStats } from "@/components/instructor/dashboard/InstructorStats";
-import { PerformanceCharts } from "@/components/instructor/dashboard/PerformanceCharts";
 import { SmartAlerts } from "@/components/instructor/dashboard/SmartAlerts";
 import { InstructorCourses } from "@/components/instructor/courses/InstructorCourses";
 import { InstructorStudentDashboard } from "@/components/instructor/dashboard/InstructorStudentDashboard";
 import { ChatInterface } from "@/components/chat/ChatInterface";
 import { ResourcesDashboard } from "@/components/instructor/dashboard/ResourcesDashboard";
-import PerformanceDashboard from "@/components/instructor/dashboard/PerformanceDashboard";
 import { QuestionBankManager } from "@/components/manager/QuestionBankManager";
 import { InstructorVideoLibrary } from "@/components/instructor/dashboard/InstructorVideoLibrary";
 import { LiveClassManager } from "@/components/instructor/dashboard/LiveClassManager";
@@ -185,7 +183,6 @@ export default function InstructorDashboard() {
   const isCourses = path.startsWith("/instructor/courses");
   const isStudents = path === "/instructor/students";
   const isResources = path === "/instructor/resources";
-  const isPerformance = path === "/instructor/performance";
   const isVideos = path === "/instructor/videos";
   const isLiveClasses = path === "/instructor/live-classes";
   const isChat = path === "/instructor/chat";
@@ -222,35 +219,13 @@ export default function InstructorDashboard() {
 
                   <div className="grid gap-6 lg:gap-10 xl:grid-cols-3">
                     <div className="xl:col-span-2 space-y-6 lg:space-y-10 min-w-0">
-                      <div className="pro-card p-4 sm:p-6 md:p-8 bg-white min-w-0 overflow-hidden">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-                          <div>
-                            <h3 className="text-lg md:text-xl font-bold text-slate-900">
-                              Engagement Overview
-                            </h3>
-                            <p className="text-sm text-slate-500 font-medium">
-                              Trends in student participation and progress.
-                            </p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            className="text-primary font-bold text-sm gap-2 w-full sm:w-auto mt-2 sm:mt-0"
-                          >
-                            Details <ChevronRight className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        <div className="h-[250px] sm:h-[300px] md:h-[350px] w-full mt-2">
-                          <PerformanceCharts loading={statsLoading} />
-                        </div>
-                      </div>
-
                       <div className="pro-card p-1 bg-white min-w-0 overflow-hidden mt-6 lg:mt-10">
                         <div className="p-4 sm:p-6 md:p-8 border-b border-slate-100">
                           <h3 className="text-lg md:text-xl font-bold text-slate-900">
                             Recent Courses
                           </h3>
                         </div>
-                        <InstructorCourses limit={3} hideHeader />
+                        <InstructorCourses limit={5} hideHeader />
                       </div>
                     </div>
 
@@ -327,15 +302,6 @@ export default function InstructorDashboard() {
                   animate={{ opacity: 1 }}
                 >
                   <ResourcesDashboard />
-                </motion.div>
-              )}
-              {isPerformance && (
-                <motion.div
-                  key="performance"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                >
-                  <PerformanceDashboard />
                 </motion.div>
               )}
               {isVideos && (

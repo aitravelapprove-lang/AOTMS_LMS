@@ -20,7 +20,7 @@ cloudinary.config({
 });
 
 // Import Mongoose Models
-const { User, Profile, UserRole, OTP, VerifiedEmail, InstructorApplication, GuestCredential } = require('./models/User');
+const { User, Profile, UserRole, OTP, VerifiedEmail, InstructorApplication, GuestCredential, ResumeScan } = require('./models/User');
 const { Course, Enrollment, Topic, Module, Video, Announcement, Timeline, Resource, InstructorProgress, VideoProgress } = require('./models/Course');
 const { Exam, QuestionBank, ExamSchedule, StudentExamAccess, ExamResult, MockPaper, ExamRule, MockTestConfig } = require('./models/Exam');
 const { Assignment, Submission, Playlist, LiveClass } = require('./models/Content');
@@ -68,7 +68,8 @@ const MODEL_MAP = {
     'video_progress': VideoProgress,
     'guest_credentials': GuestCredential,
     'notifications': Notification,
-    'users': User
+    'users': User,
+    'resume_scans': ResumeScan
 };
 
 const ALLOWED_TABLES = Object.keys(MODEL_MAP);
@@ -871,7 +872,7 @@ app.post('/api/auth/signup', async (req, res) => {
 
         const token = generateToken(user);
         res.json({
-            user: { id: user._id, email, full_name: fullName },
+            user: { id: user._id, email, full_name: fullName, avatar_url: avatarUrl },
             session: { access_token: token, expires_in: 604800 }
         });
 
@@ -908,6 +909,7 @@ app.post('/api/auth/login', async (req, res) => {
                 id: user._id, // Use Mongoose ObjectId
                 email,
                 full_name: user.full_name,
+                avatar_url: user.avatar_url || (profile ? profile.avatar_url : null),
                 role: roleDoc ? roleDoc.role : 'student',
                 approval_status: profile ? profile.approval_status : 'pending',
                 suspended_until: profile ? profile.suspended_until : null
@@ -919,6 +921,7 @@ app.post('/api/auth/login', async (req, res) => {
         handleError(res, err, 'login');
     }
 });
+
 
 // Self-Upgrade endpoint (for dev/setup phase)
 app.post('/api/auth/self-upgrade', authenticateToken, async (req, res) => {
@@ -1066,6 +1069,35 @@ app.put('/api/admin/approve-course', authenticateToken, requireAdmin, async (req
         handleError(res, err, 'approve-course');
     }
 });
+
+app.put('/api/admin/toggle-course-active', authenticateToken, requireAdminOrManager, async (req, res) => {
+    const { courseId, is_active } = req.body;
+    if (!courseId) return res.status(400).json({ error: 'Missing courseId' });
+
+    try {
+        const course = await Course.findByIdAndUpdate(
+            courseId, 
+            { is_active, updated_at: new Date() }, 
+            { new: true }
+        );
+        
+        if (!course) return res.status(404).json({ error: 'Course not found' });
+
+        // Log action
+        await SystemLog.create({
+            log_type: 'audit',
+            module: 'Course',
+            action: `Course ${is_active ? 'Activated' : 'Deactivated'}`,
+            details: { course_id: courseId, is_active },
+            user_id: req.user.id
+        });
+
+        res.json({ message: `Course ${is_active ? 'activated' : 'deactivated'}`, course });
+    } catch (err) {
+        handleError(res, err, 'toggle-course-active');
+    }
+});
+
 
 app.put('/api/admin/approve-question-bank', authenticateToken, requireAdmin, async (req, res) => {
     const { topic, status, course_id } = req.body;
@@ -1391,7 +1423,8 @@ app.get('/api/admin/data-summary', authenticateToken, requireAdminOrManager, asy
             pendingCourses,
             pendingEnrollments,
             pendingExams,
-            highPriorityEvents
+            highPriorityEvents,
+            activeCoursesCount
         ] = await Promise.all([
             User.countDocuments(),
             Course.countDocuments(),
@@ -1402,7 +1435,8 @@ app.get('/api/admin/data-summary', authenticateToken, requireAdminOrManager, asy
             Course.countDocuments({ status: 'pending' }),
             Enrollment.countDocuments({ status: 'pending' }),
             Exam.countDocuments({ approval_status: 'pending' }),
-            SecurityEvent.countDocuments({ risk_level: { $in: ['high', 'critical'] }, resolved: false })
+            SecurityEvent.countDocuments({ risk_level: { $in: ['high', 'critical'] }, resolved: false }),
+            Course.countDocuments({ is_active: { $ne: false } })
         ]);
 
         // Aggregate role counts
@@ -1415,6 +1449,7 @@ app.get('/api/admin/data-summary', authenticateToken, requireAdminOrManager, asy
         res.json({
             users,
             courses,
+            activeCourses: activeCoursesCount,
             enrollments,
             questionBanks,
             exams,
@@ -1427,6 +1462,37 @@ app.get('/api/admin/data-summary', authenticateToken, requireAdminOrManager, asy
         });
     } catch (err) {
         handleError(res, err, 'data-summary');
+    }
+});
+
+// Admin Student Performance
+app.get('/api/admin/student-performance/:studentId', authenticateToken, requireAdminOrManager, async (req, res) => {
+    try {
+        const studentId = req.params.studentId;
+        const profile = await Profile.findOne({ user_id: studentId }).lean();
+        const enrollmentsRaw = await Enrollment.find({ user_id: studentId }).populate('course_id', 'title').lean();
+        const resultsRaw = await ExamResult.find({ user_id: studentId }).populate('exam_id', 'title').lean();
+        
+        const performanceData = {
+            enrollments: enrollmentsRaw.map(e => ({
+                course_name: e.course_id?.title || 'Unknown Course',
+                progress: typeof e.progress === 'number' ? e.progress : 0,
+                status: e.status || 'Unknown'
+            })),
+            results: resultsRaw.map(r => ({
+                title: r.exam_id?.title || 'Unknown Assessment',
+                score: r.score,
+                total: r.total_questions || 0,
+                percentage: r.percentage,
+                date: r.created_at
+            })),
+            github_url: profile?.github_url || null,
+            resume_url: profile?.resume_url || null
+        };
+        
+        res.json(performanceData);
+    } catch (err) {
+        handleError(res, err, 'student-performance');
     }
 });
 
@@ -1594,6 +1660,8 @@ app.get('/api/user/profile', authenticateToken, async (req, res) => {
             await profile.save();
         }
 
+        console.log("==> GET PROFILE DATA SERVING:", profile ? profile.github_url : 'NO PROFILE DOC');
+
         res.json({
             profile,
             user: {
@@ -1608,19 +1676,67 @@ app.get('/api/user/profile', authenticateToken, async (req, res) => {
         handleError(res, err, 'get-profile');
     }
 });
-
 app.put('/api/user/profile', authenticateToken, async (req, res) => {
     try {
+        console.log("==> SCHEMA KEYS:", Object.keys(Profile.schema.paths));
+        console.log("==> PROFILE PUT RECEIVED FOR:", req.user.id);
+        console.log("==> PAYLOAD:", req.body);
+        const updates = { ...req.body, updated_at: new Date() };
+        
+        // Update Profile
         await Profile.findOneAndUpdate(
             { user_id: req.user.id },
-            { ...req.body, updated_at: new Date() },
-            { new: true }
+            { $set: updates },
+            { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true }
         );
+
+        // Update core User record to keep data in sync
+        const userUpdates = {};
+        if (updates.full_name) userUpdates.full_name = updates.full_name;
+        if (updates.avatar_url) userUpdates.avatar_url = updates.avatar_url;
+        
+        if (Object.keys(userUpdates).length > 0) {
+            await User.findByIdAndUpdate(req.user.id, userUpdates);
+        }
+
         res.json({ message: 'Profile updated' });
     } catch (err) {
         handleError(res, err, 'update-profile');
     }
 });
+
+// Profile Image Upload (Cloudinary)
+app.post('/api/user/profile/image', authenticateToken, upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+        
+        // Convert buffer to base64
+        const b64 = Buffer.from(req.file.buffer).toString('base64');
+        const dataURI = "data:" + req.file.mimetype + ";base64," + b64;
+        
+        // 1. Upload to Cloudinary
+        const result = await cloudinary.uploader.upload(dataURI, {
+            folder: 'profile_pics',
+            resource_type: 'image'
+        });
+
+        const imageUrl = result.secure_url;
+
+        // 2. Update Database (User & Profile models)
+        await Promise.all([
+            User.findByIdAndUpdate(req.user.id, { avatar_url: imageUrl }),
+            Profile.findOneAndUpdate(
+                { user_id: req.user.id }, 
+                { avatar_url: imageUrl, updated_at: new Date() }
+            )
+        ]);
+
+        res.json({ success: true, url: imageUrl });
+    } catch (err) {
+        handleError(res, err, 'upload-profile-image');
+    }
+});
+
 
 
 app.get('/api/admin/conversations', authenticateToken, requireAdminOrManager, async (req, res) => {
@@ -2309,7 +2425,9 @@ app.get('/api/courses/enrollments', authenticateToken, requireAdminOrManager, as
             utr_number: e.utr_number,
             payment_proof_url: e.payment_proof_url,
             applied_coupon: e.applied_coupon,
-            final_price: e.final_price || e.course_id?.price
+            final_price: e.final_price || e.course_id?.price,
+            payment_term: e.payment_term || 'full',
+            remaining_balance: e.remaining_balance || 0
         }));
 
         res.json(data);
@@ -2337,7 +2455,7 @@ app.post('/api/upload', authenticateToken, upload.single('file'), async (req, re
 });
 
 app.post('/api/courses/enroll', authenticateToken, async (req, res) => {
-    const { course_id, courseId, payment_proof_url, utr_number, coupon_code } = req.body;
+    const { course_id, courseId, payment_proof_url, utr_number, coupon_code, payment_term = 'full' } = req.body;
     const finalCourseId = course_id || courseId;
     if (!finalCourseId) return res.status(400).json({ error: 'Course ID required' });
 
@@ -2345,7 +2463,7 @@ app.post('/api/courses/enroll', authenticateToken, async (req, res) => {
         const course = await Course.findById(finalCourseId);
         if (!course) return res.status(404).json({ error: 'Course not found' });
 
-        let finalPrice = course.price || 0;
+        let basePrice = course.price || 0;
         let couponApplied = null;
 
         if (coupon_code) {
@@ -2355,11 +2473,22 @@ app.post('/api/courses/enroll', authenticateToken, async (req, res) => {
                 is_used: false 
             });
             if (coupon) {
-                finalPrice = coupon.discounted_price;
+                basePrice = coupon.discounted_price;
                 couponApplied = coupon.code;
                 coupon.is_used = true;
                 await coupon.save();
             }
+        }
+
+        let amountToPay = basePrice;
+        let balance = 0;
+
+        if (payment_term === 'term1') {
+            amountToPay = Math.round(basePrice * 0.6);
+            balance = basePrice - amountToPay;
+        } else if (payment_term === 'term2') {
+            amountToPay = Math.round(basePrice * 0.4);
+            balance = 0; // Assuming this is the final payment
         }
 
         await Enrollment.findOneAndUpdate(
@@ -2371,7 +2500,9 @@ app.post('/api/courses/enroll', authenticateToken, async (req, res) => {
                 payment_proof_url: payment_proof_url || null,
                 utr_number: utr_number || null,
                 applied_coupon: couponApplied,
-                final_price: finalPrice
+                final_price: amountToPay,
+                payment_term: payment_term,
+                remaining_balance: balance
             },
             { upsert: true, new: true }
         );
@@ -2428,8 +2559,11 @@ app.get('/api/student/my-courses', authenticateToken, async (req, res) => {
             .sort({ enrolled_at: -1 })
             .lean();
 
+        // Filter out enrollments for courses that are missing or deactivated
+        const activeEnrollments = enrollments.filter(e => e.course_id && e.course_id.is_active !== false);
+
         // Transform into a flat structure for easier frontend consumption
-        const data = enrollments.map(e => {
+        const data = activeEnrollments.map(e => {
             const course = e.course_id || {};
             return {
                 id: course._id,
@@ -2447,6 +2581,9 @@ app.get('/api/student/my-courses', authenticateToken, async (req, res) => {
                 enrolled_at: e.enrolled_at,
                 price: course.price,
                 original_price: course.original_price,
+                final_price: e.final_price,
+                payment_term: e.payment_term,
+                remaining_balance: e.remaining_balance,
                 // Virtual/Helper fields for UI badges
                 is_active: course.is_active !== false
             };
@@ -2458,11 +2595,29 @@ app.get('/api/student/my-courses', authenticateToken, async (req, res) => {
     }
 });
 
+app.delete('/api/courses/enrollment/:id', authenticateToken, requireAdminOrManager, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await Enrollment.findByIdAndDelete(id);
+        
+        if (!result) {
+            return res.status(404).json({ error: 'Enrollment not found' });
+        }
+
+        console.log(`[Admin] Enrollment ${id} deleted by ${req.user.id}`);
+        res.json({ message: 'Enrollment deleted successfully', id });
+    } catch (err) {
+        handleError(res, err, 'delete-enrollment');
+    }
+});
+
 app.get('/api/student/dashboard-data', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.id;
         const enrollments = await Enrollment.find({ user_id: userId, status: 'active' }).populate('course_id').lean();
-        const activeCourseIds = enrollments.map(e => e.course_id?._id).filter(id => id);
+        const activeCourseIds = enrollments
+            .filter(e => e.course_id && e.course_id.is_active !== false)
+            .map(e => e.course_id._id);
 
         if (activeCourseIds.length === 0) {
             return res.json({ resources: [], activity: [], skills: [] });
@@ -2497,7 +2652,7 @@ app.get('/api/student/dashboard-data', authenticateToken, async (req, res) => {
 
         const activity = weekdays.map(day => ({ 
             name: day, 
-            minutes: Math.min(300, Math.round(activityMap[day] / 2)) // Scaled for chart
+            intensity: Math.min(100, activityMap[day] || 0)
         }));
 
         // 3. Skill Mastery (Categorized Progress)
@@ -2537,6 +2692,170 @@ app.get('/api/student/dashboard-data', authenticateToken, async (req, res) => {
         });
     } catch (err) {
         handleError(res, err, 'student-dashboard-data');
+    }
+});
+
+// --- Resume ATS Scanning (n8n + OpenRouter) ---
+
+app.post('/api/student/scan-resume', authenticateToken, upload.single('resume'), async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const profile = await Profile.findOne({ user_id: userId });
+        
+        if (!profile) return res.status(404).json({ error: 'Profile not found' });
+        
+        // 1. Credits Check (Disabled for Unlimited Access)
+        /*
+        if ((profile.ats_credits || 0) <= 0) {
+            return res.status(403).json({ error: 'No ATS scan credits remaining. Please contact admin for more.' });
+        }
+        */
+
+        if (!req.file && !req.body.text) {
+            return res.status(400).json({ error: 'Please upload a resume file or provide resume text.' });
+        }
+
+        let resumeText = req.body.text || "";
+        let scanResult;
+        
+        // 2. OCR Conversion: Extract text from PDF if file is uploaded
+        if (req.file) {
+            console.log(`[Resume Engine] Received file: ${req.file.originalname} (Mime: ${req.file.mimetype})`);
+            
+            const isPdf = req.file.mimetype === 'application/pdf' || req.file.originalname.toLowerCase().endsWith('.pdf');
+            
+            if (isPdf) {
+                try {
+                    const pdfParse = require('pdf-parse');
+                    const data = await pdfParse(req.file.buffer);
+                    resumeText = data.text;
+                    console.log(`[OCR Success] Extracted ${resumeText?.length || 0} characters from PDF.`);
+                } catch (err) {
+                    console.error('[OCR Error] PDF parsing failed:', err);
+                }
+            }
+        }
+
+        // 3. Integration: Call n8n Webhook
+        const N8N_URL = process.env.N8N_ATS_WEBHOOK_URL;
+        const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY; 
+        
+        if (N8N_URL) {
+            const n8nBody = {
+                userId,
+                text: resumeText,
+                originalName: req.file?.originalname,
+                userEmail: req.user.email,
+                userName: profile.full_name || req.user.full_name
+            };
+            
+            // If we have a file, send it as Multipart to allow n8n to do its own OCR/Analysis
+            if (req.file) {
+                const FormData = require('form-data');
+                const form = new FormData();
+                form.append('resume', req.file.buffer, req.file.originalname);
+                form.append('userId', userId);
+                form.append('text', resumeText);
+                form.append('userEmail', req.user.email);
+                form.append('userName', profile.full_name || req.user.full_name);
+                
+                const n8nResponse = await axios.post(N8N_URL, form, {
+                    headers: { ...form.getHeaders() }
+                });
+                scanResult = n8nResponse.data;
+            } else {
+                // If only text was provided
+                const n8nResponse = await axios.post(N8N_URL, n8nBody);
+                scanResult = n8nResponse.data;
+            }
+        } else if (OPENROUTER_KEY) {
+            // Option B: Direct OpenRouter call (if n8n not ready)
+            const aiResponse = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
+                model: 'google/gemini-2.0-flash-lite-preview-02-05:free',
+                messages: [
+                    { 
+                        role: 'system', 
+                        content: 'You are an ATS Expert. Analyze the resume and provide a score (0-100) and analysis. Return JSON: { "score": number, "analysis": { "missing_keywords": [], "formatting_issues": [], "suggestions": [] } }' 
+                    },
+                    { role: 'user', content: resumeText }
+                ],
+                response_format: { type: 'json_object' }
+            }, {
+                headers: { 'Authorization': `Bearer ${OPENROUTER_KEY}` }
+            });
+            
+            scanResult = JSON.parse(aiResponse.data.choices[0].message.content);
+        } else {
+            // Fallback for Development
+            scanResult = {
+                score: 82,
+                analysis: {
+                    missing_keywords: ["Cloud Infrastructure", "CI/CD", "Unit Testing"],
+                    formatting_issues: ["Standard professional layout", "Good font choice"],
+                    suggestions: ["Quantify your impact with numbers", "Link to your GitHub profile"]
+                }
+            };
+        }
+
+        // 3. Save History
+        const finalScore = scanResult.score || scanResult.overall_score || 0;
+        
+        // Remove score fields from analysis to avoid "Duplicate Score" in DB
+        let finalAnalysis;
+        if (scanResult.analysis) {
+            finalAnalysis = { ...scanResult.analysis };
+            delete finalAnalysis.score;
+            delete finalAnalysis.overall_score;
+        } else {
+            finalAnalysis = {
+                missing_keywords: scanResult.missing_keywords || scanResult.keywords || [],
+                formatting_issues: scanResult.formatting_issues || scanResult.issues || [],
+                suggestions: scanResult.suggestions || scanResult.improvements || []
+            };
+        }
+
+        const scan = await ResumeScan.create({
+            user_id: userId,
+            score: finalScore,
+            analysis: finalAnalysis,
+            file_name: req.file?.originalname || 'Text Input',
+            created_at: new Date()
+        });
+
+        // 4. Update Credits (Disabled for Unlimited Access)
+        // profile.ats_credits = Math.max(0, (profile.ats_credits || 0) - 1);
+        // await profile.save();
+
+        res.json({
+            success: true,
+            credits_left: 999, // Faked for UI compatibility
+            scan
+        });
+
+    } catch (err) {
+        console.error('[ATS Scan Error]:', err.message);
+        handleError(res, err, 'ats-scan');
+    }
+});
+
+app.get('/api/admin/resume-scans', authenticateToken, requireAdminOrManager, async (req, res) => {
+    try {
+        const scans = await ResumeScan.find()
+            .populate('user_id', 'full_name email avatar_url')
+            .sort({ created_at: -1 });
+        res.json(scans);
+    } catch (err) {
+        handleError(res, err, 'get-all-scans');
+    }
+});
+
+app.post('/api/admin/refill-ats-credits', authenticateToken, requireAdminOrManager, async (req, res) => {
+    try {
+        const { userId, credits = 3 } = req.body;
+        await Profile.findOneAndUpdate({ user_id: userId }, { ats_credits: credits });
+        res.json({ success: true, message: `Credits refilled to ${credits}` });
+    } catch (err) {
+        handleError(res, err, 'refill-credits');
     }
 });
 
@@ -2854,6 +3173,40 @@ app.get('/api/manager/lookup-student/:studentId', authenticateToken, requireAdmi
         });
     } catch (err) {
         handleError(res, err, 'lookup-student');
+    }
+});
+
+app.get('/api/admin/student-performance/:studentId', authenticateToken, requireAdminOrManager, async (req, res) => {
+    try {
+        const { studentId } = req.params;
+        const enrollments = await Enrollment.find({ user_id: studentId }).populate('course_id').lean();
+        
+        const activeEnrollments = enrollments.filter(e => e.course_id && e.course_id.is_active !== false);
+        
+        const courseProgress = activeEnrollments.map(e => ({
+             course_name: e.course_id.title,
+             progress: e.progress_percentage || 0,
+             status: e.status
+        }));
+
+        const results = await ExamResult.find({ user_id: studentId }).populate('exam_id mock_paper_id').lean();
+        
+        const profile = await Profile.findOne({ user_id: studentId }).lean();
+        
+        res.json({
+            enrollments: courseProgress,
+            results: results.map(r => ({
+                title: r.exam_id?.title || r.mock_paper_id?.title || r.test_title || 'Unknown Test',
+                score: r.score,
+                total: r.total_score || r.total,
+                percentage: r.percentage,
+                date: r.created_at || r.submitted_at
+            })),
+            github_url: profile?.github_url,
+            resume_url: profile?.resume_url
+        });
+    } catch (err) {
+        handleError(res, err, 'admin-student-performance');
     }
 });
 
@@ -3490,6 +3843,18 @@ app.post('/api/notifications/mark-read', authenticateToken, async (req, res) => 
     }
 });
 
+app.post('/api/notifications/:id/mark-read', authenticateToken, async (req, res) => {
+    try {
+        await Notification.findOneAndUpdate(
+            { _id: req.params.id, user_id: req.user.id }, 
+            { is_read: true }
+        );
+        res.json({ success: true });
+    } catch (err) {
+        handleError(res, err, 'mark-individual-notification-read');
+    }
+});
+
 app.get('/api/admin/students', authenticateToken, requireAdminOrManager, async (req, res) => {
     try {
         const studentRoles = await UserRole.find({ role: 'student' }).select('user_id');
@@ -3563,6 +3928,10 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
 
             if (['course_enrollments', 'student_exam_access', 'exam_results'].includes(table)) {
                 query['user_id'] = req.user.id;
+            }
+            if (table === 'courses') {
+                query['is_active'] = { $ne: false };
+                query['status'] = { $in: ['approved', 'published'] };
             }
         }
 
@@ -3743,7 +4112,10 @@ app.delete('/api/data/:table/:id', authenticateToken, async (req, res) => {
 
 app.get('/api/public/courses', async (req, res) => {
     try {
-        const query = { status: 'published' }; // Assuming 'published' status logic
+        const query = { 
+            status: { $in: ['published', 'approved'] },
+            is_active: { $ne: false } 
+        };
         if (req.query.category && req.query.category !== 'All') {
             query.category = req.query.category;
         }
@@ -3773,7 +4145,7 @@ app.get('/api/courses/:id', async (req, res) => {
 
 // --- S3 Helper Routes ---
 
-app.post('/api/s3/upload-url', authenticateToken, requireInstructor, async (req, res) => {
+app.post('/api/s3/upload-url', authenticateToken, async (req, res) => {
     try {
         const { fileName, fileType, folder } = req.body;
         const folderPath = folder ? `${folder}/` : `${req.user.id}/`;
@@ -3795,13 +4167,12 @@ app.post('/api/s3/view-url', authenticateToken, async (req, res) => {
 });
 
 // Serve public S3 assets (images/thumbnails) via redirect to signed URL
-// Uses regex to capture the full path including slashes
-app.get(/^\/api\/s3\/public\/(.*)$/, async (req, res) => {
+app.get(/\/api\/s3\/public\/(.*)/, async (req, res) => {
     try {
         const key = req.params[0];
+        console.log(`[S3 PROXY] Accessing: ${key}`);
         if (!key) return res.status(404).send('Not Found');
         
-        // Generate a signed URL (valid for 1 hour) and redirect the browser to it
         const url = await generateViewUrl(key);
         res.redirect(url);
     } catch (err) {
@@ -3814,3 +4185,5 @@ app.get(/^\/api\/s3\/public\/(.*)$/, async (req, res) => {
 httpServer.listen(port, () => {
     console.log(`Server running on port ${port} - Socket.io Enabled`);
 });
+
+// Trigger nodemon restart

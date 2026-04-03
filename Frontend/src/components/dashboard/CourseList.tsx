@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Play, BookOpen, Clock, Sparkles, ChevronRight, LayoutGrid } from "lucide-react";
+import { Play, BookOpen, Clock, Sparkles, ChevronRight, LayoutGrid, CreditCard } from "lucide-react";
 import { useEnrolledCourses, useAvailableCourses, StudentCourse } from "@/hooks/useStudentData";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -159,6 +159,24 @@ export function CourseList({ type = 'enrolled', onSelectCourse }: CourseListProp
                                             </div>
                                         ) : (
                                             <>
+                                                <div className="flex justify-between text-[11px] font-bold mb-1">
+                                                    <span className="text-slate-500 uppercase tracking-tighter">Payment Status</span>
+                                                    <span className="text-primary font-black uppercase">
+                                                        {course.payment_term === 'term1' ? '1st Term' : course.payment_term === 'term2' ? '2nd Term' : 'Paid in Full'}
+                                                    </span>
+                                                </div>
+                                                {course.remaining_balance ? (
+                                                    <div className="text-[10px] text-amber-600 bg-amber-50 px-2 py-1 rounded-md border border-amber-100 flex justify-between items-center mb-3">
+                                                       <span className="font-bold flex items-center gap-1"><CreditCard className="h-3 w-3" /> Remaining:</span>
+                                                       <span className="font-black">₹{course.remaining_balance.toLocaleString('en-IN')}</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100 flex justify-between items-center mb-3">
+                                                       <span className="font-bold">✨ Clear</span>
+                                                       <span className="font-black">Fully Covered</span>
+                                                    </div>
+                                                )}
+
                                                 <div className="flex justify-between text-sm font-bold">
                                                     <span className="text-foreground">Course Progress</span>
                                                     <span className="text-primary">{course.progress || 0}%</span>
@@ -175,10 +193,22 @@ export function CourseList({ type = 'enrolled', onSelectCourse }: CourseListProp
                                                 <span className="text-sm line-through text-slate-500">₹{course.original_price || "00,000"}</span>
                                             </div>
                                             <div className="text-right">
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-primary">Investment</span>
-                                                <p className="text-lg font-black text-slate-900 leading-none mt-0.5">
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-primary">Full Investment</span>
+                                                <p className="text-[16px] font-black text-slate-900 leading-none mt-0.5">
                                                     {course.price === 0 ? "Free Access" : (course.price ? `₹${course.price.toLocaleString('en-IN')}` : "Contact Us")}
                                                 </p>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Term Breakdown (60/40) */}
+                                        <div className="grid grid-cols-2 gap-2 mt-2">
+                                            <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-100/50 flex flex-col items-center">
+                                                <span className="text-[8px] font-black uppercase tracking-widest text-blue-400">1st Term (60%)</span>
+                                                <span className="text-sm font-black text-blue-700">₹{Math.round((course.price || 0) * 0.6).toLocaleString('en-IN')}</span>
+                                            </div>
+                                            <div className="p-2.5 rounded-xl bg-purple-50 border border-purple-100/50 flex flex-col items-center">
+                                                <span className="text-[8px] font-black uppercase tracking-widest text-purple-400">2nd Term (40%)</span>
+                                                <span className="text-sm font-black text-purple-700">₹{Math.round((course.price || 0) * 0.4).toLocaleString('en-IN')}</span>
                                             </div>
                                         </div>
                                         <Button

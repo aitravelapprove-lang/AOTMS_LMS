@@ -1,5 +1,5 @@
 export const API_URL =
-  import.meta.env.VITE_API_URL || "https://aotms-lms-new.onrender.com/api";
+  import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : "https://aotms-lms-new.onrender.com/api");
 
 export const fetchWithAuth = async <T = unknown>(
   url: string,

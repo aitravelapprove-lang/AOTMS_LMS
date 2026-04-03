@@ -16,6 +16,7 @@ import { InstructorManagement } from "@/components/admin/InstructorManagement";
 import { ExamApproval } from "@/components/admin/ExamApproval";
 import { EnrollmentsList } from "@/components/admin/EnrollmentsList";
 import { GrantStudentAccess } from "@/components/admin/GrantStudentAccess";
+import { ResumeScanHistory } from "@/components/admin/ResumeScanHistory";
 import { LiveMonitoring } from "@/components/admin/LiveMonitoring";
 import InstructorCoursesAdmin from "@/pages/InstructorCourses";
 import { ExamScheduler } from "@/components/manager/ExamScheduler";
@@ -59,8 +60,10 @@ import {
   Video as VideoIcon,
   Database,
   Ticket,
-  Gift
+  Gift,
+  Power
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { CouponManager } from "@/components/admin/CouponManager";
 import { useSocket } from "@/hooks/useSocket";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -77,13 +80,15 @@ function AllCoursesList({
   loading, 
   onDelete, 
   onView, 
-  onUpdatePrice 
+  onUpdatePrice,
+  onToggleActive
 }: { 
   courses: AdminCourse[], 
   loading: boolean,
   onDelete?: (id: string) => void, 
   onView?: (course: AdminCourse) => void,
-  onUpdatePrice?: (id: string, price: string) => void 
+  onUpdatePrice?: (id: string, price: string) => void,
+  onToggleActive?: (id: string, isActive: boolean) => void
 }) {
   const [editingPrice, setEditingPrice] = useState<{ id: string, title: string, price: string } | null>(null);
   const [newPrice, setNewPrice] = useState("");
@@ -183,6 +188,18 @@ function AllCoursesList({
                       : 'bg-slate-500/90 text-white'}
                   `}>
                     {course.status || 'Draft'}
+                  </span>
+                </div>
+
+                {/* Active Toggle */}
+                <div className="absolute top-3 left-3 z-10 flex items-center gap-2 bg-white/90 backdrop-blur-md px-2 py-1 rounded-full shadow-sm border border-slate-200/50 transition-opacity whitespace-nowrap">
+                  <Switch 
+                    checked={course.is_active !== false} 
+                    onCheckedChange={(checked) => onToggleActive?.(course.id, checked)}
+                    className="scale-75 data-[state=checked]:bg-emerald-500"
+                  />
+                  <span className={`text-[9px] font-black uppercase tracking-tighter ${course.is_active !== false ? 'text-emerald-600' : 'text-slate-400'}`}>
+                    {course.is_active !== false ? 'Active' : 'Inactive'}
                   </span>
                 </div>
 
@@ -634,6 +651,7 @@ export default function AdminDashboard() {
                       { id: "enrollments", label: "Student Enrollments", icon: GraduationCap, key: "tab-enrollments" },
                       { id: "coupons", label: "Rewards & Coupons", icon: Ticket, key: "tab-coupons" },
                       { id: "grant-access", label: "Grant Access", icon: UserCheck, key: "tab-grant-access" },
+                      { id: "resume-scans", label: "Resume Scans", icon: ClipboardList, key: "tab-resume-scans" },
                       { id: "instructor-courses", label: "Instructor Courses", icon: BookOpen, key: "tab-instructor-courses" },
                       { id: "all-courses", label: "All Courses", icon: LayoutGrid, key: "tab-all-courses" },
                       {
@@ -725,6 +743,16 @@ export default function AdminDashboard() {
                   </motion.div>
                 </TabsContent>
 
+                <TabsContent key="tab-resume-scans" value="resume-scans" className="mt-0 outline-none">
+                  <motion.div
+                    key="motion-resume-scans"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <ResumeScanHistory />
+                  </motion.div>
+                </TabsContent>
+
                 <TabsContent key="tab-instructor-courses" value="instructor-courses" className="mt-0 outline-none">
                   <motion.div
                     key="motion-instructor-courses"
@@ -750,6 +778,7 @@ export default function AdminDashboard() {
                         setShowCourseDetail(true);
                       }}
                       onUpdatePrice={adminData.updateCoursePrice}
+                      onToggleActive={adminData.toggleCourseActive}
                     />
                   </motion.div>
                 </TabsContent>
@@ -776,6 +805,7 @@ export default function AdminDashboard() {
                       onApprove={approveCourse}
                       onReject={rejectCourse}
                       onUpdateStatus={updateCourseStatus}
+                      onToggleActive={adminData.toggleCourseActive}
                     />
                   </motion.div>
                 </TabsContent>

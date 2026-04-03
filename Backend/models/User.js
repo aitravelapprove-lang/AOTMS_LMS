@@ -22,12 +22,25 @@ const ProfileSchema = new mongoose.Schema({
     full_name: { type: String },
     avatar_url: { type: String },
     mobile_number: { type: String },
+    github_url: { type: String },
+    resume_url: { type: String },
+    ats_credits: { type: Number, default: 3 }, // Added for resume scans
     approval_status: { type: String, default: 'pending' }, // pending, approved, suspended
     suspended_until: { type: Date }, // For account suspension timers
     created_at: { type: Date, default: Date.now },
     updated_at: { type: Date }
 });
 ProfileSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret.user_id; delete ret._id; } });
+
+const ResumeScanSchema = new mongoose.Schema({
+    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    score: { type: Number, required: true },
+    analysis: { type: Object, required: true },
+    resume_url: { type: String },
+    file_name: { type: String },
+    created_at: { type: Date, default: Date.now, index: true }
+});
+ResumeScanSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
 
 
 const UserRoleSchema = new mongoose.Schema({
@@ -87,5 +100,6 @@ module.exports = {
     OTP: mongoose.model('OTP', OTPSchema),
     VerifiedEmail: mongoose.model('VerifiedEmail', VerifiedEmailSchema),
     InstructorApplication: mongoose.model('InstructorApplication', InstructorApplicationSchema),
-    GuestCredential: mongoose.model('GuestCredential', GuestCredentialSchema)
+    GuestCredential: mongoose.model('GuestCredential', GuestCredentialSchema),
+    ResumeScan: mongoose.model('ResumeScan', ResumeScanSchema)
 };

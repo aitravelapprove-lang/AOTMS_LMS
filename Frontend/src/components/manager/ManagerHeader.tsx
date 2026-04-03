@@ -21,11 +21,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
+import { useNotifications } from "@/hooks/useNotifications";
+import { useNavigate } from "react-router-dom";
 
 export function ManagerHeader() {
   const { user, signOut } = useAuth();
+  const { unreadCount } = useNotifications();
+  const navigate = useNavigate();
   const initials =
-    user?.user_metadata?.full_name
+    (user?.full_name || user?.user_metadata?.full_name)
       ?.split(" ")
       .map((n: string) => n[0])
       .join("")
@@ -48,11 +52,18 @@ export function ManagerHeader() {
 
       <div className="flex items-center gap-4">
         {/* Notifications */}
-        <Button variant="ghost" size="icon" className="relative">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="relative"
+          onClick={() => navigate("/manager/notifications")}
+        >
           <Bell className="h-5 w-5" />
-          <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground flex items-center justify-center">
-            5
-          </span>
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground flex items-center justify-center">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
         </Button>
 
         {/* User Menu */}
@@ -60,14 +71,14 @@ export function ManagerHeader() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-2 px-2">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={user?.user_metadata?.avatar_url} />
+                <AvatarImage src={user?.avatar_url || user?.user_metadata?.avatar_url} />
                 <AvatarFallback className="bg-primary text-primary-foreground text-sm">
                   {initials}
                 </AvatarFallback>
               </Avatar>
               <div className="hidden md:block text-left">
                 <p className="text-sm font-medium">
-                  {user?.user_metadata?.full_name || "Manager"}
+                  {user?.full_name || user?.user_metadata?.full_name || "Manager"}
                 </p>
                 <p className="text-xs text-muted-foreground truncate max-w-[120px]">
                   {user?.email}
@@ -82,10 +93,6 @@ export function ManagerHeader() {
             <DropdownMenuItem>
               <User className="mr-2 h-4 w-4" />
               Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={signOut} className="text-destructive">

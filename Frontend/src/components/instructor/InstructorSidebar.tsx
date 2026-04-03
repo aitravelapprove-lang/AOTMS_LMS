@@ -167,30 +167,7 @@ export function InstructorSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Analytics */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Insights</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="gap-1">
-              {analyticNavItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(item.url)}
-                    className="h-11 px-4 rounded-lg transition-all duration-200 group data-[active=true]:bg-primary/5 data-[active=true]:text-primary"
-                  >
-                    <Link to={item.url} className="flex items-center gap-3">
-                      <item.icon
-                        className={`h-4.5 w-4.5 transition-colors ${isActive(item.url) ? "text-primary" : "text-slate-500 group-hover:text-slate-700"}`}
-                      />
-                      {!collapsed && <span>{item.title}</span>}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {/* Analytics Section Removed */}
       </SidebarContent>
 
       <SidebarFooter className="p-4 group-data-[collapsible=icon]:p-2 border-t border-slate-50 bg-slate-50/50">
@@ -202,14 +179,6 @@ export function InstructorSidebar() {
           >
             <RefreshCw className="h-5 w-5 shrink-0" />
             {!collapsed && <span className="text-sm">Refresh Data</span>}
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start group-data-[collapsible=icon]:justify-center gap-3 h-11 px-4 group-data-[collapsible=icon]:px-0 rounded-lg text-slate-600 hover:bg-slate-100 font-semibold"
-            onClick={() => navigate("/instructor/settings")}
-          >
-            <Settings className="h-5 w-5 shrink-0" />
-            {!collapsed && <span className="text-sm">Account Settings</span>}
           </Button>
           <Button
             variant="ghost"

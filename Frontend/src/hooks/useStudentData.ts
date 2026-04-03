@@ -22,14 +22,27 @@ export function useStudentEnrollments() {
     });
 }
 
+export interface StudentStats {
+    user_id: string;
+    total_score: number;
+    completed_courses: number;
+    total_watch_minutes: number;
+    badges: string[];
+    user?: {
+        full_name?: string;
+    }
+}
+
 export function useStudentStats() {
     const { user } = useAuth();
 
-    return useQuery({
+    return useQuery<StudentStats | null>({
         queryKey: ['student-stats', user?.id],
-        queryFn: () => fetchWithAuth(`/data/leaderboard_stats?user_id=eq.${user?.id}`),
+        queryFn: async () => {
+            const data = await fetchWithAuth(`/data/leaderboard_stats?user_id=eq.${user?.id}`) as StudentStats[];
+            return data[0] || null;
+        },
         enabled: !!user?.id,
-        select: (data) => data[0] || null,
     });
 }
 
@@ -38,7 +51,7 @@ export function useStudentExams() {
     return useQuery({
         queryKey: ['student-exams', user?.id],
         queryFn: async () => {
-            const accessible = await fetchWithAuth('/student/accessible-exams') as any[];
+            const accessible = await fetchWithAuth<AccessibleExam[]>('/student/accessible-exams');
             return accessible
                 .filter((a) => a.exam_id)
                 .map((a) => ({
@@ -56,7 +69,7 @@ export function useStudentMockPapers() {
     return useQuery({
         queryKey: ['student-mock-papers', user?.id],
         queryFn: async () => {
-            const accessible = await fetchWithAuth('/student/accessible-exams') as any[];
+            const accessible = await fetchWithAuth<AccessibleExam[]>('/student/accessible-exams');
             return accessible
                 .filter((a) => a.mock_paper_id)
                 .map((a) => ({
@@ -74,7 +87,7 @@ export function useExamQuestions(id: string | null) {
         queryKey: ['exam-questions', id],
         queryFn: async () => {
             if (!id) return [];
-            return await fetchWithAuth(`/student/exam-questions/${id}`) as any[];
+            return await fetchWithAuth(`/student/exam-questions/${id}`) as Record<string, unknown>[];
         },
         enabled: !!id,
         staleTime: Infinity, // Keep questions during exam session
@@ -84,9 +97,9 @@ export function useExamQuestions(id: string | null) {
 export function useStudentAnnouncements() {
     const { user } = useAuth();
 
-    return useQuery({
+    return useQuery<Announcement[]>({
         queryKey: ['announcements'],
-        queryFn: () => fetchWithAuth('/data/announcements?order=created_at.desc&limit=5'),
+        queryFn: () => fetchWithAuth<Announcement[]>('/data/announcements?order=created_at.desc&limit=5'),
         enabled: !!user?.id,
     });
 }
@@ -104,9 +117,9 @@ export function useLeaderboard() {
 export function useLiveClasses() {
     const { user } = useAuth();
 
-    return useQuery({
+    return useQuery<LiveClass[]>({
         queryKey: ['student-live-classes'],
-        queryFn: () => fetchWithAuth('/data/live_classes?order=scheduled_at.asc'),
+        queryFn: () => fetchWithAuth<LiveClass[]>('/data/live_classes?order=scheduled_at.asc'),
         enabled: !!user?.id,
     });
 }
@@ -125,6 +138,13 @@ export interface Announcement {
     title: string;
     content: string;
     created_at: string;
+}
+
+export interface AccessibleExam {
+    exam_id?: string;
+    mock_paper_id?: string;
+    exam_schedules?: Record<string, unknown>;
+    mock_papers?: Record<string, unknown>;
 }
 
 export interface LeaderboardEntry {
@@ -153,6 +173,9 @@ export interface StudentCourse extends Course {
     progress: number;
     enrollmentStatus: string;
     enrollmentId: string;
+    final_price?: number;
+    payment_term?: string;
+    remaining_balance?: number;
 }
 
 export function useEnrolledCourses() {
@@ -223,7 +246,7 @@ export function useEnrollCourse() {
     const { user } = useAuth();
 
     return useMutation({
-        mutationFn: async ({ courseId, payment_proof_url, utr_number, coupon_code }: { courseId: string, payment_proof_url?: string | null, utr_number?: string | null, coupon_code?: string }) => {
+        mutationFn: async ({ courseId, payment_proof_url, utr_number, coupon_code, payment_term }: { courseId: string, payment_proof_url?: string | null, utr_number?: string | null, coupon_code?: string, payment_term?: string }) => {
             if (!user?.id) throw new Error("Not logged in");
             return fetchWithAuth('/courses/enroll', {
                 method: 'POST',
@@ -231,7 +254,8 @@ export function useEnrollCourse() {
                     courseId,
                     payment_proof_url,
                     utr_number,
-                    coupon_code
+                    coupon_code,
+                    payment_term
                 })
             });
         },
@@ -300,12 +324,26 @@ export function useStudentResources(courseId: string | null) {
 export function useStudentDashboardData() {
     const { user } = useAuth();
 
-    return useQuery({
+    return useQuery<StudentDashboardData>({
         queryKey: ['student-dashboard-stats', user?.id],
-        queryFn: () => fetchWithAuth('/student/dashboard-data'),
+        queryFn: () => fetchWithAuth<StudentDashboardData>('/student/dashboard-data'),
         enabled: !!user?.id,
         refetchInterval: 60000,
     });
+}
+
+export interface StudentDashboardData {
+    activity: { name: string; minutes: number }[];
+    resources: { id: string; title: string; type: string; url?: string; thumbnail?: string }[];
+    skills: { name: string; level: number; category: string }[];
+    results: {
+        id: string;
+        title: string;
+        date: string;
+        percentage: number;
+        score: number;
+        total: number;
+    }[];
 }
 
 

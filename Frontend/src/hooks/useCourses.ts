@@ -56,6 +56,8 @@ export interface CourseEnrollment {
   payment_proof_url?: string;
   utr_number?: string;
   user_phone?: string;
+  payment_term?: 'full' | 'term1' | 'term2';
+  remaining_balance?: number;
 }
 
 export function useCourses() {
@@ -179,7 +181,9 @@ export function useCourses() {
           user_email: item.profile?.email || 'No Email',
           user_phone: item.profile?.mobile_number || 'N/A',
           course_name: item.course?.title || 'Unknown Course',
-          price: item.course?.price !== undefined ? String(item.course.price) : (item.price !== undefined ? String(item.price) : 'Free')
+          price: item.course?.price !== undefined ? String(item.course.price) : (item.price !== undefined ? String(item.price) : 'Free'),
+          payment_term: item.payment_term,
+          remaining_balance: item.remaining_balance
         }));
       } catch (err) {
         console.error('[fetchEnrollments] Error:', err);
@@ -226,6 +230,14 @@ export function useCourses() {
     return { message: 'Course requested successfully!' };
   }, []);
 
+  const deleteEnrollment = useCallback(async (id: string) => {
+    const res = await fetchWithAuth(`/courses/enrollment/${id}`, {
+      method: 'DELETE'
+    });
+    if (!res) throw new Error('Delete failed');
+    return res;
+  }, []);
+
   return {
     courses,
     loading,
@@ -239,6 +251,7 @@ export function useCourses() {
     fetchEnrollments,
     fetchMyEnrollments,
     checkEnrollment,
-    chooseCourse
+    chooseCourse,
+    deleteEnrollment
   };
 }

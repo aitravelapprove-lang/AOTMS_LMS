@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, Upload } from 'lucide-react';
+import { Loader2, Save, Upload, Github, Briefcase, Copy, CheckCircle, ExternalLink } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { useRef } from 'react';
 
@@ -20,17 +20,21 @@ interface ProfileData {
     phone: string | null;
     location: string | null;
     skills: string[];
+    github_url?: string | null;
+    resume_url?: string | null;
 }
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export function UserProfile() {
-    const { user } = useAuth();
+    const { user, checkSession } = useAuth();
     const { toast } = useToast();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [uploadingImage, setUploadingImage] = useState(false);
+    const [uploadingResume, setUploadingResume] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const fileResumeRef = useRef<HTMLInputElement>(null);
     const [profile, setProfile] = useState<ProfileData>({
         id: '',
         full_name: '',
@@ -39,16 +43,20 @@ export function UserProfile() {
         bio: '',
         phone: '',
         location: '',
-        skills: []
+        skills: [],
+        github_url: '',
+        resume_url: ''
     });
 
     const fetchProfile = useCallback(async () => {
         try {
             if (!user) return;
             const token = localStorage.getItem('access_token');
-
-            const res = await fetch(`${API_URL}/user/profile`, {
-                headers: { Authorization: `Bearer ${token}` }
+            const res = await fetch(`${API_URL}/user/profile?t=${Date.now()}`, {
+                headers: { 
+                    Authorization: `Bearer ${token}`
+                },
+                cache: 'no-store'
             });
 
             if (!res.ok) throw new Error('Failed to fetch profile');
@@ -66,7 +74,9 @@ export function UserProfile() {
                 bio: data?.bio || '',
                 phone: data?.phone || '',
                 location: data?.location || '',
-                skills: data?.skills || []
+                skills: data?.skills || [],
+                github_url: data?.github_url || '',
+                resume_url: data?.resume_url || ''
             });
         } catch (error: unknown) {
             console.error('Error fetching profile:', error);
@@ -97,11 +107,11 @@ export function UserProfile() {
             const updates = {
                 full_name: profile.full_name,
                 avatar_url: profile.avatar_url,
+                github_url: profile.github_url,
+                resume_url: profile.resume_url,
                 // Add extra fields if schema supports them
                 // bio: profile.bio,
-                // phone: profile.phone,
-                // location: profile.location,
-                // skills: profile.skills
+                // mobile_number: profile.phone,
             };
 
             const res = await fetch(`${API_URL}/user/profile`, {
@@ -122,6 +132,7 @@ export function UserProfile() {
                 title: 'Success',
                 description: 'Profile updated successfully',
             });
+            await fetchProfile();
         } catch (error: unknown) {
             console.error('Error updating profile:', error);
             const errorMessage = error instanceof Error ? error.message : 'Update failed';
@@ -145,7 +156,7 @@ export function UserProfile() {
             const formData = new FormData();
             formData.append('file', file);
 
-            const res = await fetch(`${API_URL}/upload/public`, {
+            const res = await fetch(`${API_URL}/user/profile/image`, {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${token}`
@@ -160,22 +171,26 @@ export function UserProfile() {
 
             const data = await res.json();
             
-            // Assuming the API returns { url: '...' } or { path: '...' }
             const imageUrl = data.url || data.path || data.fileUrl;
             if (imageUrl) {
                 setProfile({ ...profile, avatar_url: imageUrl });
+                
+                // Refresh authentication context to update avatar everywhere
+                if (checkSession) await checkSession();
+                
                 toast({
-                    title: 'Image Uploaded',
-                    description: 'Remember to save changes to persist your new profile picture.',
+                    title: 'Profile Picture Updated',
+                    description: 'Your profile picture has been successfully updated and saved.',
                 });
             } else {
                  throw new Error("Invalid response format from server");
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
+             const message = error instanceof Error ? error.message : 'Could not upload image';
              console.error('Error uploading image:', error);
              toast({
                  title: 'Upload Failed',
-                 description: error.message || 'Could not upload image',
+                 description: message,
                  variant: 'destructive'
              });
         } finally {
@@ -183,6 +198,59 @@ export function UserProfile() {
             if (fileInputRef.current) {
                 fileInputRef.current.value = '';
             }
+        }
+    };
+
+    const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploadingResume(true);
+        try {
+            const token = localStorage.getItem('access_token');
+            const res = await fetch(`${API_URL}/s3/upload-url`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    fileName: file.name,
+                    fileType: file.type,
+                    folder: `resumes/${profile.id || user?.id}`
+                })
+            });
+
+            if (!res.ok) throw new Error('Failed to get upload URL');
+            const { uploadUrl, fileName: s3Key } = await res.json();
+
+            const uploadRes = await fetch(uploadUrl, {
+                method: 'PUT',
+                body: file,
+                headers: {
+                    'Content-Type': file.type
+                }
+            });
+
+            if (!uploadRes.ok) throw new Error('Upload to S3 failed');
+            
+            const finalUrl = `/api/s3/public/${s3Key}`;
+            setProfile({ ...profile, resume_url: finalUrl });
+            toast({
+                title: 'Resume Uploaded',
+                description: 'Your resume has been successfully uploaded and secured in S3.',
+            });
+        } catch (error: unknown) {
+            console.error('Error uploading resume:', error);
+            const message = error instanceof Error ? error.message : 'Failed to upload resume';
+            toast({
+                title: 'Upload Error',
+                description: message,
+                variant: 'destructive',
+            });
+        } finally {
+            setUploadingResume(false);
+            if (fileResumeRef.current) fileResumeRef.current.value = '';
         }
     };
 
@@ -295,6 +363,69 @@ export function UserProfile() {
                                         disabled
                                         className="bg-muted"
                                     />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="github">GitHub Profile URL</Label>
+                                    <div className="flex gap-2">
+                                        <div className="flex bg-slate-100 border border-slate-200 rounded-lg px-3 items-center justify-center">
+                                            <Github className="h-4 w-4 text-slate-500" />
+                                        </div>
+                                        <Input
+                                            id="github"
+                                            placeholder="https://github.com/username"
+                                            value={profile.github_url || ''}
+                                            onChange={(e) => setProfile({ ...profile, github_url: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="resume">Resume/Portfolio URL</Label>
+                                    <div className="flex gap-2 items-center">
+                                        <div className="flex bg-slate-100 border border-slate-200 rounded-lg px-3 items-center justify-center p-2">
+                                            <Briefcase className="h-4 w-4 text-slate-500" />
+                                        </div>
+                                        <Input
+                                            id="resume"
+                                            placeholder="Upload your resume to secure AWS S3..."
+                                            value={profile.resume_url || ''}
+                                            readOnly
+                                            className="bg-muted text-xs cursor-default truncate"
+                                        />
+                                        <input
+                                            type="file"
+                                            accept=".pdf,.doc,.docx"
+                                            className="hidden"
+                                            ref={fileResumeRef}
+                                            onChange={handleResumeUpload}
+                                        />
+                                        {profile.resume_url && (
+                                            <a 
+                                                href={profile.resume_url.startsWith('http') 
+                                                    ? profile.resume_url 
+                                                    : `${API_URL.replace(/\/api$/, '')}${profile.resume_url.startsWith('/') ? '' : '/'}${profile.resume_url}`
+                                                } 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                            >
+                                                <Button type="button" variant="outline" className="flex-shrink-0" title="View Resume">
+                                                    <ExternalLink className="h-4 w-4" />
+                                                </Button>
+                                            </a>
+                                        )}
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            onClick={() => fileResumeRef.current?.click()}
+                                            disabled={uploadingResume}
+                                            className="flex-shrink-0"
+                                        >
+                                            {uploadingResume ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
+                                            Upload
+                                        </Button>
+                                    </div>
+                                    {profile.resume_url && (
+                                        <p className="text-[10px] text-green-600 font-semibold text-right">✓ Resume stored in AWS</p>
+                                    )}
                                 </div>
                             </div>
 

@@ -226,6 +226,22 @@ function ExamCard({
                {exam.status === 'active' ? 'End Protocol' : 'Launch Protocol'}
              </Button>
            )}
+           {exam.approval_status === 'pending' && (
+             <div className="flex flex-1 gap-2">
+               <Button
+                 className="flex-1 h-12 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[10px] uppercase tracking-widest transition-all active:scale-95"
+                 onClick={(e) => { e.stopPropagation(); onUpdate({ id: exam.id, approval_status: 'approved', status: 'ready' }); }}
+               >
+                 Approve
+               </Button>
+               <Button
+                 className="flex-1 h-12 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-[10px] uppercase tracking-widest transition-all active:scale-95"
+                 onClick={(e) => { e.stopPropagation(); onUpdate({ id: exam.id, approval_status: 'rejected' }); }}
+               >
+                 Reject
+               </Button>
+             </div>
+           )}
            <Button 
              variant="ghost" 
              size="icon" 
@@ -403,9 +419,9 @@ export function ExamScheduler() {
     }
   };
 
-  const todayExams = useMemo(() => exams.filter(e => e.scheduled_date && isToday(new Date(e.scheduled_date))), [exams]);
-  const upcomingExams = useMemo(() => exams.filter(e => !e.scheduled_date || (isFuture(new Date(e.scheduled_date)) && !isToday(new Date(e.scheduled_date)))), [exams]);
-  const pastExams = useMemo(() => exams.filter(e => e.scheduled_date && !isFuture(new Date(e.scheduled_date)) && !isToday(new Date(e.scheduled_date))), [exams]);
+  const pendingExams = useMemo(() => exams.filter(e => e.approval_status === 'pending'), [exams]);
+  const approvedExams = useMemo(() => exams.filter(e => e.approval_status === 'approved'), [exams]);
+  const rejectedExams = useMemo(() => exams.filter(e => e.approval_status === 'rejected'), [exams]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -660,19 +676,19 @@ export function ExamScheduler() {
         </Dialog>
       </div>
 
-        <Tabs defaultValue="upcoming" className="w-full">
+        <Tabs defaultValue="pending" className="w-full">
         <TabsList className="mb-12 h-20 rounded-[2.5rem] bg-white border border-slate-100 p-2 shadow-sm flex items-center gap-2">
-           {['today', 'upcoming', 'past'].map(tab => (
+           {['pending', 'approved', 'rejected'].map(tab => (
              <TabsTrigger 
                key={tab} 
                value={tab} 
                className="flex-1 h-full rounded-full font-bold text-[10px] uppercase tracking-widest text-slate-300 data-[state=active]:bg-slate-900 data-[state=active]:text-white transition-all duration-500"
              >
-               {tab === 'today' ? `Active Protocols (${todayExams.length})` : tab === 'upcoming' ? `Workstream (${upcomingExams.length})` : `Archive (${pastExams.length})`}
+               {tab === 'pending' ? `Pending Approval (${pendingExams.length})` : tab === 'approved' ? `Approved Protocols (${approvedExams.length})` : `Rejected Protocols (${rejectedExams.length})`}
              </TabsTrigger>
            ))}
         </TabsList>
-        {['today', 'upcoming', 'past'].map((tabVal) => (
+        {['pending', 'approved', 'rejected'].map((tabVal) => (
           <TabsContent key={tabVal} value={tabVal} className="focusVisible:outline-none">
             <motion.div 
               initial={{ opacity: 0 }}
@@ -680,7 +696,7 @@ export function ExamScheduler() {
               className="grid gap-10 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
             >
               {(() => {
-                const list = tabVal === 'today' ? todayExams : tabVal === 'upcoming' ? upcomingExams : pastExams;
+                const list = tabVal === 'pending' ? pendingExams : tabVal === 'approved' ? approvedExams : rejectedExams;
                 if (list.length === 0) return (
                   <div className="col-span-full py-40 text-center border-2 border-dashed border-slate-100 rounded-[4rem] bg-slate-50/20">
                      <Rocket className="h-12 w-12 text-slate-100 mx-auto mb-6" />

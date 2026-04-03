@@ -235,9 +235,9 @@ export default function InstructorRegister() {
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-white relative overflow-hidden">
-      {/* Global Spline Background Layer - Brand Colors Integrated */}
+      {/* Global Spline Background Layer - Restored for Tablet (md+) */}
       <div className="absolute inset-0 z-0 w-full h-full pointer-events-none overflow-hidden bg-gradient-to-br from-[#0075CF]/20 via-white to-[#FD5A1A]/20">
-        <div className="w-[140vw] h-[140vh] absolute -top-[10vh] -left-[20vw] md:w-[150vw] md:-top-[20vh] md:-left-[25vw] lg:w-[220vw] lg:-top-[15vh] lg:-left-[75vw] pointer-events-auto transition-all duration-700 ease-out mix-blend-multiply">
+        <div className="hidden md:block w-[150vw] h-[150vh] absolute -top-[20vh] -left-[25vw] lg:w-[220vw] lg:-top-[15vh] lg:-left-[75vw] pointer-events-auto transition-all duration-700 ease-out mix-blend-multiply">
           <Spline scene="https://prod.spline.design/atHJsNeB45CbbiBU/scene.splinecode" />
         </div>
         {/* Subtle Brand Orbs for Depth */}
@@ -246,22 +246,22 @@ export default function InstructorRegister() {
       </div>
 
       {/* Left Panel — Visual Spacing */}
-      <div className="lg:w-1/2 relative flex flex-col pointer-events-none min-h-[400px] lg:min-h-screen">
-        <div className="absolute top-0 left-0 w-full p-8 z-20 pointer-events-none">
+      <div className="lg:w-1/2 relative flex flex-col pointer-events-none min-h-0 lg:min-h-screen">
+        <div className="relative lg:absolute top-0 left-0 w-full p-8 lg:p-12 z-20 flex flex-col lg:flex-row items-center justify-between pointer-events-none gap-6">
           <Link
             to="/"
             className="pointer-events-auto flex items-center gap-2 text-slate-400 hover:text-[#0075CF] transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
-            <span className="text-xs font-bold uppercase tracking-widest">
+            <span className="text-xs font-bold uppercase tracking-widest leading-none">
               Exit
             </span>
           </Link>
           <a
             href="/"
-            className="pointer-events-auto transition-transform hover:scale-105 active:scale-95 absolute right-8 top-8 inline-block"
+            className="pointer-events-auto transition-transform hover:scale-105 active:scale-95 inline-block"
           >
-            <img src={logo} alt="Logo" className="h-10" />
+            <img src={logo} alt="Logo" className="h-10 lg:h-12" />
           </a>
         </div>
       </div>

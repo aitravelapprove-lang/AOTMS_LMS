@@ -345,26 +345,25 @@ export default function Auth() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-white relative overflow-hidden">
       {/* 
-          Global Spline Background Layer 
-          Aggressively scaled and offset on all breakpoints to bury the "Built with Spline" logo.
-          Now featuring AOTMS brand gradient background.
+          Global Spline Background Layer - Brand Identity
+          Hidden on mobile (sm) for performance, visible on tablet (md) and desktop (lg).
       */}
       <div className="absolute inset-0 z-0 w-full h-full pointer-events-none overflow-hidden text-center bg-gradient-to-br from-[#0075CF]/20 via-white to-[#FD5A1A]/20">
-        <div className="w-[140vw] h-[140vh] absolute -top-[10vh] -left-[20vw] md:w-[150vw] md:-top-[20vh] md:-left-[25vw] lg:w-[220vw] lg:-top-[15vh] lg:-left-[75vw] pointer-events-auto transition-all duration-700 ease-out mix-blend-multiply">
+        <div className="hidden md:block w-[150vw] h-[150vh] absolute -top-[20vh] -left-[25vw] lg:w-[220vw] lg:-top-[15vh] lg:-left-[75vw] pointer-events-auto transition-all duration-700 ease-out mix-blend-multiply">
           <Spline 
             scene="https://prod.spline.design/atHJsNeB45CbbiBU/scene.splinecode" 
           />
         </div>
-        {/* Subtle Brand Orbs for Depth */}
+        {/* Subtle Brand Orbs for Depth - Optimized for all screens */}
         <div className="absolute top-1/4 -left-20 w-96 h-96 bg-[#0075CF]/10 rounded-full blur-[120px]" />
         <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-[#FD5A1A]/10 rounded-full blur-[120px]" />
       </div>
 
       {/* Left Panel — Purely Visual Spacing */}
-      <div className="lg:w-1/2 relative flex flex-col pointer-events-none min-h-[400px] lg:min-h-screen">
-        <div className="absolute top-0 left-0 w-full p-8 z-20 pointer-events-none">
+      <div className="lg:w-1/2 relative flex flex-col pointer-events-none min-h-0 lg:min-h-screen">
+        <div className="relative lg:absolute top-0 left-0 w-full p-8 lg:p-12 z-20 flex justify-center lg:justify-start pointer-events-none">
           <a href="/" className="pointer-events-auto transition-transform hover:scale-105 active:scale-95 inline-block">
-            <img src={logo} alt="Logo" className="h-10" />
+            <img src={logo} alt="Logo" className="h-10 lg:h-12" />
           </a>
         </div>
       </div>

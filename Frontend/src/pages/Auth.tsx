@@ -91,12 +91,9 @@ export default function Auth() {
   const { userRole } = useAuth();
   useEffect(() => {
     if (user && !authLoading) {
-      if (userRole === 'admin') navigate('/admin');
-      else if (userRole === 'instructor') navigate('/instructor');
-      else if (userRole === 'manager') navigate('/manager');
-      else navigate('/student-dashboard');
+      navigate('/');
     }
-  }, [user, authLoading, userRole, navigate]);
+  }, [user, authLoading, navigate]);
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -311,14 +308,8 @@ export default function Auth() {
 
       if (userData?.approval_status === 'pending' && role !== 'admin' && role !== 'manager') {
         navigate('/pending-approval');
-      } else if (role === 'admin') {
-        navigate('/admin');
-      } else if (role === 'instructor') {
-        navigate('/instructor');
-      } else if (role === 'manager') {
-        navigate('/manager');
       } else {
-        navigate('/student-dashboard');
+        navigate('/');
       }
     }
   };

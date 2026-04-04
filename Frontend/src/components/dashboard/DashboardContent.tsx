@@ -48,6 +48,7 @@ import {
   ArrowRight,
   Loader2,
   Upload,
+  Star,
   Mail,
   X,
   Phone,
@@ -1034,12 +1035,16 @@ const routeConfig: Record<string, { title: string; description: string; icon: Re
   },
 };
 
+import { RatingModal } from "./RatingModal";
+
 export function DashboardContent() {
   const location = useLocation();
   const currentPath = location.pathname;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { socket } = useSocket();
+  const [ratingModalOpen, setRatingModalOpen] = useState(false);
+  const [selectedCourseForRating, setSelectedCourseForRating] = useState({ id: '', title: '' });
 
   useEffect(() => {
     if (!socket) return;
@@ -1066,7 +1071,14 @@ export function DashboardContent() {
   if (config) {
     if (config.component) {
       return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
+          <RatingModal 
+            isOpen={ratingModalOpen} 
+            onClose={() => setRatingModalOpen(false)}
+            courseId={selectedCourseForRating.id}
+            courseTitle={selectedCourseForRating.title}
+          />
+
           <div className="flex flex-col md:flex-row items-start md:items-center gap-4 border-b border-slate-200 pb-6">
             <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 border border-primary/10">
               <config.icon className="h-7 w-7 text-primary" />
@@ -1077,15 +1089,31 @@ export function DashboardContent() {
               </h1>
               <p className="text-base font-medium text-slate-600 mt-1">{config.description}</p>
             </div>
-            {currentPath === "/student-dashboard/notifications" && (
-               <Button 
-                onClick={() => navigate("/student-dashboard/courses")}
-                className="ml-auto bg-primary text-white font-bold rounded-xl px-6 h-12 shadow-lg shadow-primary/20 hover:shadow-xl transition-all gap-2"
-               >
-                 <BookOpen className="h-4 w-4" />
-                 View Course Catalog
-               </Button>
-            )}
+            
+            <div className="ml-auto flex items-center gap-3">
+              {currentPath === "/student-dashboard/courses" && (
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedCourseForRating({ id: 'GENERAL', title: 'AOTMS Pro Academy' });
+                    setRatingModalOpen(true);
+                  }}
+                  className="bg-white border-2 border-slate-100 text-slate-900 font-black rounded-xl px-6 h-12 shadow-sm hover:border-yellow-400 hover:text-yellow-600 transition-all gap-2 text-xs uppercase"
+                >
+                  <Star className="h-4 w-4 fill-current" />
+                  Pulse Your Rating
+                </Button>
+              )}
+              {currentPath === "/student-dashboard/notifications" && (
+                <Button 
+                  onClick={() => navigate("/student-dashboard/courses")}
+                  className="bg-primary text-white font-bold rounded-xl px-6 h-12 shadow-lg shadow-primary/20 hover:shadow-xl transition-all gap-2"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  View Course Catalog
+                </Button>
+              )}
+            </div>
           </div>
           <div className="w-full">
             {config.component}

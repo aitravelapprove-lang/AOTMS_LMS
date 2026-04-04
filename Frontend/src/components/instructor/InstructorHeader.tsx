@@ -113,22 +113,6 @@ export function InstructorHeader() {
               </span>
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-black/5" />
-            <DropdownMenuItem className="h-11 rounded-xl px-4 text-xs font-black uppercase tracking-widest gap-4 hover:bg-primary/5 transition-all text-foreground/90 hover:text-primary">
-              <User className="h-4 w-4" />
-              Teaching Identity
-            </DropdownMenuItem>
-            <DropdownMenuItem className="h-11 rounded-xl px-4 text-xs font-black uppercase tracking-widest gap-4 hover:bg-primary/5 transition-all text-foreground/90 hover:text-primary">
-              <Settings className="h-4 w-4" />
-              Pedagogy Config
-            </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-black/5" />
-            <DropdownMenuItem
-              onClick={() => navigate("/student-dashboard")}
-              className="h-11 rounded-xl px-4 text-xs font-black uppercase tracking-widest gap-4 hover:bg-primary/5 transition-all text-primary"
-            >
-              <User className="h-4 w-4" />
-              Student Console
-            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={signOut}
               className="h-11 rounded-xl px-4 text-xs font-black uppercase tracking-widest gap-4 text-destructive hover:bg-destructive/10 transition-all"

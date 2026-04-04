@@ -159,6 +159,18 @@ export interface Submission {
   student_name?: string;
 }
 
+export interface CourseRating {
+  id: string;
+  course_id: string;
+  user_id: string;
+  rating: number;
+  review: string;
+  created_at: string;
+  course_title?: string;
+  user_name?: string;
+  user_avatar?: string;
+}
+
 
 export function useInstructorCourses() {
   const { user, userRole } = useAuth();
@@ -603,9 +615,9 @@ export function useInstructorStats() {
       // Note: "in" query in Firestore has a limit of documents (usually 30).
       // We chunk if needed or use separate calls, but for now we assume < 30 courses.
       const [enrollments, allVideos, allResources] = await Promise.all([
-        fetchWithAuth(`/data/course_enrollments?course_id=in.(${courseIdsInFormat})`),
-        fetchWithAuth(`/data/course_videos?course_id=in.(${courseIdsInFormat})`),
-        fetchWithAuth(`/data/course_resources?course_id=in.(${courseIdsInFormat})`)
+        fetchWithAuth(`/data/course_enrollments?course_id=in.(${courseIdsInFormat})`) as Promise<any[]>,
+        fetchWithAuth(`/data/course_videos?course_id=in.(${courseIdsInFormat})`) as Promise<any[]>,
+        fetchWithAuth(`/data/course_resources?course_id=in.(${courseIdsInFormat})`) as Promise<any[]>
       ]);
 
       const totalStudents = enrollments.length;
@@ -1423,5 +1435,36 @@ export function useDeleteLiveClass() {
     onError: (error: Error) => {
       toast({ title: 'Error deleting live class', description: error.message, variant: 'destructive' });
     },
+  });
+}
+
+export function useInstructorRatings() {
+  const { user } = useAuth();
+  const { data: courses } = useInstructorCourses();
+
+  return useQuery({
+    queryKey: ['instructor-ratings', user?.id],
+    queryFn: async () => {
+      if (!courses || courses.length === 0) return [];
+      const courseIds = [...courses.map((c: Course) => c.id), 'GENERAL'].join(',');
+      
+      const ratings = await fetchWithAuth(`/data/course_ratings?course_id=in.(${courseIds})&order=created_at.desc`) as any[];
+      
+      const enriched = await Promise.all(ratings.map(async (r: any) => {
+        const course = courses.find((c: Course) => c.id === r.course_id);
+        const userData = await fetchWithAuth(`/data/profiles?user_id=${r.user_id}`).then(res => (res as any[])[0] || {});
+        
+        return {
+          ...r,
+          course_title: course?.title || (r.course_id === 'GENERAL' ? 'Academy Pulse' : 'Course'),
+          user_name: userData.full_name || 'Scholar',
+          user_avatar: userData.avatar_url
+        };
+      }));
+
+      return enriched as CourseRating[];
+    },
+    enabled: !!courses && courses.length > 0 && !!user?.id,
+    staleTime: 60000 * 5,
   });
 }

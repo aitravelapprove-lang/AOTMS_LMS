@@ -138,13 +138,15 @@ function ExamCard({
   onUpdate, 
   onDelete, 
   onConfigure,
-  isPast 
+  isPast,
+  userRole 
 }: { 
   exam: Exam; 
   onUpdate: (params: { id: string; status?: string; approval_status?: string }) => void;
   onDelete: (id: string) => void;
   onConfigure: (exam: Exam) => void;
   isPast?: boolean;
+  userRole?: string | null;
 }) {
   const isPending = exam.approval_status === 'pending';
   const isRejected = exam.approval_status === 'rejected';
@@ -226,7 +228,7 @@ function ExamCard({
                {exam.status === 'active' ? 'End Protocol' : 'Launch Protocol'}
              </Button>
            )}
-           {exam.approval_status === 'pending' && (
+           {exam.approval_status === 'pending' && userRole !== 'instructor' && (
              <div className="flex flex-1 gap-2">
                <Button
                  className="flex-1 h-12 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[10px] uppercase tracking-widest transition-all active:scale-95"
@@ -259,7 +261,7 @@ function ExamCard({
 // ─── 3. Main Horizontal Scheduler ──────────────────────────────────────────
 
 export function ExamScheduler() {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const { toast } = useToast();
   const { data: exams = [], isLoading } = useExams();
   const createExam = useCreateExam();
@@ -353,6 +355,19 @@ export function ExamScheduler() {
     setIsGenerating(true);
     try {
       // Calling the backend proxy to n8n
+      interface AIQuestion {
+        questionText?: string;
+        question_text?: string;
+        text?: string;
+        options?: {
+          text?: string;
+          option_text?: string;
+          isCorrect?: boolean;
+          is_correct?: boolean;
+        }[];
+        difficulty?: string;
+      }
+
       const response = await fetchWithAuth('/manager/generate-questions', {
         method: 'POST',
         body: JSON.stringify({
@@ -362,21 +377,21 @@ export function ExamScheduler() {
           count: 5,
           difficulty: 'medium'
         })
-      });
+      }) as { questions?: AIQuestion[] } | AIQuestion[];
 
       // Handle both direct array and nested 'questions' object from AI
-      const aiQuestions = response.questions || (Array.isArray(response) ? response : []);
+      const aiQuestions = Array.isArray(response) ? response : (response.questions || []);
       
-      const mapped = aiQuestions.map((q: any, idx: number) => {
+      const mapped = aiQuestions.map((q: AIQuestion, idx: number) => {
         // Find the text of the correct option for the correct_answer field
-        const correctOption = q.options?.find((o: any) => o.isCorrect === true || o.is_correct === true);
+        const correctOption = q.options?.find((o) => o.isCorrect === true || o.is_correct === true);
         
         return {
           id: `ai-${idx}-${Date.now()}`,
-          text: q.questionText || q.question_text || q.text,
+          text: q.questionText || q.question_text || q.text || "",
           type: 'mcq',
-          options: q.options?.map((o: any) => ({
-             text: o.text || o.option_text,
+          options: q.options?.map((o) => ({
+             text: o.text || o.option_text || "",
              is_correct: o.isCorrect || o.is_correct || false
           })) || [],
           correct_answer: correctOption?.text || correctOption?.option_text || "",
@@ -407,6 +422,8 @@ export function ExamScheduler() {
         difficulty: q.difficulty || 'medium',
         options: q.options,
         correct_answer: q.correct_answer,
+        explanation: "AI generated assessment item",
+        marks: 1,
         created_by: user?.id || ""
       }));
 
@@ -441,7 +458,7 @@ export function ExamScheduler() {
           </DialogTrigger>
           <DialogContent className="sm:max-w-2xl p-0 overflow-hidden border-none shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] rounded-[3rem] bg-white">
             <DialogHeader className="p-16 border-b border-slate-50 relative space-y-0">
-               <DialogTitle className="text-4xl font-bold text-slate-900 tracking-tighter uppercase italic leading-none">Initialize <br/> Workspace</DialogTitle>
+               <DialogTitle className="text-4xl font-bold text-slate-900 tracking-tighter italic uppercase leading-none">Initialize <br/> Workspace</DialogTitle>
                <DialogDescription className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.5em] mt-3 block">Unified Assessment Module Builder</DialogDescription>
                <div className="absolute top-16 right-16 h-12 w-12 rounded-full border border-slate-100 flex items-center justify-center text-slate-200">
                   <Layout className="h-5 w-5" />
@@ -705,7 +722,7 @@ export function ExamScheduler() {
                   </div>
                 );
                 return list.map(exam => (
-                  <ExamCard key={exam.id} exam={exam} onUpdate={(p) => updateExam.mutate({ id: p.id, ...p })} onDelete={(id) => deleteExam.mutate(id)} onConfigure={(e) => { setSelectedExam(e); setIsConfigureOpen(true); }} isPast={tabVal === 'past'} />
+                  <ExamCard key={exam.id} exam={exam} userRole={userRole} onUpdate={(p) => updateExam.mutate({ id: p.id, ...p })} onDelete={(id) => deleteExam.mutate(id)} onConfigure={(e) => { setSelectedExam(e); setIsConfigureOpen(true); }} />
                 ));
               })()}
             </motion.div>
@@ -924,7 +941,7 @@ export function ExamScheduler() {
                           <div className="grid md:grid-cols-3 gap-8 pt-10 animate-in fade-in slide-in-from-bottom-10 duration-1000">
                              {generatedQuestions.map(q => (
                                <div key={q.id} className="p-12 rounded-[3.5rem] bg-white/5 border border-white/5 backdrop-blur-xl hover:bg-white/10 transition-all duration-500 group/card">
-                                  <Badge className="bg-white/10 text-white/60 border-none text-[8px] font-bold uppercase tracking-widest mb-6 group-hover/card:bg-white group-hover/card:text-slate-900 transition-colors uppercase italic">{q.type} item</Badge>
+                                  <Badge className="bg-white/10 text-white/60 border-none text-[8px] font-bold uppercase tracking-widest mb-6 group-hover/card:bg-white group-hover/card:text-slate-900 transition-colors italic">{q.type} item</Badge>
                                   <p className="text-sm font-medium text-white/80 leading-relaxed group-hover/card:text-white transition-colors">"{q.text}"</p>
                                </div>
                              ))}

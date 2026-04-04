@@ -21,7 +21,7 @@ cloudinary.config({
 
 // Import Mongoose Models
 const { User, Profile, UserRole, OTP, VerifiedEmail, InstructorApplication, GuestCredential, ResumeScan } = require('./models/User');
-const { Course, Enrollment, Topic, Module, Video, Announcement, Timeline, Resource, InstructorProgress, VideoProgress } = require('./models/Course');
+const { Course, Enrollment, Topic, Module, Video, Announcement, Timeline, Resource, InstructorProgress, VideoProgress, CourseRating } = require('./models/Course');
 const { Exam, QuestionBank, ExamSchedule, StudentExamAccess, ExamResult, MockPaper, ExamRule, MockTestConfig } = require('./models/Exam');
 const { Assignment, Submission, Playlist, LiveClass } = require('./models/Content');
 const { SystemLog, SecurityEvent, LeaderboardStat, Notification, Coupon } = require('./models/System');
@@ -45,6 +45,7 @@ const MODEL_MAP = {
     'course_announcements': Announcement,
     'announcements': Announcement, // Alias for frontend compatibility
     'course_enrollments': Enrollment,
+    'course_ratings': CourseRating,
     'exams': Exam,
     'question_bank': QuestionBank,
     'exam_schedules': ExamSchedule,
@@ -440,7 +441,7 @@ app.post('/api/zoom/webhook', async (req, res) => {
 
 
 // --- Question Bank Generator Proxy ---
-app.post('/api/manager/generate-questions', authenticateToken, requireManager, async (req, res) => {
+app.post('/api/manager/generate-questions', authenticateToken, requireInstructor, async (req, res) => {
     console.log('[API] Generate Questions Request:', req.body.topic, req.body.type);
     const { topic, type, count, difficulty, prompt } = req.body;
     
@@ -1668,6 +1669,8 @@ app.get('/api/user/profile', authenticateToken, async (req, res) => {
                 id: req.user.id,
                 email: req.user.email,
                 role: role || 'student',
+                full_name: profile?.full_name || null,
+                avatar_url: profile?.avatar_url || null,
                 approval_status: profile?.approval_status || 'pending',
                 suspended_until: profile?.suspended_until || null
             }
@@ -3364,7 +3367,7 @@ app.get('/api/admin/question-bank/:topic/access-list', authenticateToken, requir
     }
 });
 
-app.post('/api/manager/grant-question-bank-access', authenticateToken, requireAdminOrManager, async (req, res) => {
+app.post('/api/manager/grant-question-bank-access', authenticateToken, requireInstructor, async (req, res) => {
     const { studentId, topic } = req.body;
     if (!studentId || !topic) return res.status(400).json({ error: 'Student ID and Topic required' });
 
@@ -3966,14 +3969,20 @@ app.post('/api/data/:table', authenticateToken, async (req, res) => {
         
         // Security: Restrict who can create entries in sensitive tables
         if (role !== 'admin' && role !== 'manager') {
-            if (['course_enrollments', 'student_exam_access'].includes(table)) {
+            if (['course_enrollments', 'student_exam_access', 'course_ratings'].includes(table)) {
                 // Force user_id and pending status for students
                 req.body.user_id = req.user.id;
-                req.body.status = 'pending';
+                if (table !== 'course_ratings') req.body.status = 'pending';
             } else if (table === 'question_bank') {
                 // Instructors can create questions, but forced to pending
                 req.body.created_by = req.user.id;
                 req.body.approval_status = 'pending';
+            } else if (['exams', 'mock_papers', 'exam_schedules', 'mock_test_configs'].includes(table)) {
+                if (role !== 'instructor') return res.status(403).json({ error: 'Unauthorized to manage exams' });
+                if (table !== 'exam_schedules') {
+                    req.body.created_by = req.user.id;
+                }
+                if (table === 'exams') req.body.status = 'scheduled';
             } else if (table === 'courses') {
                 if (role !== 'instructor') return res.status(403).json({ error: 'Only instructors can create courses' });
                 req.body.instructor_id = req.user.id;

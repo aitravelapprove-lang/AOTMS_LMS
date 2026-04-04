@@ -3974,7 +3974,22 @@ app.post('/api/data/:table', authenticateToken, async (req, res) => {
                 // Instructors can create questions, but forced to pending
                 req.body.created_by = req.user.id;
                 req.body.approval_status = 'pending';
-            } else if (['user_roles', 'courses', 'system_logs'].includes(table)) {
+            } else if (table === 'courses') {
+                if (role !== 'instructor') return res.status(403).json({ error: 'Only instructors can create courses' });
+                req.body.instructor_id = req.user.id;
+                req.body.status = 'draft'; // Forces draft state
+            } else if ([
+                'course_topics', 'course_modules', 'course_videos', 
+                'course_resources', 'course_timeline', 'course_announcements'
+            ].includes(table)) {
+                if (role !== 'instructor') return res.status(403).json({ error: 'Unauthorized to create course content' });
+                if (!req.body.course_id) return res.status(400).json({ error: 'course_id is required' });
+                
+                const course = await Course.findById(req.body.course_id);
+                if (!course || course.instructor_id?.toString() !== req.user.id) {
+                    return res.status(403).json({ error: 'Forbidden: You must be the assigned instructor of this course' });
+                }
+            } else if (['user_roles', 'system_logs'].includes(table)) {
                 return res.status(403).json({ error: 'Unauthorized to create entries in this table' });
             }
         } else {
@@ -4019,22 +4034,25 @@ app.put('/api/data/:table/:id', authenticateToken, async (req, res) => {
             } else if (table === 'courses') {
                 // Allow instructors to update their own courses or assigning themselves
                 const existing = await Model.findById(id);
-                const isInstructorRole = role === 'instructor';
-                
-                if (isInstructorRole) {
-                    const isAlreadyOwner = existing?.instructor_id === req.user.id;
+                if (role === 'instructor') {
+                    const isAlreadyOwner = existing?.instructor_id?.toString() === req.user.id;
                     const isAssigningSelf = req.body.instructor_id === req.user.id;
                     
                     if (!isAlreadyOwner && !isAssigningSelf) {
                         return res.status(403).json({ error: 'Forbidden: Cannot modify courses assigned to others' });
                     }
+                }
+            } else if ([
+                'course_topics', 'course_modules', 'course_videos', 
+                'course_resources', 'course_timeline', 'course_announcements'
+            ].includes(table)) {
+                if (role === 'instructor') {
+                    const item = await Model.findById(id);
+                    if (!item) return res.status(404).json({ error: 'Item not found' });
                     
-                    // Instructors shouldn't change the status without admin approval?
-                    // But we allow draft and pending
-                    if (req.body.status && !['draft', 'pending'].includes(req.body.status) && existing.status !== req.body.status) {
-                        // Managers/admins can change to anything, instructors can only submit for review
-                        // Actually, instructors might need to set it to published if it's their course?
-                        // Let's assume for now they can mod their own course freely.
+                    const course = await Course.findById(item.course_id);
+                    if (!course || course.instructor_id?.toString() !== req.user.id) {
+                        return res.status(403).json({ error: 'Forbidden: You must be the assigned instructor' });
                     }
                 }
             } else if (table === 'question_bank') {
@@ -4046,8 +4064,6 @@ app.put('/api/data/:table/:id', authenticateToken, async (req, res) => {
                 req.body.approval_status = 'pending';
                 delete req.body.created_by;
             } else if (!['doubts', 'doubt_replies'].includes(table)) {
-                 // Allow instructors/students to update their own doubts/replies (simplified check for now)
-                 // Ideally verify ownership or role
                  return res.status(403).json({ error: 'Unauthorized to update this table' });
             }
         }

@@ -240,14 +240,14 @@ function StudentRow({ student, onSendMessage, onViewDetails }: {
           <DropdownMenuContent align="end" className="w-48 rounded-2xl p-2 border-slate-100 shadow-2xl">
             <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-3 py-2">Management</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="rounded-xl px-3 h-10 font-bold focus:bg-slate-50" onClick={() => onViewDetails(student.userId)}>
+            <DropdownMenuItem className="rounded-xl px-3 h-10 font-bold focus:bg-slate-900 focus:text-white transition-colors cursor-pointer" onClick={() => onViewDetails(student.userId)}>
               <Eye className="w-4 h-4 mr-2 opacity-40 text-blue-600" /> View Profile
             </DropdownMenuItem>
-            <DropdownMenuItem className="rounded-xl px-3 h-10 font-bold focus:bg-slate-50" onClick={() => onSendMessage(student.userId)}>
-              <Mail className="w-4 h-4 mr-2 opacity-40 text-emerald-600" /> Send Mail
+            <DropdownMenuItem className="rounded-xl px-3 h-10 font-bold focus:bg-slate-900 focus:text-white transition-colors cursor-pointer" onClick={() => onSendMessage(student.userId)}>
+              <Mail className="w-4 h-4 mr-2 opacity-40 text-emerald-600" /> Send Message
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="rounded-xl px-3 h-10 font-bold text-rose-600 focus:bg-rose-50/50">
+            <DropdownMenuItem className="rounded-xl px-3 h-10 font-bold text-rose-600 focus:bg-slate-900 focus:text-white transition-colors cursor-pointer">
               <UserMinus className="w-4 h-4 mr-2 opacity-40" /> Drop Student
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -507,10 +507,6 @@ export function InstructorStudentDashboard() {
             <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
             {isRefreshing ? 'Refreshing...' : 'Refresh'}
           </Button>
-          <Button variant="outline" size="sm" className="gap-2">
-            <Download className="w-4 h-4" />
-            Export
-          </Button>
         </div>
       </div>
 
@@ -530,17 +526,17 @@ export function InstructorStudentDashboard() {
           loading={loading}
         />
         <StatCard 
-          title="At Risk" 
-          value={loading ? '...' : stats.atRiskStudents} 
-          icon={AlertTriangle} 
-          color="bg-amber-500/10 text-amber-500"
+          title="Total Watch Time" 
+          value={loading ? '...' : stats.totalWatchTimeMinutes} 
+          icon={Clock} 
+          color="bg-blue-500/10 text-blue-500"
           loading={loading}
         />
         <StatCard 
-          title="Total Watch Time" 
-          value={loading ? '...' : formatWatchTime(stats.totalWatchTimeMinutes)} 
-          icon={Clock} 
-          color="bg-blue-500/10 text-blue-500"
+          title="Course Enrollments" 
+          value={loading ? '...' : stats.totalEnrollments} 
+          icon={BookOpen} 
+          color="bg-purple-500/10 text-purple-500"
           loading={loading}
         />
       </div>
@@ -570,7 +566,6 @@ export function InstructorStudentDashboard() {
                       <SelectItem value="all">All Status</SelectItem>
                       <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="at-risk">At Risk</SelectItem>
                       <SelectItem value="inactive">Inactive</SelectItem>
                     </SelectContent>
                   </Select>
@@ -619,7 +614,7 @@ export function InstructorStudentDashboard() {
         </div>
 
         <div className="space-y-6">
-          <ActivityFeed activities={activities} students={students || []} />
+
           
           <Card>
             <CardHeader className="pb-3">

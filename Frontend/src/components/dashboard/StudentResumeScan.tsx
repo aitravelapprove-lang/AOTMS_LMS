@@ -115,8 +115,8 @@ export function StudentResumeScan() {
       {/* Header Section */}
       <div className="grid lg:grid-cols-2 gap-8 items-center bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
         <div className="space-y-6">
-          <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-none font-black px-4 py-1 tracking-widest uppercase text-[10px]">
-             Premium Unlimited Access
+          <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-200 border-none font-black px-4 py-1 tracking-widest uppercase text-[10px]">
+             3 Premium Scanning Chances
           </Badge>
           <h2 className="text-3xl md:text-4xl font-black text-slate-900 leading-tight">
             Analyze Your Resume <br /> & Beat the Bot
@@ -132,8 +132,8 @@ export function StudentResumeScan() {
              <div>
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Scanning Status</p>
                 <div className="flex items-center gap-2">
-                   <p className="text-2xl font-black text-slate-900">Unlimited</p>
-                   <Badge className="bg-primary text-white text-[8px] h-4">VIP</Badge>
+                   <p className="text-2xl font-black text-slate-900">{Math.max(0, 3 - history.length)} Left</p>
+                   <Badge className="bg-amber-500 text-white text-[8px] h-4">BASIC</Badge>
                 </div>
              </div>
           </div>
@@ -192,10 +192,12 @@ export function StudentResumeScan() {
 
                  <Button 
                    className="w-full h-14 bg-primary hover:bg-primary/90 text-white font-black text-lg rounded-2xl shadow-xl shadow-primary/20"
-                   disabled={(!file && !resumeText) || scanMutation.isPending}
+                   disabled={(!file && !resumeText) || scanMutation.isPending || history.length >= 3}
                    onClick={() => scanMutation.mutate()}
                  >
-                   {scanMutation.isPending ? (
+                   {history.length >= 3 ? (
+                     "No Chances Left"
+                   ) : scanMutation.isPending ? (
                      <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Analyzing...</>
                    ) : (
                      <>Calculate ATS Score</>

@@ -553,6 +553,7 @@ function LeaderboardTab() {
 
 function LiveClassesTab() {
   const { data: classes, isLoading } = useLiveClasses();
+  const { data: enrolledCourses } = useEnrolledCourses();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -567,6 +568,16 @@ function LiveClassesTab() {
     });
   };
 
+  const enrolledIds = new Set(enrolledCourses?.map(c => c.id?.toString()) || []);
+  const filteredClasses = classes?.filter(c => {
+    // If no course is associated, it's a general/public meeting
+    if (!c.course_id) return true;
+    
+    // If course is associated, verify the student is enrolled in it
+    const courseId = typeof c.course_id === 'object' ? (c.course_id._id || c.course_id.id) : c.course_id;
+    return enrolledIds.has(courseId?.toString());
+  }) || [];
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -579,18 +590,18 @@ function LiveClassesTab() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {isLoading ? (
           [1, 2, 3].map((i) => <Skeleton key={i} className="h-[280px] rounded-2xl" />)
-        ) : !classes || classes.length === 0 ? (
+        ) : filteredClasses.length === 0 ? (
           <div className="col-span-full py-24 text-center bg-white rounded-3xl border border-dashed border-slate-200 flex flex-col items-center">
             <div className="h-16 w-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
                <Video className="h-8 w-8 text-primary/40" />
             </div>
             <h3 className="text-xl font-bold text-slate-800">No Upcoming Sessions</h3>
             <p className="text-base font-medium text-slate-600 mt-2 max-w-sm">
-              Your instructors haven't scheduled any new live broadcasts yet.
+              Either there are no scheduled sessions or you aren't enrolled in their courses yet.
             </p>
           </div>
         ) : (
-          classes.map((session: LiveClass) => (
+          filteredClasses.map((session: LiveClass) => (
             <Card
               key={session.id}
               className="pro-card group cursor-default hover:-translate-y-1 transition-all duration-300"
@@ -703,6 +714,11 @@ function DashboardHome() {
   const recentResources = dashboardData?.resources || [];
   const realSkills = dashboardData?.skills || [];
 
+  // Derive real-time stats
+  const completedCoursesCount = enrolledCourses?.filter(c => c.progress >= 100).length || 0;
+  const totalMinutesSpent = dashboardData?.activity?.reduce((sum, day) => sum + (day.minutes || 0), 0) || 0;
+  const watchHours = Math.floor(totalMinutesSpent / 60) || 0;
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Welcome Header */}
@@ -727,8 +743,8 @@ function DashboardHome() {
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {[
           { title: "Active Enrollments", value: enrolledCourses?.length || 0, icon: BookOpen, color: "blue", desc: "Ongoing courses" },
-          { title: "Training Progress", value: stats?.completed_courses || 0, icon: Target, color: "orange", desc: "Modules finished" },
-          { title: "Platform Engagement", value: `${stats?.total_watch_minutes ? Math.floor(stats.total_watch_minutes / 60) : 0}h`, icon: Clock, color: "blue", desc: "Total learning time" },
+          { title: "Training Progress", value: completedCoursesCount, icon: Target, color: "orange", desc: "Modules finished" },
+          { title: "Platform Engagement", value: `${watchHours}h`, icon: Clock, color: "blue", desc: "Total learning time" },
         ].map((kpi, i) => (
           <motion.div
             key={kpi.title}
@@ -850,22 +866,7 @@ function DashboardHome() {
             </CardContent>
           </Card>
 
-          {/* Skill Blocks - Real Data */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-             {(realSkills.length > 0 ? realSkills : ['Core', 'Technical', 'Soft Skills', 'Labs']).map((skill, i) => (
-               <div key={typeof skill === 'string' ? skill : skill.name} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-slate-50 flex items-center justify-center">
-                    <CheckCircle className="h-4 w-4 text-emerald-500" />
-                  </div>
-                  <span className="text-xs font-black text-slate-900 uppercase tracking-tighter line-clamp-1">
-                    {typeof skill === 'string' ? skill : skill.name}
-                  </span>
-                  <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-emerald-500" style={{ width: `${typeof skill === 'string' ? (40 + (i * 15)) : (skill.progress || 0)}%` }}></div>
-                  </div>
-               </div>
-             ))}
-          </div>
+          {/* Row of stats and activity removed as requested */}
         </div>
 
         {/* Right Sidebar - Spans 1 col */}
@@ -938,10 +939,7 @@ function DashboardHome() {
             </CardContent>
           </Card>
 
-          {/* Announcements - Existing component */}
-          <div className="border-none shadow-none">
-            <AnnouncementsSection />
-          </div>
+          {/* Announcements removed per user request */}
 
           {/* Student Support Section - New Feature */}
           <Card className="bg-primary text-white p-6 rounded-3xl relative overflow-hidden group">

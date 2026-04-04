@@ -4003,14 +4003,21 @@ app.post('/api/data/:table', authenticateToken, async (req, res) => {
                 req.body.status = 'draft'; // Forces draft state
             } else if ([
                 'course_topics', 'course_modules', 'course_videos', 
-                'course_resources', 'course_timeline', 'course_announcements'
+                'course_resources', 'course_timeline', 'course_announcements', 'live_classes'
             ].includes(table)) {
                 if (role !== 'instructor') return res.status(403).json({ error: 'Unauthorized to create course content' });
-                if (!req.body.course_id) return res.status(400).json({ error: 'course_id is required' });
                 
-                const course = await Course.findById(req.body.course_id);
-                if (!course || course.instructor_id?.toString() !== req.user.id) {
-                    return res.status(403).json({ error: 'Forbidden: You must be the assigned instructor of this course' });
+                if (table === 'live_classes') {
+                    // Logic handled below specialized for live_classes or default to check course_id if provided
+                } else if (!req.body.course_id) {
+                    return res.status(400).json({ error: 'course_id is required' });
+                }
+                
+                if (req.body.course_id) {
+                    const course = await Course.findById(req.body.course_id);
+                    if (!course || course.instructor_id?.toString() !== req.user.id) {
+                        return res.status(403).json({ error: 'Forbidden: You must be the assigned instructor of this course' });
+                    }
                 }
             } else if (['user_roles', 'system_logs'].includes(table)) {
                 return res.status(403).json({ error: 'Unauthorized to create entries in this table' });
@@ -4067,15 +4074,22 @@ app.put('/api/data/:table/:id', authenticateToken, async (req, res) => {
                 }
             } else if ([
                 'course_topics', 'course_modules', 'course_videos', 
-                'course_resources', 'course_timeline', 'course_announcements'
+                'course_resources', 'course_timeline', 'course_announcements', 'live_classes'
             ].includes(table)) {
                 if (role === 'instructor') {
                     const item = await Model.findById(id);
                     if (!item) return res.status(404).json({ error: 'Item not found' });
                     
-                    const course = await Course.findById(item.course_id);
-                    if (!course || course.instructor_id?.toString() !== req.user.id) {
-                        return res.status(403).json({ error: 'Forbidden: You must be the assigned instructor' });
+                    if (table === 'live_classes' && item.instructor_id?.toString() === req.user.id) {
+                        // Priority check: If they are the host of the meeting, allow it
+                    } else if (item.course_id) {
+                        const course = await Course.findById(item.course_id);
+                        if (!course || course.instructor_id?.toString() !== req.user.id) {
+                            return res.status(403).json({ error: 'Forbidden: You must be the assigned instructor of this course' });
+                        }
+                    } else {
+                        // Not host and no course attached
+                         return res.status(403).json({ error: 'Forbidden: Action unauthorized for this session' });
                     }
                 }
             } else if (table === 'question_bank') {
@@ -4122,17 +4136,24 @@ app.delete('/api/data/:table/:id', authenticateToken, async (req, res) => {
             if (role === 'instructor') {
                 const courseRelatedTables = [
                     'courses', 'course_topics', 'course_modules', 'course_videos', 
-                    'course_resources', 'course_timeline', 'course_announcements'
+                    'course_resources', 'course_timeline', 'course_announcements', 'live_classes'
                 ];
                 
                 if (courseRelatedTables.includes(table)) {
                     // Get courseId for sub-items or item itself if it's a course
-                    const courseId = table === 'courses' ? item._id : item.course_id;
-                    if (!courseId) return res.status(403).json({ error: 'Action forbidden for this item' });
-                    
-                    const course = await Course.findById(courseId);
-                    if (!course || course.instructor_id?.toString() !== req.user.id) {
-                        return res.status(403).json({ error: 'Forbidden: You must be the assigned instructor' });
+                    if (table === 'live_classes' && item.instructor_id?.toString() === req.user.id) {
+                         // Priority check: allow meeting host to delete
+                    } else {
+                        const courseId = table === 'courses' ? item._id : item.course_id;
+                        
+                        if (courseId) {
+                            const course = await Course.findById(courseId);
+                            if (!course || course.instructor_id?.toString() !== req.user.id) {
+                                return res.status(403).json({ error: 'Forbidden: You must be the assigned instructor of this course' });
+                            }
+                        } else if (table === 'live_classes') {
+                             return res.status(403).json({ error: 'Forbidden: You are not the host of this session' });
+                        }
                     }
                 } else if (table === 'question_bank') {
                     if (item.created_by?.toString() !== req.user.id) {

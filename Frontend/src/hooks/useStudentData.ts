@@ -161,6 +161,7 @@ export interface LeaderboardEntry {
 
 export interface LiveClass {
     id: string;
+    course_id?: string;
     title: string;
     scheduled_at: string;
     duration_minutes: number;
@@ -218,9 +219,7 @@ export function useAvailableCourses() {
                     }
                 }
 
-                return data
-                    .filter(course => !enrolledCourseIds.has(course.id))
-                    .map(course => ({
+                return data.map(course => ({
                         id: course.id,
                         title: course.title,
                         description: course.description,
@@ -231,6 +230,7 @@ export function useAvailableCourses() {
                         created_at: course.created_at,
                         price: course.price,
                         original_price: course.original_price,
+                        enrollmentStatus: enrolledCourseIds.has(course.id) ? 'active' : undefined,
                         progress: 0
                     } as StudentCourse));
             } catch (error) {

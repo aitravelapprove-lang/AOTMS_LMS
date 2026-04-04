@@ -22,6 +22,7 @@ import { QuestionBankManager } from "@/components/manager/QuestionBankManager";
 import { ExamScheduler } from "@/components/manager/ExamScheduler";
 import { InstructorVideoLibrary } from "@/components/instructor/dashboard/InstructorVideoLibrary";
 import { LiveClassManager } from "@/components/instructor/dashboard/LiveClassManager";
+import { UserProfile } from "@/components/dashboard/UserProfile";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -343,6 +344,7 @@ export default function InstructorDashboard() {
   const isChat = path === "/instructor/chat";
   const isQuestionBank = path === "/instructor/question-bank";
   const isExams = path === "/instructor/exams";
+  const isProfile = path === "/instructor/profile";
 
   return (
     <SidebarProvider className="h-screen w-full overflow-hidden mesh-bg font-sans">
@@ -508,6 +510,15 @@ export default function InstructorDashboard() {
                   animate={{ opacity: 1 }}
                 >
                   <ExamScheduler />
+                </motion.div>
+              )}
+              {isProfile && (
+                <motion.div
+                  key="profile"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <UserProfile />
                 </motion.div>
               )}
             </AnimatePresence>

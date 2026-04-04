@@ -131,7 +131,10 @@ export function AdminHeader() {
               </div>
             </div>
             <DropdownMenuSeparator className="bg-slate-100 mx-2" />
-            <DropdownMenuItem className="h-11 rounded-xl px-3 text-sm font-medium gap-3 hover:bg-slate-100 transition-colors cursor-pointer text-slate-700 focus:bg-slate-100 focus:text-slate-900 mx-1">
+            <DropdownMenuItem 
+              onClick={() => navigate("/admin/profile")}
+              className="h-11 rounded-xl px-3 text-sm font-medium gap-3 hover:bg-slate-100 transition-colors cursor-pointer text-slate-700 focus:bg-slate-100 focus:text-slate-900 mx-1"
+            >
               <User className="h-4 w-4 text-slate-500" />
               My Profile
             </DropdownMenuItem>

@@ -114,6 +114,14 @@ export function InstructorHeader() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-black/5" />
             <DropdownMenuItem
+              onClick={() => navigate("/instructor/profile")}
+              className="h-11 rounded-xl px-4 text-xs font-black uppercase tracking-widest gap-4 text-slate-700 hover:bg-slate-100 transition-all font-sans"
+            >
+              <User className="h-4 w-4" />
+              Manage Profile
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-black/5" />
+            <DropdownMenuItem
               onClick={signOut}
               className="h-11 rounded-xl px-4 text-xs font-black uppercase tracking-widest gap-4 text-destructive hover:bg-destructive/10 transition-all"
             >

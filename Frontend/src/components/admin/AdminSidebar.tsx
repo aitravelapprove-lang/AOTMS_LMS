@@ -29,7 +29,8 @@ import {
   Database,
   TrendingUp,
   Ticket,
-  Zap
+  Zap,
+  User
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useAuth } from "@/hooks/useAuth";
@@ -37,6 +38,7 @@ import { Button } from "@/components/ui/button";
 
 const mainNavItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
+  { title: "My Profile", url: "/admin/profile", icon: User },
   { title: "Users Management", url: "/admin/users", icon: Users },
   { title: "Instructor Courses", url: "/admin/instructor-courses", icon: BookOpen },
   { title: "All Courses", url: "/admin/all-courses", icon: GraduationCap },

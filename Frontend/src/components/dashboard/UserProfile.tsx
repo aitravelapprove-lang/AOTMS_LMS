@@ -20,6 +20,7 @@ interface ProfileData {
     phone: string | null;
     location: string | null;
     skills: string[];
+    role?: string;
     github_url?: string | null;
     resume_url?: string | null;
 }
@@ -27,7 +28,7 @@ interface ProfileData {
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export function UserProfile() {
-    const { user, checkSession } = useAuth();
+    const { user, userRole, checkSession } = useAuth();
     const { toast } = useToast();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -304,37 +305,39 @@ export function UserProfile() {
                         <CardDescription>{profile.email}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                        <div className="text-sm text-muted-foreground text-center">
-                            Student • Joined {new Date().getFullYear()}
+                        <div className="text-sm text-muted-foreground text-center font-bold uppercase tracking-widest bg-primary/5 py-2 rounded-lg border border-primary/10">
+                            {userRole ? userRole : 'Student'} • Joined {new Date().getFullYear()}
                         </div>
 
-                        <div className="pt-4 border-t">
-                            <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold mb-3 block">My Learning ID</Label>
-                            <div className="flex gap-2">
-                                <Input
-                                    readOnly
-                                    value={profile.id}
-                                    className="bg-muted/50 font-mono text-[10px] h-9"
-                                />
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-9 px-3"
-                                    onClick={() => {
-                                        navigator.clipboard.writeText(profile.id);
-                                        toast({
-                                            title: "ID Copied",
-                                            description: "Share this ID with your instructor to get course access.",
-                                        });
-                                    }}
-                                >
-                                    Copy
-                                </Button>
+                        {userRole === 'student' && (
+                            <div className="pt-4 border-t">
+                                <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold mb-3 block">My Learning ID</Label>
+                                <div className="flex gap-2">
+                                    <Input
+                                        readOnly
+                                        value={profile.id}
+                                        className="bg-muted/50 font-mono text-[10px] h-9"
+                                    />
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-9 px-3"
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(profile.id);
+                                            toast({
+                                                title: "ID Copied",
+                                                description: "Share this ID with your instructor to get course access.",
+                                            });
+                                        }}
+                                    >
+                                        Copy
+                                    </Button>
+                                </div>
+                                <p className="text-[10px] text-muted-foreground mt-2 leading-tight">
+                                    Share this UUID with your instructor so they can manually enroll you in courses.
+                                </p>
                             </div>
-                            <p className="text-[10px] text-muted-foreground mt-2 leading-tight">
-                                Share this UUID with your instructor so they can manually enroll you in courses.
-                            </p>
-                        </div>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -364,69 +367,73 @@ export function UserProfile() {
                                         className="bg-muted"
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="github">GitHub Profile URL</Label>
-                                    <div className="flex gap-2">
-                                        <div className="flex bg-slate-100 border border-slate-200 rounded-lg px-3 items-center justify-center">
-                                            <Github className="h-4 w-4 text-slate-500" />
+                                {userRole === 'student' && (
+                                    <>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="github">GitHub Profile URL</Label>
+                                            <div className="flex gap-2">
+                                                <div className="flex bg-slate-100 border border-slate-200 rounded-lg px-3 items-center justify-center">
+                                                    <Github className="h-4 w-4 text-slate-500" />
+                                                </div>
+                                                <Input
+                                                    id="github"
+                                                    placeholder="https://github.com/username"
+                                                    value={profile.github_url || ''}
+                                                    onChange={(e) => setProfile({ ...profile, github_url: e.target.value })}
+                                                />
+                                            </div>
                                         </div>
-                                        <Input
-                                            id="github"
-                                            placeholder="https://github.com/username"
-                                            value={profile.github_url || ''}
-                                            onChange={(e) => setProfile({ ...profile, github_url: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="resume">Resume/Portfolio URL</Label>
-                                    <div className="flex gap-2 items-center">
-                                        <div className="flex bg-slate-100 border border-slate-200 rounded-lg px-3 items-center justify-center p-2">
-                                            <Briefcase className="h-4 w-4 text-slate-500" />
-                                        </div>
-                                        <Input
-                                            id="resume"
-                                            placeholder="Upload your resume to secure AWS S3..."
-                                            value={profile.resume_url || ''}
-                                            readOnly
-                                            className="bg-muted text-xs cursor-default truncate"
-                                        />
-                                        <input
-                                            type="file"
-                                            accept=".pdf,.doc,.docx"
-                                            className="hidden"
-                                            ref={fileResumeRef}
-                                            onChange={handleResumeUpload}
-                                        />
-                                        {profile.resume_url && (
-                                            <a 
-                                                href={profile.resume_url.startsWith('http') 
-                                                    ? profile.resume_url 
-                                                    : `${API_URL.replace(/\/api$/, '')}${profile.resume_url.startsWith('/') ? '' : '/'}${profile.resume_url}`
-                                                } 
-                                                target="_blank" 
-                                                rel="noopener noreferrer"
-                                            >
-                                                <Button type="button" variant="outline" className="flex-shrink-0" title="View Resume">
-                                                    <ExternalLink className="h-4 w-4" />
+                                        <div className="space-y-2">
+                                            <Label htmlFor="resume">Resume/Portfolio URL</Label>
+                                            <div className="flex gap-2 items-center">
+                                                <div className="flex bg-slate-100 border border-slate-200 rounded-lg px-3 items-center justify-center p-2">
+                                                    <Briefcase className="h-4 w-4 text-slate-500" />
+                                                </div>
+                                                <Input
+                                                    id="resume"
+                                                    placeholder="Upload your resume to secure AWS S3..."
+                                                    value={profile.resume_url || ''}
+                                                    readOnly
+                                                    className="bg-muted text-xs cursor-default truncate"
+                                                />
+                                                <input
+                                                    type="file"
+                                                    accept=".pdf,.doc,.docx"
+                                                    className="hidden"
+                                                    ref={fileResumeRef}
+                                                    onChange={handleResumeUpload}
+                                                />
+                                                {profile.resume_url && (
+                                                    <a 
+                                                        href={profile.resume_url.startsWith('http') 
+                                                            ? profile.resume_url 
+                                                            : `${API_URL.replace(/\/api$/, '')}${profile.resume_url.startsWith('/') ? '' : '/'}${profile.resume_url}`
+                                                        } 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer"
+                                                    >
+                                                        <Button type="button" variant="outline" className="flex-shrink-0" title="View Resume">
+                                                            <ExternalLink className="h-4 w-4" />
+                                                        </Button>
+                                                    </a>
+                                                )}
+                                                <Button
+                                                    type="button"
+                                                    variant="secondary"
+                                                    onClick={() => fileResumeRef.current?.click()}
+                                                    disabled={uploadingResume}
+                                                    className="flex-shrink-0"
+                                                >
+                                                    {uploadingResume ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
+                                                    Upload
                                                 </Button>
-                                            </a>
-                                        )}
-                                        <Button
-                                            type="button"
-                                            variant="secondary"
-                                            onClick={() => fileResumeRef.current?.click()}
-                                            disabled={uploadingResume}
-                                            className="flex-shrink-0"
-                                        >
-                                            {uploadingResume ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
-                                            Upload
-                                        </Button>
-                                    </div>
-                                    {profile.resume_url && (
-                                        <p className="text-[10px] text-green-600 font-semibold text-right">✓ Resume stored in AWS</p>
-                                    )}
-                                </div>
+                                            </div>
+                                            {profile.resume_url && (
+                                                <p className="text-[10px] text-green-600 font-semibold text-right">✓ Resume stored in AWS</p>
+                                            )}
+                                        </div>
+                                    </>
+                                )}
                             </div>
 
                             <div className="space-y-2">

@@ -17,9 +17,8 @@ import {
   BookOpen,
   Users,
   Video,
-  FileQuestion,
   Calendar,
-  MessageSquare,
+  FileQuestion,
   FileText,
   BarChart3,
   HelpCircle,
@@ -30,6 +29,8 @@ import {
   Settings,
   ShieldCheck,
   RefreshCw,
+  User,
+  MessageSquare,
 } from "lucide-react";
 
 import logo from "@/assets/logo.png";
@@ -41,6 +42,7 @@ import { Badge } from "@/components/ui/badge";
 
 const mainNavItems = [
   { title: "Dashboard", url: "/instructor", icon: LayoutDashboard },
+  { title: "My Profile", url: "/instructor/profile", icon: User },
   { title: "My Courses", url: "/instructor/my-courses", icon: BookOpen },
   { title: "Student Roster", url: "/instructor/students", icon: Users, isLive: true },
   { title: "Messages", url: "/instructor/chat", icon: MessageSquare },

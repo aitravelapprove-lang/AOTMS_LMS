@@ -23,6 +23,7 @@ import { ExamScheduler } from "@/components/manager/ExamScheduler";
 import { QuestionBankManager } from "@/components/manager/QuestionBankManager";
 import { LeaderboardManager } from "@/components/manager/LeaderboardManager";
 import { ManagerVideoLibrary } from "@/components/manager/ManagerVideoLibrary";
+import { UserProfile } from "@/components/dashboard/UserProfile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -480,6 +481,7 @@ export default function AdminDashboard() {
         "/admin/live-monitoring": "live-monitoring",
         "/admin/coupons": "coupons",
         "/admin/leads": "leads",
+        "/admin/profile": "profile",
       };
     const path = location.pathname;
     const tab = tabUrlMap[path];
@@ -938,6 +940,16 @@ export default function AdminDashboard() {
                     animate={{ opacity: 1 }}
                   >
                     <LeadManagement />
+                  </motion.div>
+                </TabsContent>
+
+                <TabsContent key="tab-profile" value="profile" className="mt-0 outline-none">
+                  <motion.div
+                    key="motion-profile"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <UserProfile />
                   </motion.div>
                 </TabsContent>
               </div>

@@ -29,6 +29,7 @@ import {
   KeyRound,
   GraduationCap,
   BookOpen,
+  User,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useAuth } from "@/hooks/useAuth";
@@ -40,6 +41,7 @@ interface ManagerSidebarProps {
 
 const examManagementItems = [
   { id: "overview", title: "Dashboard", icon: LayoutDashboard },
+  { id: "profile", title: "My Profile", icon: User },
   { id: "exams", title: "Exam Scheduling", icon: Calendar },
   { id: "questions", title: "Question Bank", icon: FileQuestion },
 ];

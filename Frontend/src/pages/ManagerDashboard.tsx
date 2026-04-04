@@ -19,6 +19,7 @@ import { ManagerVideoLibrary } from "@/components/manager/ManagerVideoLibrary";
 import { useAdminData } from "@/hooks/useAdminData";
 import { useCourses, CourseEnrollment } from "@/hooks/useCourses";
 import { useSocket } from "@/hooks/useSocket";
+import { UserProfile } from "@/components/dashboard/UserProfile";
 import {
   Card,
   CardContent,
@@ -400,6 +401,8 @@ export default function ManagerDashboard() {
         return <InstructorManagement />;
       case "video-library":
         return <ManagerVideoLibrary />;
+      case "profile":
+        return <UserProfile />;
       default:
         return renderOverview();
     }

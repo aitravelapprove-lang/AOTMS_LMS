@@ -61,7 +61,8 @@ import {
   Database,
   Ticket,
   Gift,
-  Power
+  Power,
+  Layers,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { CouponManager } from "@/components/admin/CouponManager";
@@ -70,6 +71,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Course as InstructorCourse } from "@/hooks/useInstructorData";
 import { Course as CatalogCourse } from "@/hooks/useCourses";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { CourseBuilder } from "@/components/instructor/courses/CourseBuilder";
 
 import { Course as AdminCourse } from "@/hooks/useAdminData";
 
@@ -80,6 +82,7 @@ function AllCoursesList({
   loading, 
   onDelete, 
   onView, 
+  onViewSyllabus,
   onUpdatePrice,
   onToggleActive
 }: { 
@@ -87,6 +90,7 @@ function AllCoursesList({
   loading: boolean,
   onDelete?: (id: string) => void, 
   onView?: (course: AdminCourse) => void,
+  onViewSyllabus?: (course: AdminCourse) => void,
   onUpdatePrice?: (id: string, price: string) => void,
   onToggleActive?: (id: string, isActive: boolean) => void
 }) {
@@ -280,6 +284,15 @@ function AllCoursesList({
                         <span>₹{course.price}</span>
                       )}
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-primary hover:bg-primary/5 rounded-full"
+                      onClick={() => onViewSyllabus?.(course)}
+                      title="Manage Syllabus"
+                    >
+                      <Layers className="h-4 w-4" />
+                    </Button>
                     <Button 
                       variant="ghost" 
                       size="icon" 
@@ -349,6 +362,7 @@ export default function AdminDashboard() {
   const adminData = useAdminData(userRole);
   const [selectedCourseDetail, setSelectedCourseDetail] = useState<CombinedCourse | null>(null);
   const [showCourseDetail, setShowCourseDetail] = useState(false);
+  const [buildingCourse, setBuildingCourse] = useState<CombinedCourse | null>(null);
   const {
     loading: dataLoading,
     profiles,
@@ -528,6 +542,16 @@ export default function AdminDashboard() {
         </div>
       </div>
     );
+  }
+
+  if (buildingCourse) {
+      return (
+        <div className="min-h-screen bg-slate-50 relative">
+          <div className="p-8 max-w-7xl mx-auto">
+             <CourseBuilder course={buildingCourse as any} onBack={() => setBuildingCourse(null)} />
+          </div>
+        </div>
+      );
   }
 
   return (
@@ -773,6 +797,7 @@ export default function AdminDashboard() {
                       courses={courses}
                       loading={dataLoading}
                       onDelete={deleteCourse} 
+                      onViewSyllabus={setBuildingCourse}
                       onView={(course) => {
                         setSelectedCourseDetail(course);
                         setShowCourseDetail(true);
@@ -1001,8 +1026,14 @@ export default function AdminDashboard() {
             <Button variant="outline" className="rounded-lg h-10 px-6 font-semibold" onClick={() => setShowCourseDetail(false)}>
               Close Profile
             </Button>
-            <Button className="pro-button-primary h-10 px-8 rounded-lg shadow-md" onClick={() => setShowCourseDetail(false)}>
-              Manage Course
+            <Button 
+                className="pro-button-primary h-10 px-8 rounded-lg shadow-md" 
+                onClick={() => {
+                    setBuildingCourse(selectedCourseDetail);
+                    setShowCourseDetail(false);
+                }}
+            >
+              Manage Syllabus
             </Button>
           </DialogFooter>
         </DialogContent>

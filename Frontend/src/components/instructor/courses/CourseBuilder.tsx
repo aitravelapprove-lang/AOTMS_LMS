@@ -10,7 +10,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { useCourseModules, useCreateCourseModule, useModuleVideos, useCreateCourseVideo, useS3Upload, useUpdateCourseStatus, CourseModule, S3CourseVideo, useDeleteCourseVideo } from '@/hooks/useCourseBuilder';
+import { useCourseModules, useCreateCourseModule, useModuleVideos, useCreateCourseVideo, useS3Upload, useUpdateCourseStatus, CourseModule, S3CourseVideo, useDeleteCourseVideo, useDeleteCourseModule } from '@/hooks/useCourseBuilder';
 import { Course } from '@/hooks/useInstructorData';
 import { VideoUploader } from '../VideoUploader';
 
@@ -23,11 +23,13 @@ function ModuleItem({ module, course }: { module: CourseModule, course: Course }
     const { data: videos = [] as S3CourseVideo[], refetch } = useModuleVideos(module.id, course.id);
     const createVideo = useCreateCourseVideo();
     const deleteVideo = useDeleteCourseVideo();
+    const deleteModule = useDeleteCourseModule();
     const uploadS3 = useS3Upload();
     const { toast } = useToast();
 
     const [isVideoUploadOpen, setIsVideoUploadOpen] = useState(false);
     const [copiedModule, setCopiedModule] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const handleCopyModuleId = () => {
         try {
@@ -47,6 +49,20 @@ function ModuleItem({ module, course }: { module: CourseModule, course: Course }
             toast({ title: "Video Removed", description: "The content has been purged from this module." });
         } catch (err) {
             toast({ title: "Deletion Failed", variant: "destructive" });
+        }
+    };
+
+    const handleDeleteModule = async () => {
+        if (!confirm(`Are you sure you want to delete the module "${module.title}"? All videos within this module will be detached.`)) return;
+        
+        setIsDeleting(true);
+        try {
+            await deleteModule.mutateAsync(module.id);
+            toast({ title: "Module Deleted", description: "The section has been removed from the syllabus." });
+        } catch (err: any) {
+            toast({ title: "Deletion Failed", description: err?.message || "Internal server error", variant: "destructive" });
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -77,42 +93,54 @@ function ModuleItem({ module, course }: { module: CourseModule, course: Course }
                     </div>
                 </div>
 
-                <Dialog open={isVideoUploadOpen} onOpenChange={setIsVideoUploadOpen}>
-                    <DialogTrigger asChild>
-                        <Button 
-                            className="rounded-2xl h-11 px-6 gap-2 bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm border font-bold text-sm"
-                            disabled={!isApproved}
-                        >
-                            <Plus className="h-4 w-4 text-primary" /> 
-                            Upload New Video
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-2xl bg-white/95 backdrop-blur-xl border-slate-200 rounded-3xl p-0 overflow-hidden">
-                        <div className="p-8 space-y-8">
-                            <DialogHeader>
-                                <div className="flex items-center gap-3 mb-2 text-primary font-bold uppercase tracking-widest text-xs">
-                                    <Layers className="h-4 w-4" /> Module Specific
+                <div className="flex items-center gap-3">
+                    <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={handleDeleteModule}
+                        disabled={isDeleting}
+                        className="h-10 w-10 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
+                    >
+                        {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-5 w-5" />}
+                    </Button>
+
+                    <Dialog open={isVideoUploadOpen} onOpenChange={setIsVideoUploadOpen}>
+                        <DialogTrigger asChild>
+                            <Button 
+                                className="rounded-2xl h-11 px-6 gap-2 bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm border font-bold text-sm"
+                                disabled={!isApproved}
+                            >
+                                <Plus className="h-4 w-4 text-primary" /> 
+                                Upload New Video
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-2xl bg-white/95 backdrop-blur-xl border-slate-200 rounded-3xl p-0 overflow-hidden">
+                            <div className="p-8 space-y-8">
+                                <DialogHeader>
+                                    <div className="flex items-center gap-3 mb-2 text-primary font-bold uppercase tracking-widest text-xs">
+                                        <Layers className="h-4 w-4" /> Module Specific
+                                    </div>
+                                    <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">
+                                        Upload to "{module.title}"
+                                    </DialogTitle>
+                                </DialogHeader>
+                                
+                                <div className="space-y-6">
+                                    <VideoUploader 
+                                      courseId={course.id} 
+                                      courseStatus={course.status} 
+                                      initialModuleId={module.id} 
+                                      hideVideoList={true} 
+                                      onSuccess={() => {
+                                        setIsVideoUploadOpen(false);
+                                        refetch();
+                                      }}
+                                    />
                                 </div>
-                                <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">
-                                    Upload to "{module.title}"
-                                </DialogTitle>
-                            </DialogHeader>
-                            
-                            <div className="space-y-6">
-                                <VideoUploader 
-                                  courseId={course.id} 
-                                  courseStatus={course.status} 
-                                  initialModuleId={module.id} 
-                                  hideVideoList={true} 
-                                  onSuccess={() => {
-                                    setIsVideoUploadOpen(false);
-                                    refetch();
-                                  }}
-                                />
                             </div>
-                        </div>
-                    </DialogContent>
-                </Dialog>
+                        </DialogContent>
+                    </Dialog>
+                </div>
             </CardHeader>
             <CardContent className="p-8">
                 {!videos || videos.length === 0 ? (

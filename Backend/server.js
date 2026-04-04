@@ -4226,7 +4226,7 @@ app.get('/api/public/courses', async (req, res) => {
             status: { $in: ['published', 'approved'] },
             is_active: { $ne: false } 
         };
-        if (req.query.category && req.query.category !== 'All') {
+        if (req.query.category && req.query.category.toLowerCase() !== 'all') {
             query.category = req.query.category;
         }
         const courses = await Course.find(query).limit(50);

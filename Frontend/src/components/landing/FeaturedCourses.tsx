@@ -72,7 +72,7 @@ export default function FeaturedCourses() {
             >
               <Card 
                 className="pro-card h-[520px] overflow-hidden border border-slate-200 shadow-lg hover:shadow-2xl hover:border-primary/20 transition-all duration-500 cursor-pointer bg-white group-hover/card:-translate-y-2"
-                onClick={() => window.location.href = "https://www.aotms.in/#/courses"}
+                onClick={() => navigate("/courses")}
               >
                 <div className="relative h-56 overflow-hidden">
                   <img
@@ -136,7 +136,7 @@ export default function FeaturedCourses() {
           <Button 
             size="xl" 
             className="pro-button-primary h-16 px-14 rounded-2xl shadow-[0_20px_50px_rgba(0,117,207,0.3)] hover:shadow-[0_25px_60px_rgba(0,117,207,0.4)] hover:scale-105 active:scale-95 transition-all text-sm font-black uppercase tracking-widest gap-3"
-            onClick={() => window.location.href = "https://www.aotms.in/#/courses"}
+            onClick={() => navigate("/courses")}
           >
             Explore Full Catalog
             <ArrowRight className="h-5 w-5" />

@@ -34,7 +34,10 @@ import {
   useStudentVideoProgress,
   useVideos,
   useSendReminder,
-  type InstructorStudent 
+  type InstructorStudent,
+  type Course,
+  type CourseVideo,
+  type VideoProgressDetail
 } from '@/hooks/useInstructorData';
 
 interface RecentActivity {
@@ -275,7 +278,7 @@ function ActivityFeed({ activities, students }: { activities: RecentActivity[]; 
       action: 'completed' as const,
       courseName: s.courseEnrollments[0]?.courseTitle || 'Course',
       timestamp: formatTimeAgo(s.lastActiveAt)
-    }));
+    })) as RecentActivity[];
 
   const allActivities = [...activities, ...recentCompletions]
     .sort((a, b) => {
@@ -327,8 +330,8 @@ function ActivityFeed({ activities, students }: { activities: RecentActivity[]; 
                       </span>
                     </p>
                     <p className="text-xs text-muted-foreground truncate">{activity.courseName}</p>
-                    {('details' in activity) && activity.details && (
-                      <p className="text-xs text-amber-500 mt-0.5">{(activity as any).details}</p>
+                    {activity.details && (
+                      <p className="text-xs text-amber-500 mt-0.5">{activity.details}</p>
                     )}
                   </div>
                   <span className="text-xs text-muted-foreground whitespace-nowrap">
@@ -357,10 +360,10 @@ function StudentCourseDetails({ studentId, courseId, courseName, progress }: { s
   // Merge video data with progress
   const videoList = useMemo(() => {
     if (!videos) return [];
-    const vds = videos as any[];
-    return vds.map((video: any) => {
-      const vps = videoProgress as any[];
-      const p = vps?.find((vp: any) => vp.video_id === video.id);
+    const vds = videos as CourseVideo[];
+    return vds.map((video: CourseVideo) => {
+      const vps = videoProgress as VideoProgressDetail[];
+      const p = vps?.find((vp: VideoProgressDetail) => vp.video_id === video.id);
       return {
         ...video,
         watched: p?.watched_seconds || 0,
@@ -368,7 +371,7 @@ function StudentCourseDetails({ studentId, courseId, courseName, progress }: { s
         completed: p?.completed || false,
         lastWatched: p?.last_watched_at
       };
-    }).sort((a: any, b: any) => a.order_index - b.order_index);
+    }).sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
   }, [videos, videoProgress]);
 
   return (
@@ -390,7 +393,7 @@ function StudentCourseDetails({ studentId, courseId, courseName, progress }: { s
       {expanded && (
         <div className="mt-4 space-y-2 pl-2 border-l-2 border-slate-100 ml-2">
             {videoList.length > 0 ? (
-                videoList.map((video: any) => (
+                videoList.map((video) => (
                     <div key={video.id} className="flex items-center gap-3 text-xs py-1">
                         <div className={cn(
                             "h-4 w-4 rounded-full flex items-center justify-center flex-shrink-0",
@@ -633,8 +636,8 @@ export function InstructorStudentDashboard() {
                     </div>
                   ))}
                 </div>
-              ) : (courses as any) && (courses as any).length > 0 ? (
-                (courses as any).slice(0, 5).map((course: any) => {
+              ) : (courses as Course[]) && (courses as Course[]).length > 0 ? (
+                (courses as Course[]).slice(0, 5).map((course: Course) => {
                   const enrolledCount = students?.filter(s => 
                     s.courseEnrollments.some(e => e.courseId === course.id)
                   ).length || 0;

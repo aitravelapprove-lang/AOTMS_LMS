@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FileText, ClipboardCheck, Clock, Award, ArrowRight, CheckCircle2, BarChart, Home, XCircle, BookOpen } from "lucide-react";
-import { useStudentExams, useStudentMockPapers } from "@/hooks/useStudentData";
+import { useStudentExams, useStudentMockPapers, StudentExam } from "@/hooks/useStudentData";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ExamSession } from "./ExamSession";
 import { fetchWithAuth } from "@/lib/api";
@@ -23,14 +23,6 @@ interface ExamModuleProps {
     type: 'mock' | 'live';
 }
 
-interface Exam {
-    id: string;
-    title: string;
-    description: string;
-    duration_minutes: number;
-    total_marks: number;
-}
-
 interface SubmissionResults {
     score: number;
     totalQuestions: number;
@@ -39,7 +31,7 @@ interface SubmissionResults {
 export function ExamModule({ type }: ExamModuleProps) {
     const { data: liveExams, isLoading: loadingExams } = useStudentExams();
     const { data: mockPapers, isLoading: loadingMocks } = useStudentMockPapers();
-    const [activeExam, setActiveExam] = useState<Exam | null>(null);
+    const [activeExam, setActiveExam] = useState<StudentExam | null>(null);
     const [showResults, setShowResults] = useState<{ id?: string, score: number, total: number, percentage: number, correctCount?: number, wrongCount?: number } | null>(null);
     const [viewingReviewId, setViewingReviewId] = useState<string | null>(null);
     const { toast } = useToast();
@@ -117,7 +109,7 @@ export function ExamModule({ type }: ExamModuleProps) {
 
     return (
         <div className="grid gap-4">
-            {data.map((item: Exam) => (
+            {data?.map((item: StudentExam) => (
                 <Card key={item.id} className="hover:border-primary/50 transition-colors bg-card/50">
                     <CardHeader className="p-5 flex flex-row items-center justify-between space-y-0">
                         <div className="space-y-1">
@@ -133,7 +125,11 @@ export function ExamModule({ type }: ExamModuleProps) {
                             <CardDescription>{item.description}</CardDescription>
                         </div>
                         <div className="hidden md:block">
-                            {type === 'live' ? (
+                            {item.is_completed ? (
+                                <Badge variant="outline" className="text-slate-400 border-slate-200 bg-slate-50 font-black text-[9px] uppercase tracking-widest">
+                                    Completed
+                                </Badge>
+                            ) : type === 'live' ? (
                                 <Badge variant="outline" className="text-orange-500 border-orange-200 bg-orange-50 font-semibold">
                                     LIVE SOON
                                 </Badge>
@@ -157,11 +153,20 @@ export function ExamModule({ type }: ExamModuleProps) {
                         </div>
                         <Button 
                             size="sm" 
-                            className="gap-2 group"
-                            onClick={() => setActiveExam(item)}
+                            className={`gap-2 ${item.is_completed ? 'bg-slate-100 text-slate-500 cursor-not-allowed opacity-80' : 'group bg-primary text-white hover:bg-primary/90'}`}
+                            onClick={() => !item.is_completed && setActiveExam(item)}
+                            disabled={item.is_completed}
                         >
-                            {type === 'live' ? 'Enter Exam' : 'Start Mock'}
-                            <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                            {item.is_completed ? (
+                                <>
+                                    COMPLETED 🚫
+                                </>
+                            ) : (
+                                <>
+                                    {type === 'live' ? 'Enter Exam' : 'Start Mock'}
+                                    <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                                </>
+                            )}
                         </Button>
                     </CardContent>
                 </Card>

@@ -3,13 +3,19 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { Course, CourseResource } from './useInstructorData';
 
-interface ExamAccess {
-    id: string;
-    exam_id?: string;
-    mock_paper_id?: string;
-    exam_schedules?: Record<string, unknown>;
-    mock_papers?: Record<string, unknown>;
-    access_type: string;
+interface ExamScheduleData {
+    title: string;
+    description: string;
+    duration_minutes: number;
+    total_marks: number;
+}
+
+interface MockTestData {
+    title: string;
+    description: string;
+    duration_minutes: number;
+    total_marks: number;
+    question_count: number;
 }
 
 export function useStudentEnrollments() {
@@ -48,16 +54,23 @@ export function useStudentStats() {
 
 export function useStudentExams() {
     const { user } = useAuth();
-    return useQuery({
+    return useQuery<StudentExam[]>({
         queryKey: ['student-exams', user?.id],
         queryFn: async () => {
             const accessible = await fetchWithAuth<AccessibleExam[]>('/student/accessible-exams');
             return accessible
-                .filter((a) => a.exam_id)
-                .map((a) => ({
-                    ...a.exam_schedules,
-                    id: a.exam_id
-                }));
+                .filter((a) => a.exam_id && a.exam_schedules)
+                .map((a) => {
+                    const sched = a.exam_schedules as unknown as ExamScheduleData;
+                    return {
+                        id: a.exam_id!,
+                        title: sched.title,
+                        description: sched.description,
+                        duration_minutes: sched.duration_minutes,
+                        total_marks: sched.total_marks,
+                        is_completed: !!a.is_completed
+                    };
+                });
         },
         enabled: !!user?.id,
         refetchInterval: 30000,
@@ -66,16 +79,23 @@ export function useStudentExams() {
 
 export function useStudentMockPapers() {
     const { user } = useAuth();
-    return useQuery({
+    return useQuery<StudentExam[]>({
         queryKey: ['student-mock-papers', user?.id],
         queryFn: async () => {
             const accessible = await fetchWithAuth<AccessibleExam[]>('/student/accessible-exams');
             return accessible
-                .filter((a) => a.mock_paper_id)
-                .map((a) => ({
-                    ...a.mock_papers,
-                    id: a.mock_paper_id
-                }));
+                .filter((a) => a.mock_paper_id && a.mock_papers)
+                .map((a) => {
+                    const mock = a.mock_papers as unknown as MockTestData;
+                    return {
+                        id: a.mock_paper_id!,
+                        title: mock.title,
+                        description: mock.description,
+                        duration_minutes: mock.duration_minutes,
+                        total_marks: mock.total_marks,
+                        is_completed: !!a.is_completed
+                    };
+                });
         },
         enabled: !!user?.id,
         refetchInterval: 30000,
@@ -145,6 +165,16 @@ export interface AccessibleExam {
     mock_paper_id?: string;
     exam_schedules?: Record<string, unknown>;
     mock_papers?: Record<string, unknown>;
+    is_completed?: boolean;
+}
+
+export interface StudentExam {
+    id: string;
+    title: string;
+    description: string;
+    duration_minutes: number;
+    total_marks: number;
+    is_completed: boolean;
 }
 
 export interface LeaderboardEntry {
@@ -333,9 +363,16 @@ export function useStudentDashboardData() {
 }
 
 export interface StudentDashboardData {
-    activity: { name: string; minutes: number }[];
-    resources: { id: string; title: string; type: string; url?: string; thumbnail?: string }[];
-    skills: { name: string; level: number; category: string }[];
+    activity: { name: string; intensity: number }[]; // Unified with intensity
+    resources: { 
+        id: string; 
+        asset_title: string; 
+        resource_type: string; 
+        file_url: string; 
+        upload_format?: string;
+        view_url?: string;
+    }[];
+    skills: { name: string; progress: number }[]; // Unified keys: name, progress
     results: {
         id: string;
         title: string;

@@ -574,8 +574,9 @@ function LiveClassesTab() {
     if (!c.course_id) return true;
     
     // If course is associated, verify the student is enrolled in it
-    const courseId = typeof c.course_id === 'object' ? (c.course_id._id || c.course_id.id) : c.course_id;
-    return enrolledIds.has(courseId?.toString());
+    const courseObj = c.course_id as unknown as { _id?: string, id?: string } | string;
+    const courseId = typeof courseObj === 'object' && courseObj !== null ? (courseObj._id || courseObj.id) : courseObj;
+    return enrolledIds.has(courseId?.toString() || '');
   }) || [];
 
   return (
@@ -710,13 +711,13 @@ function DashboardHome() {
   const navigate = useNavigate();
   const latestCourse = enrolledCourses?.[0];
 
-  const activityData = dashboardData?.activity?.length ? dashboardData.activity : dummyActivityData;
+  const activityData = dashboardData?.activity?.map(d => ({ name: d.name, minutes: d.intensity })) || dummyActivityData; // Use intensity as minutes
   const recentResources = dashboardData?.resources || [];
-  const realSkills = dashboardData?.skills || [];
+  const realSkills = dashboardData?.skills?.map(s => ({ name: s.name, level: s.progress, category: 'General' })) || [];
 
   // Derive real-time stats
   const completedCoursesCount = enrolledCourses?.filter(c => c.progress >= 100).length || 0;
-  const totalMinutesSpent = dashboardData?.activity?.reduce((sum, day) => sum + (day.minutes || 0), 0) || 0;
+  const totalMinutesSpent = dashboardData?.activity?.reduce((sum, day) => sum + (day.intensity || 0), 0) || 0;
   const watchHours = Math.floor(totalMinutesSpent / 60) || 0;
 
   return (

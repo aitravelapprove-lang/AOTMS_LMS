@@ -76,6 +76,7 @@ const ExamResultSchema = new Schema({
     student_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     exam_id: { type: Schema.Types.ObjectId, ref: 'Exam' },
     mock_paper_id: { type: Schema.Types.ObjectId, ref: 'MockPaper' },
+    test_title: { type: String }, // For QB topics or miscellaneous tests
     score: { type: Number, required: true },
     total_questions: { type: Number },
     percentage: { type: Number },

@@ -2994,6 +2994,19 @@ app.get('/api/student/accessible-exams', authenticateToken, async (req, res) => 
         const enrollments = await Enrollment.find({ user_id: studentId, status: 'active' }).lean();
         const enrolledCourseIds = enrollments.map(e => e.course_id);
 
+        // 2.5. Get all results for this student to determine completion status
+        const examResults = await ExamResult.find({ student_id: studentId }).select('exam_id mock_paper_id test_title').lean();
+        const completedExamIds = new Set(examResults.map(r => r.exam_id?.toString()).filter(Boolean));
+        const completedMockIds = new Set(examResults.map(r => r.mock_paper_id?.toString()).filter(Boolean));
+        const completedQBTopics = new Set(examResults.map(r => r.test_title).filter(Boolean));
+
+        const checkCompleted = (type, id) => {
+            if (type === 'qb') return completedQBTopics.has(id);
+            if (type === 'exam') return completedExamIds.has(id?.toString());
+            if (type === 'mock') return completedMockIds.has(id?.toString());
+            return false;
+        };
+
         // 3. Get implicitly accessible exams (live/scheduled) and mocks via courses
         const courseExams = await Exam.find({ 
             course_id: { $in: enrolledCourseIds },
@@ -3026,6 +3039,7 @@ app.get('/api/student/accessible-exams', authenticateToken, async (req, res) => 
                     access_type: 'mock', 
                     granted_at: explicitGrant ? explicitGrant.granted_at : (qb.updated_at || qb.created_at),
                     mock_paper_id: `qb_${qb.topic}`, // Topic becomes the ID
+                    is_completed: checkCompleted('qb', qb.topic),
                     mock_papers: {
                         title: `${qb.topic} Practice Set${explicitGrant ? ' (Unlocked)' : ''}`,
                         description: `Topic-wise questions for ${qb.topic}`,
@@ -3049,6 +3063,7 @@ app.get('/api/student/accessible-exams', authenticateToken, async (req, res) => 
                 granted_at: exam.updated_at || exam.created_at,
                 exam_id: isMock ? null : exam._id,
                 mock_paper_id: isMock ? exam._id : null,
+                is_completed: isMock ? checkCompleted('mock', exam._id) : checkCompleted('exam', exam._id),
                 exam_schedules: isMock ? null : {
                     title: exam.title,
                     description: exam.description || '',
@@ -3075,6 +3090,9 @@ app.get('/api/student/accessible-exams', authenticateToken, async (req, res) => 
                 granted_at: access.granted_at,
                 exam_id: access.exam_id?._id,
                 mock_paper_id: access.mock_paper_id?._id,
+                is_completed: access.access_type === 'mock' 
+                    ? checkCompleted('mock', access.mock_paper_id?._id) 
+                    : checkCompleted('exam', access.exam_id?._id),
                 exam_schedules: access.exam_id ? {
                     title: access.exam_id.title,
                     duration_minutes: access.exam_id.duration_minutes,
@@ -3502,6 +3520,7 @@ app.post('/api/student/submit-exam', authenticateToken, async (req, res) => {
             student_id: req.user.id,
             exam_id: examId.startsWith('qb_') ? null : examId,
             mock_paper_id: examId.startsWith('qb_') ? null : examId, // Alias for now
+            test_title: examId.startsWith('qb_') ? examId.replace('qb_', '') : null,
             score,
             total_questions: totalQuestions,
             percentage,
@@ -3942,10 +3961,17 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
         }
 
         if (!['admin', 'manager', 'instructor'].includes(role)) {
+            const scopedFields = {
+                'course_enrollments': 'user_id',
+                'student_exam_access': 'student_id',
+                'exam_results': 'student_id',
+                'resume_scans': 'user_id'
+            };
 
-            if (['course_enrollments', 'student_exam_access', 'exam_results'].includes(table)) {
-                query['user_id'] = req.user.id;
+            if (scopedFields[table]) {
+                query[scopedFields[table]] = req.user.id;
             }
+            
             if (table === 'courses') {
                 query['is_active'] = { $ne: false };
                 query['status'] = { $in: ['approved', 'published'] };

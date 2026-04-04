@@ -49,10 +49,21 @@ const CouponSchema = new Schema({
 });
 CouponSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
 
+const LeadSchema = new Schema({
+    name: { type: String, required: true },
+    email: { type: String, required: true, index: true },
+    phone: { type: String, required: true },
+    course: { type: String, required: true },
+    status: { type: String, default: 'new' }, // new, contacted, enrolled
+    created_at: { type: Date, default: Date.now, index: true }
+});
+LeadSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
+
 module.exports = {
     SystemLog: mongoose.model('SystemLog', SystemLogSchema),
     SecurityEvent: mongoose.model('SecurityEvent', SecurityEventSchema),
     LeaderboardStat: mongoose.model('LeaderboardStat', LeaderboardStatSchema),
     Notification: mongoose.model('Notification', NotificationSchema),
-    Coupon: mongoose.model('Coupon', CouponSchema)
+    Coupon: mongoose.model('Coupon', CouponSchema),
+    Lead: mongoose.model('Lead', LeadSchema)
 };

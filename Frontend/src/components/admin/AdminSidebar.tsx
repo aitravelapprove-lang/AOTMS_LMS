@@ -28,7 +28,8 @@ import {
   Calendar,
   Database,
   TrendingUp,
-  Ticket
+  Ticket,
+  Zap
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useAuth } from "@/hooks/useAuth";
@@ -48,6 +49,7 @@ const mainNavItems = [
   { title: "Question Repository", url: "/admin/question-repository", icon: Database },
   { title: "Live Monitoring", url: "/admin/live-monitoring", icon: TrendingUp },
   { title: "Rewards & Coupons", url: "/admin/coupons", icon: Ticket },
+  { title: "Landing Leads", url: "/admin/leads", icon: Zap },
 ];
 
 

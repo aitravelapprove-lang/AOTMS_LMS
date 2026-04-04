@@ -24,7 +24,7 @@ const { User, Profile, UserRole, OTP, VerifiedEmail, InstructorApplication, Gues
 const { Course, Enrollment, Topic, Module, Video, Announcement, Timeline, Resource, InstructorProgress, VideoProgress, CourseRating } = require('./models/Course');
 const { Exam, QuestionBank, ExamSchedule, StudentExamAccess, ExamResult, MockPaper, ExamRule, MockTestConfig } = require('./models/Exam');
 const { Assignment, Submission, Playlist, LiveClass } = require('./models/Content');
-const { SystemLog, SecurityEvent, LeaderboardStat, Notification, Coupon } = require('./models/System');
+const { SystemLog, SecurityEvent, LeaderboardStat, Notification, Coupon, Lead } = require('./models/System');
 const { Conversation, Message } = require('./models/Chat');
 const { Doubt, DoubtReply } = require('./models/Doubt');
 
@@ -70,7 +70,8 @@ const MODEL_MAP = {
     'guest_credentials': GuestCredential,
     'notifications': Notification,
     'users': User,
-    'resume_scans': ResumeScan
+    'resume_scans': ResumeScan,
+    'leads': Lead
 };
 
 const ALLOWED_TABLES = Object.keys(MODEL_MAP);
@@ -830,6 +831,19 @@ app.post('/api/auth/refresh', async (req, res) => {
             refresh_token: 'new_mock_refresh_' + Date.now()
         } 
     });
+});
+
+app.post('/api/public/enroll', async (req, res) => {
+    try {
+        const { name, email, phone, course } = req.body;
+        if (!name || !email || !phone || !course) {
+            return res.status(400).json({ error: 'All fields are required' });
+        }
+        const lead = await Lead.create({ name, email, phone, course });
+        res.json({ success: true, message: 'Enrolled successfully', leadId: lead._id });
+    } catch (err) {
+        handleError(res, err, 'public-enroll');
+    }
 });
 
 app.post('/api/auth/signup', async (req, res) => {

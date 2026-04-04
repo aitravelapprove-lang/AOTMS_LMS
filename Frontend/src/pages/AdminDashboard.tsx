@@ -30,6 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChatMonitor } from "@/components/admin/ChatMonitor";
+import { LeadManagement } from "@/components/admin/LeadManagement";
 import {
   Users,
   Shield,
@@ -63,6 +64,7 @@ import {
   Gift,
   Power,
   Layers,
+  Zap
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { CouponManager } from "@/components/admin/CouponManager";
@@ -477,6 +479,7 @@ export default function AdminDashboard() {
         "/admin/question-repository": "question-repository",
         "/admin/live-monitoring": "live-monitoring",
         "/admin/coupons": "coupons",
+        "/admin/leads": "leads",
       };
     const path = location.pathname;
     const tab = tabUrlMap[path];
@@ -548,7 +551,7 @@ export default function AdminDashboard() {
       return (
         <div className="min-h-screen bg-slate-50 relative">
           <div className="p-8 max-w-7xl mx-auto">
-             <CourseBuilder course={buildingCourse as any} onBack={() => setBuildingCourse(null)} />
+             <CourseBuilder course={buildingCourse as InstructorCourse} onBack={() => setBuildingCourse(null)} />
           </div>
         </div>
       );
@@ -694,6 +697,7 @@ export default function AdminDashboard() {
                       { id: "exam-scheduling", label: "Exam Scheduling", icon: Calendar, key: "tab-exam-scheduling" },
                       { id: "question-repository", label: "Question Repository", icon: Database, key: "tab-question-repository" },
                       { id: "live-monitoring", label: "Live Monitoring", icon: Activity, key: "tab-live-monitoring" },
+                      { id: "leads", label: "Landing Leads", icon: Zap, key: "tab-leads" },
                     ].map((tab) => (
                       <TabsTrigger
                         key={tab.key}
@@ -924,6 +928,16 @@ export default function AdminDashboard() {
                     animate={{ opacity: 1 }}
                   >
                     <LiveMonitoring />
+                  </motion.div>
+                </TabsContent>
+
+                <TabsContent key="tab-leads" value="leads" className="mt-0 outline-none">
+                  <motion.div
+                    key="motion-leads"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <LeadManagement />
                   </motion.div>
                 </TabsContent>
               </div>

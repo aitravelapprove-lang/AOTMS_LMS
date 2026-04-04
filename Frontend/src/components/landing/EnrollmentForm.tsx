@@ -49,10 +49,25 @@ const EnrollmentForm = () => {
   });
 
   const onSubmit = async (data: FormData) => {
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    console.log("Premium Form Submitted:", data);
-    toast.success("Success! Your journey with AOTMS has begun.");
-    reset();
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/public/enroll`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit enrollment');
+      }
+
+      toast.success("Success! Your journey with AOTMS has begun.");
+      reset();
+    } catch (error) {
+      console.error("Enrollment Error:", error);
+      toast.error("Something went wrong. Please try again later.");
+    }
   };
 
   return (

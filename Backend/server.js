@@ -4076,19 +4076,31 @@ app.delete('/api/data/:table/:id', authenticateToken, async (req, res) => {
 
         // Security: Restrict deletions
         if (role !== 'admin' && role !== 'manager') {
+            const item = await Model.findById(id);
+            if (!item) return res.status(404).json({ error: 'Item not found' });
+
             // Instructors
             if (role === 'instructor') {
-                if (table === 'question_bank') {
-                    const item = await Model.findById(id);
-                    if (!item) return res.status(404).json({ error: 'Item not found' });
+                const courseRelatedTables = [
+                    'courses', 'course_topics', 'course_modules', 'course_videos', 
+                    'course_resources', 'course_timeline', 'course_announcements'
+                ];
+                
+                if (courseRelatedTables.includes(table)) {
+                    // Get courseId for sub-items or item itself if it's a course
+                    const courseId = table === 'courses' ? item._id : item.course_id;
+                    if (!courseId) return res.status(403).json({ error: 'Action forbidden for this item' });
                     
+                    const course = await Course.findById(courseId);
+                    if (!course || course.instructor_id?.toString() !== req.user.id) {
+                        return res.status(403).json({ error: 'Forbidden: You must be the assigned instructor' });
+                    }
+                } else if (table === 'question_bank') {
                     if (item.created_by?.toString() !== req.user.id) {
                         return res.status(403).json({ error: 'Forbidden: You can only delete your own questions' });
                     }
                 } else if (['doubts', 'doubt_replies'].includes(table)) {
-                    // Allow deleting own doubts/replies (basic check)
-                    const item = await Model.findById(id);
-                    if (item && item.user_id?.toString() !== req.user.id) {
+                    if (item.user_id?.toString() !== req.user.id) {
                          return res.status(403).json({ error: 'Forbidden: Ownership required' });
                     }
                 } else {

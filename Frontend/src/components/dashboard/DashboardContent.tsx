@@ -1008,12 +1008,6 @@ const routeConfig: Record<string, { title: string; description: string; icon: Re
     icon: History,
     component: <StudentHistory />,
   },
-  "/student-dashboard/leaderboard": {
-    title: "Global Rankings",
-    description: "See how you rank among top tech scholars",
-    icon: Trophy,
-    component: <LeaderboardTab />,
-  },
   "/student-dashboard/notifications": {
     title: "Communications",
     description: "Important updates from the academy",

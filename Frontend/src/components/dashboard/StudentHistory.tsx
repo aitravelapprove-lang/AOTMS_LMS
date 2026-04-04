@@ -38,17 +38,17 @@ interface Enrollment {
     }
 }
 
-interface ExamResult {
+export interface ExamResult {
     id: string;
     _id?: string;
-    exam_id: string | null;
-    mock_paper_id: string | null;
     score: number;
     total_questions: number;
     percentage: number;
     submitted_at: string;
     time_spent: number;
-    exam_title?: string;
+    test_title?: string;
+    exam_id?: { title: string } | string | null;
+    mock_paper_id?: { title: string } | string | null;
 }
 
 export function StudentHistory() {
@@ -60,7 +60,7 @@ export function StudentHistory() {
     const { data: results, isLoading } = useQuery({
         queryKey: ['student-exam-history', user?.id],
         queryFn: async () => {
-            const data = await fetchWithAuth(`/data/exam_results?user_id=eq.${user?.id}&sort=submitted_at&order=desc`) as ExamResult[];
+            const data = await fetchWithAuth(`/data/exam_results?student_id=eq.${user?.id}&sort=submitted_at&order=desc`) as ExamResult[];
             return data;
         },
         enabled: !!user?.id
@@ -70,9 +70,13 @@ export function StudentHistory() {
         return <ExamReview resultId={viewingResultId} onClose={() => setViewingResultId(null)} />;
     }
 
-    const filteredResults = (results || []).filter(r => 
-        (r.exam_title || (r.mock_paper_id ? 'Mock Paper' : 'Assessment')).toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredResults = (results || []).filter(r => {
+        const title = r.test_title || 
+                    (typeof r.exam_id === 'object' && r.exam_id?.title) || 
+                    (typeof r.mock_paper_id === 'object' && r.mock_paper_id?.title) || 
+                    'Assessment';
+        return title.toLowerCase().includes(searchTerm.toLowerCase());
+    });
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500 max-w-3xl mx-auto">
@@ -136,44 +140,53 @@ export function StudentHistory() {
                         <p className="text-slate-400 text-xs mt-1">Complete a mocktest to see your performance here.</p>
                     </div>
                 ) : (
-                    filteredResults.map((item, idx) => (
-                        <motion.div
-                            initial={{ opacity: 0, y: 5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: idx * 0.05 }}
-                            key={item._id || item.id}
-                            className="bg-white border border-slate-100 rounded-2xl p-4 flex items-center gap-4 group hover:border-primary/20 transition-all shadow-sm"
-                        >
-                            <div className="h-12 w-12 rounded-xl bg-slate-50 flex items-center justify-center shrink-0 group-hover:bg-primary/5 transition-colors border border-slate-50">
-                                <Trophy className={`h-5 w-5 ${item.percentage >= 60 ? 'text-amber-500' : 'text-slate-400'}`} />
-                            </div>
-
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-0.5">
-                                    <h4 className="font-bold text-slate-900 text-sm truncate">{item.exam_title || (item.mock_paper_id ? 'Mock Paper Analysis' : 'Formal Assessment')}</h4>
-                                    <Badge variant="outline" className={`font-black text-[8px] uppercase px-1.5 py-0 h-4 border-none ${item.percentage >= 60 ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
-                                        {item.percentage >= 60 ? 'PASSED' : 'FAILED'}
-                                    </Badge>
+                    filteredResults.map((item, idx) => {
+                        const title = item.test_title || 
+                                     (typeof item.exam_id === 'object' && item.exam_id?.title) || 
+                                     (typeof item.mock_paper_id === 'object' && item.mock_paper_id?.title) || 
+                                     (item.mock_paper_id ? 'Mock Paper' : 'Assessment');
+                        
+                        return (
+                            <motion.div
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: idx * 0.05 }}
+                                key={item._id || item.id}
+                                className="bg-white border border-slate-100 rounded-2xl p-4 flex items-center gap-4 group hover:border-primary/20 transition-all shadow-sm"
+                            >
+                                <div className="h-12 w-12 rounded-xl bg-slate-50 flex items-center justify-center shrink-0 group-hover:bg-primary/5 transition-colors border border-slate-50">
+                                    <Trophy className={`h-5 w-5 ${item.percentage >= 60 ? 'text-amber-500' : 'text-slate-400'}`} />
                                 </div>
-                                <div className="flex items-center gap-3 text-[10px] font-bold text-slate-400 uppercase tracking-tight">
-                                    <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {new Date(item.submitted_at).toLocaleDateString()}</span>
-                                    <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[8px]">{Math.round(item.percentage)}% SCORE</span>
-                                </div>
-                            </div>
 
-                            <div className="flex items-center gap-2">
-                                <Button 
-                                    variant="ghost"
-                                    size="sm" 
-                                    onClick={() => setViewingResultId(item._id || item.id)}
-                                    className="h-8 rounded-lg px-3 text-primary font-black text-[10px] uppercase hover:bg-primary/5 transition-all"
-                                >
-                                    Review
-                                    <ArrowUpRight className="h-3 w-3 ml-1" />
-                                </Button>
-                            </div>
-                        </motion.div>
-                    ))
+                                <div className="flex-1 min-w-0">
+                                     <div className="flex items-center gap-2 mb-0.5">
+                                        <h4 className="font-bold text-slate-900 text-sm truncate">
+                                            {title}
+                                        </h4>
+                                        <Badge variant="outline" className={`font-black text-[8px] uppercase px-1.5 py-0 h-4 border-none ${item.percentage >= 60 ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
+                                            {item.percentage >= 60 ? 'PASSED' : 'FAILED'}
+                                        </Badge>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-[10px] font-bold text-slate-400 uppercase tracking-tight">
+                                        <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {new Date(item.submitted_at).toLocaleDateString()}</span>
+                                        <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[8px]">{Math.round(item.percentage)}% SCORE</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <Button 
+                                        variant="ghost"
+                                        size="sm" 
+                                        onClick={() => setViewingResultId(item._id || item.id)}
+                                        className="h-8 rounded-lg px-3 text-primary font-black text-[10px] uppercase hover:bg-primary/5 transition-all"
+                                    >
+                                        Review
+                                        <ArrowUpRight className="h-3 w-3 ml-1" />
+                                    </Button>
+                                </div>
+                            </motion.div>
+                        );
+                    })
                 )}
             </div>
 

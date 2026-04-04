@@ -56,7 +56,6 @@ const navigationGroups = [
     items: [
       { title: "Resume ATS", url: "/student-dashboard/resume-ats", icon: Zap },
       { title: "Mock Papers", url: "/student-dashboard/mock-papers", icon: FileText },
-      { title: "Leaderboard", url: "/student-dashboard/leaderboard", icon: Trophy },
     ],
   },
   {

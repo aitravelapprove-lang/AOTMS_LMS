@@ -3952,30 +3952,36 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
                     { created_by: req.user.id }
                 ]
             };
-             // If query already has keys, wrap it in $and along with our access filter
-             if (Object.keys(query).length > 0) {
-                 query = { $and: [query, accessFilter] };
-             } else {
-                 query = accessFilter;
-             }
+            // If query already has keys, wrap it in $and along with our access filter
+            if (Object.keys(query).length > 0) {
+                query = { $and: [query, accessFilter] };
+            } else {
+                query = accessFilter;
+            }
         }
 
-        if (!['admin', 'manager', 'instructor'].includes(role)) {
-            const scopedFields = {
-                'course_enrollments': 'user_id',
-                'student_exam_access': 'student_id',
+        // Student-specific scoping logic
+        if (role !== 'admin' && role !== 'manager') {
+            const studentScopedTables = {
                 'exam_results': 'student_id',
-                'resume_scans': 'user_id'
+                'resume_scans': 'user_id',
+                'student_exam_access': 'student_id',
+                'course_enrollments': 'user_id'
             };
 
-            if (scopedFields[table]) {
-                query[scopedFields[table]] = req.user.id;
+            if (studentScopedTables[table]) {
+                const scopeField = studentScopedTables[table];
+                // CRITICAL: Overwrite any attempted ID with the actual user ID
+                query[scopeField] = req.user.id;
+                console.log(`[ACL] Scoping ${table} to ${scopeField}=${req.user.id}`);
             }
             
-            if (table === 'courses') {
+            if (table === 'courses' && role !== 'instructor') {
                 query['is_active'] = { $ne: false };
                 query['status'] = { $in: ['approved', 'published'] };
             }
+        } else {
+            console.log(`[ACL] Admin/Manager access to ${table}`);
         }
 
         // Sort & Pagination
@@ -3986,9 +3992,15 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
         if (req.query.offset) skip = parseInt(req.query.offset);
 
         // Execute query
+        console.log(`[DB] Fetching ${table} with query:`, JSON.stringify(query));
+        
         let data;
         if (table === 'leaderboard_stats' || table === 'leaderboard') {
             data = await Model.find(query).sort(sort).limit(limit).skip(skip).populate('user_id', 'full_name avatar_url email');
+        } else if (table === 'exam_results') {
+            data = await Model.find(query).sort(sort).limit(limit).skip(skip)
+                .populate('exam_id', 'title')
+                .populate('mock_paper_id', 'title');
         } else {
             data = await Model.find(query).sort(sort).limit(limit).skip(skip);
         }

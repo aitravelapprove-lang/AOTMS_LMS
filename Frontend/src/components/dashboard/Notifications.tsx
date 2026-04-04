@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   Bell, 
   Gift, 
@@ -30,6 +31,24 @@ export function Notifications() {
     markAllAsRead, 
     markAsRead 
   } = useNotifications();
+
+  const navigate = useNavigate();
+
+  const handleNotificationClick = (notification: Notification) => {
+    if (!notification.is_read) {
+      markAsRead(notification.id);
+    }
+    
+    // Redirection keywords
+    const title = notification.title.toLowerCase();
+    const msg = (notification.message || '').toLowerCase();
+    
+    if (title.includes('mock test') || msg.includes('mock test')) {
+      navigate('/student-dashboard/mock-papers');
+    } else if (title.includes('course') || msg.includes('course')) {
+      navigate('/student-dashboard/courses');
+    }
+  };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -92,7 +111,7 @@ export function Notifications() {
                 key={notification.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0, transition: { delay: index * 0.05 } }}
-                onClick={() => !notification.is_read && markAsRead(notification.id)}
+                onClick={() => handleNotificationClick(notification)}
                 className={`group relative overflow-hidden rounded-3xl border transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer ${notification.is_read ? 'bg-white border-slate-100' : 'bg-gradient-to-r from-primary/[0.03] to-white border-primary/20 shadow-md shadow-primary/5'}`}
               >
                   {/* Status Indicator */}

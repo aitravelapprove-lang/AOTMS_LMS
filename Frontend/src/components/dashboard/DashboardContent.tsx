@@ -48,12 +48,14 @@ import {
   ArrowRight,
   Loader2,
   Upload,
+  Star,
   Mail,
   X,
   Phone,
   QrCode,
   Hash,
-  Ticket
+  Ticket,
+  Zap
 } from "lucide-react";
 import { UserProfile } from "./UserProfile";
 import { CourseList } from "./CourseList";
@@ -64,6 +66,7 @@ import StudentVideoLibrary from "./StudentVideoLibrary";
 import { ExamModule } from "./ExamModule";
 import { Notifications } from "./Notifications";
 import { StudentSettings } from "./StudentSettings";
+import { StudentResumeScan } from "./StudentResumeScan";
 import { ChatInterface } from "../chat/ChatInterface";
 import {
   StudentCourse,
@@ -77,6 +80,8 @@ import {
   Announcement,
   LeaderboardEntry,
   LiveClass,
+  StudentStats,
+  StudentDashboardData
 } from "@/hooks/useStudentData";
 import { useSocket } from "@/hooks/useSocket";
 import { useQueryClient } from "@tanstack/react-query";
@@ -105,6 +110,14 @@ function CoursesTab() {
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const [utrNumber, setUtrNumber] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [paymentTerm, setPaymentTerm] = useState<'full' | 'term1' | 'term2'>('full');
+
+  const getEffectivePrice = () => {
+    return (appliedPrice !== null ? appliedPrice : (paymentCourse?.price || 0)) as number;
+  };
+
+  const term1Amount = Math.round(getEffectivePrice() * 0.6);
+  const term2Amount = getEffectivePrice() - term1Amount;
 
   if (viewingCourse) {
     return (
@@ -150,6 +163,7 @@ function CoursesTab() {
     setPaymentCourse(course);
     setCouponCode("");
     setAppliedPrice(null);
+    setPaymentTerm('full');
     setShowPaymentModal(true);
   };
 
@@ -179,7 +193,8 @@ function CoursesTab() {
           courseId: paymentCourse.id, 
           payment_proof_url: paymentProofUrl,
           utr_number: utrNumber,
-          coupon_code: appliedPrice ? couponCode : undefined
+          coupon_code: appliedPrice ? couponCode : undefined,
+          payment_term: paymentTerm
       });
 
       toast({
@@ -208,275 +223,134 @@ function CoursesTab() {
     <div className="w-full space-y-8 h-full">
       {/* Payment Modal JSX */}
       <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
-        <DialogContent className="max-w-4xl p-0 overflow-hidden border-0 rounded-3xl shadow-2xl bg-white">
-          <div className="flex flex-col md:flex-row h-full">
-            {/* Left Column: Course Summary */}
-            <div className="md:w-[400px] bg-slate-900 p-8 text-white flex flex-col justify-between selection:bg-primary/30">
-              <div className="space-y-8">
-                <div className="flex items-center justify-between">
-                  <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/10">
-                    <BookOpen className="h-5 w-5 text-primary" />
-                  </div>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="text-white/40 hover:text-white hover:bg-white/10 rounded-full md:hidden"
-                    onClick={() => setShowPaymentModal(false)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                <div className="space-y-4">
-                  <h2 className="text-3xl font-black tracking-tight leading-tight">
-                    Review Your <span className="text-primary italic">Enrollment</span>
-                  </h2>
-                  <p className="text-slate-400 text-sm leading-relaxed">
-                    You're one step away from mastering new skills. Complete the secure payment below to unlock full course access.
-                  </p>
-                </div>
-
-                {paymentCourse && (
-                  <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4 backdrop-blur-md">
-                    <div className="flex items-start gap-4">
-                      <div className="h-16 w-16 shrink-0 rounded-xl overflow-hidden border border-white/20">
-                        <img 
-                            src={paymentCourse.thumbnail_url?.startsWith('http') ? paymentCourse.thumbnail_url : `${API_URL}/s3/public/${paymentCourse.thumbnail_url}`} 
-                            alt="" 
-                            className="h-full w-full object-cover" 
-                            onError={(e) => { (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=2070&auto=format&fit=crop"; }}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Target Course</div>
-                        <h3 className="font-bold text-sm leading-snug line-clamp-2">{paymentCourse.title}</h3>
-                        <div className="flex items-center gap-2 text-[10px] text-slate-500">
-                          <Clock className="h-3 w-3" />
-                          <span>Lifetime Access</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="pt-4 border-t border-white/10 flex items-center justify-between">
-                      <span className="text-sm font-medium text-slate-400">Course Value</span>
-                      <span className="text-sm line-through text-slate-500">
-                        {paymentCourse.original_price ? `₹${paymentCourse.original_price.toLocaleString('en-IN')}` : "₹00,000"}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-slate-400">Total Investment</span>
-                      <div className="text-right">
-                        {appliedPrice !== null ? (
-                          <div className="space-y-0.5">
-                            <span className="text-sm line-through text-slate-500 block">
-                              ₹{paymentCourse.price?.toLocaleString('en-IN')}
-                            </span>
-                            <span className="text-2xl font-black text-emerald-400 block animate-in zoom-in duration-300">
-                              ₹{appliedPrice.toLocaleString('en-IN')}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-2xl font-black text-white block">
-                            {paymentCourse.price === 0 ? "Free Access" : (paymentCourse.price ? `₹${paymentCourse.price.toLocaleString('en-IN')}` : "Contact Us")}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="pt-12 space-y-6">
-                <div className="flex items-center gap-4 group">
-                  <div className="h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center transition-all group-hover:scale-110 shadow-[0_0_20px_rgba(var(--primary-rgb),0.1)]">
-                    <CheckCircle2 className="h-6 w-6 text-primary" />
+        <DialogContent className="max-w-xl p-0 overflow-hidden border-0 rounded-[2rem] shadow-2xl bg-white max-h-[90vh] flex flex-col">
+          {/* Top Course Strip (Compact) */}
+          {paymentCourse && (
+            <div className="bg-slate-900 px-6 py-4 text-white flex items-center justify-between shrink-0">
+               <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg overflow-hidden border border-white/10 shrink-0">
+                    <img 
+                      src={paymentCourse.thumbnail_url?.startsWith('http') ? paymentCourse.thumbnail_url : `${API_URL}/s3/public/${paymentCourse.thumbnail_url}`} 
+                      alt="" 
+                      className="h-full w-full object-cover" 
+                    />
                   </div>
                   <div>
-                    <div className="text-xs font-black uppercase tracking-widest text-white/40 mb-0.5">Payment Verified</div>
-                    <div className="text-sm font-bold text-white">Manual Admin Approval</div>
+                    <h3 className="font-bold text-sm leading-none">{paymentCourse.title}</h3>
+                    <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest font-black">
+                      Total: ₹{getEffectivePrice().toLocaleString('en-IN')}
+                    </p>
                   </div>
-                </div>
-                <p className="text-[10px] text-slate-500 leading-relaxed font-medium uppercase tracking-[0.1em]">
-                  Secure transactions protected by standard SSL protocols and human verification systems.
-                </p>
-              </div>
+               </div>
+               <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-white/40 hover:text-white hover:bg-white/10 rounded-full h-8 w-8"
+                onClick={() => setShowPaymentModal(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+
+          <div className="p-6 space-y-6 overflow-y-auto overflow-x-hidden custom-scrollbar">
+            {/* Term Selection (Drastically Reduced Height) */}
+            <div className="space-y-2">
+               <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Select Payment Plan</div>
+               <div className="grid grid-cols-3 gap-2">
+                 {[ 
+                   { id: 'full', label: 'Full', pct: 100, amount: getEffectivePrice() },
+                   { id: 'term1', label: 'Term 1', pct: 60, amount: term1Amount },
+                   { id: 'term2', label: 'Term 2', pct: 40, amount: term2Amount }
+                 ].map((plan) => (
+                    <button 
+                      key={plan.id}
+                      onClick={() => setPaymentTerm(plan.id as 'full' | 'term1' | 'term2')}
+                      className={`p-2 rounded-xl border transition-all text-center flex flex-col items-center justify-center gap-0.5 ${paymentTerm === plan.id ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-slate-100 bg-slate-50 hover:bg-slate-100'}`}
+                    >
+                      <div className={`text-[9px] font-black uppercase ${paymentTerm === plan.id ? 'text-primary' : 'text-slate-500'}`}>{plan.label} ({plan.pct}%)</div>
+                      <div className="font-black text-xs text-slate-900">₹{plan.amount.toLocaleString('en-IN')}</div>
+                    </button>
+                 ))}
+               </div>
             </div>
 
-            {/* Right Column: Payment Details */}
-            <div className="flex-1 p-8 md:p-12 space-y-8 bg-white selection:bg-slate-100">
-              <div className="flex justify-between items-start">
-                <div className="space-y-1 flex-1">
-                  <h3 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Payment Details</h3>
-                  <p className="text-slate-500 text-sm font-medium">Scan the QR code below or use the payment credentials.</p>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded-full hidden md:flex"
-                        onClick={() => setShowPaymentModal(false)}
-                      >
-                        <X className="h-5 w-5" />
-                      </Button>
-                </div>
-              </div>
+            {/* Payment Section (Horizontal Mix) */}
+            <div className="grid grid-cols-5 gap-6 items-start">
+               {/* QR Section (Small) */}
+               <div className="col-span-2 space-y-3">
+                  <div className="relative h-32 w-32 mx-auto bg-slate-50 rounded-2xl p-2 border-2 border-slate-100 group">
+                    <img src="/scanner.jpeg" alt="QR" className="w-full h-full object-contain" />
+                  </div>
+                  <div className="text-center">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Scanner UI Attached</span>
+                    <p className="text-[8px] text-slate-400 truncate mt-0.5">8019942233@hdfcbank</p>
+                  </div>
+               </div>
 
-              {/* QR Section */}
-              <div className="relative group max-w-[280px] mx-auto">
-                <div className="absolute -inset-4 bg-primary/5 rounded-[2rem] blur-2xl opacity-0 group-hover:opacity-100 transition duration-500"></div>
-                <div className="relative bg-slate-50 border-2 border-slate-100 rounded-[2.5rem] p-6 shadow-sm overflow-hidden flex flex-col items-center">
-                  <div className="mb-4 text-center">
-                    <div className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2">Secure UPI Gateway</div>
-                    <div className="flex items-center justify-center gap-2 px-3 py-1 bg-white rounded-full border border-slate-200">
-                      <QrCode className="h-3 w-3 text-primary" />
-                      <span className="text-[10px] font-bold text-slate-600">Scan to Pay</span>
-                    </div>
-                  </div>
-                  
-                  <div className="relative h-44 w-44 bg-white rounded-2xl p-2 shadow-inner border border-slate-200/50 flex items-center justify-center group-hover:scale-[1.02] transition-transform">
-                    {/* The QR Image */}
-                    <img 
-                      src="/scanner.jpeg" 
-                      alt="Payment QR Code" 
-                      className="w-full h-full object-contain"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = "https://placehold.co/400x400?text=QR+CODE+HERE";
-                      }}
-                    />
-                  </div>
-
-                  <div className="mt-6 w-full space-y-3">
-                    <div className="p-3 bg-white rounded-xl border border-dashed border-slate-300 flex items-center justify-between group/code cursor-pointer hover:border-primary transition-colors">
-                      <span className="text-[10px] font-mono font-bold text-slate-500 truncate max-w-[140px]">vyapar.17432781471@hdfcbank</span>
-                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-primary">
-                        <CheckCircle2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                    <div className="flex items-center justify-center gap-6 saturate-0 opacity-50">
-                        <Phone className="h-4 w-4" />
-                        <span className="text-xs font-bold">+91 80199 42233</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Upload Section */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <label className="text-xs font-black uppercase tracking-widest text-slate-400">Confirmation Proof <span className="text-primary">*</span></label>
-                    {paymentProof && (
-                        <span className="text-[10px] font-bold text-primary flex items-center gap-1">
-                            <CheckCircle2 className="h-3 w-3" /> File Selected
-                        </span>
-                    )}
-                </div>
-                <div 
-                    className={`relative border-2 border-dashed rounded-2xl p-6 transition-all cursor-pointer group flex flex-col items-center justify-center space-y-3 ${paymentProof ? 'border-primary bg-primary/5' : 'border-slate-200 hover:border-primary hover:bg-slate-50'}`}
-                    onClick={() => document.getElementById('payment-proof')?.click()}
-                >
-                    <div className="h-10 w-10 rounded-full bg-white shadow-sm flex items-center justify-center border border-slate-100 group-hover:scale-110 transition-transform">
-                        <Upload className={`h-5 w-5 ${paymentProof ? 'text-primary' : 'text-slate-400'}`} />
-                    </div>
-                    <div className="text-center">
-                        <p className="text-xs font-bold text-slate-900">{paymentProof ? paymentProof.name : 'Upload Payment Screenshot'}</p>
-                        <p className="text-[10px] text-slate-500 mt-1 font-medium">JPEG, PNG only (Max 5MB)</p>
-                    </div>
-                    <input 
-                        id="payment-proof" 
-                        type="file" 
-                        className="hidden" 
-                        accept="image/*"
-                        onChange={(e) => setPaymentProof(e.target.files?.[0] || null)}
-                    />
-                </div>
-              </div>
-
-                {/* Coupon Code Section */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                      <label className="text-xs font-black uppercase tracking-widest text-slate-400">Apply Coupon Code</label>
-                      {appliedPrice !== null && (
-                         <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[10px] font-bold">SAVED ₹{(paymentCourse!.price as number) - appliedPrice}</Badge>
-                      )}
-                  </div>
-                  <div className="flex gap-3">
-                    <div className="relative flex-1 group">
-                        <input 
-                            placeholder="Enter Code (e.g. AOTMS12345)"
-                            value={couponCode}
-                            onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                            disabled={appliedPrice !== null}
-                            className="w-full h-12 rounded-xl border-2 border-slate-100 bg-slate-50 px-4 font-bold text-slate-900 focus:border-primary focus:outline-none focus:bg-white transition-all shadow-sm disabled:opacity-50"
-                        />
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                           <Ticket className={`h-4 w-4 ${appliedPrice ? 'text-emerald-500' : 'text-slate-300'}`} />
-                        </div>
-                    </div>
-                    <Button 
-                      type="button"
-                      onClick={handleApplyCoupon}
-                      disabled={!couponCode || isValidating || appliedPrice !== null}
-                      className="h-12 px-6 rounded-xl font-bold transition-all"
-                    >
-                      {isValidating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Apply'}
-                    </Button>
-                  </div>
-                </div>
-
-                {/* UTR Number Section */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                      <label className="text-xs font-black uppercase tracking-widest text-slate-400">Transaction ID (UTR) <span className="text-primary">*</span></label>
-                  </div>
-                  <div className="relative group">
+               {/* Inputs Column (Compressed) */}
+               <div className="col-span-3 space-y-4">
+                  {/* Coupon (Low Height) */}
+                  <div className="space-y-1.5">
+                    <div className="flex gap-2 h-9">
                       <input 
-                          placeholder="Enter 12-digit UTR Number"
-                          value={utrNumber}
-                          onChange={(e) => {
-                              const val = e.target.value.replace(/\D/g, '').slice(0, 12);
-                              setUtrNumber(val);
-                          }}
-                          className="w-full h-14 rounded-2xl border-2 border-slate-100 bg-slate-50 px-6 font-bold text-slate-900 focus:border-primary focus:outline-none focus:bg-white transition-all shadow-sm"
+                        placeholder="Coupon Code"
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                        disabled={appliedPrice !== null}
+                        className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-bold focus:border-primary focus:outline-none transition-all"
                       />
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 h-8 w-8 rounded-lg bg-white/50 border border-slate-200 flex items-center justify-center pointer-events-none">
-                          <Hash className="h-4 w-4 text-slate-400" />
-                      </div>
+                      <Button 
+                        size="sm"
+                        onClick={handleApplyCoupon}
+                        disabled={!couponCode || isValidating || appliedPrice !== null}
+                        className="h-9 px-4 rounded-lg font-bold text-[10px]"
+                      >
+                        {isValidating ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Apply'}
+                      </Button>
+                    </div>
                   </div>
-                  <p className="text-[10px] text-slate-400 font-medium px-1">
-                      Please double-check your UTR number from your payment receipt.
-                  </p>
-                </div>
 
-              {/* Action Buttons */}
-              <div className="grid grid-cols-2 gap-4 pt-4">
-                <Button
-                    variant="ghost"
-                    size="lg"
-                    className="h-14 rounded-2xl border-2 border-slate-100 font-bold text-slate-600 hover:bg-slate-50 gap-3"
-                    onClick={() => {
-                        window.location.href = `mailto:Info@aotms.in?subject=Enrollment Inquiry: ${paymentCourse?.title}&body=Hello, I have a question about the course enrollment process.`;
-                    }}
-                >
-                    <Mail className="h-5 w-5 text-primary" />
-                    Get in Touch
-                </Button>
-                <Button
-                    size="lg"
-                    className="h-14 rounded-2xl font-black uppercase tracking-widest text-sm shadow-[0_10px_20px_rgba(var(--primary-rgb),0.2)] active:scale-95 transition-all"
-                    disabled={isUploading || !paymentProof || utrNumber.length !== 12}
-                    onClick={handleEnrollmentSubmit}
-                >
-                    {isUploading ? (
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                    ) : (
-                        'Enroll Course'
-                    )}
-                </Button>
+                  {/* UTR (Low Height) */}
+                  <div className="space-y-1.5">
+                    <div className="relative">
+                      <input 
+                        placeholder="12-digit UTR Number"
+                        value={utrNumber}
+                        onChange={(e) => setUtrNumber(e.target.value.replace(/\D/g, '').slice(0, 12))}
+                        className="w-full h-9 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-bold focus:border-primary focus:outline-none transition-all"
+                      />
+                      <Hash className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-300" />
+                    </div>
+                  </div>
+
+                  {/* Upload (Compact Row) */}
+                  <div 
+                    className={`h-9 flex items-center justify-center gap-2 border border-dashed rounded-lg cursor-pointer transition-all ${paymentProof ? 'border-primary bg-primary/5' : 'border-slate-200 hover:bg-slate-50'}`}
+                    onClick={() => document.getElementById('payment-proof')?.click()}
+                  >
+                    <Upload className="h-3 w-3 text-slate-400" />
+                    <span className="text-[10px] font-bold text-slate-600 truncate max-w-[120px]">
+                      {paymentProof ? paymentProof.name : 'Proof Screenshot'}
+                    </span>
+                    <input id="payment-proof" type="file" className="hidden" accept="image/*" onChange={(e) => setPaymentProof(e.target.files?.[0] || null)} />
+                  </div>
+               </div>
+            </div>
+
+            {/* Action Bar (Low Height) */}
+            <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-4">
+              <div className="flex-1">
+                 <p className="text-[9px] text-slate-400 leading-tight">By clicking enroll, you agree to our terms. Manual approval may take 2-4 hours.</p>
               </div>
-
-              <p className="text-center text-[10px] text-slate-400 font-medium">
-                After payment, please upload the screenshot to confirm your order details via manual verification.
-              </p>
+              <Button
+                  size="sm"
+                  className="h-10 px-8 rounded-xl font-black uppercase tracking-widest text-[11px] shadow-lg shadow-primary/20 shrink-0"
+                  disabled={isUploading || !paymentProof || utrNumber.length !== 12}
+                  onClick={handleEnrollmentSubmit}
+              >
+                  {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Enroll Now'}
+              </Button>
             </div>
           </div>
         </DialogContent>
@@ -679,6 +553,7 @@ function LeaderboardTab() {
 
 function LiveClassesTab() {
   const { data: classes, isLoading } = useLiveClasses();
+  const { data: enrolledCourses } = useEnrolledCourses();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -693,6 +568,17 @@ function LiveClassesTab() {
     });
   };
 
+  const enrolledIds = new Set(enrolledCourses?.map(c => c.id?.toString()) || []);
+  const filteredClasses = classes?.filter(c => {
+    // If no course is associated, it's a general/public meeting
+    if (!c.course_id) return true;
+    
+    // If course is associated, verify the student is enrolled in it
+    const courseObj = c.course_id as unknown as { _id?: string, id?: string } | string;
+    const courseId = typeof courseObj === 'object' && courseObj !== null ? (courseObj._id || courseObj.id) : courseObj;
+    return enrolledIds.has(courseId?.toString() || '');
+  }) || [];
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -705,18 +591,18 @@ function LiveClassesTab() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {isLoading ? (
           [1, 2, 3].map((i) => <Skeleton key={i} className="h-[280px] rounded-2xl" />)
-        ) : !classes || classes.length === 0 ? (
+        ) : filteredClasses.length === 0 ? (
           <div className="col-span-full py-24 text-center bg-white rounded-3xl border border-dashed border-slate-200 flex flex-col items-center">
             <div className="h-16 w-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
                <Video className="h-8 w-8 text-primary/40" />
             </div>
             <h3 className="text-xl font-bold text-slate-800">No Upcoming Sessions</h3>
             <p className="text-base font-medium text-slate-600 mt-2 max-w-sm">
-              Your instructors haven't scheduled any new live broadcasts yet.
+              Either there are no scheduled sessions or you aren't enrolled in their courses yet.
             </p>
           </div>
         ) : (
-          classes.map((session: LiveClass) => (
+          filteredClasses.map((session: LiveClass) => (
             <Card
               key={session.id}
               className="pro-card group cursor-default hover:-translate-y-1 transition-all duration-300"
@@ -825,9 +711,14 @@ function DashboardHome() {
   const navigate = useNavigate();
   const latestCourse = enrolledCourses?.[0];
 
-  const activityData = dashboardData?.activity?.length ? dashboardData.activity : dummyActivityData;
+  const activityData = dashboardData?.activity?.map(d => ({ name: d.name, minutes: d.intensity })) || dummyActivityData; // Use intensity as minutes
   const recentResources = dashboardData?.resources || [];
-  const realSkills = dashboardData?.skills || [];
+  const realSkills = dashboardData?.skills?.map(s => ({ name: s.name, level: s.progress, category: 'General' })) || [];
+
+  // Derive real-time stats
+  const completedCoursesCount = enrolledCourses?.filter(c => c.progress >= 100).length || 0;
+  const totalMinutesSpent = dashboardData?.activity?.reduce((sum, day) => sum + (day.intensity || 0), 0) || 0;
+  const watchHours = Math.floor(totalMinutesSpent / 60) || 0;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -836,7 +727,7 @@ function DashboardHome() {
         <div>
           <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-none mb-3 tracking-widest uppercase font-bold text-[10px] px-3 py-1">Student Portal</Badge>
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900">
-            Welcome back, <span className="text-primary italic">{user?.user_metadata?.full_name?.split(" ")[0] || "Student"}</span>.
+            Welcome back, <span className="text-primary italic">{user?.full_name?.split(" ")[0] || user?.user_metadata?.full_name?.split(" ")[0] || "Student"}</span>.
           </h1>
           <p className="text-slate-600 font-medium mt-2 text-base md:text-lg">
             Elevate your skills and track your learning journey.
@@ -853,8 +744,8 @@ function DashboardHome() {
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {[
           { title: "Active Enrollments", value: enrolledCourses?.length || 0, icon: BookOpen, color: "blue", desc: "Ongoing courses" },
-          { title: "Training Progress", value: stats?.completed_courses || 0, icon: Target, color: "orange", desc: "Modules finished" },
-          { title: "Platform Engagement", value: `${stats?.total_watch_minutes ? Math.floor(stats.total_watch_minutes / 60) : 0}h`, icon: Clock, color: "blue", desc: "Total learning time" },
+          { title: "Training Progress", value: completedCoursesCount, icon: Target, color: "orange", desc: "Modules finished" },
+          { title: "Platform Engagement", value: `${watchHours}h`, icon: Clock, color: "blue", desc: "Total learning time" },
         ].map((kpi, i) => (
           <motion.div
             key={kpi.title}
@@ -976,22 +867,7 @@ function DashboardHome() {
             </CardContent>
           </Card>
 
-          {/* Skill Blocks - Real Data */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-             {(realSkills.length > 0 ? realSkills : ['Core', 'Technical', 'Soft Skills', 'Labs']).map((skill: any, i) => (
-               <div key={typeof skill === 'string' ? skill : skill.name} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-slate-50 flex items-center justify-center">
-                    <CheckCircle className="h-4 w-4 text-emerald-500" />
-                  </div>
-                  <span className="text-xs font-black text-slate-900 uppercase tracking-tighter line-clamp-1">
-                    {typeof skill === 'string' ? skill : skill.name}
-                  </span>
-                  <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-emerald-500" style={{ width: `${typeof skill === 'string' ? (40 + (i * 15)) : (skill.progress || 0)}%` }}></div>
-                  </div>
-               </div>
-             ))}
-          </div>
+          {/* Row of stats and activity removed as requested */}
         </div>
 
         {/* Right Sidebar - Spans 1 col */}
@@ -1008,7 +884,7 @@ function DashboardHome() {
                {recentResources.length === 0 ? (
                  <div className="py-8 text-center text-xs text-slate-400 font-medium italic">No recent materials</div>
                ) : (
-                 recentResources.map((res: any, i: number) => (
+                 recentResources.map((res, i: number) => (
                    <div key={i} className="flex items-center justify-between p-3 rounded-xl border border-slate-50 hover:bg-slate-50 transition-colors group cursor-pointer" onClick={() => res.view_url && window.open(res.view_url, '_blank')}>
                       <div className="flex items-center gap-3">
                          <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-[10px] font-black group-hover:bg-slate-900 group-hover:text-white transition-all uppercase">
@@ -1038,7 +914,7 @@ function DashboardHome() {
               {dashboardData?.results?.length === 0 ? (
                 <div className="py-8 text-center text-xs text-slate-400 font-medium italic">No recent test attempts</div>
               ) : (
-                dashboardData?.results?.map((res: any, i: number) => (
+                dashboardData?.results?.map((res, i: number) => (
                   <div key={i} className="flex flex-col gap-2 p-3 rounded-2xl bg-slate-50/50 border border-slate-100 group hover:border-primary/20 transition-all">
                     <div className="flex justify-between items-start">
                       <div className="flex-1 min-w-0">
@@ -1064,10 +940,7 @@ function DashboardHome() {
             </CardContent>
           </Card>
 
-          {/* Announcements - Existing component */}
-          <div className="border-none shadow-none">
-            <AnnouncementsSection />
-          </div>
+          {/* Announcements removed per user request */}
 
           {/* Student Support Section - New Feature */}
           <Card className="bg-primary text-white p-6 rounded-3xl relative overflow-hidden group">
@@ -1092,6 +965,12 @@ const routeConfig: Record<string, { title: string; description: string; icon: Re
     description: "Manage your credentials and portfolio",
     icon: User,
     component: <UserProfile />,
+  },
+  "/student-dashboard/resume-ats": {
+    title: "Resume ATS Scan",
+    description: "Analyze your resume with AI to improve your job prospects",
+    icon: Zap,
+    component: <StudentResumeScan />,
   },
   "/student-dashboard/courses": {
     title: "Learning Library",
@@ -1129,12 +1008,6 @@ const routeConfig: Record<string, { title: string; description: string; icon: Re
     icon: History,
     component: <StudentHistory />,
   },
-  "/student-dashboard/leaderboard": {
-    title: "Global Rankings",
-    description: "See how you rank among top tech scholars",
-    icon: Trophy,
-    component: <LeaderboardTab />,
-  },
   "/student-dashboard/notifications": {
     title: "Communications",
     description: "Important updates from the academy",
@@ -1155,12 +1028,16 @@ const routeConfig: Record<string, { title: string; description: string; icon: Re
   },
 };
 
+import { RatingModal } from "./RatingModal";
+
 export function DashboardContent() {
   const location = useLocation();
   const currentPath = location.pathname;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { socket } = useSocket();
+  const [ratingModalOpen, setRatingModalOpen] = useState(false);
+  const [selectedCourseForRating, setSelectedCourseForRating] = useState({ id: '', title: '' });
 
   useEffect(() => {
     if (!socket) return;
@@ -1187,7 +1064,14 @@ export function DashboardContent() {
   if (config) {
     if (config.component) {
       return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
+          <RatingModal 
+            isOpen={ratingModalOpen} 
+            onClose={() => setRatingModalOpen(false)}
+            courseId={selectedCourseForRating.id}
+            courseTitle={selectedCourseForRating.title}
+          />
+
           <div className="flex flex-col md:flex-row items-start md:items-center gap-4 border-b border-slate-200 pb-6">
             <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 border border-primary/10">
               <config.icon className="h-7 w-7 text-primary" />
@@ -1197,6 +1081,31 @@ export function DashboardContent() {
                 {config.title}
               </h1>
               <p className="text-base font-medium text-slate-600 mt-1">{config.description}</p>
+            </div>
+            
+            <div className="ml-auto flex items-center gap-3">
+              {currentPath === "/student-dashboard/courses" && (
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedCourseForRating({ id: 'GENERAL', title: 'AOTMS Pro Academy' });
+                    setRatingModalOpen(true);
+                  }}
+                  className="bg-white border-2 border-slate-100 text-slate-900 font-black rounded-xl px-6 h-12 shadow-sm hover:border-yellow-400 hover:text-yellow-600 transition-all gap-2 text-xs uppercase"
+                >
+                  <Star className="h-4 w-4 fill-current" />
+                  Pulse Your Rating
+                </Button>
+              )}
+              {currentPath === "/student-dashboard/notifications" && (
+                <Button 
+                  onClick={() => navigate("/student-dashboard/courses")}
+                  className="bg-primary text-white font-bold rounded-xl px-6 h-12 shadow-lg shadow-primary/20 hover:shadow-xl transition-all gap-2"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  View Course Catalog
+                </Button>
+              )}
             </div>
           </div>
           <div className="w-full">

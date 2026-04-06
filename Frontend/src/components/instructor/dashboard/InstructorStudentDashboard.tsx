@@ -34,7 +34,10 @@ import {
   useStudentVideoProgress,
   useVideos,
   useSendReminder,
-  type InstructorStudent 
+  type InstructorStudent,
+  type Course,
+  type CourseVideo,
+  type VideoProgressDetail
 } from '@/hooks/useInstructorData';
 
 interface RecentActivity {
@@ -240,14 +243,14 @@ function StudentRow({ student, onSendMessage, onViewDetails }: {
           <DropdownMenuContent align="end" className="w-48 rounded-2xl p-2 border-slate-100 shadow-2xl">
             <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-3 py-2">Management</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="rounded-xl px-3 h-10 font-bold focus:bg-slate-50" onClick={() => onViewDetails(student.userId)}>
+            <DropdownMenuItem className="rounded-xl px-3 h-10 font-bold focus:bg-slate-900 focus:text-white transition-colors cursor-pointer" onClick={() => onViewDetails(student.userId)}>
               <Eye className="w-4 h-4 mr-2 opacity-40 text-blue-600" /> View Profile
             </DropdownMenuItem>
-            <DropdownMenuItem className="rounded-xl px-3 h-10 font-bold focus:bg-slate-50" onClick={() => onSendMessage(student.userId)}>
-              <Mail className="w-4 h-4 mr-2 opacity-40 text-emerald-600" /> Send Mail
+            <DropdownMenuItem className="rounded-xl px-3 h-10 font-bold focus:bg-slate-900 focus:text-white transition-colors cursor-pointer" onClick={() => onSendMessage(student.userId)}>
+              <Mail className="w-4 h-4 mr-2 opacity-40 text-emerald-600" /> Send Message
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="rounded-xl px-3 h-10 font-bold text-rose-600 focus:bg-rose-50/50">
+            <DropdownMenuItem className="rounded-xl px-3 h-10 font-bold text-rose-600 focus:bg-slate-900 focus:text-white transition-colors cursor-pointer">
               <UserMinus className="w-4 h-4 mr-2 opacity-40" /> Drop Student
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -275,7 +278,7 @@ function ActivityFeed({ activities, students }: { activities: RecentActivity[]; 
       action: 'completed' as const,
       courseName: s.courseEnrollments[0]?.courseTitle || 'Course',
       timestamp: formatTimeAgo(s.lastActiveAt)
-    }));
+    })) as RecentActivity[];
 
   const allActivities = [...activities, ...recentCompletions]
     .sort((a, b) => {
@@ -327,8 +330,8 @@ function ActivityFeed({ activities, students }: { activities: RecentActivity[]; 
                       </span>
                     </p>
                     <p className="text-xs text-muted-foreground truncate">{activity.courseName}</p>
-                    {('details' in activity) && activity.details && (
-                      <p className="text-xs text-amber-500 mt-0.5">{(activity as any).details}</p>
+                    {activity.details && (
+                      <p className="text-xs text-amber-500 mt-0.5">{activity.details}</p>
                     )}
                   </div>
                   <span className="text-xs text-muted-foreground whitespace-nowrap">
@@ -357,10 +360,10 @@ function StudentCourseDetails({ studentId, courseId, courseName, progress }: { s
   // Merge video data with progress
   const videoList = useMemo(() => {
     if (!videos) return [];
-    const vds = videos as any[];
-    return vds.map((video: any) => {
-      const vps = videoProgress as any[];
-      const p = vps?.find((vp: any) => vp.video_id === video.id);
+    const vds = videos as CourseVideo[];
+    return vds.map((video: CourseVideo) => {
+      const vps = videoProgress as VideoProgressDetail[];
+      const p = vps?.find((vp: VideoProgressDetail) => vp.video_id === video.id);
       return {
         ...video,
         watched: p?.watched_seconds || 0,
@@ -368,7 +371,7 @@ function StudentCourseDetails({ studentId, courseId, courseName, progress }: { s
         completed: p?.completed || false,
         lastWatched: p?.last_watched_at
       };
-    }).sort((a: any, b: any) => a.order_index - b.order_index);
+    }).sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
   }, [videos, videoProgress]);
 
   return (
@@ -390,7 +393,7 @@ function StudentCourseDetails({ studentId, courseId, courseName, progress }: { s
       {expanded && (
         <div className="mt-4 space-y-2 pl-2 border-l-2 border-slate-100 ml-2">
             {videoList.length > 0 ? (
-                videoList.map((video: any) => (
+                videoList.map((video) => (
                     <div key={video.id} className="flex items-center gap-3 text-xs py-1">
                         <div className={cn(
                             "h-4 w-4 rounded-full flex items-center justify-center flex-shrink-0",
@@ -507,10 +510,6 @@ export function InstructorStudentDashboard() {
             <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
             {isRefreshing ? 'Refreshing...' : 'Refresh'}
           </Button>
-          <Button variant="outline" size="sm" className="gap-2">
-            <Download className="w-4 h-4" />
-            Export
-          </Button>
         </div>
       </div>
 
@@ -530,17 +529,17 @@ export function InstructorStudentDashboard() {
           loading={loading}
         />
         <StatCard 
-          title="At Risk" 
-          value={loading ? '...' : stats.atRiskStudents} 
-          icon={AlertTriangle} 
-          color="bg-amber-500/10 text-amber-500"
+          title="Total Watch Time" 
+          value={loading ? '...' : stats.totalWatchTimeMinutes} 
+          icon={Clock} 
+          color="bg-blue-500/10 text-blue-500"
           loading={loading}
         />
         <StatCard 
-          title="Total Watch Time" 
-          value={loading ? '...' : formatWatchTime(stats.totalWatchTimeMinutes)} 
-          icon={Clock} 
-          color="bg-blue-500/10 text-blue-500"
+          title="Course Enrollments" 
+          value={loading ? '...' : stats.totalEnrollments} 
+          icon={BookOpen} 
+          color="bg-purple-500/10 text-purple-500"
           loading={loading}
         />
       </div>
@@ -570,7 +569,6 @@ export function InstructorStudentDashboard() {
                       <SelectItem value="all">All Status</SelectItem>
                       <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="at-risk">At Risk</SelectItem>
                       <SelectItem value="inactive">Inactive</SelectItem>
                     </SelectContent>
                   </Select>
@@ -619,7 +617,7 @@ export function InstructorStudentDashboard() {
         </div>
 
         <div className="space-y-6">
-          <ActivityFeed activities={activities} students={students || []} />
+
           
           <Card>
             <CardHeader className="pb-3">
@@ -638,8 +636,8 @@ export function InstructorStudentDashboard() {
                     </div>
                   ))}
                 </div>
-              ) : (courses as any) && (courses as any).length > 0 ? (
-                (courses as any).slice(0, 5).map((course: any) => {
+              ) : (courses as Course[]) && (courses as Course[]).length > 0 ? (
+                (courses as Course[]).slice(0, 5).map((course: Course) => {
                   const enrolledCount = students?.filter(s => 
                     s.courseEnrollments.some(e => e.courseId === course.id)
                   ).length || 0;

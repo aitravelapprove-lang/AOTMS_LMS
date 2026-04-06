@@ -137,9 +137,8 @@ export function VideoAnalyticsPanel({
           >
             <CardContent className="pt-0 space-y-4">
               <Tabs defaultValue="overview" className="w-full">
-                <TabsList className="w-full grid grid-cols-3">
+                <TabsList className="w-full grid grid-cols-2">
                   <TabsTrigger value="overview">Overview</TabsTrigger>
-                  <TabsTrigger value="performance">Performance</TabsTrigger>
                   <TabsTrigger value="students">Students</TabsTrigger>
                 </TabsList>
 
@@ -239,35 +238,7 @@ export function VideoAnalyticsPanel({
                   </div>
                 </TabsContent>
 
-                <TabsContent value="performance" className="space-y-4 mt-4">
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium">Engagement Metrics</h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                        <span className="text-sm">Views vs Completion</span>
-                        <Badge variant="outline">
-                          {analytics.totalViews} views
-                        </Badge>
-                      </div>
-                      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                        <span className="text-sm">Watch Retention</span>
-                        <Badge variant="outline">
-                          {100 - analytics.dropOffPercentage}% retained
-                        </Badge>
-                      </div>
-                      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                        <span className="text-sm">Engagement Score</span>
-                        <Badge className={
-                          analytics.completionRate >= 70 ? 'bg-green-500' : 
-                          analytics.completionRate >= 40 ? 'bg-amber-500' : 'bg-red-500'
-                        }>
-                          {analytics.completionRate >= 70 ? 'High' : 
-                           analytics.completionRate >= 40 ? 'Medium' : 'Low'}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                </TabsContent>
+                {/* Performance Tab Removed */}
 
                 <TabsContent value="students" className="mt-4">
                   <div className="space-y-3">

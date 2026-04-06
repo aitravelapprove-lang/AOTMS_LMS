@@ -24,9 +24,11 @@ import {
   Award,
   FileText,
   Mail,
+  Layers,
 } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api';
 import type { Profile } from '@/hooks/useAdminData';
+import { CourseBuilder } from '@/components/instructor/courses/CourseBuilder';
 
 interface EnrolledStudent extends Profile {
   progress: number;
@@ -77,6 +79,7 @@ export default function InstructorCourses() {
   const [enrolledStudents, setEnrolledStudents] = useState<EnrolledStudent[]>([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [selectedInstructor, setSelectedInstructor] = useState<Profile | null>(null);
+  const [buildingCourse, setBuildingCourse] = useState<Course | null>(null);
 
   const fetchEnrolledStudents = async (courseId: string) => {
     setLoadingStudents(true);
@@ -217,6 +220,11 @@ export default function InstructorCourses() {
     if (!dateStr) return '-';
     return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
+
+  if (buildingCourse) {
+      // Need to cast to the same structure as InstructorCourses.tsx component expects or Course interface
+      return <CourseBuilder course={buildingCourse as any} onBack={() => setBuildingCourse(null)} />;
+  }
 
   return (
     <div className="space-y-6">
@@ -427,6 +435,15 @@ export default function InstructorCourses() {
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      title="View Syllabus"
+                      onClick={() => setBuildingCourse(course)}
+                      className="text-primary hover:bg-primary/5"
+                    >
+                      <Layers className="h-4 w-4" />
+                    </Button>
                     <Button 
                       variant="ghost" 
                       size="icon" 

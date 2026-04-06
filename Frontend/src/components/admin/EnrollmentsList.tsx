@@ -37,6 +37,7 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCourse, setFilterCourse] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterTerm, setFilterTerm] = useState("all");
   const [timeFilter, setTimeFilter] = useState("all");
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [selectedEnrollment, setSelectedEnrollment] = useState<CourseEnrollment | null>(null);
@@ -72,6 +73,7 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
       e.user_id?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCourse = filterCourse === "all" || e.course_name === filterCourse;
     const matchesStatus = filterStatus === "all" || e.status === filterStatus;
+    const matchesTerm = filterTerm === "all" || e.payment_term === filterTerm;
 
     if (timeFilter !== "all" && e.enrollment_date) {
       const now = new Date();
@@ -85,7 +87,7 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
       if (timeFilter === "yearly" && diffDays > 365) return false;
     }
 
-    return matchesSearch && matchesCourse && matchesStatus;
+    return matchesSearch && matchesCourse && matchesStatus && matchesTerm;
   });
 
   const totalValue = filteredEnrollments.reduce((acc, e) => acc + parseInt(e.price?.replace(/[^0-9]/g, '') || '0'), 0);
@@ -213,6 +215,19 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
             </select>
           </div>
           <div className="relative w-full sm:w-40">
+            <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <select
+              value={filterTerm}
+              onChange={(e) => setFilterTerm(e.target.value)}
+              className="w-full h-10 pl-10 pr-4 rounded-lg border border-input bg-background text-sm focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="all">All Terms</option>
+              <option value="full">Full Term</option>
+              <option value="term1">Term 1</option>
+              <option value="term2">Term 2</option>
+            </select>
+          </div>
+          <div className="relative w-full sm:w-40">
             <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <select
               value={filterStatus}
@@ -260,13 +275,14 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
               <p>No enrollments found</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <div className="overflow-x-auto custom-scrollbar-horizontal pb-4">
+              <table className="w-full min-w-[1000px]">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Student</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">UUID</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Course</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Term / Balance</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">UTR / Proof</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Price</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Progress</th>
@@ -302,10 +318,31 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                           {enrollment.user_id?.substring(0, 8)}...
                         </div>
                       </td>
-                      <td className="px-4 py-3">
-                        <Badge variant="outline" className="font-normal border-primary/20 bg-primary/5 text-primary">
+                      <td className="px-4 py-3 whitespace-nowrap max-w-[180px]">
+                        <Badge variant="outline" className="font-bold border-primary/20 bg-primary/5 text-primary max-w-full truncate block text-center">
                           {enrollment.course_name || "Unknown"}
                         </Badge>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          {enrollment.payment_term === 'term1' ? (
+                            <Badge className="text-[10px] font-black uppercase bg-blue-100 text-blue-700 border-blue-200">1st Term</Badge>
+                          ) : enrollment.payment_term === 'term2' ? (
+                            <Badge className="text-[10px] font-black uppercase bg-purple-100 text-purple-700 border-purple-200">2nd Term</Badge>
+                          ) : (
+                            <Badge className="text-[10px] font-black uppercase bg-emerald-100 text-emerald-700 border-emerald-200 border">Full Term</Badge>
+                          )}
+                          
+                          {enrollment.remaining_balance ? (
+                            <Badge variant="outline" className="text-[10px] font-black text-amber-600 border-amber-200 bg-amber-50 animate-pulse">
+                               OWED: ₹{enrollment.remaining_balance.toLocaleString('en-IN')}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[10px] font-bold text-slate-400 border-slate-200">
+                               PAID
+                            </Badge>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-col gap-1.5">
@@ -353,11 +390,11 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                       <td className="px-4 py-3">
                         {getStatusBadge(enrollment.status || 'pending')}
                       </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">
-                        <div className="flex flex-col">
-                          <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {formatDate(enrollment.enrollment_date).split(',')[0]}</span>
-                          <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {formatDate(enrollment.enrollment_date).split(',')[1]}</span>
-                        </div>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="text-[11px] font-bold text-slate-500 bg-slate-50 px-2 py-1.5 rounded-full border border-slate-100 flex items-center gap-1.5 w-fit">
+                          <Calendar className="h-3 w-3 text-primary/60" />
+                          {new Date(enrollment.enrollment_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} • {new Date(enrollment.enrollment_date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
@@ -471,6 +508,20 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                             <div className="space-y-1">
                                 <p className="text-sm font-bold text-primary">{selectedEnrollment?.course_name}</p>
                                 <p className="text-[10px] text-slate-500 font-medium">Progress: {selectedEnrollment?.progress_percentage || 0}%</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Payment Term & Balance</label>
+                            <div className="space-y-1">
+                                <Badge className="bg-slate-700 text-primary border-slate-600 font-bold">
+                                    {selectedEnrollment?.payment_term === 'term1' ? '1st Term (60%)' : selectedEnrollment?.payment_term === 'term2' ? '2nd Term (40%)' : 'Full Payment'}
+                                </Badge>
+                                {selectedEnrollment?.remaining_balance ? (
+                                    <p className="text-sm font-bold text-amber-500">Owed: ₹{selectedEnrollment.remaining_balance.toLocaleString('en-IN')}</p>
+                                ) : (
+                                    <p className="text-sm font-bold text-emerald-500">Fully Paid</p>
+                                )}
                             </div>
                         </div>
 

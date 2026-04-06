@@ -3,13 +3,19 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { Course, CourseResource } from './useInstructorData';
 
-interface ExamAccess {
-    id: string;
-    exam_id?: string;
-    mock_paper_id?: string;
-    exam_schedules?: Record<string, unknown>;
-    mock_papers?: Record<string, unknown>;
-    access_type: string;
+interface ExamScheduleData {
+    title: string;
+    description: string;
+    duration_minutes: number;
+    total_marks: number;
+}
+
+interface MockTestData {
+    title: string;
+    description: string;
+    duration_minutes: number;
+    total_marks: number;
+    question_count: number;
 }
 
 export function useStudentEnrollments() {
@@ -22,29 +28,49 @@ export function useStudentEnrollments() {
     });
 }
 
+export interface StudentStats {
+    user_id: string;
+    total_score: number;
+    completed_courses: number;
+    total_watch_minutes: number;
+    badges: string[];
+    user?: {
+        full_name?: string;
+    }
+}
+
 export function useStudentStats() {
     const { user } = useAuth();
 
-    return useQuery({
+    return useQuery<StudentStats | null>({
         queryKey: ['student-stats', user?.id],
-        queryFn: () => fetchWithAuth(`/data/leaderboard_stats?user_id=eq.${user?.id}`),
+        queryFn: async () => {
+            const data = await fetchWithAuth(`/data/leaderboard_stats?user_id=eq.${user?.id}`) as StudentStats[];
+            return data[0] || null;
+        },
         enabled: !!user?.id,
-        select: (data) => data[0] || null,
     });
 }
 
 export function useStudentExams() {
     const { user } = useAuth();
-    return useQuery({
+    return useQuery<StudentExam[]>({
         queryKey: ['student-exams', user?.id],
         queryFn: async () => {
-            const accessible = await fetchWithAuth('/student/accessible-exams') as any[];
+            const accessible = await fetchWithAuth<AccessibleExam[]>('/student/accessible-exams');
             return accessible
-                .filter((a) => a.exam_id)
-                .map((a) => ({
-                    ...a.exam_schedules,
-                    id: a.exam_id
-                }));
+                .filter((a) => a.exam_id && a.exam_schedules)
+                .map((a) => {
+                    const sched = a.exam_schedules as unknown as ExamScheduleData;
+                    return {
+                        id: a.exam_id!,
+                        title: sched.title,
+                        description: sched.description,
+                        duration_minutes: sched.duration_minutes,
+                        total_marks: sched.total_marks,
+                        is_completed: !!a.is_completed
+                    };
+                });
         },
         enabled: !!user?.id,
         refetchInterval: 30000,
@@ -53,16 +79,23 @@ export function useStudentExams() {
 
 export function useStudentMockPapers() {
     const { user } = useAuth();
-    return useQuery({
+    return useQuery<StudentExam[]>({
         queryKey: ['student-mock-papers', user?.id],
         queryFn: async () => {
-            const accessible = await fetchWithAuth('/student/accessible-exams') as any[];
+            const accessible = await fetchWithAuth<AccessibleExam[]>('/student/accessible-exams');
             return accessible
-                .filter((a) => a.mock_paper_id)
-                .map((a) => ({
-                    ...a.mock_papers,
-                    id: a.mock_paper_id
-                }));
+                .filter((a) => a.mock_paper_id && a.mock_papers)
+                .map((a) => {
+                    const mock = a.mock_papers as unknown as MockTestData;
+                    return {
+                        id: a.mock_paper_id!,
+                        title: mock.title,
+                        description: mock.description,
+                        duration_minutes: mock.duration_minutes,
+                        total_marks: mock.total_marks,
+                        is_completed: !!a.is_completed
+                    };
+                });
         },
         enabled: !!user?.id,
         refetchInterval: 30000,
@@ -74,7 +107,7 @@ export function useExamQuestions(id: string | null) {
         queryKey: ['exam-questions', id],
         queryFn: async () => {
             if (!id) return [];
-            return await fetchWithAuth(`/student/exam-questions/${id}`) as any[];
+            return await fetchWithAuth(`/student/exam-questions/${id}`) as Record<string, unknown>[];
         },
         enabled: !!id,
         staleTime: Infinity, // Keep questions during exam session
@@ -84,9 +117,9 @@ export function useExamQuestions(id: string | null) {
 export function useStudentAnnouncements() {
     const { user } = useAuth();
 
-    return useQuery({
+    return useQuery<Announcement[]>({
         queryKey: ['announcements'],
-        queryFn: () => fetchWithAuth('/data/announcements?order=created_at.desc&limit=5'),
+        queryFn: () => fetchWithAuth<Announcement[]>('/data/announcements?order=created_at.desc&limit=5'),
         enabled: !!user?.id,
     });
 }
@@ -104,9 +137,9 @@ export function useLeaderboard() {
 export function useLiveClasses() {
     const { user } = useAuth();
 
-    return useQuery({
+    return useQuery<LiveClass[]>({
         queryKey: ['student-live-classes'],
-        queryFn: () => fetchWithAuth('/data/live_classes?order=scheduled_at.asc'),
+        queryFn: () => fetchWithAuth<LiveClass[]>('/data/live_classes?order=scheduled_at.asc'),
         enabled: !!user?.id,
     });
 }
@@ -127,6 +160,23 @@ export interface Announcement {
     created_at: string;
 }
 
+export interface AccessibleExam {
+    exam_id?: string;
+    mock_paper_id?: string;
+    exam_schedules?: Record<string, unknown>;
+    mock_papers?: Record<string, unknown>;
+    is_completed?: boolean;
+}
+
+export interface StudentExam {
+    id: string;
+    title: string;
+    description: string;
+    duration_minutes: number;
+    total_marks: number;
+    is_completed: boolean;
+}
+
 export interface LeaderboardEntry {
     id: string;
     user_id: string | {
@@ -141,6 +191,7 @@ export interface LeaderboardEntry {
 
 export interface LiveClass {
     id: string;
+    course_id?: string;
     title: string;
     scheduled_at: string;
     duration_minutes: number;
@@ -153,6 +204,9 @@ export interface StudentCourse extends Course {
     progress: number;
     enrollmentStatus: string;
     enrollmentId: string;
+    final_price?: number;
+    payment_term?: string;
+    remaining_balance?: number;
 }
 
 export function useEnrolledCourses() {
@@ -195,9 +249,7 @@ export function useAvailableCourses() {
                     }
                 }
 
-                return data
-                    .filter(course => !enrolledCourseIds.has(course.id))
-                    .map(course => ({
+                return data.map(course => ({
                         id: course.id,
                         title: course.title,
                         description: course.description,
@@ -208,6 +260,7 @@ export function useAvailableCourses() {
                         created_at: course.created_at,
                         price: course.price,
                         original_price: course.original_price,
+                        enrollmentStatus: enrolledCourseIds.has(course.id) ? 'active' : undefined,
                         progress: 0
                     } as StudentCourse));
             } catch (error) {
@@ -223,7 +276,7 @@ export function useEnrollCourse() {
     const { user } = useAuth();
 
     return useMutation({
-        mutationFn: async ({ courseId, payment_proof_url, utr_number, coupon_code }: { courseId: string, payment_proof_url?: string | null, utr_number?: string | null, coupon_code?: string }) => {
+        mutationFn: async ({ courseId, payment_proof_url, utr_number, coupon_code, payment_term }: { courseId: string, payment_proof_url?: string | null, utr_number?: string | null, coupon_code?: string, payment_term?: string }) => {
             if (!user?.id) throw new Error("Not logged in");
             return fetchWithAuth('/courses/enroll', {
                 method: 'POST',
@@ -231,7 +284,8 @@ export function useEnrollCourse() {
                     courseId,
                     payment_proof_url,
                     utr_number,
-                    coupon_code
+                    coupon_code,
+                    payment_term
                 })
             });
         },
@@ -300,12 +354,33 @@ export function useStudentResources(courseId: string | null) {
 export function useStudentDashboardData() {
     const { user } = useAuth();
 
-    return useQuery({
+    return useQuery<StudentDashboardData>({
         queryKey: ['student-dashboard-stats', user?.id],
-        queryFn: () => fetchWithAuth('/student/dashboard-data'),
+        queryFn: () => fetchWithAuth<StudentDashboardData>('/student/dashboard-data'),
         enabled: !!user?.id,
         refetchInterval: 60000,
     });
+}
+
+export interface StudentDashboardData {
+    activity: { name: string; intensity: number }[]; // Unified with intensity
+    resources: { 
+        id: string; 
+        asset_title: string; 
+        resource_type: string; 
+        file_url: string; 
+        upload_format?: string;
+        view_url?: string;
+    }[];
+    skills: { name: string; progress: number }[]; // Unified keys: name, progress
+    results: {
+        id: string;
+        title: string;
+        date: string;
+        percentage: number;
+        score: number;
+        total: number;
+    }[];
 }
 
 

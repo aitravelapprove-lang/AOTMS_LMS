@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { InstructorSidebar } from "@/components/instructor/InstructorSidebar";
@@ -7,24 +7,27 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   useInstructorCourses,
   useInstructorStats,
+  useInstructorRatings,
   Course,
+  CourseRating,
 } from "@/hooks/useInstructorData";
 import { useSocket } from "@/hooks/useSocket";
 import { useToast } from "@/hooks/use-toast";
 import { InstructorStats } from "@/components/instructor/dashboard/InstructorStats";
-import { PerformanceCharts } from "@/components/instructor/dashboard/PerformanceCharts";
-import { SmartAlerts } from "@/components/instructor/dashboard/SmartAlerts";
 import { InstructorCourses } from "@/components/instructor/courses/InstructorCourses";
 import { InstructorStudentDashboard } from "@/components/instructor/dashboard/InstructorStudentDashboard";
 import { ChatInterface } from "@/components/chat/ChatInterface";
 import { ResourcesDashboard } from "@/components/instructor/dashboard/ResourcesDashboard";
-import PerformanceDashboard from "@/components/instructor/dashboard/PerformanceDashboard";
 import { QuestionBankManager } from "@/components/manager/QuestionBankManager";
+import { ExamScheduler } from "@/components/manager/ExamScheduler";
 import { InstructorVideoLibrary } from "@/components/instructor/dashboard/InstructorVideoLibrary";
 import { LiveClassManager } from "@/components/instructor/dashboard/LiveClassManager";
+import { UserProfile } from "@/components/dashboard/UserProfile";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { motion, AnimatePresence } from "framer-motion";
+import { fetchWithAuth } from "@/lib/api";
 import {
   Bell,
   Sparkles,
@@ -42,7 +45,17 @@ import {
   Activity,
   User,
   Video,
+  Star,
+  Eye,
+  MessageSquare,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface DashboardStats {
   totalStudents: number;
@@ -55,16 +68,152 @@ interface DashboardStats {
   totalEarnings?: number;
 }
 
+// ─── Feedback Modal Component ──────────────────────────────────────────────
+function FeedbackModal({ 
+  ratings, 
+  isOpen, 
+  onOpenChange 
+}: { 
+  ratings: CourseRating[], 
+  isOpen: boolean, 
+  onOpenChange: (open: boolean) => void 
+}) {
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-4xl p-0 overflow-hidden bg-white border-none shadow-2xl rounded-3xl">
+        <DialogHeader className="p-10 border-b border-slate-50 bg-slate-50/50">
+           <div className="flex items-center gap-4">
+              <div className="h-14 w-14 rounded-2xl bg-yellow-400 flex items-center justify-center text-white shadow-lg shadow-yellow-400/20">
+                 <Star className="h-7 w-7 fill-white" />
+              </div>
+              <div>
+                 <DialogTitle className="text-3xl font-black text-slate-900 tracking-tight italic uppercase">Student Pulse Detail</DialogTitle>
+                 <DialogDescription className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">Full analytical breakdown of scholar testimonials</DialogDescription>
+              </div>
+           </div>
+        </DialogHeader>
+        <div className="p-10 max-h-[60vh] overflow-y-auto custom-scrollbar bg-white">
+          {ratings.length === 0 ? (
+            <div className="py-20 text-center opacity-40">
+               <MessageSquare className="h-16 w-16 mx-auto mb-6 text-slate-300" />
+               <p className="text-xl font-bold uppercase tracking-widest text-slate-500">Zero Pulse Detected</p>
+            </div>
+          ) : (
+            <div className="grid gap-8 sm:grid-cols-2 text-left">
+              {ratings.map((r: CourseRating) => (
+                <div key={r.id} className="p-8 rounded-[2rem] bg-slate-50 border border-slate-100 group hover:bg-white hover:shadow-2xl hover:border-transparent transition-all duration-500">
+                  <div className="flex items-center gap-5 mb-6">
+                    <Avatar className="h-14 w-14 border-4 border-white shadow-xl">
+                        <AvatarImage src={r.user_avatar} />
+                        <AvatarFallback className="bg-primary/10 text-primary font-black uppercase text-xs">{r.user_name?.slice(0, 2)}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                       <h5 className="font-black text-xl text-slate-900 truncate">{r.user_name}</h5>
+                       <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] truncate">{r.course_title}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-1 mb-5">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star key={star} className={`h-4 w-4 ${star <= r.rating ? 'text-yellow-400 fill-yellow-400' : 'text-slate-200'}`} />
+                    ))}
+                  </div>
+                  <p className="text-base text-slate-600 font-medium italic leading-relaxed text-left">"{r.review || 'Excellent module architecture. Highly intuitive teaching methodology.'}"</p>
+                  <div className="flex items-center justify-between mt-8 pt-6 border-t border-slate-200/50">
+                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{new Date(r.created_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                     <Badge className="bg-emerald-500 text-white border-none text-[8px] font-black uppercase px-3 h-5 flex items-center gap-1 rounded-full">
+                        Pulsar Verified
+                     </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+interface LiveClass {
+  id: string;
+  topic: string;
+  scheduled_at: string;
+  duration_minutes: number;
+  status: string;
+  [key: string]: unknown;
+}
+
+// ─── Active Sessions Component ───────────────────────────────────────────────
+function ActiveSessions() {
+  const [sessions, setSessions] = useState<LiveClass[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchSessions = async () => {
+    try {
+      const data = await fetchWithAuth('/data/live_classes?status=eq.live') as LiveClass[];
+      setSessions(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSessions();
+  }, []);
+
+  if (loading) return (
+    <>
+      {[1, 2, 3].map(i => (
+        <div key={i} className="h-40 bg-slate-100 animate-pulse rounded-2xl" />
+      ))}
+    </>
+  );
+  
+  if (sessions.length === 0) return null;
+
+  return (
+    <>
+      {sessions.map((s: LiveClass) => (
+        <div key={s.id} className="p-6 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-500">
+                <Video className="h-7 w-7" />
+            </div>
+            <div className="min-w-0">
+              <h5 className="font-black text-slate-900 group-hover:text-primary transition-colors truncate">{s.topic}</h5>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Broadcast</p>
+            </div>
+          </div>
+          <Button 
+            className="w-full bg-slate-900 hover:bg-black text-white rounded-xl h-12 text-xs font-bold shadow-lg" 
+            onClick={() => window.location.href='/instructor/live-classes'}
+          >
+            Enter Session Room
+          </Button>
+        </div>
+      ))}
+    </>
+  );
+}
+
 // ─── Welcome Component ────────────────────────────────────────────────────────
-function WelcomeBanner({ name, stats }: { name: string, stats?: DashboardStats }) {
+function WelcomeBanner({ 
+  name, 
+  stats, 
+  navigate 
+}: { 
+  name: string, 
+  stats?: DashboardStats, 
+  navigate: (path: string) => void 
+}) {
   const hour = new Date().getHours();
   const greeting =
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   // Dynamic stats
   const studentCount = stats?.totalStudents || 0;
-  const upcomingCount = stats?.upcomingClasses || 0;
-  const pendingAssignments = stats?.pendingAssignments || 0;
 
   return (
     <motion.div
@@ -81,33 +230,32 @@ function WelcomeBanner({ name, stats }: { name: string, stats?: DashboardStats }
           <Badge className="bg-primary/20 text-blue-400 border-primary/20 font-bold px-3 py-1 rounded-full text-xs uppercase tracking-widest shadow-sm">
             Instructor Hub
           </Badge>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white">
             {greeting},{" "}
-            <span className="text-primary font-black italic">
+            <span className="font-black italic">
               {name.split(" ")[0]}
             </span>
             .
           </h1>
           <p className="text-slate-400 max-w-xl font-medium text-base md:text-lg leading-relaxed">
             Welcome back to your teaching portal. You have{" "}
-            <span className="text-white font-bold">{studentCount} students</span> enrolled in your courses.
-            {pendingAssignments > 0 && (
-              <> There are <span className="text-white font-bold">{pendingAssignments} assignments</span> waiting to be graded.</>
-            )}
-            {upcomingCount > 0 && (
-              <> You have <span className="text-white font-bold">{upcomingCount} classes</span> scheduled for this week.</>
-            )}
+            <span className="text-white font-bold">{studentCount} students</span> enrolled in your courses. 
+            All systems are ready for your next teaching session.
           </p>
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
-          <Button className="pro-button-primary h-12 md:h-14 px-6 md:px-8 w-full sm:w-auto rounded-xl shadow-lg shadow-primary/20 group text-sm md:text-base">
+          <Button 
+            className="pro-button-primary h-12 md:h-14 px-6 md:px-8 w-full sm:w-auto rounded-xl shadow-lg shadow-primary/20 group text-sm md:text-base"
+            onClick={() => navigate('/instructor/courses')}
+          >
             <Plus className="mr-2 h-4 w-4 md:h-5 md:w-5" />
             Create New Course
           </Button>
           <Button
             variant="outline"
             className="h-12 md:h-14 px-6 md:px-8 w-full sm:w-auto rounded-xl bg-white/5 border-white/10 text-white hover:bg-white/10 hover:text-white font-semibold text-sm md:text-base"
+            onClick={() => navigate('/instructor/live-classes')}
           >
             View Schedule
           </Button>
@@ -134,6 +282,12 @@ export default function InstructorDashboard() {
   };
   const { socket } = useSocket();
   const { toast } = useToast();
+  const { data: ratings = [] } = useInstructorRatings();
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+
+  const avgRating = ratings.length > 0 
+    ? (ratings.reduce((acc, r) => acc + (r.rating || 0), 0) / ratings.length).toFixed(1)
+    : "5.0";
 
   useEffect(() => {
     if (socket) {
@@ -185,11 +339,12 @@ export default function InstructorDashboard() {
   const isCourses = path.startsWith("/instructor/courses");
   const isStudents = path === "/instructor/students";
   const isResources = path === "/instructor/resources";
-  const isPerformance = path === "/instructor/performance";
   const isVideos = path === "/instructor/videos";
   const isLiveClasses = path === "/instructor/live-classes";
   const isChat = path === "/instructor/chat";
   const isQuestionBank = path === "/instructor/question-bank";
+  const isExams = path === "/instructor/exams";
+  const isProfile = path === "/instructor/profile";
 
   return (
     <SidebarProvider className="h-screen w-full overflow-hidden mesh-bg font-sans">
@@ -200,7 +355,7 @@ export default function InstructorDashboard() {
         <main className="flex-1 w-full overflow-y-auto overflow-x-hidden p-4 md:p-8 lg:p-10 custom-scrollbar">
           <div className="max-w-7xl mx-auto space-y-10">
             <AnimatePresence mode="wait">
-              {/* ── Dashboard Stats Overlay ────────────────────────────────── */}
+              {/* ── Dashboard Root ─────────────────────────────────────────── */}
               {isRoot && (
                 <motion.div
                   key="dashboard"
@@ -210,8 +365,9 @@ export default function InstructorDashboard() {
                   className="space-y-10"
                 >
                   <WelcomeBanner
-                    name={user?.user_metadata?.full_name || "Instructor"}
+                    name={user?.full_name || user?.user_metadata?.full_name || "Instructor"}
                     stats={stats}
+                    navigate={navigate}
                   />
 
                   <InstructorStats
@@ -220,73 +376,55 @@ export default function InstructorDashboard() {
                     loading={statsLoading || coursesLoading}
                   />
 
-                  <div className="grid gap-6 lg:gap-10 xl:grid-cols-3">
-                    <div className="xl:col-span-2 space-y-6 lg:space-y-10 min-w-0">
-                      <div className="pro-card p-4 sm:p-6 md:p-8 bg-white min-w-0 overflow-hidden">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-                          <div>
-                            <h3 className="text-lg md:text-xl font-bold text-slate-900">
-                              Engagement Overview
-                            </h3>
-                            <p className="text-sm text-slate-500 font-medium">
-                              Trends in student participation and progress.
-                            </p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            className="text-primary font-bold text-sm gap-2 w-full sm:w-auto mt-2 sm:mt-0"
-                          >
-                            Details <ChevronRight className="h-4 w-4" />
-                          </Button>
+                  <div className="space-y-10">
+                    <div className="pro-card p-1 bg-white min-w-0 overflow-hidden mt-6 lg:mt-10 border-slate-200 shadow-md">
+                      <div className="p-6 sm:p-10 md:p-12 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-slate-50/30">
+                        <div className="space-y-2">
+                           <h3 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
+                              Featured & Recent Curricula
+                           </h3>
+                           <p className="text-sm font-bold text-slate-400 mt-1">Manage and oversee your latest course developments</p>
+                           
+                           <div className="group relative flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-100 shadow-sm w-fit mt-3 animate-in fade-in slide-in-from-left-2 duration-700">
+                             <div className="flex gap-0.5">
+                               {[1, 2, 3, 4, 5].map((star) => (
+                                 <Star key={star} className={`h-3 w-3 ${star <= Math.round(Number(avgRating)) ? 'text-amber-400 fill-amber-400' : 'text-slate-200'}`} />
+                               ))}
+                             </div>
+                             <span className="text-[10px] font-black text-amber-700 uppercase tracking-tighter">
+                               {avgRating} Average Peer Rating
+                             </span>
+                             <button
+                               onClick={() => setIsFeedbackOpen(true)}
+                               className="ml-2 h-6 w-6 rounded-full bg-amber-400 flex items-center justify-center text-white hover:bg-amber-500 transition-colors shadow-sm"
+                               title="View Detailed Student Pulse"
+                             >
+                               <Eye className="h-3 w-3" />
+                             </button>
+                           </div>
+                           
+                           <FeedbackModal 
+                             ratings={ratings} 
+                             isOpen={isFeedbackOpen} 
+                             onOpenChange={setIsFeedbackOpen} 
+                           />
                         </div>
-                        <div className="h-[250px] sm:h-[300px] md:h-[350px] w-full mt-2">
-                          <PerformanceCharts loading={statsLoading} />
-                        </div>
+                        <Badge variant="secondary" className="w-fit bg-primary/10 text-primary border-none text-[12px] uppercase font-black tracking-widest px-4 py-2 rounded-lg">
+                          {courses.length} Total Curricula
+                        </Badge>
                       </div>
-
-                      <div className="pro-card p-1 bg-white min-w-0 overflow-hidden mt-6 lg:mt-10">
-                        <div className="p-4 sm:p-6 md:p-8 border-b border-slate-100">
-                          <h3 className="text-lg md:text-xl font-bold text-slate-900">
-                            Recent Courses
-                          </h3>
-                        </div>
-                        <InstructorCourses limit={3} hideHeader />
+                      <div className="overflow-x-auto w-full custom-scrollbar pb-6">
+                         <div className="min-w-[800px] lg:min-w-0 p-6 md:p-10 lg:p-14">
+                           <InstructorCourses limit={6} hideHeader />
+                         </div>
                       </div>
                     </div>
 
-                    <div className="space-y-6 lg:space-y-8 min-w-0">
-                      <SmartAlerts />
 
-                      <div className="pro-card p-4 sm:p-6 md:p-8 bg-gradient-to-br from-slate-50 to-white hover:bg-white cursor-pointer transition-all border-slate-200 min-w-0">
-                        <h4 className="text-xs md:text-sm font-bold text-primary uppercase tracking-widest mb-4 md:mb-6">
-                          Active Sessions
-                        </h4>
-                        <div className="space-y-6">
-                          {[1, 2].map((i) => (
-                            <div
-                              key={i}
-                              className="flex items-start gap-4 p-4 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100"
-                            >
-                              <div className="h-10 w-10 shrink-0 bg-blue-50 rounded-lg flex items-center justify-center">
-                                <Video className="h-5 w-5 text-primary" />
-                              </div>
-                              <div className="space-y-1">
-                                <p className="text-sm font-bold text-slate-800">
-                                  Advanced React Patterns
-                                </p>
-                                <div className="flex items-center gap-3 text-xs text-slate-500 font-bold">
-                                  <span className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3" /> 2:30 PM
-                                  </span>
-                                  <span className="flex items-center gap-1 text-emerald-600">
-                                    <Users className="h-3 w-3" /> 42 Online
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+
+                    {/* Active Sessions */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-10">
+                       <ActiveSessions />
                     </div>
                   </div>
                 </motion.div>
@@ -329,15 +467,6 @@ export default function InstructorDashboard() {
                   <ResourcesDashboard />
                 </motion.div>
               )}
-              {isPerformance && (
-                <motion.div
-                  key="performance"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                >
-                  <PerformanceDashboard />
-                </motion.div>
-              )}
               {isVideos && (
                 <motion.div
                   key="videos"
@@ -372,6 +501,24 @@ export default function InstructorDashboard() {
                   animate={{ opacity: 1 }}
                 >
                   <QuestionBankManager mode="instructor" />
+                </motion.div>
+              )}
+              {isExams && (
+                <motion.div
+                  key="exams"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <ExamScheduler />
+                </motion.div>
+              )}
+              {isProfile && (
+                <motion.div
+                  key="profile"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <UserProfile />
                 </motion.div>
               )}
             </AnimatePresence>

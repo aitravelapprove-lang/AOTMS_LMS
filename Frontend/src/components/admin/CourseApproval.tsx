@@ -6,6 +6,8 @@ import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   BookOpen,
   Eye,
@@ -37,6 +39,7 @@ interface CourseApprovalProps {
   onApprove: (courseId: string) => Promise<boolean>;
   onReject: (courseId: string, reason: string) => Promise<boolean>;
   onUpdateStatus?: (courseId: string, status: string) => Promise<boolean>;
+  onToggleActive?: (courseId: string, isActive: boolean) => Promise<boolean>;
 }
 
 export function CourseApproval({
@@ -44,7 +47,8 @@ export function CourseApproval({
   loading,
   onApprove,
   onReject,
-  onUpdateStatus
+  onUpdateStatus,
+  onToggleActive
 }: CourseApprovalProps) {
   const [filter, setFilter] = useState<'pending' | 'approved' | 'rejected' | 'draft' | 'all'>('pending');
 
@@ -228,6 +232,22 @@ export function CourseApproval({
                     } className="text-[9px] h-4 px-1">
                       {course.status || 'draft'}
                     </Badge>
+                    {onToggleActive && (
+                      <div className="flex items-center gap-1.5 ml-2">
+                        <Switch 
+                          id={`active-toggle-${course.id}`}
+                          checked={course.is_active !== false}
+                          onCheckedChange={(checked) => onToggleActive(course.id, checked)}
+                          className="h-4 w-7 scale-75 data-[state=checked]:bg-green-600"
+                        />
+                        <Label 
+                          htmlFor={`active-toggle-${course.id}`}
+                          className={`text-[8px] font-bold uppercase tracking-wider ${course.is_active !== false ? 'text-green-600' : 'text-muted-foreground'}`}
+                        >
+                          {course.is_active !== false ? 'Active' : 'Inactive'}
+                        </Label>
+                      </div>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground truncate">
                     by {course.instructor_name || 'Unknown'} • <Clock className="h-3 w-3 inline" /> {formatDate(course.submitted_at || course.created_at)}

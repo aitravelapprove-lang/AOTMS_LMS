@@ -29,6 +29,7 @@ import {
   KeyRound,
   GraduationCap,
   BookOpen,
+  User,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useAuth } from "@/hooks/useAuth";
@@ -40,6 +41,7 @@ interface ManagerSidebarProps {
 
 const examManagementItems = [
   { id: "overview", title: "Dashboard", icon: LayoutDashboard },
+  { id: "profile", title: "My Profile", icon: User },
   { id: "exams", title: "Exam Scheduling", icon: Calendar },
   { id: "questions", title: "Question Bank", icon: FileQuestion },
 ];
@@ -130,15 +132,6 @@ export function ManagerSidebar({
 
       <SidebarFooter className="p-4 group-data-[collapsible=icon]:p-2 border-t border-slate-200/60 !bg-white/70">
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              onClick={() => onSectionChange("settings")}
-              className="flex items-center gap-3 cursor-pointer justify-start group-data-[collapsible=icon]:justify-center"
-            >
-              <Settings className="h-5 w-5 shrink-0" />
-              {!collapsed && <span>Settings</span>}
-            </SidebarMenuButton>
-          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton
               onClick={signOut}

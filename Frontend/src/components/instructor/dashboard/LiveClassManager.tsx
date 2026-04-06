@@ -184,9 +184,6 @@ export function LiveClassManager() {
                                                 >
                                                     <Play className="w-4 h-4 mr-2" /> Start Meeting
                                                 </Button>
-                                                <Button variant="outline" size="icon" className="group-hover:border-primary/50">
-                                                    <Settings className="w-4 h-4" />
-                                                </Button>
                                             </div>
                                         </CardContent>
                                     </Card>

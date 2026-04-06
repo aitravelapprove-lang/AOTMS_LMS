@@ -228,15 +228,7 @@ const Header = () => {
                       <span className="font-bold">Dashboard</span>
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    asChild
-                    className="cursor-pointer focus:bg-[#0075CF]/10 focus:text-[#0075CF]"
-                  >
-                    <Link to="/settings" className="flex items-center gap-2">
-                      <Settings className="h-4 w-4" />
-                      <span className="font-bold">Settings</span>
-                    </Link>
-                  </DropdownMenuItem>
+
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={handleSignOut}
@@ -401,18 +393,7 @@ const Header = () => {
                           </Link>
                         </Button>
                       </SheetClose>
-                      <SheetClose asChild>
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-start"
-                          asChild
-                        >
-                          <Link to="/settings">
-                            <Settings className="h-4 w-4 mr-2" />
-                            Settings
-                          </Link>
-                        </Button>
-                      </SheetClose>
+
                       <Button
                         variant="ghost"
                         className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"

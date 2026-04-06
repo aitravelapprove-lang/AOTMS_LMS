@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Play, BookOpen, Clock, Sparkles, ChevronRight, LayoutGrid } from "lucide-react";
+import { Play, BookOpen, Clock, Sparkles, ChevronRight, LayoutGrid, CreditCard } from "lucide-react";
 import { useEnrolledCourses, useAvailableCourses, StudentCourse } from "@/hooks/useStudentData";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -91,7 +91,7 @@ export function CourseList({ type = 'enrolled', onSelectCourse }: CourseListProp
                                         <Badge variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-md">
                                             {course.category || 'Course'}
                                         </Badge>
-                                        {type === 'enrolled' && course.enrollmentStatus && (
+                                        {(type === 'enrolled' || course.enrollmentStatus) && course.enrollmentStatus && (
                                             <Badge 
                                                 variant="secondary" 
                                                 className={`border-none backdrop-blur-md gap-1 ${
@@ -100,11 +100,11 @@ export function CourseList({ type = 'enrolled', onSelectCourse }: CourseListProp
                                                     'bg-red-500/80 hover:bg-red-500 text-white'
                                                 }`}
                                             >
-                                                {course.enrollmentStatus === 'active' ? 'Approved' : 
+                                                {course.enrollmentStatus === 'active' ? (type === 'available' ? 'Enrolled' : 'Approved') : 
                                                  course.enrollmentStatus === 'pending' ? 'Pending' : 'Rejected'}
                                             </Badge>
                                         )}
-                                        {course.status === 'published' && type === 'available' && (
+                                        {course.status === 'published' && type === 'available' && !course.enrollmentStatus && (
                                             <Badge variant="secondary" className="bg-green-500/80 hover:bg-green-500 text-white border-none backdrop-blur-md gap-1">
                                                 <Sparkles className="h-3 w-3" /> New
                                             </Badge>
@@ -159,6 +159,24 @@ export function CourseList({ type = 'enrolled', onSelectCourse }: CourseListProp
                                             </div>
                                         ) : (
                                             <>
+                                                <div className="flex justify-between text-[11px] font-bold mb-1">
+                                                    <span className="text-slate-500 uppercase tracking-tighter">Payment Status</span>
+                                                    <span className="text-primary font-black uppercase">
+                                                        {course.payment_term === 'term1' ? '1st Term' : course.payment_term === 'term2' ? '2nd Term' : 'Paid in Full'}
+                                                    </span>
+                                                </div>
+                                                {course.remaining_balance ? (
+                                                    <div className="text-[10px] text-amber-600 bg-amber-50 px-2 py-1 rounded-md border border-amber-100 flex justify-between items-center mb-3">
+                                                       <span className="font-bold flex items-center gap-1"><CreditCard className="h-3 w-3" /> Remaining:</span>
+                                                       <span className="font-black">₹{course.remaining_balance.toLocaleString('en-IN')}</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100 flex justify-between items-center mb-3">
+                                                       <span className="font-bold">✨ Clear</span>
+                                                       <span className="font-black">Fully Covered</span>
+                                                    </div>
+                                                )}
+
                                                 <div className="flex justify-between text-sm font-bold">
                                                     <span className="text-foreground">Course Progress</span>
                                                     <span className="text-primary">{course.progress || 0}%</span>
@@ -169,28 +187,59 @@ export function CourseList({ type = 'enrolled', onSelectCourse }: CourseListProp
                                     </div>
                                 ) : (
                                     <div className="mt-auto space-y-4">
-                                        <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100/50">
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Value</span>
-                                                <span className="text-sm line-through text-slate-500">₹{course.original_price || "00,000"}</span>
+                                        {course.enrollmentStatus === 'active' ? (
+                                            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 text-center">
+                                                <p className="text-xs font-bold text-emerald-700">You are enrolled in this course.</p>
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="sm" 
+                                                    className="mt-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 font-bold"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onSelectCourse && onSelectCourse(course);
+                                                    }}
+                                                >
+                                                    View Content <ChevronRight className="h-3 w-3 ml-1" />
+                                                </Button>
                                             </div>
-                                            <div className="text-right">
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-primary">Investment</span>
-                                                <p className="text-lg font-black text-slate-900 leading-none mt-0.5">
-                                                    {course.price === 0 ? "Free Access" : (course.price ? `₹${course.price.toLocaleString('en-IN')}` : "Contact Us")}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <Button
-                                            className="w-full group/btn pro-button-primary"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (onSelectCourse) onSelectCourse(course);
-                                            }}
-                                        >
-                                            Purchase Course
-                                            <ChevronRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
-                                        </Button>
+                                        ) : (
+                                            <>
+                                                <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100/50">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Value</span>
+                                                        <span className="text-sm line-through text-slate-500">₹{course.original_price || "00,000"}</span>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-primary">Full Investment</span>
+                                                        <p className="text-[16px] font-black text-slate-900 leading-none mt-0.5">
+                                                            {course.price === 0 ? "Free Access" : (course.price ? `₹${course.price.toLocaleString('en-IN')}` : "Contact Us")}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* Term Breakdown (60/40) */}
+                                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                                    <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-100/50 flex flex-col items-center">
+                                                        <span className="text-[8px] font-black uppercase tracking-widest text-blue-400">1st Term (60%)</span>
+                                                        <span className="text-sm font-black text-blue-700">₹{Math.round((course.price || 0) * 0.6).toLocaleString('en-IN')}</span>
+                                                    </div>
+                                                    <div className="p-2.5 rounded-xl bg-purple-50 border border-purple-100/50 flex flex-col items-center">
+                                                        <span className="text-[8px] font-black uppercase tracking-widest text-purple-400">2nd Term (40%)</span>
+                                                        <span className="text-sm font-black text-purple-700">₹{Math.round((course.price || 0) * 0.4).toLocaleString('en-IN')}</span>
+                                                    </div>
+                                                </div>
+                                                <Button
+                                                    className="w-full group/btn pro-button-primary"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (onSelectCourse) onSelectCourse(course);
+                                                    }}
+                                                >
+                                                    Purchase Course
+                                                    <ChevronRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
+                                                </Button>
+                                            </>
+                                        )}
                                     </div>
                                 )}
                             </CardContent>

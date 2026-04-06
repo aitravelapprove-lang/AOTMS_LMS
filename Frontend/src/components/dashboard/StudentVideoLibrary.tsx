@@ -18,9 +18,11 @@ import {
     BookOpen, 
     MonitorPlay,
     Filter,
-    CheckCircle2
+    CheckCircle2,
+    Star
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { RatingModal } from './RatingModal';
 
 interface VideoProgress {
     video_id: string;
@@ -34,6 +36,7 @@ export default function StudentVideoLibrary() {
     const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [playingVideo, setPlayingVideo] = useState<S3CourseVideo | null>(null);
+    const [ratingOpen, setRatingOpen] = useState(false);
 
     // Progress Tracking Refs
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -93,6 +96,9 @@ export default function StudentVideoLibrary() {
             watchedSeconds: Math.floor(videoRef.current.duration),
             totalSeconds: Math.floor(videoRef.current.duration)
         });
+
+        // Trigger Rating Modal
+        setRatingOpen(true);
     };
 
     const handlePause = () => {
@@ -164,6 +170,12 @@ export default function StudentVideoLibrary() {
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
+            <RatingModal 
+                isOpen={ratingOpen}
+                onClose={() => setRatingOpen(false)}
+                courseId={selectedCourseId || ''}
+                courseTitle={enrolledCourses?.find(c => c.id === selectedCourseId)?.title || 'Course'}
+            />
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { fetchWithAuth } from "@/lib/api";
 import {
   Card,
   CardContent,
@@ -40,6 +41,11 @@ import {
   Copy,
   Eye,
   Loader2,
+  Github,
+  Briefcase,
+  GraduationCap,
+  Award,
+  Presentation
 } from "lucide-react";
 import type { Profile } from "@/hooks/useAdminData";
 
@@ -78,6 +84,29 @@ export function UserManagement({
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuspendDialog, setShowSuspendDialog] = useState(false);
   const [suspensionDays, setSuspensionDays] = useState("7");
+  interface PerformanceData {
+    enrollments: { course_name: string; progress: number; status: string }[];
+    results: { title: string; score: number; total: number; percentage: number; date: string }[];
+    github_url?: string;
+    resume_url?: string;
+  }
+  const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null);
+  const [loadingPerformance, setLoadingPerformance] = useState(false);
+
+  useEffect(() => {
+    if (showProfileDialog && selectedUser?.id) {
+       setLoadingPerformance(true);
+       fetchWithAuth(`/admin/student-performance/${selectedUser.id}`)
+          .then(data => setPerformanceData(data as PerformanceData))
+          .catch(err => {
+              console.error("Failed to fetch student performance:", err);
+              setPerformanceData(null);
+          })
+          .finally(() => setLoadingPerformance(false));
+    } else {
+       setPerformanceData(null);
+    }
+  }, [showProfileDialog, selectedUser]);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -654,7 +683,7 @@ export function UserManagement({
 
       {/* View Profile Dialog */}
       <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
-        <DialogContent aria-describedby="profile-dialog-description" className="max-w-md">
+        <DialogContent aria-describedby="profile-dialog-description" className="max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Eye className="h-5 w-5 text-primary" />
@@ -734,6 +763,81 @@ export function UserManagement({
                     {selectedUser.created_at ? new Date(selectedUser.created_at).toLocaleDateString() : 'N/A'}
                   </span>
                 </div>
+              </div>
+
+              {/* Performance Section */}
+              <div className="space-y-3 pt-2">
+                 <h4 className="font-semibold flex items-center text-sm">
+                   <Presentation className="h-4 w-4 mr-2 text-primary" /> Performance & Portfolio
+                 </h4>
+                 {loadingPerformance ? (
+                    <div className="flex justify-center p-4"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+                 ) : performanceData ? (
+                    <div className="grid gap-3">
+                       {/* Github & Resume */}
+                       {(performanceData.github_url || performanceData.resume_url) && (
+                          <div className="flex flex-col gap-2 p-3 bg-blue-50/50 rounded-lg border border-blue-100">
+                             {performanceData.github_url && (
+                                <a href={performanceData.github_url} target="_blank" rel="noreferrer" className="flex items-center text-sm text-blue-700 hover:underline">
+                                  <Github className="h-4 w-4 mr-2" /> GitHub Repository
+                                </a>
+                             )}
+                             {performanceData.resume_url && (
+                                <a 
+                                  href={performanceData.resume_url.startsWith('http') 
+                                    ? performanceData.resume_url 
+                                    : `${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api$/, '')}${performanceData.resume_url.startsWith('/') ? '' : '/'}${performanceData.resume_url}`
+                                  } 
+                                  target="_blank" 
+                                  rel="noreferrer" 
+                                  className="flex items-center text-sm text-blue-700 hover:underline"
+                                >
+                                  <Briefcase className="h-4 w-4 mr-2" /> View Resume
+                                </a>
+                             )}
+                          </div>
+                       )}
+
+                       {/* Active Enrollments */}
+                       {performanceData.enrollments.length > 0 && (
+                          <div className="space-y-2">
+                             <span className="text-xs font-semibold text-muted-foreground uppercase">Active Enrollments</span>
+                             {performanceData.enrollments.map((env, i) => (
+                                <div key={i} className="bg-muted p-2 rounded flex justify-between items-center text-sm">
+                                  <div className="flex items-center gap-2 max-w-[70%]">
+                                     <GraduationCap className="h-3 w-3 shrink-0" />
+                                     <span className="truncate" title={env.course_name}>{env.course_name}</span>
+                                  </div>
+                                  <Badge variant={env.progress === 100 ? "default" : "secondary"} className="text-[10px]">
+                                     {env.progress}%
+                                  </Badge>
+                                </div>
+                             ))}
+                          </div>
+                       )}
+
+                       {/* Exam Results */}
+                       {performanceData.results.length > 0 && (
+                          <div className="space-y-2">
+                             <span className="text-xs font-semibold text-muted-foreground uppercase">Recent Assessments</span>
+                             {performanceData.results.map((res, i) => (
+                                <div key={i} className="bg-muted p-2 rounded flex justify-between items-center text-sm">
+                                  <div className="flex items-center gap-2 max-w-[65%]">
+                                     <Award className="h-3 w-3 shrink-0" />
+                                     <span className="truncate" title={res.title}>{res.title}</span>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="font-bold text-[11px]">{res.percentage}%</div>
+                                    <div className="text-[9px] text-muted-foreground">{res.score}/{res.total}</div>
+                                  </div>
+                                </div>
+                             ))}
+                          </div>
+                       )}
+                    </div>
+                 ) : (
+                    <div className="text-sm text-muted-foreground text-center p-3">No performance data found.</div>
+                 )}
               </div>
 
               <div className="flex gap-2 pt-2">

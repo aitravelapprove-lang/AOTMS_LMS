@@ -177,7 +177,7 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
                     </Button>
                 </Card>
             ) : (
-                <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     <AnimatePresence>
                         {courses?.map((course: Course, index: number) => {
                             const isInstructorOwner = course.instructor_id === user?.id;
@@ -190,24 +190,26 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
                             return (
                                 <motion.div
                                     key={course.id || course._id}
+                                    className="relative group h-full"
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, scale: 0.95 }}
                                     transition={{ delay: index * 0.1 }}
                                 >
+                                    <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/10 to-accent/10 rounded-[2rem] blur opacity-0 group-hover:opacity-100 transition duration-500"></div>
                                     <Card 
                                         className={cn(
-                                            "overflow-hidden h-full flex flex-col transition-all group",
-                                            isInstructorApproved ? "hover:border-primary/50 cursor-pointer shadow-sm hover:shadow-md" : "opacity-90 grayscale-[0.3]"
+                                            "pro-card relative flex flex-col h-full overflow-hidden cursor-pointer",
+                                            isInstructorApproved ? "" : "opacity-90 grayscale-[0.3]"
                                         )} 
                                         onClick={() => isInstructorApproved && setViewingCourse(course)}
                                     >
-                                        <div className="relative aspect-video bg-muted border-b">
+                                        <div className="aspect-[16/10] relative overflow-hidden bg-muted border-b">
                                             {course.thumbnail_url || course.image ? (
                                                 <img
                                                     src={(course.thumbnail_url || course.image).startsWith('http') ? (course.thumbnail_url || course.image) : `${API_URL}/s3/public/${course.thumbnail_url}`}
                                                     alt={course.title}
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                    className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-700 ease-in-out"
                                                     onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=2070&auto=format&fit=crop'; }}
                                                 />
                                             ) : (
@@ -215,23 +217,28 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
                                                     <PlayCircle className="h-12 w-12 text-muted-foreground/30" />
                                                 </div>
                                             )}
-                                            <div className="absolute top-3 left-3 flex gap-2">
-                                                <Badge className="bg-primary/90 backdrop-blur-md">
-                                                    {course.category}
-                                                </Badge>
-                                                {isInstructorOwner && (
-                                                    <Badge variant={
-                                                        (course.status?.toLowerCase() === 'approved' || course.status?.toLowerCase() === 'published') ? 'default' :
-                                                            course.status?.toLowerCase() === 'pending' ? 'secondary' :
-                                                                course.status?.toLowerCase() === 'rejected' ? 'destructive' : 'outline'
-                                                    } className="text-[10px]">
-                                                        {course.status === 'published' ? 'Published' : course.status === 'pending' ? 'Pending Review' : course.status === 'rejected' ? 'Rejected' : course.status === 'draft' ? 'Draft' : course.status || 'Active'}
+                                            
+                                            {/* Gradient overlay for badges */}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-5 opacity-80 group-hover:opacity-100 transition-opacity">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <Badge variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-md">
+                                                        {course.category}
                                                     </Badge>
-                                                )}
+                                                    {isInstructorOwner && (
+                                                        <Badge variant="secondary" className={cn(
+                                                            "border-none backdrop-blur-md gap-1 text-[10px]",
+                                                            (course.status?.toLowerCase() === 'approved' || course.status?.toLowerCase() === 'published') ? 'bg-green-500/80 hover:bg-green-500 text-white' :
+                                                                course.status?.toLowerCase() === 'pending' ? 'bg-amber-500/80 hover:bg-amber-500 text-white' :
+                                                                    course.status?.toLowerCase() === 'rejected' ? 'bg-red-500/80 hover:bg-red-500 text-white' : 'bg-slate-500/80 hover:bg-slate-500 text-white'
+                                                        )}>
+                                                            {course.status === 'published' ? 'Published' : course.status === 'pending' ? 'Pending Review' : course.status === 'rejected' ? 'Rejected' : course.status === 'draft' ? 'Draft' : course.status || 'Active'}
+                                                        </Badge>
+                                                    )}
+                                                </div>
                                             </div>
                                             
                                             {isInstructorOwner && (
-                                                <div className="absolute top-3 right-3" onClick={(e) => e.stopPropagation()}>
+                                                <div className="absolute top-3 right-3 z-10" onClick={(e) => e.stopPropagation()}>
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
                                                             <Button variant="ghost" size="icon" className="h-8 w-8 bg-black/30 hover:bg-black/50 text-white rounded-full">

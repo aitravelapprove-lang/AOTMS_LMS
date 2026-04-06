@@ -112,6 +112,21 @@ export interface AdminStats {
   roleCounts: Record<string, number>;
 }
 
+interface SummaryData {
+  users: number;
+  courses: number;
+  activeCourses: number;
+  enrollments: number;
+  questionBanks: number;
+  exams: number;
+  securityEvents: number;
+  pendingCourses: number;
+  pendingEnrollments: number;
+  pendingExams: number;
+  highPriorityEvents: number;
+  roleCounts: Record<string, number>;
+}
+
 export function useAdminData(userRole?: string | null) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -144,14 +159,15 @@ export function useAdminData(userRole?: string | null) {
       fetchWithAuth('/admin/data-summary')
         .then(summaryData => {
           if (summaryData) {
+            const data = summaryData as SummaryData;
             setStats({
-              totalUsers: summaryData.users || 0,
-              activeCourses: (summaryData.courses || 0) - (summaryData.pendingCourses || 0),
-              pendingCourses: summaryData.pendingCourses || 0,
-              pendingEnrollments: summaryData.pendingEnrollments || 0,
-              securityEvents: summaryData.securityEvents || 0,
-              highPriorityEvents: summaryData.highPriorityEvents || 0,
-              roleCounts: summaryData.roleCounts || {}
+              totalUsers: data.users || 0,
+              activeCourses: data.activeCourses || 0,
+              pendingCourses: data.pendingCourses || 0,
+              pendingEnrollments: data.pendingEnrollments || 0,
+              securityEvents: data.securityEvents || 0,
+              highPriorityEvents: data.highPriorityEvents || 0,
+              roleCounts: data.roleCounts || {}
             });
           }
         }).catch(err => console.error('Summary Fetch Error:', err));
@@ -316,7 +332,7 @@ export function useAdminData(userRole?: string | null) {
 
   const deleteEnrollment = async (enrollmentId: string) => {
     try {
-      await fetchWithAuth(`/data/course_enrollments/${enrollmentId}`, { method: 'DELETE' });
+      await fetchWithAuth(`/courses/enrollment/${enrollmentId}`, { method: 'DELETE' });
       toast({ title: 'Deleted', description: 'Enrollment removed' });
       fetchAllData();
       return true;
@@ -352,7 +368,7 @@ export function useAdminData(userRole?: string | null) {
 
   const resolveSecurityEvent = async (eventId: string) => {
     try {
-      const resp = await fetchWithAuth('/user/profile');
+      const resp = await fetchWithAuth('/user/profile') as any;
       await fetchWithAuth(`/data/security_events/${eventId}`, {
         method: 'PUT',
         body: JSON.stringify({ resolved: true, resolved_at: new Date().toISOString(), resolved_by: resp.user?.id || resp.id })
@@ -378,6 +394,21 @@ export function useAdminData(userRole?: string | null) {
     }
   };
 
+  const toggleCourseActive = async (courseId: string, isActive: boolean) => {
+    try {
+      await fetchWithAuth('/admin/toggle-course-active', {
+        method: 'PUT',
+        body: JSON.stringify({ courseId, is_active: isActive })
+      });
+      toast({ title: 'Success', description: `Course ${isActive ? 'activated' : 'deactivated'}` });
+      fetchAllData();
+      return true;
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to toggle status', variant: 'destructive' });
+      return false;
+    }
+  };
+
   return {
     loading,
     profiles,
@@ -399,7 +430,8 @@ export function useAdminData(userRole?: string | null) {
     rejectCourse,
     updateCourseStatus,
     updateCoursePrice,
-    deleteExamResult
+    deleteExamResult,
+    toggleCourseActive
   };
 }
 
@@ -410,7 +442,7 @@ export function useLiveMonitoring() {
   const fetchData = useCallback(async () => {
     try {
       const resp = await fetchWithAuth('/admin/live-monitoring');
-      setData(resp);
+      setData(resp as any);
     } catch (err) {
       console.error('Failed to fetch monitoring data', err);
     } finally {

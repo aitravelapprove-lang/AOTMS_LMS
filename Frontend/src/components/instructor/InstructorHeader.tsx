@@ -21,13 +21,15 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
+import { useNotifications } from "@/hooks/useNotifications";
 import { useNavigate } from "react-router-dom";
 
 export function InstructorHeader() {
   const { user, signOut } = useAuth();
+  const { unreadCount } = useNotifications();
   const navigate = useNavigate();
   const initials =
-    user?.user_metadata?.full_name
+    (user?.full_name || user?.user_metadata?.full_name)
       ?.split(" ")
       .map((n: string) => n[0])
       .join("")
@@ -54,13 +56,16 @@ export function InstructorHeader() {
           <Button
             variant="ghost"
             size="icon"
+            onClick={() => navigate("/instructor/notifications")}
             className="h-11 w-11 rounded-2xl bg-primary/5 border border-primary/10 hover:bg-primary/10 hover:border-primary/20 transition-all hover:scale-105 active:scale-95 group overflow-hidden"
           >
             <Bell className="h-5 w-5 text-primary group-hover:rotate-12 transition-transform" />
           </Button>
-          <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-accent border-4 border-white text-[9px] font-black text-white flex items-center justify-center shadow-glow-orange animate-bounce">
-            3
-          </span>
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-accent border-4 border-white text-[9px] font-black text-white flex items-center justify-center shadow-glow-orange animate-bounce">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
         </div>
 
         <div className="h-8 w-px bg-black/5 mx-1" />
@@ -74,7 +79,7 @@ export function InstructorHeader() {
             >
               <div className="relative">
                 <Avatar className="h-11 w-11 border-2 border-primary/20 group-hover:border-primary/50 transition-all duration-500 shadow-sm">
-                  <AvatarImage src={user?.user_metadata?.avatar_url} />
+                  <AvatarImage src={user?.avatar_url || user?.user_metadata?.avatar_url} />
                   <AvatarFallback className="bg-primary text-white font-black text-xs uppercase tracking-tighter">
                     {initials}
                   </AvatarFallback>
@@ -85,7 +90,7 @@ export function InstructorHeader() {
               </div>
               <div className="hidden md:block text-left space-y-0.5">
                 <p className="text-sm font-black text-foreground group-hover:text-primary transition-colors tracking-tight uppercase italic">
-                  {user?.user_metadata?.full_name?.toUpperCase() ||
+                  {(user?.full_name || user?.user_metadata?.full_name)?.toUpperCase() ||
                     "INSTRUCTOR"}
                 </p>
                 <div className="flex items-center gap-1.5 opacity-50 group-hover:opacity-100 transition-opacity">
@@ -108,22 +113,14 @@ export function InstructorHeader() {
               </span>
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-black/5" />
-            <DropdownMenuItem className="h-11 rounded-xl px-4 text-xs font-black uppercase tracking-widest gap-4 hover:bg-primary/5 transition-all text-foreground/90 hover:text-primary">
-              <User className="h-4 w-4" />
-              Teaching Identity
-            </DropdownMenuItem>
-            <DropdownMenuItem className="h-11 rounded-xl px-4 text-xs font-black uppercase tracking-widest gap-4 hover:bg-primary/5 transition-all text-foreground/90 hover:text-primary">
-              <Settings className="h-4 w-4" />
-              Pedagogy Config
-            </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-black/5" />
             <DropdownMenuItem
-              onClick={() => navigate("/student-dashboard")}
-              className="h-11 rounded-xl px-4 text-xs font-black uppercase tracking-widest gap-4 hover:bg-primary/5 transition-all text-primary"
+              onClick={() => navigate("/instructor/profile")}
+              className="h-11 rounded-xl px-4 text-xs font-black uppercase tracking-widest gap-4 text-slate-700 hover:bg-slate-100 transition-all font-sans"
             >
               <User className="h-4 w-4" />
-              Student Console
+              Manage Profile
             </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-black/5" />
             <DropdownMenuItem
               onClick={signOut}
               className="h-11 rounded-xl px-4 text-xs font-black uppercase tracking-widest gap-4 text-destructive hover:bg-destructive/10 transition-all"

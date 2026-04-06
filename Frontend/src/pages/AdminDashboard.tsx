@@ -16,12 +16,14 @@ import { InstructorManagement } from "@/components/admin/InstructorManagement";
 import { ExamApproval } from "@/components/admin/ExamApproval";
 import { EnrollmentsList } from "@/components/admin/EnrollmentsList";
 import { GrantStudentAccess } from "@/components/admin/GrantStudentAccess";
+import { ResumeScanHistory } from "@/components/admin/ResumeScanHistory";
 import { LiveMonitoring } from "@/components/admin/LiveMonitoring";
 import InstructorCoursesAdmin from "@/pages/InstructorCourses";
 import { ExamScheduler } from "@/components/manager/ExamScheduler";
 import { QuestionBankManager } from "@/components/manager/QuestionBankManager";
 import { LeaderboardManager } from "@/components/manager/LeaderboardManager";
 import { ManagerVideoLibrary } from "@/components/manager/ManagerVideoLibrary";
+import { UserProfile } from "@/components/dashboard/UserProfile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChatMonitor } from "@/components/admin/ChatMonitor";
+import { LeadManagement } from "@/components/admin/LeadManagement";
 import {
   Users,
   Shield,
@@ -59,14 +62,19 @@ import {
   Video as VideoIcon,
   Database,
   Ticket,
-  Gift
+  Gift,
+  Power,
+  Layers,
+  Zap
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { CouponManager } from "@/components/admin/CouponManager";
 import { useSocket } from "@/hooks/useSocket";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Course as InstructorCourse } from "@/hooks/useInstructorData";
 import { Course as CatalogCourse } from "@/hooks/useCourses";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { CourseBuilder } from "@/components/instructor/courses/CourseBuilder";
 
 import { Course as AdminCourse } from "@/hooks/useAdminData";
 
@@ -77,13 +85,17 @@ function AllCoursesList({
   loading, 
   onDelete, 
   onView, 
-  onUpdatePrice 
+  onViewSyllabus,
+  onUpdatePrice,
+  onToggleActive
 }: { 
   courses: AdminCourse[], 
   loading: boolean,
   onDelete?: (id: string) => void, 
   onView?: (course: AdminCourse) => void,
-  onUpdatePrice?: (id: string, price: string) => void 
+  onViewSyllabus?: (course: AdminCourse) => void,
+  onUpdatePrice?: (id: string, price: string) => void,
+  onToggleActive?: (id: string, isActive: boolean) => void
 }) {
   const [editingPrice, setEditingPrice] = useState<{ id: string, title: string, price: string } | null>(null);
   const [newPrice, setNewPrice] = useState("");
@@ -186,6 +198,18 @@ function AllCoursesList({
                   </span>
                 </div>
 
+                {/* Active Toggle */}
+                <div className="absolute top-3 left-3 z-10 flex items-center gap-2 bg-white/90 backdrop-blur-md px-2 py-1 rounded-full shadow-sm border border-slate-200/50 transition-opacity whitespace-nowrap">
+                  <Switch 
+                    checked={course.is_active !== false} 
+                    onCheckedChange={(checked) => onToggleActive?.(course.id, checked)}
+                    className="scale-75 data-[state=checked]:bg-emerald-500"
+                  />
+                  <span className={`text-[9px] font-black uppercase tracking-tighter ${course.is_active !== false ? 'text-emerald-600' : 'text-slate-400'}`}>
+                    {course.is_active !== false ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+
                 {/* Quick Actions (Hover) */}
                 <div className="absolute bottom-3 right-3 flex gap-2 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 z-10">
                   {onView && (
@@ -263,6 +287,15 @@ function AllCoursesList({
                         <span>₹{course.price}</span>
                       )}
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-primary hover:bg-primary/5 rounded-full"
+                      onClick={() => onViewSyllabus?.(course)}
+                      title="Manage Syllabus"
+                    >
+                      <Layers className="h-4 w-4" />
+                    </Button>
                     <Button 
                       variant="ghost" 
                       size="icon" 
@@ -332,6 +365,7 @@ export default function AdminDashboard() {
   const adminData = useAdminData(userRole);
   const [selectedCourseDetail, setSelectedCourseDetail] = useState<CombinedCourse | null>(null);
   const [showCourseDetail, setShowCourseDetail] = useState(false);
+  const [buildingCourse, setBuildingCourse] = useState<CombinedCourse | null>(null);
   const {
     loading: dataLoading,
     profiles,
@@ -446,6 +480,8 @@ export default function AdminDashboard() {
         "/admin/question-repository": "question-repository",
         "/admin/live-monitoring": "live-monitoring",
         "/admin/coupons": "coupons",
+        "/admin/leads": "leads",
+        "/admin/profile": "profile",
       };
     const path = location.pathname;
     const tab = tabUrlMap[path];
@@ -511,6 +547,16 @@ export default function AdminDashboard() {
         </div>
       </div>
     );
+  }
+
+  if (buildingCourse) {
+      return (
+        <div className="min-h-screen bg-slate-50 relative">
+          <div className="p-8 max-w-7xl mx-auto">
+             <CourseBuilder course={buildingCourse as InstructorCourse} onBack={() => setBuildingCourse(null)} />
+          </div>
+        </div>
+      );
   }
 
   return (
@@ -634,6 +680,7 @@ export default function AdminDashboard() {
                       { id: "enrollments", label: "Student Enrollments", icon: GraduationCap, key: "tab-enrollments" },
                       { id: "coupons", label: "Rewards & Coupons", icon: Ticket, key: "tab-coupons" },
                       { id: "grant-access", label: "Grant Access", icon: UserCheck, key: "tab-grant-access" },
+                      { id: "resume-scans", label: "Resume Scans", icon: ClipboardList, key: "tab-resume-scans" },
                       { id: "instructor-courses", label: "Instructor Courses", icon: BookOpen, key: "tab-instructor-courses" },
                       { id: "all-courses", label: "All Courses", icon: LayoutGrid, key: "tab-all-courses" },
                       {
@@ -652,6 +699,7 @@ export default function AdminDashboard() {
                       { id: "exam-scheduling", label: "Exam Scheduling", icon: Calendar, key: "tab-exam-scheduling" },
                       { id: "question-repository", label: "Question Repository", icon: Database, key: "tab-question-repository" },
                       { id: "live-monitoring", label: "Live Monitoring", icon: Activity, key: "tab-live-monitoring" },
+                      { id: "leads", label: "Landing Leads", icon: Zap, key: "tab-leads" },
                     ].map((tab) => (
                       <TabsTrigger
                         key={tab.key}
@@ -725,6 +773,16 @@ export default function AdminDashboard() {
                   </motion.div>
                 </TabsContent>
 
+                <TabsContent key="tab-resume-scans" value="resume-scans" className="mt-0 outline-none">
+                  <motion.div
+                    key="motion-resume-scans"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <ResumeScanHistory />
+                  </motion.div>
+                </TabsContent>
+
                 <TabsContent key="tab-instructor-courses" value="instructor-courses" className="mt-0 outline-none">
                   <motion.div
                     key="motion-instructor-courses"
@@ -745,11 +803,13 @@ export default function AdminDashboard() {
                       courses={courses}
                       loading={dataLoading}
                       onDelete={deleteCourse} 
+                      onViewSyllabus={setBuildingCourse}
                       onView={(course) => {
                         setSelectedCourseDetail(course);
                         setShowCourseDetail(true);
                       }}
                       onUpdatePrice={adminData.updateCoursePrice}
+                      onToggleActive={adminData.toggleCourseActive}
                     />
                   </motion.div>
                 </TabsContent>
@@ -776,6 +836,7 @@ export default function AdminDashboard() {
                       onApprove={approveCourse}
                       onReject={rejectCourse}
                       onUpdateStatus={updateCourseStatus}
+                      onToggleActive={adminData.toggleCourseActive}
                     />
                   </motion.div>
                 </TabsContent>
@@ -869,6 +930,26 @@ export default function AdminDashboard() {
                     animate={{ opacity: 1 }}
                   >
                     <LiveMonitoring />
+                  </motion.div>
+                </TabsContent>
+
+                <TabsContent key="tab-leads" value="leads" className="mt-0 outline-none">
+                  <motion.div
+                    key="motion-leads"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <LeadManagement />
+                  </motion.div>
+                </TabsContent>
+
+                <TabsContent key="tab-profile" value="profile" className="mt-0 outline-none">
+                  <motion.div
+                    key="motion-profile"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <UserProfile />
                   </motion.div>
                 </TabsContent>
               </div>
@@ -971,8 +1052,14 @@ export default function AdminDashboard() {
             <Button variant="outline" className="rounded-lg h-10 px-6 font-semibold" onClick={() => setShowCourseDetail(false)}>
               Close Profile
             </Button>
-            <Button className="pro-button-primary h-10 px-8 rounded-lg shadow-md" onClick={() => setShowCourseDetail(false)}>
-              Manage Course
+            <Button 
+                className="pro-button-primary h-10 px-8 rounded-lg shadow-md" 
+                onClick={() => {
+                    setBuildingCourse(selectedCourseDetail);
+                    setShowCourseDetail(false);
+                }}
+            >
+              Manage Syllabus
             </Button>
           </DialogFooter>
         </DialogContent>

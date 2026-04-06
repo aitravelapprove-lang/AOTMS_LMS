@@ -207,6 +207,23 @@ export function useDeleteCourseVideo() {
     });
 }
 
+export function useDeleteCourseModule() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (moduleId: string) => {
+            return fetchWithAuth(`/data/course_modules/${moduleId}`, {
+                method: 'DELETE',
+            });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['course-modules'] });
+            queryClient.invalidateQueries({ queryKey: ['s3-courses'] });
+        },
+    });
+}
+
+
 export function useS3Upload() {
     const { user } = useAuth();
 

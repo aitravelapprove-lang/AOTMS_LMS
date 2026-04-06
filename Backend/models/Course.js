@@ -39,6 +39,8 @@ const EnrollmentSchema = new Schema({
     utr_number: { type: String }, // Unique Transaction Reference
     applied_coupon: { type: String }, // The code used
     final_price: { type: Number }, // The price after discount
+    payment_term: { type: String, default: 'full' }, // full, term1, term2
+    remaining_balance: { type: Number, default: 0 },
     enrolled_at: { type: Date, default: Date.now },
     completed_at: { type: Date },
     last_accessed_at: { type: Date }
@@ -133,6 +135,16 @@ const InstructorProgressSchema = new mongoose.Schema({
 });
 InstructorProgressSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
 
+const CourseRatingSchema = new Schema({
+    user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    course_id: { type: mongoose.Schema.Types.Mixed, ref: 'Course', required: true },
+    rating: { type: Number, required: true, min: 1, max: 5 },
+    review: { type: String },
+    created_at: { type: Date, default: Date.now }
+});
+CourseRatingSchema.index({ user_id: 1, course_id: 1 }, { unique: true });
+CourseRatingSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
+
 module.exports = {
     Course: mongoose.model('Course', CourseSchema),
     Enrollment: mongoose.model('Enrollment', EnrollmentSchema),
@@ -143,6 +155,7 @@ module.exports = {
     Timeline: mongoose.model('Timeline', TimelineSchema),
     Resource: mongoose.model('Resource', ResourceSchema),
     InstructorProgress: mongoose.model('InstructorProgress', InstructorProgressSchema),
+    CourseRating: mongoose.model('CourseRating', CourseRatingSchema),
     VideoProgress: mongoose.model('VideoProgress', new Schema({
         user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
         course_id: { type: Schema.Types.ObjectId, ref: 'Course', required: true },

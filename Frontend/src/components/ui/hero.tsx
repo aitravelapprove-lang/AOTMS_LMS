@@ -64,17 +64,20 @@ export default function ShaderShowcase() {
         {/* Left side: Content */}
         <div className="w-full lg:w-1/2 text-center lg:text-left">
           <motion.h1
-            className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-white mb-8 leading-[0.95] tracking-tight drop-shadow-2xl"
+            className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-white mb-8 leading-[0.95] tracking-tight drop-shadow-2xl"
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
-            SMART <br className="hidden md:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-[#0075CF]">
+            <span className="block md:inline">SMART</span>{" "}
+            <br className="md:block" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-[#0075CF] block md:inline">
               LEARNING
+            </span>{" "}
+            <br className="md:block" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FD5A1A] to-[#FF7A00] block md:inline">
+              SYSTEM
             </span>
-            <br className="hidden md:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FD5A1A] to-[#FF7A00]">SYSTEM</span>
           </motion.h1>
 
           <motion.p

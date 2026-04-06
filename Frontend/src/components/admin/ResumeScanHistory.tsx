@@ -13,7 +13,8 @@ import {
   AlertCircle,
   TrendingUp,
   BrainCircuit,
-  Layout
+  Layout,
+  Mail
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -53,15 +54,15 @@ export function ResumeScanHistory() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <History className="h-6 w-6 text-primary" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2">
+            <History className="h-7 w-7 text-primary" />
             Resume Scan History
           </h2>
-          <p className="text-slate-500">View all student ATS resume analysis results</p>
+          <p className="text-slate-500 text-sm font-medium">View all student ATS resume analysis results</p>
         </div>
-        <Badge variant="outline" className="bg-slate-50 px-3 py-1">
+        <Badge variant="outline" className="bg-white border-slate-200 px-4 py-1.5 rounded-full shadow-sm text-[10px] uppercase font-black tracking-widest text-slate-400 shrink-0">
           {scans.length} Scans Performed
         </Badge>
       </div>
@@ -78,31 +79,40 @@ export function ResumeScanHistory() {
         <div className="grid gap-4">
           {scans.map((scan) => (
             <Card key={scan.id} className="overflow-hidden border-slate-200/60 hover:shadow-lg transition-all duration-300">
-              <CardHeader className="pb-3 bg-slate-50/50 border-b border-slate-100">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
+              <CardHeader className="p-4 sm:p-6 bg-slate-50/50 border-b border-slate-100">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                  <div className="flex items-center gap-4 overflow-hidden">
+                    <Avatar className="h-14 w-14 border-4 border-white shadow-md shrink-0">
                       <AvatarImage src={scan.user_id?.avatar_url} />
-                      <AvatarFallback className="bg-primary/10 text-primary">
+                      <AvatarFallback className="bg-primary/10 text-primary text-xl font-black">
                         {scan.user_id?.full_name?.charAt(0) || 'U'}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="space-y-0.5">
-                      <CardTitle className="text-base font-bold text-slate-800">
+                    <div className="space-y-1 overflow-hidden">
+                      <CardTitle className="text-lg font-black text-slate-900 leading-none truncate">
                         {scan.user_id?.full_name || 'Unknown Student'}
                       </CardTitle>
-                      <CardDescription className="flex items-center gap-1.5 text-xs">
-                        <User className="h-3 w-3" /> {scan.user_id?.email}
+                      <CardDescription className="flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
+                        <Mail className="h-3 w-3 shrink-0" /> {scan.user_id?.email}
                       </CardDescription>
+                      <div className="lg:hidden flex items-center gap-2 mt-2">
+                         <Badge variant={scan.score >= 80 ? 'default' : scan.score >= 60 ? 'secondary' : 'destructive'} className="font-black text-[10px] h-6 uppercase tracking-tighter">
+                            ATS Score: {scan.score}/100
+                         </Badge>
+                         <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1 border-l pl-2">
+                            <Calendar className="h-3 w-3" />
+                            {format(new Date(scan.created_at), 'MMM dd, HH:mm')}
+                         </span>
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="flex items-center gap-1 justify-end text-xs text-slate-500 font-medium mb-1">
-                      <Calendar className="h-3 w-3" />
-                      {format(new Date(scan.created_at), 'MMM dd, yyyy HH:mm')}
+                  <div className="hidden lg:flex flex-col items-end gap-2">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400 font-bold uppercase tracking-widest">
+                      <Calendar className="h-3.5 w-3.5" />
+                      {format(new Date(scan.created_at), 'MMMM dd, yyyy HH:mm')}
                     </div>
-                    <Badge variant={scan.score >= 80 ? 'default' : scan.score >= 60 ? 'secondary' : 'destructive'} className="font-bold">
-                       ATS Score: {scan.score}/100
+                    <Badge variant={scan.score >= 80 ? 'default' : scan.score >= 60 ? 'secondary' : 'destructive'} className="px-4 py-1.5 rounded-xl shadow-lg shadow-primary/20 text-sm font-black whitespace-nowrap">
+                       ATS SCORE: {scan.score}/100
                     </Badge>
                   </div>
                 </div>

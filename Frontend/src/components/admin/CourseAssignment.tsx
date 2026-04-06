@@ -65,8 +65,8 @@ export function CourseAssignment() {
         fetchWithAuth('/admin/courses-with-instructors'),
         fetchWithAuth('/admin/instructors')
       ]);
-      setCourses(coursesRes || []);
-      setInstructors(instructorsRes || []);
+      setCourses((coursesRes as Course[]) || []);
+      setInstructors((instructorsRes as Instructor[]) || []);
     } catch (err) {
       console.error('Failed to load data:', err);
     } finally {
@@ -89,8 +89,9 @@ export function CourseAssignment() {
       const result = await fetchWithAuth(`/admin/lookup-user/${uuidInput.trim()}`);
       if (result) {
         // Allow any user to be assigned as instructor - admin decision
-        setLookupResult(result);
-        toast.success(`User found: ${result.full_name || result.email}`);
+        const lookupData = result as LookupResult;
+        setLookupResult(lookupData);
+        toast.success(`User found: ${lookupData.full_name || lookupData.email}`);
       } else {
         setLookupResult(null);
         toast.error('No user found with this UUID');
@@ -178,53 +179,53 @@ export function CourseAssignment() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col md:flex-row gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <Input
                 placeholder="Enter instructor UUID..."
                 value={uuidInput}
                 onChange={(e) => setUuidInput(e.target.value)}
-                className="h-10 font-mono text-sm"
+                className="h-11 font-mono text-xs sm:text-sm rounded-xl bg-white/50 border-primary/20 focus:ring-primary/20"
               />
             </div>
             <Button 
               onClick={handleLookup} 
               disabled={lookupLoading}
-              className="h-10"
+              className="h-11 rounded-xl px-8 shadow-lg shadow-primary/10"
             >
               {lookupLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
               ) : (
                 <Search className="h-4 w-4 mr-2" />
               )}
-              Lookup
+              Lookup User
             </Button>
           </div>
 
           {/* Lookup Result */}
           {lookupResult && (
-            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                    <User className="h-5 w-5 text-green-600" />
+            <div className="mt-4 p-4 bg-emerald-50/50 border border-emerald-200 rounded-2xl">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <div className="h-12 w-12 rounded-xl bg-emerald-100 flex items-center justify-center border border-emerald-200 shadow-sm shrink-0">
+                    <User className="h-6 w-6 text-emerald-600" />
                   </div>
-                  <div>
-                    <p className="font-semibold text-green-800">
+                  <div className="overflow-hidden">
+                    <p className="font-black text-emerald-900 truncate">
                       {lookupResult.full_name || 'Unknown'}
                     </p>
-                    <div className="flex items-center gap-2 text-sm text-green-600">
+                    <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 uppercase tracking-tighter truncate">
                       <Mail className="h-3.5 w-3.5" />
                       {lookupResult.email}
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="w-full sm:w-auto flex items-center gap-2">
                   {selectedCourseId ? (
                     <Button 
                       onClick={handleAssignWithLookup}
                       disabled={assigning !== null}
-                      className="bg-green-600 hover:bg-green-700"
+                      className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-11 px-6 shadow-lg shadow-emerald-600/20"
                     >
                       {assigning ? (
                         <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -234,9 +235,12 @@ export function CourseAssignment() {
                       Confirm & Assign
                     </Button>
                   ) : (
-                    <p className="text-sm text-amber-600">
-                      Select a course below to assign
-                    </p>
+                    <div className="flex items-center gap-2 bg-amber-100/50 p-2 px-3 rounded-lg border border-amber-200">
+                       <AlertCircle className="h-4 w-4 text-amber-600" />
+                       <p className="text-[10px] font-black uppercase text-amber-700 tracking-tighter leading-none">
+                         Select a course below to assign
+                       </p>
+                    </div>
                   )}
                 </div>
               </div>
@@ -298,22 +302,24 @@ export function CourseAssignment() {
             placeholder="Search courses or instructors..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 h-10"
+            className="pl-10 h-11 rounded-xl border-slate-200"
           />
         </div>
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-[180px] h-10">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Courses</SelectItem>
-            <SelectItem value="assigned">Assigned</SelectItem>
-            <SelectItem value="unassigned">Unassigned</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button variant="outline" size="icon" onClick={loadData}>
-          <RefreshCw className="h-4 w-4" />
-        </Button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="flex-1 sm:w-[180px] h-11 rounded-xl bg-white border-slate-200">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-slate-200">
+              <SelectItem value="all">All Courses</SelectItem>
+              <SelectItem value="assigned">Assigned</SelectItem>
+              <SelectItem value="unassigned">Unassigned</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="icon" onClick={loadData} className="h-11 w-11 shrink-0 rounded-xl bg-white border-slate-200">
+            <RefreshCw className="h-4 w-4 text-slate-500" />
+          </Button>
+        </div>
       </div>
 
       {/* Course List */}
@@ -329,69 +335,94 @@ export function CourseAssignment() {
           filteredCourses.map((course) => (
             <Card 
               key={course.id} 
-              className={`hover:shadow-md transition-shadow cursor-pointer ${
-                selectedCourseId === course.id ? 'ring-2 ring-primary' : ''
+              className={`hover:border-primary/50 hover:shadow-lg transition-all cursor-pointer rounded-2xl overflow-hidden group ${
+                selectedCourseId === course.id ? 'ring-2 ring-primary border-transparent translate-x-1' : 'border-slate-200/60'
               }`}
               onClick={() => setSelectedCourseId(course.id)}
             >
-              <CardContent className="p-4">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-foreground">{course.title}</h3>
-                      <Badge variant="outline" className="text-xs">
-                        {course.category}
-                      </Badge>
-                      <Badge className={`text-xs ${
-                        course.status === 'published' ? 'bg-green-100 text-green-700' :
-                        course.status === 'draft' ? 'bg-gray-100 text-gray-700' :
-                        'bg-amber-100 text-amber-700'
-                      }`}>
-                        {course.status}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      {course.instructor_id ? (
-                        <span className="flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          {course.instructor_name} ({course.instructor_email})
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-amber-600">
-                          <AlertCircle className="h-3 w-3" />
-                          Not assigned to any instructor
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <Select
-                      value={course.instructor_id || "unassigned"}
-                      onValueChange={(value) => {
-                        if (value !== "unassigned") {
-                          handleAssign(course.id, value);
-                        }
-                      }}
-                      disabled={assigning === String(course.id)}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <SelectTrigger className="w-[200px]">
-                        {assigning === String(course.id) ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+              <CardContent className="p-0">
+                <div className="flex flex-col sm:flex-row items-stretch">
+                  {/* Category Side Strip */}
+                  <div className={`w-1 sm:w-2 shrink-0 ${
+                    course.status === 'published' ? 'bg-emerald-500' :
+                    course.status === 'draft' ? 'bg-slate-300' :
+                    'bg-amber-500'
+                  }`} />
+
+                  <div className="flex-1 p-5 lg:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
+                        <h3 className="text-base sm:text-lg font-black text-slate-900 group-hover:text-primary transition-colors truncate">
+                          {course.title}
+                        </h3>
+                        <Badge variant="outline" className="text-[10px] uppercase font-black tracking-tight border-slate-200 text-slate-500 rounded-md h-5">
+                          {course.category}
+                        </Badge>
+                        <Badge className={`text-[10px] uppercase font-black tracking-tighter rounded-md h-5 shadow-sm ${
+                          course.status === 'published' ? 'bg-emerald-500' :
+                          course.status === 'draft' ? 'bg-slate-500' :
+                          'bg-amber-500'
+                        }`}>
+                          {course.status}
+                        </Badge>
+                      </div>
+                      
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                        {course.instructor_id ? (
+                          <div className="flex items-center gap-2.5 bg-slate-50 p-1.5 pr-3 rounded-full border border-slate-100 max-w-full overflow-hidden">
+                            <div className="h-7 w-7 rounded-full bg-white flex items-center justify-center shadow-sm border border-slate-100 shrink-0">
+                               <Users className="h-3.5 w-3.5 text-primary" />
+                            </div>
+                            <div className="overflow-hidden">
+                               <p className="text-xs font-bold text-slate-700 truncate leading-none mb-0.5">
+                                 {course.instructor_name}
+                               </p>
+                               <p className="text-[10px] font-medium text-slate-400 truncate leading-none">
+                                 {course.instructor_email}
+                               </p>
+                            </div>
+                          </div>
                         ) : (
-                          <SelectValue placeholder="Assign to instructor" />
+                          <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-2 px-3 rounded-xl border border-amber-100 w-fit">
+                            <AlertCircle className="h-4 w-4 shrink-0" />
+                            <span className="text-xs font-black uppercase tracking-tighter">Needs Assignment</span>
+                          </div>
                         )}
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="unassigned">-- Unassigned --</SelectItem>
-                        {instructors.map((inst) => (
-                          <SelectItem key={inst.user_id} value={inst.user_id}>
-                            {inst.full_name || 'Unknown'} - {inst.email || 'No email'}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="w-full lg:w-[240px] flex items-center gap-2 group/select bg-white p-1 rounded-xl border border-slate-200 focus-within:border-primary transition-colors shadow-sm">
+                        <Select
+                          value={course.instructor_id || "unassigned"}
+                          onValueChange={(value) => {
+                            if (value !== "unassigned") {
+                              handleAssign(course.id, value);
+                            }
+                          }}
+                          disabled={assigning === String(course.id)}
+                        >
+                          <SelectTrigger className="h-10 border-none shadow-none focus:ring-0 focus:ring-offset-0 bg-transparent text-xs font-bold">
+                            {assigning === String(course.id) ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <SelectValue placeholder="Assign Instructor" />
+                            )}
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-slate-200">
+                            <SelectItem value="unassigned" className="text-slate-400">Not Assigned</SelectItem>
+                            {instructors.map((inst) => (
+                              <SelectItem key={inst.user_id} value={inst.user_id} className="text-xs">
+                                <div className="flex flex-col">
+                                   <span className="font-bold">{inst.full_name || 'Unknown'}</span>
+                                   <span className="text-[10px] opacity-70 italic">{inst.email || 'No email'}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>

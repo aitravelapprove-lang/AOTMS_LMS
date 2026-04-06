@@ -16,13 +16,21 @@ import {
   Loader2,
   GraduationCap,
   Mail,
-  Plus
+  Plus,
+  ArrowRight
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchWithAuth } from '@/lib/api';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { Profile, CourseEnrollment } from '@/hooks/useAdminData';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Course {
   id: string;
@@ -118,14 +126,14 @@ export function GrantStudentAccess({ profiles = [], enrollments = [] }: GrantStu
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
+      <CardHeader className="pb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <CardTitle className="text-xl flex items-center gap-2">
               <UserPlus className="h-5 w-5 text-primary" />
               Grant Student Access
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="max-w-md">
               Select a student from the list and manually enroll them in a course.
             </CardDescription>
           </div>
@@ -148,26 +156,29 @@ export function GrantStudentAccess({ profiles = [], enrollments = [] }: GrantStu
               </DialogHeader>
               
               <div className="space-y-4 py-4">
-                {/* Course Selection */}
-                <div className="space-y-2">
-                  <Label>Select Course</Label>
+                <div className="space-y-3">
+                  <Label className="text-xs font-bold uppercase text-slate-500">Target Course</Label>
                   {coursesLoading ? (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Loader2 className="h-4 w-4 animate-spin" /> Loading courses...
+                    <div className="flex items-center gap-2 text-muted-foreground bg-slate-50 p-3 rounded-xl border border-slate-200">
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" /> 
+                      <span className="text-sm">Loading available courses...</span>
                     </div>
                   ) : (
-                    <select
-                      className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:ring-2 focus:ring-primary/20"
-                      value={selectedCourse?.id || ''}
-                      onChange={(e) => handleCourseSelect(e.target.value)}
-                    >
-                      <option value="">Select a course...</option>
-                      {availableCourses.map(course => (
-                        <option key={course.id} value={course.id}>
-                          {course.title}
-                        </option>
-                      ))}
-                    </select>
+                    <Select value={selectedCourse?.id || ''} onValueChange={handleCourseSelect}>
+                      <SelectTrigger className="h-12 rounded-xl bg-background border-slate-200">
+                         <div className="flex items-center gap-2">
+                            <BookOpen className="h-4 w-4 text-muted-foreground" />
+                            <SelectValue placeholder="Select a course..." />
+                         </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableCourses.map(course => (
+                          <SelectItem key={course.id} value={course.id}>
+                            {course.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   )}
                 </div>
 
@@ -225,42 +236,58 @@ export function GrantStudentAccess({ profiles = [], enrollments = [] }: GrantStu
                           </div>
                       </div>
                   ) : (
-                      <div className="rounded-xl border bg-card p-4 relative group">
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="absolute top-2 right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => setSelectedStudent(null)}
-                        >
-                            <XCircle className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                        </Button>
-                        <div className="flex items-center gap-4">
-                          <Avatar className="h-12 w-12">
-                            <AvatarImage src={selectedStudent.avatar_url || ''} />
-                            <AvatarFallback className="bg-primary text-primary-foreground">
-                              {selectedStudent.full_name?.[0]?.toUpperCase() || 'S'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <p className="font-medium">{selectedStudent.full_name}</p>
-                            <p className="text-sm text-muted-foreground flex items-center gap-1">
+                      <div className="rounded-2xl border-2 border-primary bg-primary/5 p-4 relative overflow-hidden">
+                        {/* Decorative background pulse */}
+                        <div className="absolute -top-12 -right-12 h-32 w-32 bg-primary/10 rounded-full blur-3xl animate-pulse" />
+                        
+                        <div className="flex items-center justify-between mb-4">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-1.5">
+                               <UserCheck className="h-3 w-3" /> Selected Candidate
+                            </span>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-7 w-7 rounded-full bg-white hover:bg-destructive hover:text-white shadow-sm transition-all"
+                                onClick={() => setSelectedStudent(null)}
+                            >
+                                <XCircle className="h-4 w-4" />
+                            </Button>
+                        </div>
+
+                        <div className="flex items-center gap-4 relative">
+                          <div className="relative">
+                            <Avatar className="h-14 w-14 border-2 border-white shadow-md">
+                                <AvatarImage src={selectedStudent.avatar_url || ''} />
+                                <AvatarFallback className="bg-primary text-primary-foreground text-lg font-bold">
+                                {selectedStudent.full_name?.[0]?.toUpperCase() || 'S'}
+                                </AvatarFallback>
+                            </Avatar>
+                            <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm">
+                               <CheckCircle className="h-5 w-5 text-emerald-500" />
+                            </div>
+                          </div>
+                          <div className="flex-1 overflow-hidden">
+                            <p className="font-black text-slate-900 truncate leading-none mb-1">{selectedStudent.full_name}</p>
+                            <p className="text-xs text-muted-foreground flex items-center gap-1 mb-2 truncate">
                               <Mail className="h-3 w-3" />
                               {selectedStudent.email}
                             </p>
-                            <Badge variant="outline" className="mt-1 text-[10px] h-5 px-1.5">{selectedStudent.role}</Badge>
+                            <Badge className="bg-primary text-white border-none text-[9px] h-4.5 px-2 uppercase font-black tracking-tighter">
+                                {selectedStudent.role || 'STUDENT'}
+                            </Badge>
                           </div>
-                          <CheckCircle className="h-5 w-5 text-green-500" />
                         </div>
                       </div>
                   )}
                 </div>
               </div>
 
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
+              <DialogFooter className="gap-2 sm:gap-0">
+                <Button variant="outline" onClick={() => setIsOpen(false)} className="rounded-xl h-11">Cancel</Button>
                 <Button
                   onClick={() => grantAccess.mutate()}
                   disabled={!selectedCourse || !selectedStudent || grantAccess.isPending}
+                  className="rounded-xl h-11 px-8 shadow-lg shadow-primary/20"
                 >
                   {grantAccess.isPending ? (
                     <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Enrolling...</>
@@ -278,26 +305,22 @@ export function GrantStudentAccess({ profiles = [], enrollments = [] }: GrantStu
           but for now, the modal handles the action. We can show a simple instruction list. */}
       <CardContent>
           <div className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-3">
                  {filteredStudents.map(student => (
-                     <div key={student.id} className="flex items-center justify-between p-4 rounded-lg border bg-card text-card-foreground shadow-sm">
-                         <div className="flex items-center gap-3 overflow-hidden">
-                             <Avatar className="h-9 w-9 border">
+                     <div key={student.id} className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl border border-slate-200 bg-white hover:border-primary/30 hover:shadow-md transition-all group overflow-hidden relative">
+                         <div className="flex items-center gap-4 w-full sm:w-auto overflow-hidden">
+                             <Avatar className="h-12 w-12 border-2 border-slate-50 shrink-0">
                                   <AvatarImage src={student.avatar_url} />
-                                  <AvatarFallback>{student.full_name?.[0]}</AvatarFallback>
+                                  <AvatarFallback className="bg-primary/5 text-primary font-bold">{student.full_name?.[0]}</AvatarFallback>
                              </Avatar>
-                             <div className="grid gap-0.5 overflow-hidden">
-                                 <div className="flex items-center gap-2">
-                                     <p className="text-sm font-medium leading-none truncate">{student.full_name}</p>
+                             <div className="flex-1 overflow-hidden">
+                                 <div className="flex items-center gap-2 mb-1">
+                                     <p className="text-sm font-black text-slate-900 leading-none truncate">{student.full_name}</p>
                                      <Badge 
                                         variant="outline" 
-                                        className={`text-[9px] h-4 px-1 rounded-sm uppercase tracking-tighter ${
-                                            student.role === 'instructor' 
-                                            ? "border-amber-200 bg-amber-50 text-amber-700" 
-                                            : "border-blue-200 bg-blue-50 text-blue-700"
-                                        }`}
+                                        className="text-[9px] h-4 px-1.5 rounded-md uppercase font-black tracking-tighter bg-blue-50 text-blue-600 border-blue-100"
                                     >
-                                        {student.role || 'student'}
+                                        Student
                                      </Badge>
                                  </div>
                                  <p className="text-xs text-muted-foreground truncate">{student.email}</p>
@@ -306,13 +329,15 @@ export function GrantStudentAccess({ profiles = [], enrollments = [] }: GrantStu
                          <Button 
                             variant="secondary" 
                             size="sm" 
-                            className="ml-auto h-8 shadow-none"
+                            className="w-full sm:w-auto sm:ml-auto h-9 bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-xl shadow-none transition-all font-bold"
                             onClick={() => {
                                 setSelectedStudent(student);
                                 setIsOpen(true);
                             }}
                          >
+                            <Plus className="h-3.5 w-3.5 mr-1.5 sm:hidden lg:block shrink-0" />
                             Enroll
+                            <ArrowRight className="h-3.5 w-3.5 ml-1.5 hidden sm:block shrink-0 transition-transform group-hover:translate-x-1" />
                          </Button>
                      </div>
                  ))}

@@ -1,4 +1,4 @@
-# 🚀 AOTMS - Academy of Tech Master
+# 🚀 AOTMS - Academy of Tech Masters
 
 ### _Empowering the Next Generation of Tech Leaders with High-Fidelity Learning._
 
@@ -7,6 +7,12 @@
 [![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+
+## 📝 Description
+> **🚀 High-Fidelity Learning Management System (LMS) built with React, Node.js, and MongoDB. Features premium "Cyber-Premium" UI, role-based dashboards, and interactive animations tailored for industry-standard tech training.**
+
+### 🏷️ Tags
+`react` `typescript` `nodejs` `lms` `mongodb` `agile-development` `framer-motion` `tailwind-css` `high-performance` `vite`
 
 ---
 
@@ -86,6 +92,23 @@ We utilize two-week sprints to break down complex features (like the Student Das
 
 - [Node.js](https://nodejs.org/) (v16.x or higher)
 - [MongoDB](https://www.mongodb.com/) (Local or Atlas instance)
+
+### Installation
+
+1. **Frontend Setup**
+
+   ```bash
+   cd Frontend
+   npm install
+   npm run dev
+   ```
+
+2. **Backend Setup**
+   ```bash
+   cd ../Backend
+   npm install
+   npm start
+   ```
 
 ---
 

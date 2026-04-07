@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import logo from "@/assets/logo.png";
+import logo from "/favicon.png";
 
 interface PageLoaderProps {
   isVisible: boolean;
@@ -68,17 +68,23 @@ const PageLoader = ({ isVisible }: PageLoaderProps) => {
               <motion.div
                 initial={{ scale: 0.5, opacity: 0, y: 20 }}
                 animate={{ 
-                  scale: 1, 
+                  scale: [1, 1.05, 1], 
                   opacity: 1,
-                  y: [0, -15, 0],
+                  y: [0, -10, 0],
+                  rotate: 360,
                 }}
                 transition={{
-                  scale: { type: "spring", stiffness: 100, damping: 15 },
+                  scale: { duration: 3, repeat: Infinity, ease: "easeInOut" },
                   opacity: { duration: 0.6 },
                   y: { 
-                    duration: 2.5, 
+                    duration: 3, 
                     repeat: Infinity, 
                     ease: "easeInOut" 
+                  },
+                  rotate: {
+                    duration: 12,
+                    repeat: Infinity,
+                    ease: "linear"
                   }
                 }}
                 className="relative z-10 p-4"

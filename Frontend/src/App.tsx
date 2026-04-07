@@ -130,26 +130,26 @@ const RoleRedirector = () => {
 const RouteChangeLoader = () => {
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
-  const [prevPath, setPrevPath] = useState(location.pathname);
+  const prevPathRef = useRef(location.pathname);
 
   useEffect(() => {
-    if (location.pathname !== prevPath) {
+    if (location.pathname !== prevPathRef.current) {
       setIsLoading(true);
-      setPrevPath(location.pathname);
+      prevPathRef.current = location.pathname;
       
       const timer = setTimeout(() => {
         setIsLoading(false);
-      }, 500);
+      }, 700);
       
       return () => clearTimeout(timer);
     }
-  }, [location.pathname, prevPath]);
+  }, [location.pathname]);
 
   useEffect(() => {
     setIsLoading(true);
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 800);
+    }, 1000);
     return () => clearTimeout(timer);
   }, []);
 

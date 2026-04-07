@@ -139,7 +139,7 @@ const RouteChangeLoader = () => {
       
       const timer = setTimeout(() => {
         setIsLoading(false);
-      }, 700);
+      }, 500);
       
       return () => clearTimeout(timer);
     }
@@ -149,7 +149,7 @@ const RouteChangeLoader = () => {
     setIsLoading(true);
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 1200);
+    }, 800);
     return () => clearTimeout(timer);
   }, []);
 

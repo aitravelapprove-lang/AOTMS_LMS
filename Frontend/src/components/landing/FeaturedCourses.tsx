@@ -52,7 +52,7 @@ export default function FeaturedCourses() {
       </div>
 
       {/* Courses Display: Universal Auto-Play Marquee */}
-      <div className="relative w-full overflow-hidden group/marquee py-12 mt-4">
+      <div className="relative w-full overflow-hidden group/marquee pt-12 pb-4 mt-4">
         {/* Faded edges for depth - Optimized for mobile */}
         <div className="absolute inset-y-0 left-0 w-8 sm:w-24 lg:w-32 bg-gradient-to-r from-white to-transparent z-20 pointer-events-none" />
         <div className="absolute inset-y-0 right-0 w-8 sm:w-24 lg:w-32 bg-gradient-to-l from-white to-transparent z-20 pointer-events-none" />
@@ -148,8 +148,8 @@ export default function FeaturedCourses() {
         </motion.div>
       </div>
 
-      <div className="container-width section-padding relative z-10">
-        <div className="text-center mt-6">
+      <div className="container-width pb-16 md:pb-24 lg:pb-32 pt-8 relative z-10">
+        <div className="text-center mt-2">
           <Button
             size="xl"
             className="pro-button-primary h-16 px-14 rounded-2xl shadow-[0_20px_50px_rgba(0,117,207,0.3)] hover:shadow-[0_25px_60px_rgba(0,117,207,0.4)] hover:scale-105 active:scale-95 transition-all text-sm font-black uppercase tracking-widest gap-3"

@@ -39,6 +39,13 @@ interface InstructorCoursesProps {
     title?: string;
 }
 
+interface InstructorProfile {
+    _id?: string;
+    id?: string;
+    full_name?: string;
+    avatar_url?: string;
+}
+
 export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, title }: InstructorCoursesProps = {}) {
     const [viewTab, setViewTab] = useState<'my' | 'catalog'>(initialShowAll ? 'catalog' : 'my');
     
@@ -46,7 +53,9 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
     // If we're in 'catalog' tab, we want ALL courses.
     const { data: allCourses, isLoading, refetch } = useInstructorS3Courses(viewTab === 'catalog');
     
-    const courses = limit ? allCourses?.slice(0, limit) : allCourses;
+    const courses = (limit && Array.isArray(allCourses)) 
+        ? (allCourses as any[]).slice(0, limit) 
+        : (Array.isArray(allCourses) ? allCourses : []) as any[];
     const [viewingCourse, setViewingCourse] = useState<Course | null>(null);
     const [selectedProfile, setSelectedProfile] = useState<Course | null>(null);
     const [showProfile, setShowProfile] = useState(false);
@@ -136,48 +145,48 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
         <div className="space-y-6">
             {!hideHeader && (
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div className="space-y-4 w-full sm:w-auto">
-                        <Tabs value={viewTab} onValueChange={(v) => setViewTab(v as 'my' | 'catalog')} className="w-full sm:w-auto">
-                            <TabsList className="bg-slate-100/50 p-1 rounded-xl">
-                                <TabsTrigger value="my" className="rounded-lg px-6 py-2">My Courses</TabsTrigger>
-                                <TabsTrigger value="catalog" className="rounded-lg px-6 py-2">Courses Catalogue</TabsTrigger>
+                    <div className="space-y-2 w-full sm:w-auto">
+                        <Tabs value={viewTab} onValueChange={(v) => setViewTab(v as 'my' | 'catalog')} className="w-full sm:w-auto overflow-x-auto">
+                            <TabsList className="bg-slate-100/50 p-1 rounded-xl w-full sm:w-auto flex">
+                                <TabsTrigger value="my" className="rounded-lg px-4 sm:px-6 py-2 flex-1 sm:flex-none text-xs sm:text-sm">My Courses</TabsTrigger>
+                                <TabsTrigger value="catalog" className="rounded-lg px-4 sm:px-6 py-2 flex-1 sm:flex-none text-xs sm:text-sm">Catalogue</TabsTrigger>
                             </TabsList>
                         </Tabs>
-                        <p className="text-muted-foreground mt-1 text-sm font-medium">
-                            {viewTab === 'catalog' ? 'Explore the full course repository and choose curricula to teach.' : 'View and manage your assigned courses.'}
+                        <p className="text-muted-foreground text-[10px] sm:text-xs font-medium max-w-md">
+                            {viewTab === 'catalog' ? 'Explore and choose curricula to teach.' : 'View your assigned courses.'}
                         </p>
                     </div>
-                    <Button onClick={() => refetch()} variant="outline" size="sm" className="gap-2 shrink-0">
+                    <Button onClick={() => refetch()} variant="outline" size="sm" className="hidden sm:flex gap-2 shrink-0 rounded-xl">
                         <RefreshCw className="h-4 w-4" />
-                        Sync Data
+                        Sync
                     </Button>
                 </div>
             )}
 
             {isLoading ? (
-                <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                    {[1, 2, 3].map((i) => (
-                        <Card key={i} className="animate-pulse bg-muted/50 h-[300px]" />
+                <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {[1, 2, 3, 4].map((i) => (
+                        <Card key={i} className="animate-pulse bg-muted/30 h-[280px] rounded-2xl" />
                     ))}
                 </div>
             ) : courses?.length === 0 ? (
-                <Card className="flex flex-col items-center justify-center py-16 text-center">
-                    <div className="bg-primary/10 p-4 rounded-full mb-4">
-                        <Layers className="h-8 w-8 text-primary" />
+                <Card className="flex flex-col items-center justify-center py-12 px-6 text-center rounded-3xl border-dashed bg-slate-50/50">
+                    <div className="bg-primary/5 p-4 rounded-full mb-4">
+                        <Layers className="h-6 w-6 text-primary/40" />
                     </div>
-                    <CardTitle className="mb-2">No Courses Found</CardTitle>
-                    <p className="text-muted-foreground max-w-sm mb-6">
+                    <CardTitle className="text-lg sm:text-xl font-bold">No Courses Found</CardTitle>
+                    <p className="text-muted-foreground max-w-sm mb-6 text-xs sm:text-sm">
                         {viewTab === 'catalog' 
-                            ? "No courses are currently available in the catalogue." 
-                            : "You don't have any courses assigned to you yet. You can find courses in the Courses Catalogue."}
+                            ? "Catalogue is currently empty." 
+                            : "You don't have any assigned courses yet."}
                     </p>
-                    <Button onClick={() => refetch()} variant="outline" className="gap-2">
+                    <Button onClick={() => refetch()} variant="outline" className="gap-2 rounded-xl text-xs">
                         <RefreshCw className="h-4 w-4" />
-                        {viewTab === 'catalog' ? "Refresh Catalogue" : "Check for Assignments"}
+                        Refresh
                     </Button>
                 </Card>
             ) : (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     <AnimatePresence>
                         {courses?.map((course: Course, index: number) => {
                             const instructor = course.instructor_id as any;

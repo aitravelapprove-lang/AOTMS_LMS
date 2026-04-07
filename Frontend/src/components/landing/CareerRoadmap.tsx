@@ -168,61 +168,60 @@ export default function CareerRoadmap() {
       </div>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="w-[95vw] sm:max-w-[500px] border-0 rounded-[2rem] sm:rounded-[2.5rem] bg-white p-0 shadow-2xl !overflow-hidden [&>button:last-child]:text-white [&>button:last-child]:bg-white/10 [&>button:last-child]:hover:bg-white/20 [&>button:last-child]:rounded-full [&>button:last-child]:p-1.5 [&>button:last-child]:right-8 [&>button:last-child]:top-8 [&>button:last-child]:transition-all [&>button:last-child]:z-[60]">
+
+        <DialogContent className="w-[95vw] sm:max-w-[450px] border-0 rounded-[2rem] sm:rounded-[2.5rem] bg-white p-0 shadow-2xl !overflow-hidden [&>button:last-child]:text-white [&>button:last-child]:bg-white/10 [&>button:last-child]:hover:bg-white/20 [&>button:last-child]:rounded-full [&>button:last-child]:p-1.5 [&>button:last-child]:right-8 [&>button:last-child]:top-8 [&>button:last-child]:transition-all [&>button:last-child]:z-[60]">
           <ScrollArea className="max-h-[85vh] w-full">
-            {/* Decorative Header */}
-            <div className="relative h-32 sm:h-48 w-full bg-gradient-to-br from-[#0075CF] to-[#001F3D] flex items-center justify-center overflow-hidden rounded-t-[2rem] sm:rounded-t-[2.5rem]">
-               {/* Abstract Grid Backdrop */}
+            {/* Decorative Header (Compacted) */}
+            <div className="relative h-28 sm:h-40 w-full bg-gradient-to-br from-[#0075CF] to-[#001F3D] flex items-center justify-center overflow-hidden rounded-t-[2rem] sm:rounded-t-[2.5rem]">
                <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '15px 15px' }} />
                
-               <div className="relative z-10 flex flex-col items-center gap-2 sm:gap-4 text-center">
-                  <div className="w-12 h-12 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center shadow-2xl">
-                     <GraduationCap className="w-6 h-6 sm:w-10 sm:h-10 text-white" />
+               <div className="relative z-10 flex flex-col items-center gap-2 sm:gap-3 text-center">
+                  <div className="w-10 h-10 sm:w-16 sm:h-16 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center shadow-2xl">
+                     <GraduationCap className="w-5 h-5 sm:w-8 sm:h-8 text-white" />
                   </div>
                   <div className="px-3 py-1 bg-white/10 rounded-full border border-white/20">
-                     <p className="text-[8px] sm:text-[10px] font-black text-white uppercase tracking-[0.2em] sm:tracking-[0.3em]">Official AOTMS Portal</p>
+                     <p className="text-[7px] sm:text-[9px] font-black text-white uppercase tracking-[0.3em]">Official AOTMS Portal</p>
                   </div>
                </div>
                
-               {/* Floating Glows */}
-               <div className="absolute -top-10 -right-10 w-32 h-32 sm:w-40 sm:h-40 bg-[#FD5A1A]/20 blur-[40px] sm:blur-[60px] rounded-full" />
-               <div className="absolute -bottom-10 -left-10 w-32 h-32 sm:w-40 sm:h-40 bg-[#0075CF]/30 blur-[40px] sm:blur-[60px] rounded-full" />
+               <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#FD5A1A]/20 blur-[40px] rounded-full" />
+               <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-[#0075CF]/30 blur-[40px] rounded-full" />
             </div>
 
-            <div className="p-6 sm:p-10 space-y-6 sm:space-y-8 text-center pt-6 sm:pt-8 pb-10 sm:pb-14">
-              <div className="space-y-2 sm:space-y-3">
-                <h2 className="text-xl sm:text-3xl font-black text-slate-950 tracking-tight leading-tight uppercase italic">
+            <div className="p-6 sm:p-8 space-y-5 sm:space-y-6 text-center pt-6 sm:pt-7 pb-8 sm:pb-10">
+              <div className="space-y-1.5 sm:space-y-2">
+                <h2 className="text-xl sm:text-2xl font-black text-slate-950 tracking-tight leading-tight uppercase italic">
                   Ready for the <br/>
                   <span className="text-[#0075CF]">Next Evolution?</span>
                 </h2>
-                <p className="text-slate-500 text-xs sm:text-sm font-medium leading-relaxed">
-                  Join our elite LMS platform today and unlock the tools, mentorship, and network you need to dominate the industry.
+                <p className="text-slate-500 text-[10px] sm:text-xs font-medium leading-relaxed max-w-[280px] mx-auto">
+                  Join our elite LMS platform today and unlock the tools and network to dominate the industry.
                 </p>
               </div>
 
-              <div className="bg-slate-50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-100 flex items-center justify-around">
+              <div className="bg-slate-50 rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border border-slate-100 flex items-center justify-around">
                  <div className="text-center">
-                    <p className="text-lg sm:text-2xl font-black text-slate-900 leading-none">2K+</p>
-                    <p className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Students</p>
+                    <p className="text-base sm:text-xl font-black text-slate-900 leading-none">2K+</p>
+                    <p className="text-[7px] sm:text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Students</p>
                  </div>
-                 <div className="h-8 sm:h-10 w-px bg-slate-200" />
+                 <div className="h-6 sm:h-8 w-px bg-slate-200" />
                  <div className="text-center">
-                    <p className="text-lg sm:text-2xl font-black text-[#FD5A1A] leading-none">100+</p>
-                    <p className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Partners</p>
+                    <p className="text-base sm:text-xl font-black text-[#FD5A1A] leading-none">100+</p>
+                    <p className="text-[7px] sm:text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Partners</p>
                  </div>
               </div>
 
-              <div className="flex flex-col gap-3 sm:gap-4">
+              <div className="flex flex-col gap-2.5 sm:gap-3.5">
                  <Button 
                   onClick={scrollToEnroll}
-                  className="w-full h-14 sm:h-16 rounded-xl sm:rounded-2xl bg-[#0075CF] hover:bg-[#0075CF]/90 text-white font-black text-sm sm:text-base shadow-lg sm:shadow-xl shadow-[#0075CF]/20 transition-all active:scale-[0.98] group"
+                  className="w-full h-13 sm:h-14 rounded-xl sm:rounded-2xl bg-[#0075CF] hover:bg-[#0075CF]/90 text-white font-black text-xs sm:text-sm shadow-lg shadow-[#0075CF]/20 transition-all active:scale-[0.98] group"
                  >
                    <span>Enroll Now</span>
-                   <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-2 transition-transform" />
+                   <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-2 transition-transform" />
                  </Button>
                  <button 
                   onClick={() => setIsModalOpen(false)}
-                  className="text-[10px] sm:text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest"
+                  className="text-[9px] sm:text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest"
                  >
                    I'll explore more first
                  </button>

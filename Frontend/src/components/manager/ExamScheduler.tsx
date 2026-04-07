@@ -1,19 +1,19 @@
-import { useState, useCallback, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { useState, useCallback, useMemo } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -21,81 +21,87 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogFooter
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
-  FormMessage
-} from '@/components/ui/form';
-import { useExams, useCreateExam, useUpdateExam, useDeleteExam, useCreateQuestion, type Exam } from '@/hooks/useManagerData';
-import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
-import { fetchWithAuth } from '@/lib/api';
+  FormMessage,
+  FormDescription,
+} from "@/components/ui/form";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  useExams,
+  useCreateExam,
+  useUpdateExam,
+  useDeleteExam,
+  useCreateQuestion,
+  type Exam,
+} from "@/hooks/useManagerData";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { fetchWithAuth } from "@/lib/api";
 import {
   Plus,
   Calendar as CalendarIcon,
   Clock,
   Trash2,
-  Sparkles,
   Image as ImageIcon,
   CheckCircle2,
-  AlertCircle,
-  BrainCircuit,
   Settings2,
-  ChevronRight,
-  ChevronLeft,
-  FileText,
-  MousePointer2,
   Loader2,
   Layout,
   Rocket,
   RefreshCw,
-  Eye,
-  ArrowRight,
   X,
   Zap,
   ShieldCheck,
   Dna,
-  Link as LinkIcon,
-  Upload,
+  ArrowRight,
   ArrowLeft,
   Target,
-  Layers,
   Activity,
-  UserPlus2,
   ShieldAlert,
   GraduationCap,
   Scale,
-  PlayCircle
-} from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
-import { format, isToday, isFuture } from 'date-fns';
-import { cn } from '@/lib/utils';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { motion, AnimatePresence } from 'framer-motion';
+  PlayCircle,
+  FileText,
+  Star,
+  Shuffle,
+  Brain,
+  BrainCircuit,
+} from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { motion, AnimatePresence } from "framer-motion";
 
 // ─── 1. Validation Schema ────────────────────────────────────────────────────
 
 const examSchema = z.object({
-  title: z.string().min(3, 'Title must be at least 3 characters'),
+  title: z.string().min(3, "Title must be at least 3 characters"),
   description: z.string().optional(),
-  exam_type: z.string().min(1, 'Please select or enter an exam type'),
+  exam_type: z.string().min(1, "Please select or enter an exam type"),
   assigned_image: z.string().optional(),
   scheduled_date: z.string().optional(),
-  duration_minutes: z.coerce.number().min(5, 'Duration must be at least 5 minutes').default(60),
-  total_marks: z.coerce.number().min(1, 'Total marks must be at least 1').default(100),
+  duration_minutes: z.coerce
+    .number()
+    .min(5, "Duration must be at least 5 minutes")
+    .default(60),
+  total_marks: z.coerce
+    .number()
+    .min(1, "Total marks must be at least 1")
+    .default(100),
   passing_percentage: z.coerce.number().min(0).max(100).default(40),
   negative_marking: z.coerce.number().min(0).default(0),
   max_attempts: z.coerce.number().min(1).default(1),
@@ -106,6 +112,8 @@ const examSchema = z.object({
   topics: z.array(z.string()).default([]),
   source_topic: z.string().optional(),
   question_count: z.coerce.number().min(1).default(10),
+  marking_scheme: z.enum(["standard", "weighted", "fixed"]).default("standard"),
+  exam_mode: z.enum(["automated", "manual"]).default("automated"),
 });
 
 type ExamFormValues = z.infer<typeof examSchema>;
@@ -119,37 +127,35 @@ interface GeneratedQuestion {
   difficulty: string;
 }
 
-interface AIQuestion {
-  id: number;
-  text: string;
-  type: string;
-}
-
 // ─── 2. Internal Components ──────────────────────────────────────────────────
 
 function getImageSrc(path: string | null | undefined) {
   if (!path) return null;
-  if (path.startsWith('http') || path.startsWith('data:')) return path;
+  if (path.startsWith("http") || path.startsWith("data:")) return path;
   return `/s3/public/${path}`;
 }
 
-function ExamCard({ 
-  exam, 
-  onUpdate, 
-  onDelete, 
+function ExamCard({
+  exam,
+  onUpdate,
+  onDelete,
   onConfigure,
   isPast,
-  userRole 
-}: { 
-  exam: Exam; 
-  onUpdate: (params: { id: string; status?: string; approval_status?: string }) => void;
+  userRole,
+}: {
+  exam: Exam;
+  onUpdate: (params: {
+    id: string;
+    status?: string;
+    approval_status?: string;
+  }) => void;
   onDelete: (id: string) => void;
   onConfigure: (exam: Exam) => void;
   isPast?: boolean;
   userRole?: string | null;
 }) {
-  const isPending = exam.approval_status === 'pending';
-  const isRejected = exam.approval_status === 'rejected';
+  const isPending = exam.approval_status === "pending";
+  const isRejected = exam.approval_status === "rejected";
   const imgSource = getImageSrc(exam.assigned_image);
 
   return (
@@ -159,99 +165,141 @@ function ExamCard({
       whileTap={{ scale: 0.98 }}
       className={cn(
         "group h-full flex flex-col rounded-[2.5rem] border border-slate-100 bg-white shadow-sm hover:shadow-2xl transition-all duration-500 overflow-hidden cursor-pointer",
-        isPast && "opacity-75 grayscale-[0.2]"
+        isPast && "opacity-75 grayscale-[0.2]",
       )}
       onClick={() => onConfigure(exam)}
     >
       <div className="h-44 relative bg-slate-50 overflow-hidden border-b border-slate-50">
         {imgSource ? (
-          <img 
-            src={imgSource} 
-            className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-transform duration-700" 
-            alt={exam.title} 
+          <img
+            src={imgSource}
+            className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-transform duration-700"
+            alt={exam.title}
             onError={(e) => {
-              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?auto=format&fit=crop&q=80&w=800';
+              (e.target as HTMLImageElement).src =
+                "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?auto=format&fit=crop&q=80&w=800";
             }}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-slate-100">
-             <Layout className="h-10 w-10 text-slate-200" />
+            <Layout className="h-10 w-10 text-slate-200" />
           </div>
         )}
-        
+
         <div className="absolute inset-0 bg-white/40 group-hover:bg-white/80 transition-colors duration-500 flex items-center justify-center opacity-0 group-hover:opacity-100 backdrop-blur-[4px]">
-           <div className="flex flex-col items-center gap-2 text-slate-900">
-              <div className="h-14 w-14 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-white shadow-2xl scale-75 group-hover:scale-100 transition-transform duration-500">
-                 <Settings2 className="h-6 w-6" />
-              </div>
-              <span className="text-[10px] font-bold uppercase tracking-widest">Protocol Setup</span>
-           </div>
+          <div className="flex flex-col items-center gap-2 text-slate-900">
+            <div className="h-14 w-14 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-white shadow-2xl scale-75 group-hover:scale-100 transition-transform duration-500">
+              <Settings2 className="h-6 w-6" />
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-widest">
+              Protocol Setup
+            </span>
+          </div>
         </div>
 
         <div className="absolute top-4 right-4 flex flex-col gap-2 scale-90 origin-top-right">
           <Badge className="bg-white hover:bg-white text-slate-900 border border-slate-100 text-[9px] font-bold uppercase tracking-widest h-6 rounded-full px-3 shadow-sm">
-             {exam.exam_type}
+            {exam.exam_type}
           </Badge>
-          <Badge className={cn(
-             "border-none text-[9px] font-bold uppercase tracking-widest h-6 rounded-full px-3",
-             isPending ? "bg-amber-500 text-white shadow-lg shadow-amber-500/20" :
-             isRejected ? "bg-rose-500 text-white" :
-             exam.status === 'active' ? "bg-slate-900 text-white animate-pulse" : "bg-slate-200 text-slate-500"
-          )}>
-            {isPending ? 'Under review' : isRejected ? 'Rejected' : (exam.approval_status === 'approved' ? 'Approved' : (exam.status || 'Draft'))}
+          <Badge
+            className={cn(
+              "border-none text-[9px] font-bold uppercase tracking-widest h-6 rounded-full px-3",
+              isPending
+                ? "bg-amber-500 text-white shadow-lg shadow-amber-500/20"
+                : isRejected
+                  ? "bg-rose-500 text-white"
+                  : exam.status === "active"
+                    ? "bg-slate-900 text-white animate-pulse"
+                    : "bg-slate-200 text-slate-500",
+            )}
+          >
+            {isPending
+              ? "Under review"
+              : isRejected
+                ? "Rejected"
+                : exam.approval_status === "approved"
+                  ? "Approved"
+                  : exam.status || "Draft"}
           </Badge>
         </div>
       </div>
-      
+
       <div className="p-4 sm:p-8 flex flex-col justify-between flex-1 space-y-4">
         <div className="space-y-3">
-          <h4 className="font-bold text-base sm:text-xl text-slate-900 leading-tight transition-colors line-clamp-2 uppercase tracking-tighter">{exam.title}</h4>
+          <h4 className="font-bold text-base sm:text-xl text-slate-900 leading-tight transition-colors line-clamp-2 uppercase tracking-tighter">
+            {exam.title}
+          </h4>
           <div className="flex flex-wrap items-center gap-3 text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em]">
-            <span className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> {exam.duration_minutes} min</span>
+            <span className="flex items-center gap-1.5">
+              <Clock className="h-3 w-3" /> {exam.duration_minutes} min
+            </span>
             <span className="h-1 w-1 rounded-full bg-slate-100" />
             <span className="flex items-center gap-1.5">
-              <CalendarIcon className="h-3 w-3" /> 
-              {exam.scheduled_date ? format(new Date(exam.scheduled_date), 'MMM dd') : 'Unscheduled'}
+              <CalendarIcon className="h-3 w-3" />
+              {exam.scheduled_date
+                ? format(new Date(exam.scheduled_date), "MMM dd")
+                : "Unscheduled"}
             </span>
           </div>
         </div>
 
         <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
-           {!isPast && exam.approval_status === 'approved' && (
-             <Button
-               className={cn(
-                 "flex-1 h-12 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all active:scale-95",
-                 exam.status === 'active' ? "bg-slate-900 hover:bg-black text-white" : "bg-slate-100 hover:bg-slate-200 text-slate-900"
-               )}
-               onClick={(e) => { e.stopPropagation(); onUpdate({ id: exam.id, status: exam.status === 'active' ? 'completed' : 'active' }); }}
-             >
-               {exam.status === 'active' ? 'End Protocol' : 'Launch Protocol'}
-             </Button>
-           )}
-           {exam.approval_status === 'pending' && userRole !== 'instructor' && (
-             <div className="flex flex-1 gap-2">
-               <Button
-                 className="flex-1 h-12 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[10px] uppercase tracking-widest transition-all active:scale-95"
-                 onClick={(e) => { e.stopPropagation(); onUpdate({ id: exam.id, approval_status: 'approved', status: 'ready' }); }}
-               >
-                 Approve
-               </Button>
-               <Button
-                 className="flex-1 h-12 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-[10px] uppercase tracking-widest transition-all active:scale-95"
-                 onClick={(e) => { e.stopPropagation(); onUpdate({ id: exam.id, approval_status: 'rejected' }); }}
-               >
-                 Reject
-               </Button>
-             </div>
-           )}
-           <Button 
-             variant="ghost" 
-             size="icon" 
-             className="h-12 w-12 rounded-2xl text-slate-200 hover:text-destructive hover:bg-rose-50 transition-all border border-transparent hover:border-rose-100" 
-             onClick={(e) => { e.stopPropagation(); onDelete(exam.id); }}
-           >
-             <Trash2 className="h-4 w-4" />
-           </Button>
+          {!isPast && exam.approval_status === "approved" && (
+            <Button
+              className={cn(
+                "flex-1 h-12 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all active:scale-95",
+                exam.status === "active"
+                  ? "bg-slate-900 hover:bg-black text-white"
+                  : "bg-slate-100 hover:bg-slate-200 text-slate-900",
+              )}
+              onClick={(e) => {
+                e.stopPropagation();
+                onUpdate({
+                  id: exam.id,
+                  status: exam.status === "active" ? "completed" : "active",
+                });
+              }}
+            >
+              {exam.status === "active" ? "End Protocol" : "Launch Protocol"}
+            </Button>
+          )}
+          {exam.approval_status === "pending" && userRole !== "instructor" && (
+            <div className="flex flex-1 gap-2">
+              <Button
+                className="flex-1 h-12 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[10px] uppercase tracking-widest transition-all active:scale-95"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onUpdate({
+                    id: exam.id,
+                    approval_status: "approved",
+                    status: "ready",
+                  });
+                }}
+              >
+                Approve
+              </Button>
+              <Button
+                className="flex-1 h-12 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-[10px] uppercase tracking-widest transition-all active:scale-95"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onUpdate({ id: exam.id, approval_status: "rejected" });
+                }}
+              >
+                Reject
+              </Button>
+            </div>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-12 w-12 rounded-2xl text-slate-200 hover:text-destructive hover:bg-rose-50 transition-all border border-transparent hover:border-rose-100"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(exam.id);
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
       </div>
     </motion.div>
@@ -272,17 +320,19 @@ export function ExamScheduler() {
   const [isConfigureOpen, setIsConfigureOpen] = useState(false);
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestion[]>([]);
+  const [generatedQuestions, setGeneratedQuestions] = useState<
+    GeneratedQuestion[]
+  >([]);
   const [isOtherType, setIsOtherType] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
 
   const form = useForm<ExamFormValues>({
     resolver: zodResolver(examSchema),
     defaultValues: {
-      title: '',
-      description: '',
-      exam_type: 'mock',
-      assigned_image: '',
+      title: "",
+      description: "",
+      exam_type: "mock",
+      assigned_image: "",
       duration_minutes: 60,
       total_marks: 100,
       passing_percentage: 40,
@@ -293,34 +343,41 @@ export function ExamScheduler() {
       shuffle_questions: true,
       proctoring_enabled: false,
       topics: [],
-      scheduled_date: '',
-      source_topic: '',
+      scheduled_date: "",
+      source_topic: "",
       question_count: 10,
+      marking_scheme: "standard",
+      exam_mode: "automated",
     },
   });
 
-  const onDropPoster = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const url = e.dataTransfer.getData('text/plain');
-    if (url && (url.startsWith('http') || url.startsWith('data:'))) {
-      form.setValue('assigned_image', url);
-      toast({ title: 'Visual Identity Attached' });
-      return;
-    }
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (ev) => form.setValue('assigned_image', ev.target?.result as string);
-      reader.readAsDataURL(file);
-    }
-  }, [form, toast]);
+  const onDropPoster = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const url = e.dataTransfer.getData("text/plain");
+      if (url && (url.startsWith("http") || url.startsWith("data:"))) {
+        form.setValue("assigned_image", url);
+        toast({ title: "Visual Identity Attached" });
+        return;
+      }
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = (ev) =>
+          form.setValue("assigned_image", ev.target?.result as string);
+        reader.readAsDataURL(file);
+      }
+    },
+    [form, toast],
+  );
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
+    if (file && file.type.startsWith("image/")) {
       const reader = new FileReader();
-      reader.onload = (ev) => form.setValue('assigned_image', ev.target?.result as string);
+      reader.onload = (ev) =>
+        form.setValue("assigned_image", ev.target?.result as string);
       reader.readAsDataURL(file);
     }
   };
@@ -328,19 +385,21 @@ export function ExamScheduler() {
   const onSubmitProfile = async (data: ExamFormValues) => {
     if (!user?.id) return;
     try {
-      const passing_marks = Math.round((data.total_marks * data.passing_percentage) / 100);
+      const passing_marks = Math.round(
+        (data.total_marks * data.passing_percentage) / 100,
+      );
       await createExam.mutateAsync({
         ...(data as Omit<Exam, "id" | "created_at">),
         course_id: null,
         passing_marks,
-        status: 'draft',
-        approval_status: 'pending',
-        created_by: user.id || '',
+        status: "draft",
+        approval_status: "pending",
+        created_by: user.id || "",
         scheduled_date: data.scheduled_date || new Date().toISOString(),
       });
       setIsAddOpen(false);
       form.reset();
-      toast({ title: 'Architecture Successfully Committed' });
+      toast({ title: "Architecture Successfully Committed" });
     } catch (error) {
       console.error(error);
     }
@@ -348,13 +407,16 @@ export function ExamScheduler() {
 
   const handleGenerateAI = async () => {
     if (!selectedExam || !aiPrompt) {
-      toast({ title: "Inference Error", description: "Subject vectors or context prompts are missing.", variant: "destructive" });
+      toast({
+        title: "Inference Error",
+        description: "Subject vectors or context prompts are missing.",
+        variant: "destructive",
+      });
       return;
     }
-    
+
     setIsGenerating(true);
     try {
-      // Calling the backend proxy to n8n
       interface AIQuestion {
         questionText?: string;
         question_text?: string;
@@ -368,42 +430,53 @@ export function ExamScheduler() {
         difficulty?: string;
       }
 
-      const response = await fetchWithAuth('/manager/generate-questions', {
-        method: 'POST',
+      const response = (await fetchWithAuth("/manager/generate-questions", {
+        method: "POST",
         body: JSON.stringify({
           topic: selectedExam.source_topic || selectedExam.title,
           prompt: aiPrompt,
-          type: 'mcq',
+          type: "mcq",
           count: 5,
-          difficulty: 'medium'
-        })
-      }) as { questions?: AIQuestion[] } | AIQuestion[];
+          difficulty: "medium",
+        }),
+      })) as { questions?: AIQuestion[] } | AIQuestion[];
 
-      // Handle both direct array and nested 'questions' object from AI
-      const aiQuestions = Array.isArray(response) ? response : (response.questions || []);
-      
+      const aiQuestions = Array.isArray(response)
+        ? response
+        : response.questions || [];
+
       const mapped = aiQuestions.map((q: AIQuestion, idx: number) => {
-        // Find the text of the correct option for the correct_answer field
-        const correctOption = q.options?.find((o) => o.isCorrect === true || o.is_correct === true);
-        
+        const correctOption = q.options?.find(
+          (o) => o.isCorrect === true || o.is_correct === true,
+        );
+
         return {
           id: `ai-${idx}-${Date.now()}`,
           text: q.questionText || q.question_text || q.text || "",
-          type: 'mcq',
-          options: q.options?.map((o) => ({
-             text: o.text || o.option_text || "",
-             is_correct: o.isCorrect || o.is_correct || false
-          })) || [],
-          correct_answer: correctOption?.text || correctOption?.option_text || "",
-          difficulty: q.difficulty || 'medium'
+          type: "mcq",
+          options:
+            q.options?.map((o) => ({
+              text: o.text || o.option_text || "",
+              is_correct: o.isCorrect || o.is_correct || false,
+            })) || [],
+          correct_answer:
+            correctOption?.text || correctOption?.option_text || "",
+          difficulty: q.difficulty || "medium",
         };
       });
 
       setGeneratedQuestions(mapped);
-      toast({ title: 'Neural Vectors Synchronized', description: `${mapped.length} assessment items generated.` });
+      toast({
+        title: "Neural Vectors Synchronized",
+        description: `${mapped.length} assessment items generated.`,
+      });
     } catch (error) {
-      console.error('AI Sync Failed:', error);
-      toast({ title: 'AI Grid Sync Failed', description: 'Quantum handshake unsuccessful. Please retry.', variant: 'destructive' });
+      console.error("AI Sync Failed:", error);
+      toast({
+        title: "AI Grid Sync Failed",
+        description: "Quantum handshake unsuccessful. Please retry.",
+        variant: "destructive",
+      });
     } finally {
       setIsGenerating(false);
     }
@@ -413,87 +486,128 @@ export function ExamScheduler() {
 
   const handleDeploySync = async () => {
     if (!generatedQuestions.length) return;
-    
+
     try {
-      const payload = generatedQuestions.map(q => ({
+      const payload = generatedQuestions.map((q) => ({
         topic: selectedExam?.source_topic || selectedExam?.title || "General",
         question_text: q.text,
-        type: 'multiple_choice',
-        difficulty: q.difficulty || 'medium',
+        type: "multiple_choice",
+        difficulty: q.difficulty || "medium",
         options: q.options,
         correct_answer: q.correct_answer,
         explanation: "AI generated assessment item",
         marks: 1,
-        created_by: user?.id || ""
+        created_by: user?.id || "",
       }));
 
       await createQuestions.mutateAsync(payload);
       setIsConfigureOpen(false);
       setGeneratedQuestions([]);
-      toast({ title: 'Architecture Successfully Committed', description: 'Assessment repository core updated.' });
+      toast({
+        title: "Architecture Successfully Committed",
+        description: "Assessment repository core updated.",
+      });
     } catch (error) {
-      console.error('Deployment Failed:', error);
+      console.error("Deployment Failed:", error);
     }
   };
 
-  const pendingExams = useMemo(() => exams.filter(e => e.approval_status === 'pending'), [exams]);
-  const approvedExams = useMemo(() => exams.filter(e => e.approval_status === 'approved'), [exams]);
-  const rejectedExams = useMemo(() => exams.filter(e => e.approval_status === 'rejected'), [exams]);
+  const pendingExams = useMemo(
+    () => exams.filter((e) => e.approval_status === "pending"),
+    [exams],
+  );
+  const approvedExams = useMemo(
+    () => exams.filter((e) => e.approval_status === "approved"),
+    [exams],
+  );
+  const rejectedExams = useMemo(
+    () => exams.filter((e) => e.approval_status === "rejected"),
+    [exams],
+  );
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       <div className="flex items-center justify-between gap-6">
         <div />
-        <Dialog open={isAddOpen} onOpenChange={(val) => {
-          setIsAddOpen(val);
-          if (!val) {
-            setIsOtherType(false);
-            form.reset();
-          }
-        }}>
+        <Dialog
+          open={isAddOpen}
+          onOpenChange={(val) => {
+            setIsAddOpen(val);
+            if (!val) {
+              setIsOtherType(false);
+              form.reset();
+            }
+          }}
+        >
           <DialogTrigger asChild>
-            <Button className="rounded-xl sm:rounded-2xl h-11 sm:h-14 px-6 sm:px-12 bg-slate-900 hover:bg-black text-white font-bold uppercase tracking-widest text-[10px] gap-2 shadow-2xl transition-all hover:scale-105 active:scale-95">
-              <Plus className="h-4 w-4" /> Initialize Workspace
+            <Button className="rounded-xl sm:rounded-2xl h-11 sm:h-14 px-6 sm:px-12 bg-gradient-to-r from-[#001F3D] to-[#000d1a] hover:from-[#FD5A1A] hover:to-[#e04d13] text-white font-black uppercase tracking-[0.2em] text-[10px] gap-3 shadow-[0_10px_40px_rgba(0,31,61,0.2)] hover:shadow-[0_10px_40px_rgba(253,90,26,0.3)] transition-all duration-500 hover:scale-[1.02] active:scale-95 group">
+              <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform duration-500" />
+              Commence Scheduling
             </Button>
           </DialogTrigger>
-          <DialogContent className="w-[calc(100%-1rem)] sm:max-w-2xl p-0 overflow-hidden border-none shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] rounded-2xl sm:rounded-[3rem] bg-white">
-            <DialogHeader className="p-6 sm:p-16 border-b border-slate-50 relative space-y-0">
-               <DialogTitle className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight uppercase leading-none">Initialize <br/> Workspace</DialogTitle>
-               <DialogDescription className="text-xs font-semibold text-slate-500 uppercase tracking-widest mt-2 block">Unified Assessment Module Builder</DialogDescription>
-               <div className="absolute top-6 right-6 sm:top-16 sm:right-16 h-10 w-10 sm:h-12 sm:w-12 rounded-full border border-slate-100 flex items-center justify-center text-slate-200">
-                  <Layout className="h-5 w-5" />
-               </div>
-            </DialogHeader>
-            <div className="p-6 sm:p-12 overflow-y-auto max-h-[60vh] sm:max-h-[65vh] custom-scrollbar bg-gradient-to-b from-slate-50 to-white border-t border-slate-200">
-               <Form {...form}>
-                 <form onSubmit={form.handleSubmit(onSubmitProfile)} className="space-y-12">
-                   <div className="space-y-10">
-                     <FormField
-                       control={form.control}
-                       name="title"
-                       render={({ field }) => (
-                         <FormItem>
-                           <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-2">Assessment Identity</FormLabel>
-                           <FormControl>
-                              <Input placeholder="E.g. FullStack Logic Protocol" className="h-14 sm:h-16 rounded-xl sm:rounded-2xl border-2 border-slate-200 bg-white font-semibold px-4 sm:px-6 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-base outline-none shadow-sm" {...field} />
-                           </FormControl>
-                           <FormMessage />
-                         </FormItem>
-                       )}
-                     />
+          <DialogContent className="w-[calc(100%-1rem)] sm:max-w-3xl p-0 overflow-hidden border-none shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] rounded-2xl sm:rounded-[3rem] bg-white flex flex-col max-h-[90vh] sm:max-h-[85vh]">
+            <DialogHeader className="p-8 sm:p-20 relative space-y-0 overflow-hidden bg-gradient-to-br from-[#001F3D] to-[#000d1a] border-b border-white/5 shrink-0">
+              {/* Cyber Glows */}
+              <div className="absolute -top-24 -right-24 w-64 h-64 bg-[#FD5A1A]/10 blur-[100px] rounded-full pointer-events-none" />
+              <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-[#0075CF]/10 blur-[100px] rounded-full pointer-events-none" />
 
-                     <div className="grid grid-cols-2 gap-8">
+              <DialogTitle className="text-3xl sm:text-5xl font-black text-white tracking-tighter uppercase leading-none italic">
+                Setup <br /> <span className="text-[#FD5A1A]">New Exam</span>
+              </DialogTitle>
+              <DialogDescription className="text-[10px] font-black text-[#0075CF] uppercase tracking-[0.4em] mt-4 block">
+                Official Assessment Creation System
+              </DialogDescription>
+              <div className="absolute top-8 right-8 sm:top-20 sm:right-20 h-12 w-12 sm:h-16 sm:w-16 rounded-[1.5rem] bg-white/5 border border-white/10 flex items-center justify-center text-[#FD5A1A] backdrop-blur-xl shadow-2xl shadow-black/20">
+                <CalendarIcon className="h-6 w-6 sm:h-8 sm:w-8" />
+              </div>
+            </DialogHeader>
+            <div className="p-8 sm:p-14 flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-white">
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(onSubmitProfile)}
+                  className="space-y-16"
+                >
+                  <div className="space-y-16">
+                    {/* Identity & Basic Config */}
+                    <div className="space-y-10">
+                      <div className="flex items-center gap-3">
+                        <div className="h-1.5 w-8 bg-[#0075CF] rounded-full" />
+                        <h5 className="text-[11px] font-black uppercase tracking-[0.3em] text-[#001F3D]">
+                          General Exam Details
+                        </h5>
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                        <FormField
+                          control={form.control}
+                          name="title"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <div className="relative group">
+                                  <Input
+                                    placeholder="Assessment Title"
+                                    className="h-18 rounded-2xl border-2 border-slate-100 bg-slate-50/50 font-black px-8 focus:border-[#0075CF] focus:bg-white transition-all text-sm uppercase italic text-[#001F3D] outline-none shadow-none"
+                                    {...field}
+                                  />
+                                  <Star className="absolute right-6 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-200 group-focus-within:text-[#FD5A1A] transition-colors" />
+                                </div>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
                         <FormField
                           control={form.control}
                           name="exam_type"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-700 ml-1">Class Profile</FormLabel>
                               {isOtherType ? (
                                 <div className="relative group">
-                                  <Input 
-                                    placeholder="Enter custom type..." 
-                                    className="h-14 sm:h-16 rounded-xl sm:rounded-2xl border-2 border-slate-200 bg-white font-semibold flex items-center px-4 sm:px-6 focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-base shadow-sm pr-12"
+                                  <Input
+                                    placeholder="Custom Type"
+                                    className="h-18 rounded-2xl border-2 border-slate-100 bg-slate-50/50 font-black px-8 focus:border-[#FD5A1A] transition-all text-sm uppercase italic outline-none"
                                     {...field}
                                     autoFocus
                                   />
@@ -501,32 +615,46 @@ export function ExamScheduler() {
                                     type="button"
                                     variant="ghost"
                                     size="icon"
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-900"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300"
                                     onClick={() => {
                                       setIsOtherType(false);
-                                      field.onChange('mock');
+                                      field.onChange("mock");
                                     }}
                                   >
                                     <X className="h-4 w-4" />
                                   </Button>
                                 </div>
                               ) : (
-                                <Select onValueChange={(val) => {
-                                  if (val === 'others') {
-                                    setIsOtherType(true);
-                                    field.onChange('');
-                                  } else {
-                                    field.onChange(val);
-                                  }
-                                }} value={field.value}>
+                                <Select
+                                  onValueChange={(val) => {
+                                    if (val === "others") {
+                                      setIsOtherType(true);
+                                      field.onChange("");
+                                    } else {
+                                      field.onChange(val);
+                                    }
+                                  }}
+                                  value={field.value}
+                                >
                                   <FormControl>
-                                    <SelectTrigger className="h-14 sm:h-16 rounded-xl sm:rounded-2xl border-2 border-slate-200 bg-white font-semibold flex items-center px-4 sm:px-6 focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-base shadow-sm outline-none">
-                                      <SelectValue placeholder="Select type" />
+                                    <SelectTrigger className="h-18 rounded-2xl border-2 border-slate-100 bg-slate-50/50 font-black px-8 focus:border-[#0075CF] transition-all text-sm uppercase italic outline-none text-[#001F3D]">
+                                      <SelectValue placeholder="Select Exam Category" />
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent className="rounded-2xl border-slate-100 p-2 shadow-2xl">
-                                    {['mock', 'certification', 'live', 'others'].map(t => (
-                                      <SelectItem key={t} value={t} className="font-bold py-4 uppercase text-[10px] tracking-widest rounded-xl hover:bg-slate-50">{t} paper</SelectItem>
+                                    {[
+                                      "mock",
+                                      "certification",
+                                      "live",
+                                      "others",
+                                    ].map((t) => (
+                                      <SelectItem
+                                        key={t}
+                                        value={t}
+                                        className="font-black py-4 uppercase text-[10px] tracking-widest rounded-xl hover:bg-slate-50"
+                                      >
+                                        {t} Portal
+                                      </SelectItem>
                                     ))}
                                   </SelectContent>
                                 </Select>
@@ -534,195 +662,444 @@ export function ExamScheduler() {
                             </FormItem>
                           )}
                         />
+                      </div>
+                    </div>
+
+                    {/* Logic & Marking Options (Radio Selectors) */}
+                    <div className="space-y-10">
+                      <div className="flex items-center gap-3">
+                        <div className="h-1.5 w-8 bg-[#FD5A1A] rounded-full" />
+                        <h5 className="text-[11px] font-black uppercase tracking-[0.3em] text-[#001F3D]">
+                          Scoring & Delivery
+                        </h5>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                         <FormField
                           control={form.control}
-                          name="assigned_image"
+                          name="marking_scheme"
                           render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-700 ml-1">Visual Poster</FormLabel>
+                            <FormItem className="space-y-6">
+                              <div className="space-y-1">
+                                <FormLabel className="text-[11px] font-black uppercase tracking-widest text-[#001F3D]">
+                                  Marking Protocol
+                                </FormLabel>
+                                <FormDescription className="text-[10px] italic">
+                                  Select the scoring algorithm for this portal
+                                </FormDescription>
+                              </div>
                               <FormControl>
-                                <div className="space-y-4">
-                                  {field.value ? (
-                                    <div className="relative h-16 w-full rounded-[1.5rem] overflow-hidden group border border-slate-100 shadow-sm">
-                                       <img src={field.value} className="w-full h-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all" alt="" />
-                                       <div className="absolute inset-0 bg-white/90 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
-                                          <Button type="button" variant="ghost" size="icon" className="h-10 w-10 text-rose-500 hover:bg-rose-50 rounded-full" onClick={() => field.onChange('')}>
-                                            <Trash2 className="h-5 w-5" />
-                                          </Button>
-                                       </div>
-                                    </div>
-                                  ) : (
-                                    <div 
-                                      className="group h-14 sm:h-16 rounded-xl sm:rounded-2xl border-2 border-dashed border-slate-300 bg-white flex items-center px-4 sm:px-6 hover:border-primary hover:bg-slate-50 transition-all cursor-pointer shadow-sm"
-                                      onDragOver={(e) => e.preventDefault()}
-                                      onDrop={onDropPoster}
-                                      onClick={() => document.getElementById('init-pos')?.click()}
+                                <RadioGroup
+                                  onValueChange={field.onChange}
+                                  defaultValue={field.value}
+                                  className="grid grid-cols-1 gap-4"
+                                >
+                                  {[
+                                    {
+                                      value: "standard",
+                                      label: "Standard Grid",
+                                      desc: "Even distribution via item weights",
+                                    },
+                                    {
+                                      value: "weighted",
+                                      label: "Weighted Hybrid",
+                                      desc: "Difficulty-based dynamic scoring",
+                                    },
+                                  ].map((opt) => (
+                                    <FormItem
+                                      key={opt.value}
+                                      className="flex items-center space-x-0 space-y-0"
                                     >
-                                       <ImageIcon className="h-5 w-5 text-slate-400 mr-4 group-hover:text-primary transition-colors" />
-                                       <span className="text-xs font-bold text-slate-500 group-hover:text-slate-900 uppercase tracking-widest transition-colors">Initialize Poster</span>
-                                    </div>
-                                  )}
-                                  <input id="init-pos" type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
-                                </div>
+                                      <FormControl>
+                                        <RadioGroupItem
+                                          value={opt.value}
+                                          className="sr-only"
+                                        />
+                                      </FormControl>
+                                      <FormLabel
+                                        className={cn(
+                                          "flex-1 flex items-center justify-between p-5 rounded-2xl border-2 transition-all cursor-pointer group",
+                                          field.value === opt.value
+                                            ? "border-[#0075CF] bg-[#0075CF]/5"
+                                            : "border-slate-50 bg-slate-50/30 hover:border-slate-200",
+                                        )}
+                                      >
+                                        <div className="space-y-1">
+                                          <p
+                                            className={cn(
+                                              "text-xs font-black uppercase tracking-widest transition-colors",
+                                              field.value === opt.value
+                                                ? "text-[#0075CF]"
+                                                : "text-slate-400",
+                                            )}
+                                          >
+                                            {opt.label}
+                                          </p>
+                                          <p className="text-[9px] text-slate-400 font-medium italic">
+                                            {opt.desc}
+                                          </p>
+                                        </div>
+                                        <div
+                                          className={cn(
+                                            "h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all",
+                                            field.value === opt.value
+                                              ? "border-[#0075CF] bg-white"
+                                              : "border-slate-200",
+                                          )}
+                                        >
+                                          {field.value === opt.value && (
+                                            <div className="h-2 w-2 rounded-full bg-[#0075CF]" />
+                                          )}
+                                        </div>
+                                      </FormLabel>
+                                    </FormItem>
+                                  ))}
+                                </RadioGroup>
                               </FormControl>
                             </FormItem>
                           )}
                         />
-                     </div>
 
-                     <div className="p-5 sm:p-10 rounded-2xl sm:rounded-[2.5rem] bg-gradient-to-br from-slate-100 via-slate-50 to-white border-2 border-slate-200 space-y-6 sm:space-y-10 shadow-sm">
                         <FormField
-                           control={form.control}
-                           name="scheduled_date"
-                           render={({ field }) => (
-                             <FormItem>
-                               <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-700 ml-1 flex items-center gap-2">
-                                  <CalendarIcon className="h-3 w-3" /> Activation Timeline
-                               </FormLabel>
-                               <FormControl>
-                                 <Input type="datetime-local" className="h-14 rounded-xl border-slate-100 font-medium px-8 shadow-none focus:border-slate-900 transition-all" {...field} />
-                               </FormControl>
-                             </FormItem>
-                           )}
-                         />
-                         
-                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
-                            <FormField
-                              control={form.control}
-                              name="duration_minutes"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-2">Duration (M)</FormLabel>
-                                  <FormControl>
-                                    <Input type="number" className="h-14 rounded-xl border-slate-100 font-medium px-8 text-center shadow-none focus:border-slate-900 transition-all" {...field} />
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={form.control}
-                              name="total_marks"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-2">Total Score</FormLabel>
-                                  <FormControl>
-                                    <Input type="number" className="h-14 rounded-xl border-slate-100 font-medium px-8 text-center shadow-none focus:border-slate-900 transition-all" {...field} />
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-                         </div>
+                          control={form.control}
+                          name="exam_mode"
+                          render={({ field }) => (
+                            <FormItem className="space-y-6">
+                              <div className="space-y-1">
+                                <FormLabel className="text-[11px] font-black uppercase tracking-widest text-[#001F3D]">
+                                  Deploy Mode
+                                </FormLabel>
+                                <FormDescription className="text-[10px] italic">
+                                  Execution pattern for assessment cycle
+                                </FormDescription>
+                              </div>
+                              <FormControl>
+                                <RadioGroup
+                                  onValueChange={field.onChange}
+                                  defaultValue={field.value}
+                                  className="grid grid-cols-1 gap-4"
+                                >
+                                  {[
+                                    {
+                                      value: "automated",
+                                      label: "Automatic",
+                                      desc: "Questions added automatically",
+                                    },
+                                    {
+                                      value: "manual",
+                                      label: "Manual",
+                                      desc: "Select questions manually",
+                                    },
+                                  ].map((opt) => (
+                                    <FormItem
+                                      key={opt.value}
+                                      className="flex items-center space-x-0 space-y-0"
+                                    >
+                                      <FormControl>
+                                        <RadioGroupItem
+                                          value={opt.value}
+                                          className="sr-only"
+                                        />
+                                      </FormControl>
+                                      <FormLabel
+                                        className={cn(
+                                          "flex-1 flex items-center justify-between p-5 rounded-2xl border-2 transition-all cursor-pointer group",
+                                          field.value === opt.value
+                                            ? "border-[#FD5A1A] bg-[#FD5A1A]/5"
+                                            : "border-slate-50 bg-slate-50/30 hover:border-slate-200",
+                                        )}
+                                      >
+                                        <div className="space-y-1">
+                                          <p
+                                            className={cn(
+                                              "text-xs font-black uppercase tracking-widest transition-colors",
+                                              field.value === opt.value
+                                                ? "text-[#FD5A1A]"
+                                                : "text-slate-400",
+                                            )}
+                                          >
+                                            {opt.label}
+                                          </p>
+                                          <p className="text-[9px] text-slate-400 font-medium italic">
+                                            {opt.desc}
+                                          </p>
+                                        </div>
+                                        <div
+                                          className={cn(
+                                            "h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all",
+                                            field.value === opt.value
+                                              ? "border-[#FD5A1A] bg-white"
+                                              : "border-slate-200",
+                                          )}
+                                        >
+                                          {field.value === opt.value && (
+                                            <div className="h-2 w-2 rounded-full bg-[#FD5A1A]" />
+                                          )}
+                                        </div>
+                                      </FormLabel>
+                                    </FormItem>
+                                  ))}
+                                </RadioGroup>
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
 
-                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6 pt-2">
-                            <FormField
-                              control={form.control}
-                              name="negative_marking"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-2">Neg. Marks</FormLabel>
-                                  <FormControl>
-                                    <Input type="number" step="0.25" className="h-14 rounded-xl border-slate-100 font-medium px-6 text-center shadow-none focus:border-slate-900 transition-all" {...field} />
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={form.control}
-                              name="max_attempts"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-2">Max Retakes</FormLabel>
-                                  <FormControl>
-                                    <Input type="number" className="h-14 rounded-xl border-slate-100 font-medium px-6 text-center shadow-none focus:border-slate-900 transition-all" {...field} />
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={form.control}
-                              name="passing_percentage"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-2">Threshold %</FormLabel>
-                                  <FormControl>
-                                    <Input type="number" className="h-14 rounded-xl border-slate-100 font-medium px-6 text-center shadow-none focus:border-slate-900 transition-all" {...field} />
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-                         </div>
-                     </div>
+                    {/* Integrity & Constraints */}
+                    <div className="p-10 rounded-[3rem] bg-slate-50/50 border-2 border-slate-50 space-y-12">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="h-1.5 w-8 bg-[#001F3D] rounded-full" />
+                          <h5 className="text-[11px] font-black uppercase tracking-[0.3em] text-[#001F3D]">
+                            Security & Rules
+                          </h5>
+                        </div>
+                        <div className="px-4 py-1.5 bg-white rounded-full border border-slate-100 flex items-center gap-2">
+                          <Activity className="h-3 w-3 text-[#0075CF]" />
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                            Active Monitoring
+                          </span>
+                        </div>
+                      </div>
 
-                     <FormField
-                        control={form.control}
-                        name="description"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-2">Assessment Briefing</FormLabel>
-                            <FormControl>
-                              <Textarea placeholder="Instructions for protocol candidates..." className="min-h-[100px] rounded-[1.5rem] border-slate-100 bg-slate-50/30 p-8 font-medium text-slate-600 focus:bg-white focus:border-slate-900 transition-all" {...field} />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                   </div>
-                   <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6 sm:pt-10">
-                     <Button type="button" variant="ghost" className="h-18 flex-1 rounded-2xl font-bold uppercase text-[10px] tracking-widest text-slate-300 hover:text-slate-900 hover:bg-slate-50" onClick={() => setIsAddOpen(false)}>Abort Change</Button>
-                     <Button 
-                        type="submit"
-                        disabled={createExam.isPending}
-                        className="h-18 flex-[2] rounded-2xl bg-slate-900 hover:bg-black text-white font-bold uppercase tracking-widest text-[11px] shadow-2xl transition-all flex items-center justify-center gap-2"
-                      >
-                        {createExam.isPending ? (
-                          <>
-                            <Loader2 className="h-5 w-5 animate-spin" />
-                            <span>Synchronizing Architecture...</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>Initialize Profile</span>
-                            <ChevronRight className="h-5 w-5" />
-                          </>
-                        )}
-                      </Button>
-                   </div>
-                 </form>
-               </Form>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                        <FormField
+                          control={form.control}
+                          name="shuffle_questions"
+                          render={({ field }) => (
+                            <FormItem className="flex items-center justify-between p-8 bg-white rounded-2xl border border-slate-100 shadow-sm group">
+                              <div className="space-y-2 flex items-start gap-5">
+                                <div className="h-12 w-12 rounded-xl bg-[#0075CF]/5 flex items-center justify-center text-[#0075CF]">
+                                  <Shuffle className="h-5 w-5" />
+                                </div>
+                                <div className="space-y-0.5">
+                                  <FormLabel className="text-xs font-black uppercase tracking-widest text-[#001F3D]">
+                                    Shuffle Questions
+                                  </FormLabel>
+                                  <FormDescription className="text-[9px] font-medium italic">
+                                    Randomize question vectors for every user
+                                    session
+                                  </FormDescription>
+                                </div>
+                              </div>
+                              <FormControl>
+                                <Switch
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                  className="data-[state=checked]:bg-[#0075CF]"
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="browser_security"
+                          render={({ field }) => (
+                            <FormItem className="flex items-center justify-between p-8 bg-white rounded-2xl border border-slate-100 shadow-sm group">
+                              <div className="space-y-2 flex items-start gap-5">
+                                <div className="h-12 w-12 rounded-xl bg-[#FD5A1A]/5 flex items-center justify-center text-[#FD5A1A]">
+                                  <ShieldCheck className="h-5 w-5" />
+                                </div>
+                                <div className="space-y-0.5">
+                                  <FormLabel className="text-xs font-black uppercase tracking-widest text-[#001F3D]">
+                                    Strict Browser Mode
+                                  </FormLabel>
+                                  <FormDescription className="text-[9px] font-medium italic">
+                                    Enforce secure browsing environment
+                                    protection
+                                  </FormDescription>
+                                </div>
+                              </div>
+                              <FormControl>
+                                <Switch
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                  className="data-[state=checked]:bg-[#FD5A1A]"
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      {/* Timing Grids */}
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-6 border-t border-slate-100">
+                        <FormField
+                          control={form.control}
+                          name="duration_minutes"
+                          render={({ field }) => (
+                            <FormItem className="space-y-3">
+                              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                Duration (M)
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  className="h-14 rounded-xl border-2 border-slate-100 bg-white font-black px-6 text-center text-base focus:border-[#0075CF] transition-all"
+                                  {...field}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="passing_percentage"
+                          render={({ field }) => (
+                            <FormItem className="space-y-3">
+                              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                Threshold %
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  className="h-14 rounded-xl border-2 border-slate-100 bg-white font-black px-6 text-center text-base focus:border-[#0075CF] transition-all"
+                                  {...field}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="scheduled_date"
+                          render={({ field }) => (
+                            <FormItem className="space-y-3">
+                              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-[#FD5A1A]">
+                                Activation Timeline
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="datetime-local"
+                                  className="h-14 rounded-xl border-2 border-[#FD5A1A]/20 bg-white font-black px-6 text-xs focus:border-[#FD5A1A] transition-all"
+                                  {...field}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem className="space-y-6">
+                          <div className="flex items-center gap-3">
+                            <div className="h-1.5 w-8 bg-slate-200 rounded-full" />
+                            <h5 className="text-[11px] font-black uppercase tracking-[0.3em] text-[#001F3D]">
+                              Exam Instructions
+                            </h5>
+                          </div>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Instructions for protocol candidates..."
+                              className="min-h-[140px] rounded-[2.5rem] border-2 border-slate-50 bg-slate-50/30 p-10 font-bold text-slate-800 italic focus:bg-white focus:border-[#0075CF] transition-all outline-none resize-none px-10"
+                              {...field}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-6 pt-10 pb-12">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="h-20 flex-1 rounded-2xl font-black uppercase text-[11px] tracking-[0.4em] text-slate-300 hover:text-rose-500"
+                      onClick={() => setIsAddOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={createExam.isPending}
+                      className="h-20 flex-[2] rounded-2xl bg-gradient-to-r from-[#001F3D] to-[#000d1a] text-white font-black uppercase tracking-[0.4em] text-[12px] shadow-[0_20px_50px_rgba(0,31,61,0.2)] hover:shadow-[0_20px_50px_rgba(0,117,207,0.3)] transition-all flex items-center justify-center gap-4 active:scale-95 group"
+                    >
+                      {createExam.isPending ? (
+                        <>
+                          <Loader2 className="h-6 w-6 animate-spin" />
+                          <span>SYNCING...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Create New Exam</span>
+                          <ArrowRight className="h-6 w-6 group-hover:translate-x-3 transition-transform duration-500 text-[#FD5A1A]" />
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
-        <Tabs defaultValue="pending" className="w-full">
+      <Tabs defaultValue="pending" className="w-full">
         <TabsList className="mb-6 sm:mb-12 h-auto sm:h-20 rounded-2xl sm:rounded-[2.5rem] bg-white border border-slate-100 p-1.5 sm:p-2 shadow-sm flex flex-wrap sm:flex-nowrap items-center gap-1 sm:gap-2">
-           {['pending', 'approved', 'rejected'].map(tab => (
-             <TabsTrigger 
-               key={tab} 
-               value={tab} 
-                className="flex-1 h-10 sm:h-full rounded-xl sm:rounded-full font-bold text-[8px] sm:text-[10px] uppercase tracking-wider sm:tracking-widest text-slate-300 data-[state=active]:bg-slate-900 data-[state=active]:text-white transition-all duration-500 whitespace-nowrap"
-             >
-                {tab === 'pending' ? `Approval (${pendingExams.length})` : tab === 'approved' ? `Approved Protocols (${approvedExams.length})` : `Rejected (${rejectedExams.length})`}
-             </TabsTrigger>
-           ))}
+          {["pending", "approved", "rejected"].map((tab) => (
+            <TabsTrigger
+              key={tab}
+              value={tab}
+              className="flex-1 h-10 sm:h-full rounded-xl sm:rounded-full font-bold text-[8px] sm:text-[10px] uppercase tracking-wider sm:tracking-widest text-slate-300 data-[state=active]:bg-slate-900 data-[state=active]:text-white transition-all duration-500 whitespace-nowrap"
+            >
+              {tab === "pending"
+                ? `Approval (${pendingExams.length})`
+                : tab === "approved"
+                  ? `Approved Protocols (${approvedExams.length})`
+                  : `Rejected (${rejectedExams.length})`}
+            </TabsTrigger>
+          ))}
         </TabsList>
-        {['pending', 'approved', 'rejected'].map((tabVal) => (
-          <TabsContent key={tabVal} value={tabVal} className="focusVisible:outline-none">
-            <motion.div 
+        {["pending", "approved", "rejected"].map((tabVal) => (
+          <TabsContent
+            key={tabVal}
+            value={tabVal}
+            className="focusVisible:outline-none"
+          >
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="grid gap-10 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
             >
               {(() => {
-                const list = tabVal === 'pending' ? pendingExams : tabVal === 'approved' ? approvedExams : rejectedExams;
-                if (list.length === 0) return (
-                  <div className="col-span-full py-40 text-center border-2 border-dashed border-slate-100 rounded-[4rem] bg-slate-50/20">
-                     <Rocket className="h-12 w-12 text-slate-100 mx-auto mb-6" />
-                     <h4 className="text-2xl font-bold text-slate-200 uppercase tracking-[0.3em] font-sans">Workspace Empty</h4>
-                     <p className="text-[10px] font-medium text-slate-200 uppercase tracking-widest mt-2">Analytical data set is currently zero</p>
-                  </div>
-                );
-                return list.map(exam => (
-                  <ExamCard key={exam.id} exam={exam} userRole={userRole} onUpdate={(p) => updateExam.mutate({ id: p.id, ...p })} onDelete={(id) => deleteExam.mutate(id)} onConfigure={(e) => { setSelectedExam(e); setIsConfigureOpen(true); }} />
+                const list =
+                  tabVal === "pending"
+                    ? pendingExams
+                    : tabVal === "approved"
+                      ? approvedExams
+                      : rejectedExams;
+                if (list.length === 0)
+                  return (
+                    <div className="col-span-full py-40 text-center border-2 border-dashed border-slate-100 rounded-[4rem] bg-slate-50/20">
+                      <Rocket className="h-12 w-12 text-slate-100 mx-auto mb-6" />
+                      <h4 className="text-2xl font-bold text-slate-200 uppercase tracking-[0.3em] font-sans">
+                        Workspace Empty
+                      </h4>
+                      <p className="text-[10px] font-medium text-slate-200 uppercase tracking-widest mt-2">
+                        Analytical data set is currently zero
+                      </p>
+                    </div>
+                  );
+                return list.map((exam) => (
+                  <ExamCard
+                    key={exam.id}
+                    exam={exam}
+                    userRole={userRole}
+                    onUpdate={(p) => updateExam.mutate({ id: p.id, ...p })}
+                    onDelete={(id) => deleteExam.mutate(id)}
+                    onConfigure={(e) => {
+                      setSelectedExam(e);
+                      setIsConfigureOpen(true);
+                    }}
+                  />
                 ));
               })()}
             </motion.div>
@@ -733,250 +1110,454 @@ export function ExamScheduler() {
       <Dialog open={isConfigureOpen} onOpenChange={setIsConfigureOpen}>
         <DialogContent className="sm:max-w-none w-screen h-screen m-0 rounded-none p-0 border-none bg-white overflow-hidden text-slate-900">
           <DialogHeader className="sr-only">
-            <DialogTitle>{selectedExam?.title || 'Exam Configuration'}</DialogTitle>
-            <DialogDescription>Modify protocol settings and deployment parameters</DialogDescription>
+            <DialogTitle>
+              {selectedExam?.title || "Exam Configuration"}
+            </DialogTitle>
+            <DialogDescription>
+              Modify protocol settings and deployment parameters
+            </DialogDescription>
           </DialogHeader>
           {selectedExam && (
             <div className="flex flex-col h-full animate-in slide-in-from-bottom duration-1000">
-              
               {/* Clean Header Bar */}
               <div className="h-28 border-b border-slate-50 flex items-center justify-between px-16 bg-white/80 backdrop-blur-3xl sticky top-0 z-50">
-                <div className="flex items-center gap-8">
-                  <Button variant="ghost" size="icon" className="h-12 w-12 rounded-full hover:bg-slate-50 text-slate-400 hover:text-slate-900" onClick={() => setIsConfigureOpen(false)}>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-8">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-full hover:bg-slate-50 text-slate-400 hover:text-slate-900 shrink-0"
+                    onClick={() => setIsConfigureOpen(false)}
+                  >
                     <ArrowLeft className="h-5 w-5" />
                   </Button>
                   <div className="space-y-1">
-                    <h3 className="text-3xl font-bold text-slate-900 tracking-tighter uppercase italic">{selectedExam.title}</h3>
-                    <div className="flex items-center gap-4 text-[9px] font-medium text-slate-400 uppercase tracking-[0.3em]">
-                       <span className="flex items-center gap-2"><Target className="h-3 w-3" /> Protocol Build</span>
-                       <span className="h-1 w-1 rounded-full bg-slate-100" />
-                       <span className="flex items-center gap-2 font-mono text-slate-300">#{selectedExam.id?.toUpperCase().slice(0, 12)}</span>
+                    <h3 className="text-xl sm:text-3xl font-bold text-slate-900 tracking-tighter uppercase italic line-clamp-1">
+                      {selectedExam.title}
+                    </h3>
+                    <div className="flex items-center gap-2 sm:gap-4 text-[8px] sm:text-[9px] font-medium text-slate-400 uppercase tracking-[0.2em] sm:tracking-[0.3em]">
+                      <span className="flex items-center gap-1 sm:gap-2">
+                        <Target className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> Build
+                      </span>
+                      <span className="h-1 w-1 rounded-full bg-slate-100" />
+                      <span className="font-mono text-slate-300">
+                        #{selectedExam.id?.toUpperCase().slice(0, 8)}
+                      </span>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-6">
-                  <Button variant="ghost" className="h-14 px-8 rounded-2xl font-bold uppercase text-[10px] tracking-widest text-slate-300 hover:text-rose-500 hover:bg-rose-50" onClick={() => deleteExam.mutate(selectedExam.id)}>Delete Protocol</Button>
-                  <Button variant="outline" className="h-14 px-8 rounded-2xl font-bold uppercase text-[10px] tracking-widest text-slate-400 border-slate-100 hover:bg-slate-50 gap-3" onClick={() => {
-                    toast({ title: 'Simulation Initialized', description: 'Entering Sandbox Preview Environment...' });
-                  }}>
+                <div className="hidden md:flex items-center gap-6">
+                  <Button
+                    variant="ghost"
+                    className="h-14 px-8 rounded-2xl font-bold uppercase text-[10px] tracking-widest text-slate-300 hover:text-rose-500 hover:bg-rose-50"
+                    onClick={() => deleteExam.mutate(selectedExam.id)}
+                  >
+                    Delete Protocol
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-14 px-8 rounded-2xl font-bold uppercase text-[10px] tracking-widest text-slate-400 border-slate-100 hover:bg-slate-50 gap-3"
+                    onClick={() => {
+                      toast({
+                        title: "Simulation Initialized",
+                        description: "Entering Sandbox Preview Environment...",
+                      });
+                    }}
+                  >
                     <PlayCircle className="h-4 w-4" /> Simulation Suite
                   </Button>
-                  <Button className="h-14 px-12 rounded-2xl bg-slate-900 hover:bg-black text-white font-bold uppercase text-[11px] tracking-widest shadow-2xl shadow-slate-200 transition-all hover:scale-[1.02]" onClick={() => {
-                    updateExam.mutate({ id: selectedExam.id, approval_status: 'pending' });
-                    toast({ title: 'Admin Request Dispatched', description: 'Your protocol is now in the review queue.' });
-                    setIsConfigureOpen(false);
-                  }}>Submit for Admin Approval</Button>
+                  <Button
+                    className="h-14 px-12 rounded-2xl bg-slate-900 hover:bg-black text-white font-bold uppercase text-[11px] tracking-widest shadow-2xl shadow-slate-200 transition-all hover:scale-[1.02]"
+                    onClick={() => {
+                      updateExam.mutate({
+                        id: selectedExam.id,
+                        approval_status: "pending",
+                      });
+                      toast({
+                        title: "Admin Request Dispatched",
+                        description:
+                          "Your protocol is now in the review queue.",
+                      });
+                      setIsConfigureOpen(false);
+                    }}
+                  >
+                    Submit for Admin Approval
+                  </Button>
                 </div>
               </div>
 
               <div className="flex-1 overflow-y-auto custom-scrollbar p-16 lg:p-28 bg-white selection:bg-slate-100">
-                <div className="max-w-7xl mx-auto space-y-32">
-                  
+                <div className="md:hidden flex flex-col gap-4 mb-16 p-6 rounded-3xl bg-slate-50 border border-slate-100">
+                  <Button
+                    className="w-full h-14 rounded-2xl bg-slate-900 text-white font-bold uppercase text-[10px] tracking-widest shadow-xl"
+                    onClick={() => {
+                      updateExam.mutate({
+                        id: selectedExam.id,
+                        approval_status: "pending",
+                      });
+                      setIsConfigureOpen(false);
+                    }}
+                  >
+                    Request Approval
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full h-12 rounded-2xl font-bold uppercase text-[9px] tracking-widest text-slate-400 border-slate-200"
+                    onClick={() => deleteExam.mutate(selectedExam.id)}
+                  >
+                    Delete Exam
+                  </Button>
+                </div>
+
+                <div className="max-w-7xl mx-auto space-y-20 sm:space-y-32">
                   {/* Hero Specs Area */}
                   <div className="grid lg:grid-cols-2 gap-24 items-start">
                     <div className="space-y-16 py-10">
                       <div className="space-y-6">
-                        <Badge className="bg-slate-50 text-slate-400 border border-slate-100 text-[9px] px-5 py-2 rounded-full font-bold uppercase tracking-[0.2em] shadow-sm">Workspace // Architecture</Badge>
-                        <h4 className="text-7xl font-bold text-slate-900 tracking-tighter leading-[0.9] max-w-xl italic uppercase">Exam <br/> Scheduling <br/> <span className="not-italic text-slate-300 font-medium">Protocol</span></h4>
+                        <Badge className="bg-slate-50 text-slate-400 border border-slate-100 text-[9px] px-5 py-2 rounded-full font-bold uppercase tracking-[0.2em] shadow-sm">
+                          Workspace // Architecture
+                        </Badge>
+                        <h4 className="text-4xl sm:text-7xl font-bold text-slate-900 tracking-tighter leading-[1.1] sm:leading-[0.9] max-w-xl italic uppercase">
+                          Exam <br /> Scheduling <br />{" "}
+                          <span className="not-italic text-slate-300 font-medium">
+                            Status
+                          </span>
+                        </h4>
                       </div>
-                      
+
                       <div className="grid grid-cols-2 gap-16 pt-8 border-t border-slate-50">
                         <div className="space-y-3">
-                           <span className="text-[11px] font-bold text-slate-300 uppercase tracking-[0.3em]">Deployment Status</span>
-                           <div className="flex items-center gap-4 text-2xl font-bold text-slate-900 tracking-tighter">
-                             <div className="h-2 w-2 rounded-full bg-slate-900" /> {selectedExam.status?.toUpperCase() || 'DRAFT'}
-                           </div>
+                          <span className="text-[11px] font-bold text-slate-300 uppercase tracking-[0.3em]">
+                            Deployment Status
+                          </span>
+                          <div className="flex items-center gap-4 text-2xl font-bold text-slate-900 tracking-tighter">
+                            <div className="h-2 w-2 rounded-full bg-slate-900" />{" "}
+                            {selectedExam.status?.toUpperCase() || "DRAFT"}
+                          </div>
                         </div>
                         <div className="space-y-3">
-                           <span className="text-[11px] font-bold text-slate-300 uppercase tracking-[0.3em]">Protocol Type</span>
-                           <div className="text-2xl font-bold text-slate-900 uppercase tracking-tighter">{selectedExam.exam_type} Module</div>
+                          <span className="text-[11px] font-bold text-slate-300 uppercase tracking-[0.3em]">
+                            Protocol Type
+                          </span>
+                          <div className="text-2xl font-bold text-slate-900 uppercase tracking-tighter">
+                            {selectedExam.exam_type} Module
+                          </div>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-6 p-8 rounded-[2.5rem] bg-slate-50 border border-slate-100/50">
                         <div className="h-16 w-16 rounded-[1.5rem] bg-white border border-slate-100 flex items-center justify-center text-slate-300">
-                           <FileText className="h-6 w-6" />
+                          <FileText className="h-6 w-6" />
                         </div>
                         <div className="flex-1 space-y-1">
-                           <h5 className="text-[11px] font-bold text-slate-900 uppercase tracking-widest">Candidate Briefing</h5>
-                           <p className="text-xs font-medium text-slate-400 line-clamp-2 italic">"{selectedExam.description || 'No specific instructions initialized for this protocol.'}"</p>
+                          <h5 className="text-[11px] font-bold text-slate-900 uppercase tracking-widest">
+                            Candidate Briefing
+                          </h5>
+                          <p className="text-xs font-medium text-slate-400 line-clamp-2 italic">
+                            "
+                            {selectedExam.description ||
+                              "No specific instructions initialized for this protocol."}
+                            "
+                          </p>
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="relative group perspective-1000">
-                      <div className="relative h-[600px] w-full bg-slate-50 rounded-[4rem] overflow-hidden shadow-[0_50px_100px_-30px_rgba(0,0,0,0.08)] border border-slate-100 transition-all duration-1000 group-hover:shadow-[0_80px_150px_-40px_rgba(0,0,0,0.12)]">
-                         {selectedExam.assigned_image ? (
-                           <img src={getImageSrc(selectedExam.assigned_image)!} className="w-full h-full object-cover grayscale-[0.8] group-hover:grayscale-0 transition-all duration-1000 scale-100 group-hover:scale-105" alt="" />
-                         ) : (
-                           <div className="h-full flex flex-col items-center justify-center gap-6">
-                              <Layout className="h-24 w-24 text-slate-100" />
-                              <span className="text-[10px] font-bold text-slate-200 uppercase tracking-[0.5em]">No Visual Key</span>
-                           </div>
-                         )}
-                         <div className="absolute inset-0 ring-1 ring-inset ring-black/5 rounded-[4rem]" />
+                      <div className="relative h-[300px] sm:h-[600px] w-full bg-slate-50 rounded-[2.5rem] sm:rounded-[4rem] overflow-hidden shadow-[0_50px_100px_-30px_rgba(0,0,0,0.08)] border border-slate-100 transition-all duration-1000 group-hover:shadow-[0_80px_150px_-40px_rgba(0,0,0,0.12)]">
+                        {selectedExam.assigned_image ? (
+                          <img
+                            src={getImageSrc(selectedExam.assigned_image)!}
+                            className="w-full h-full object-cover grayscale-[0.8] group-hover:grayscale-0 transition-all duration-1000 scale-100 group-hover:scale-105"
+                            alt=""
+                          />
+                        ) : (
+                          <div className="h-full flex flex-col items-center justify-center gap-6">
+                            <Layout className="h-16 w-16 sm:h-24 sm:w-24 text-slate-100" />
+                            <span className="text-[10px] font-bold text-slate-200 uppercase tracking-[0.5em]">
+                              No Visual Key
+                            </span>
+                          </div>
+                        )}
+                        <div className="absolute inset-0 ring-1 ring-inset ring-black/5 rounded-[2.5rem] sm:rounded-[4rem]" />
                       </div>
-                      <div className="absolute -bottom-12 -right-12 h-44 w-44 bg-white border border-slate-50 rounded-[3rem] shadow-2xl p-10 flex flex-col justify-center gap-2 transition-all duration-700 delay-100 group-hover:-translate-y-4">
-                         <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest leading-none">Latency</span>
-                         <span className="text-4xl font-bold text-slate-900 tracking-tighter">0.8<span className="text-sm font-medium text-slate-300 ml-1">ms</span></span>
-                         <div className="w-full h-1 bg-slate-50 mt-2 relative overflow-hidden rounded-full">
-                            <div className="absolute inset-0 bg-slate-900 w-2/3" />
-                         </div>
+                      <div className="absolute -bottom-6 -right-6 sm:-bottom-12 sm:-right-12 h-32 w-32 sm:h-44 sm:w-44 bg-white border border-slate-50 rounded-[2rem] sm:rounded-[3rem] shadow-2xl p-6 sm:p-10 flex flex-col justify-center gap-1 sm:gap-2 transition-all duration-700 delay-100 group-hover:-translate-y-4">
+                        <span className="text-[8px] sm:text-[10px] font-bold text-slate-300 uppercase tracking-widest leading-none">
+                          Latency
+                        </span>
+                        <span className="text-2xl sm:text-4xl font-bold text-slate-900 tracking-tighter">
+                          0.8
+                          <span className="text-[10px] sm:text-sm font-medium text-slate-300 ml-1">
+                            ms
+                          </span>
+                        </span>
+                        <div className="w-full h-1 bg-slate-50 mt-1 relative overflow-hidden rounded-full">
+                          <div className="absolute inset-0 bg-slate-900 w-2/3" />
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Operational Matrix Grid */}
                   <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10">
-                     {[
-                       { label: 'Total Score Load', value: `${selectedExam.total_marks || 100} PTS`, icon: Target, color: 'text-slate-900' },
-                       { label: 'Duration Allocation', value: `${selectedExam.duration_minutes || 60} MIN`, icon: Clock, color: 'text-slate-900' },
-                       { label: 'Neg. Marks Load', value: `${selectedExam.negative_marking || 0} PER`, icon: Scale, color: 'text-rose-500' },
-                       { label: 'Proficiency Threshold', value: `${((selectedExam.passing_marks || 1) / (selectedExam.total_marks || 1) * 100).toFixed(0)}%`, icon: GraduationCap, color: 'text-emerald-500' },
-                     ].map((stat, i) => (
-                       <div key={i} className="p-12 rounded-[3rem] bg-white border border-slate-50 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.03)] hover:shadow-2xl transition-all duration-700 group flex flex-col items-center text-center">
-                         <div className={cn("h-16 w-16 rounded-[1.5rem] bg-slate-50 flex items-center justify-center mb-10 transition-transform group-hover:scale-110 duration-700", stat.color)}>
-                            <stat.icon className="h-6 w-6" />
-                         </div>
-                         <h5 className="text-[10px] font-bold text-slate-300 uppercase tracking-[0.3em] mb-3">{stat.label}</h5>
-                         <p className="text-4xl font-bold text-slate-900 tracking-tighter leading-none italic">{stat.value}</p>
-                       </div>
-                     ))}
+                    {[
+                      {
+                        label: "Total Score Load",
+                        value: `${selectedExam.total_marks || 100} PTS`,
+                        icon: Target,
+                        color: "text-slate-900",
+                      },
+                      {
+                        label: "Duration Allocation",
+                        value: `${selectedExam.duration_minutes || 60} MIN`,
+                        icon: Clock,
+                        color: "text-slate-900",
+                      },
+                      {
+                        label: "Neg. Marks Load",
+                        value: `${selectedExam.negative_marking || 0} PER`,
+                        icon: Scale,
+                        color: "text-rose-500",
+                      },
+                      {
+                        label: "Proficiency Threshold",
+                        value: `${(((selectedExam.passing_marks || 1) / (selectedExam.total_marks || 1)) * 100).toFixed(0)}%`,
+                        icon: GraduationCap,
+                        color: "text-emerald-500",
+                      },
+                    ].map((stat, i) => (
+                      <div
+                        key={i}
+                        className="p-12 rounded-[3rem] bg-white border border-slate-50 shadow-[0_30px_60px_-15_rgba(0,0,0,0.03)] hover:shadow-2xl transition-all duration-700 group flex flex-col items-center text-center"
+                      >
+                        <div
+                          className={cn(
+                            "h-16 w-16 rounded-[1.5rem] bg-slate-50 flex items-center justify-center mb-10 transition-transform group-hover:scale-110 duration-700",
+                            stat.color,
+                          )}
+                        >
+                          <stat.icon className="h-6 w-6" />
+                        </div>
+                        <h5 className="text-[10px] font-bold text-slate-300 uppercase tracking-[0.3em] mb-2 sm:mb-3">
+                          {stat.label}
+                        </h5>
+                        <p className="text-2xl sm:text-4xl font-bold text-slate-900 tracking-tighter leading-none italic">
+                          {stat.value}
+                        </p>
+                      </div>
+                    ))}
                   </div>
 
                   {/* Behavioral Protocol Suite */}
                   <div className="grid lg:grid-cols-2 gap-12">
                     <div className="p-16 rounded-[4rem] border border-slate-50 bg-slate-50/30 space-y-12">
-                       <div className="flex items-center justify-between border-b border-slate-100 pb-10">
-                          <div>
-                            <h5 className="text-2xl font-bold text-slate-900 tracking-tight uppercase italic">Security Protocol Suite</h5>
-                            <p className="text-[9px] font-medium text-slate-400 uppercase tracking-[0.4em] mt-2">Integrity Vector Management</p>
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-10">
+                        <div>
+                          <h5 className="text-2xl font-bold text-slate-900 tracking-tight uppercase italic">
+                            Security Protocol Suite
+                          </h5>
+                          <p className="text-[9px] font-medium text-slate-400 uppercase tracking-[0.4em] mt-2">
+                            Integrity Vector Management
+                          </p>
+                        </div>
+                        <ShieldAlert className="h-8 w-8 text-slate-200" />
+                      </div>
+
+                      <div className="grid sm:grid-cols-2 gap-6">
+                        {[
+                          {
+                            label: "Biometric AI",
+                            icon: Brain,
+                            active: selectedExam.proctoring_enabled,
+                          },
+                          {
+                            label: "OS Airlock",
+                            icon: ShieldCheck,
+                            active: selectedExam.browser_security,
+                          },
+                          {
+                            label: "Entropy Shuffle",
+                            icon: RefreshCw,
+                            active: selectedExam.shuffle_questions,
+                          },
+                          {
+                            label: "Instant Sync",
+                            icon: CheckCircle2,
+                            active: selectedExam.show_results,
+                          },
+                        ].map((p, i) => (
+                          <div
+                            key={i}
+                            className="flex items-center justify-between p-8 rounded-[2rem] bg-white border border-slate-100 hover:border-slate-300 transition-all group"
+                          >
+                            <div className="flex items-center gap-4 text-slate-400 group-hover:text-slate-900 transition-colors">
+                              <p.icon className="h-5 w-5" />
+                              <span className="text-[10px] font-bold uppercase tracking-widest">
+                                {p.label}
+                              </span>
+                            </div>
+                            <Switch
+                              checked={p.active}
+                              className="data-[state=checked]:bg-slate-900"
+                            />
                           </div>
-                          <ShieldAlert className="h-8 w-8 text-slate-200" />
-                       </div>
-                       
-                       <div className="grid sm:grid-cols-2 gap-6">
-                         {[
-                           { label: 'Biometric AI', icon: BrainCircuit, active: selectedExam.proctoring_enabled },
-                           { label: 'OS Airlock', icon: ShieldCheck, active: selectedExam.browser_security },
-                           { label: 'Entropy Shuffle', icon: RefreshCw, active: selectedExam.shuffle_questions },
-                           { label: 'Instant Sync', icon: CheckCircle2, active: selectedExam.show_results }
-                         ].map((p, i) => (
-                           <div key={i} className="flex items-center justify-between p-8 rounded-[2rem] bg-white border border-slate-100 hover:border-slate-300 transition-all group">
-                             <div className="flex items-center gap-4 text-slate-400 group-hover:text-slate-900 transition-colors">
-                                <p.icon className="h-5 w-5" />
-                                <span className="text-[10px] font-bold uppercase tracking-widest">{p.label}</span>
-                             </div>
-                             <Switch checked={p.active} className="data-[state=checked]:bg-slate-900" />
-                           </div>
-                         ))}
-                       </div>
+                        ))}
+                      </div>
                     </div>
 
                     <div className="p-16 rounded-[4rem] border border-slate-50 bg-white shadow-[0_40px_100px_-30px_rgba(0,0,0,0.05)] space-y-12 relative overflow-hidden">
-                       <div className="absolute top-16 right-16 scale-150 opacity-[0.02] pointer-events-none">
-                          <Rocket className="h-40 w-40 text-slate-900" />
-                       </div>
-                       <div className="space-y-4">
-                          <h5 className="text-2xl font-bold text-slate-900 tracking-tight uppercase italic">Candidate Allocation</h5>
-                          <p className="text-[9px] font-medium text-slate-400 uppercase tracking-[0.4em]">Protocol Participant Boundaries</p>
-                       </div>
-                       
-                       <div className="space-y-10">
-                          <div className="p-8 rounded-[2.5rem] bg-slate-50 border border-slate-100 space-y-4">
-                             <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-widest text-slate-400">
-                                <span>Retake Capability</span>
-                                <span className="text-slate-900">{selectedExam.max_attempts || 1} ATTEMPTS</span>
-                             </div>
-                             <div className="h-2 w-full bg-white rounded-full overflow-hidden">
-                                <div className="h-full bg-slate-900" style={{ width: `${Math.min(100, (selectedExam.max_attempts || 1) * 20)}%` }} />
-                             </div>
-                          </div>
+                      <div className="absolute top-16 right-16 scale-150 opacity-[0.02] pointer-events-none">
+                        <Rocket className="h-40 w-40 text-slate-900" />
+                      </div>
+                      <div className="space-y-4">
+                        <h5 className="text-2xl font-bold text-slate-900 tracking-tight uppercase italic">
+                          Candidate Allocation
+                        </h5>
+                        <p className="text-[9px] font-medium text-slate-400 uppercase tracking-[0.4em]">
+                          Protocol Participant Boundaries
+                        </p>
+                      </div>
 
-                          <div className="flex items-center gap-6">
-                             <div className="flex-1 p-8 rounded-[2.5rem] bg-slate-50 border border-slate-100 text-center">
-                                <span className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.3em] block mb-2">Subject Matter Vectors</span>
-                                <span className="text-3xl font-bold text-slate-900 tracking-tighter italic">{selectedExam.total_questions || 10} ITEMS</span>
-                             </div>
-                             <Button className="h-24 w-24 rounded-full bg-slate-900 hover:bg-black text-white flex flex-col items-center justify-center p-0 shadow-2xl transition-all hover:scale-105">
-                                <Plus className="h-5 w-5 mb-1" />
-                                <span className="text-[8px] font-bold uppercase tracking-widest">Add Meta</span>
-                             </Button>
+                      <div className="space-y-10">
+                        <div className="p-8 rounded-[2.5rem] bg-slate-50 border border-slate-100 space-y-4">
+                          <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                            <span>Retake Capability</span>
+                            <span className="text-slate-900">
+                              {selectedExam.max_attempts || 1} ATTEMPTS
+                            </span>
                           </div>
-                       </div>
+                          <div className="h-2 w-full bg-white rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-slate-900"
+                              style={{
+                                width: `${Math.min(100, (selectedExam.max_attempts || 1) * 20)}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-6">
+                          <div className="flex-1 p-8 rounded-[2.5rem] bg-slate-50 border border-slate-100 text-center">
+                            <span className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.3em] block mb-2">
+                              Subject Matter Vectors
+                            </span>
+                            <span className="text-3xl font-bold text-slate-900 tracking-tighter italic">
+                              {selectedExam.total_questions || 10} ITEMS
+                            </span>
+                          </div>
+                          <Button className="h-24 w-24 rounded-full bg-slate-900 hover:bg-black text-white flex flex-col items-center justify-center p-0 shadow-2xl transition-all hover:scale-105">
+                            <Plus className="h-5 w-5 mb-1" />
+                            <span className="text-[8px] font-bold uppercase tracking-widest">
+                              Add Meta
+                            </span>
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
                   {/* n8n Neural Core Sync */}
                   <div className="p-20 rounded-[5rem] bg-slate-900 text-white relative overflow-hidden shadow-[0_60px_120px_-20px_rgba(0,0,0,0.3)] group">
-                     <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 pointer-events-none" />
-                     <div className="absolute -top-32 -right-32 w-96 h-96 bg-blue-500 blur-[150px] opacity-20 group-hover:opacity-40 transition-opacity duration-1000" />
-                     
-                     <div className="relative z-10 space-y-16">
-                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-12">
-                           <div className="space-y-4">
-                              <div className="flex items-center gap-4">
-                                 <Zap className="h-8 w-8 text-yellow-400" />
-                                 <h4 className="text-4xl font-bold tracking-tighter uppercase italic leading-none">Neural <br/> Synchronizer</h4>
-                              </div>
-                              <p className="text-[10px] font-medium text-white/40 uppercase tracking-[0.6em] max-w-sm">Autonomous subject matter population via topic analysis engine</p>
-                           </div>
-                           <Button className="h-20 px-16 rounded-[2.5rem] bg-white hover:bg-slate-100 text-slate-900 font-bold uppercase text-[11px] tracking-[0.2em] gap-4 shadow-2xl transition-all hover:scale-105 active:scale-95" onClick={handleGenerateAI} disabled={isGenerating}>
-                             {isGenerating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Dna className="h-5 w-5" />}
-                             {isGenerating ? 'Analyzing Logic Grid...' : 'Sync Subject Matter'}
-                           </Button>
-                        </div>
+                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 pointer-events-none" />
+                    <div className="absolute -top-32 -right-32 w-96 h-96 bg-blue-500 blur-[150px] opacity-20 group-hover:opacity-40 transition-opacity duration-1000" />
 
-                        <div className="relative group/input max-w-4xl mx-auto">
-                           <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-[3rem] blur opacity-20 group-hover/input:opacity-50 transition duration-700" />
-                           <Input 
-                             placeholder="Define assessment subject vectors..." 
-                             className="relative h-24 rounded-[3rem] bg-white/5 border-white/10 text-white font-bold text-2xl px-12 placeholder:text-white/10 focus:border-white/20 transition-all outline-none shadow-none" 
-                             value={aiPrompt}
-                             onChange={(e) => setAiPrompt(e.target.value)}
-                           />
-                        </div>
-
-                        {generatedQuestions.length > 0 && (
-                          <div className="grid md:grid-cols-3 gap-8 pt-10 animate-in fade-in slide-in-from-bottom-10 duration-1000">
-                             {generatedQuestions.map(q => (
-                               <div key={q.id} className="p-12 rounded-[3.5rem] bg-white/5 border border-white/5 backdrop-blur-xl hover:bg-white/10 transition-all duration-500 group/card">
-                                  <Badge className="bg-white/10 text-white/60 border-none text-[8px] font-bold uppercase tracking-widest mb-6 group-hover/card:bg-white group-hover/card:text-slate-900 transition-colors italic">{q.type} item</Badge>
-                                  <p className="text-sm font-medium text-white/80 leading-relaxed group-hover/card:text-white transition-colors">"{q.text}"</p>
-                               </div>
-                             ))}
+                    <div className="relative z-10 space-y-16">
+                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-12">
+                        <div className="space-y-4 max-w-md">
+                          <div className="flex items-center gap-4">
+                            <Zap className="h-8 w-8 text-yellow-400" />
+                            <h4 className="text-3xl sm:text-4xl font-bold tracking-tighter uppercase italic leading-none">
+                              Neural <br /> Synchronizer
+                            </h4>
                           </div>
-                        )}
-                     </div>
+                          <p className="text-[9px] sm:text-[10px] font-medium text-white/40 uppercase tracking-[0.4em] sm:tracking-[0.6em]">
+                            Autonomous subject matter population via topic
+                            analysis engine
+                          </p>
+                        </div>
+                        <Button
+                          className="w-full sm:w-auto h-16 sm:h-20 px-8 sm:px-16 rounded-3xl sm:rounded-[2.5rem] bg-white hover:bg-slate-100 text-slate-900 font-bold uppercase text-[10px] sm:text-[11px] tracking-[0.2em] gap-4 shadow-2xl transition-all hover:scale-105 active:scale-95"
+                          onClick={handleGenerateAI}
+                          disabled={isGenerating}
+                        >
+                          {isGenerating ? (
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                          ) : (
+                            <Dna className="h-5 w-5" />
+                          )}
+                          {isGenerating ? "Processing Grid..." : "Sync Data"}
+                        </Button>
+                      </div>
+
+                      <div className="relative group/input max-w-4xl mx-auto">
+                        <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-3xl sm:rounded-[3rem] blur opacity-20 group-hover/input:opacity-50 transition duration-700" />
+                        <Input
+                          placeholder="Define assessment topic..."
+                          className="relative h-16 sm:h-24 rounded-3xl sm:rounded-[3rem] bg-white/5 border-white/10 text-white font-bold text-lg sm:text-2xl px-6 sm:px-12 placeholder:text-white/10 focus:border-white/20 transition-all outline-none shadow-none"
+                          value={aiPrompt}
+                          onChange={(e) => setAiPrompt(e.target.value)}
+                        />
+                      </div>
+
+                      {generatedQuestions.length > 0 && (
+                        <div className="grid md:grid-cols-3 gap-8 pt-10 animate-in fade-in slide-in-from-bottom-10 duration-1000">
+                          {generatedQuestions.map((q) => (
+                            <div
+                              key={q.id}
+                              className="p-12 rounded-[3.5rem] bg-white/5 border border-white/5 backdrop-blur-xl hover:bg-white/10 transition-all duration-500 group/card"
+                            >
+                              <Badge className="bg-white/10 text-white/60 border-none text-[8px] font-bold uppercase tracking-widest mb-6 group-hover/card:bg-white group-hover/card:text-slate-900 transition-colors italic">
+                                {q.type} item
+                              </Badge>
+                              <p className="text-sm font-medium text-white/80 leading-relaxed group-hover/card:text-white transition-colors">
+                                "{q.text}"
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Clean Footer Controls */}
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-8 sm:gap-12 pt-12 sm:pt-20 border-t border-slate-50">
+                        <div className="hidden sm:flex items-center gap-10">
+                          <div className="flex items-center gap-4 text-slate-400 group cursor-help">
+                            <ShieldCheck className="h-5 w-5 group-hover:text-slate-900 transition-colors" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest">
+                              AOTMS SECURED
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col sm:flex-row w-full sm:w-auto items-center gap-4 sm:gap-6 px-16">
+                          <Button
+                            variant="ghost"
+                            className="w-full sm:w-auto h-14 sm:h-18 px-12 rounded-2xl font-black uppercase text-[10px] tracking-widest text-slate-300 hover:text-slate-900 hover:bg-slate-50"
+                            onClick={() => setIsConfigureOpen(false)}
+                          >
+                            Cancel Process
+                          </Button>
+                          <Button
+                            className="w-full sm:w-auto h-16 sm:h-18 px-16 sm:px-20 rounded-2xl bg-slate-900 hover:bg-black text-white font-bold uppercase text-[10px] sm:text-[11px] tracking-widest shadow-2xl transition-all active:scale-95 gap-4"
+                            onClick={handleDeploySync}
+                            disabled={
+                              createQuestions.isPending ||
+                              !generatedQuestions.length
+                            }
+                          >
+                            {createQuestions.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <ArrowRight className="h-5 w-5" />
+                            )}
+                            {createQuestions.isPending
+                              ? "Saving..."
+                              : "Finish & Deploy"}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Clean Footer Controls */}
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-12 pt-20 border-t border-slate-50">
-                    <div className="flex items-center gap-10">
-                       <div className="flex items-center gap-4 text-slate-400 group cursor-help">
-                          <ShieldCheck className="h-5 w-5 group-hover:text-slate-900 transition-colors" />
-                          <span className="text-[10px] font-bold uppercase tracking-widest">AOTMS SECURED</span>
-                       </div>
-                       <div className="flex items-center gap-4 text-slate-400 group cursor-help">
-                          <Activity className="h-5 w-5 group-hover:text-slate-900 transition-colors" />
-                          <span className="text-[10px] font-bold uppercase tracking-widest">VECTORS VERIFIED</span>
-                       </div>
-                    </div>
-                    <div className="flex items-center gap-6">
-                      <Button variant="ghost" className="h-18 px-12 rounded-2xl font-bold uppercase text-[10px] tracking-widest text-slate-300 hover:text-slate-900 hover:bg-slate-50" onClick={() => setIsConfigureOpen(false)}>Discard Workspace</Button>
-                      <Button 
-                        className="h-18 px-20 rounded-2xl bg-slate-900 hover:bg-black text-white font-bold uppercase text-[11px] tracking-widest shadow-[0_25px_60px_-15px_rgba(0,0,0,0.15)] transition-all hover:scale-[1.05] active:scale-95 gap-4" 
-                        onClick={handleDeploySync}
-                        disabled={createQuestions.isPending || !generatedQuestions.length}
-                      >
-                        {createQuestions.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-5 w-5" />}
-                        {createQuestions.isPending ? 'Committing Core...' : 'Commence Deployment'}
-                      </Button>
-                    </div>
-                  </div>
+                  <div className="h-60" />
                 </div>
-
-                <div className="h-60" />
               </div>
             </div>
           )}

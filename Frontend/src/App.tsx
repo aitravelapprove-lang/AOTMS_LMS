@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { SocketProvider } from "@/hooks/useSocket";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import InstructorRegister from "./pages/InstructorRegister";
@@ -31,6 +31,7 @@ import Features from "./pages/Features";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import ScrollToTop from "@/components/ScrollToTop";
 import { SuspensionOverlay } from "@/components/auth/SuspensionOverlay";
+import PageLoader from "@/components/PageLoader";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -126,6 +127,35 @@ const RoleRedirector = () => {
   return null;
 };
 
+const RouteChangeLoader = () => {
+  const location = useLocation();
+  const [isLoading, setIsLoading] = useState(false);
+  const [prevPath, setPrevPath] = useState(location.pathname);
+
+  useEffect(() => {
+    if (location.pathname !== prevPath) {
+      setIsLoading(true);
+      setPrevPath(location.pathname);
+      
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 700);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [location.pathname, prevPath]);
+
+  useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return <PageLoader isVisible={isLoading} />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -134,6 +164,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <RouteChangeLoader />
             <SuspensionOverlay />
             <ScrollToTop />
             <BackNavigationHandler />

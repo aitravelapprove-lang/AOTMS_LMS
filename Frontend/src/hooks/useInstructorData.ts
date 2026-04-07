@@ -933,39 +933,28 @@ export function useInstructorAllStudents() {
       if (!user?.id) return [];
 
       // 1. Fetch instructor's courses
-      const courses = await fetchWithAuth(`/data/courses?instructor_id=eq.${user.id}`);
-      const courseIds = courses.map((c: Course) => c.id);
+      const courses = await fetchWithAuth<Course[]>(`/data/courses?instructor_id=eq.${user.id}`);
+      const courseIds = courses.map(c => c.id || c._id).filter(Boolean);
 
       if (courseIds.length === 0) return [];
 
       // 2. Fetch enrollments for these courses
-      // Note: We might need to chunk this if there are too many courses, but for now we'll assume it fits in the URL length or use a different strategy if backend supports it.
-      // Using 'in' filter for course_id
-      const allEnrollments = await fetchWithAuth(`/data/course_enrollments?course_id=in.(${courseIds.join(',')})`);
+      const allEnrollments = await fetchWithAuth<any[]>(`/data/course_enrollments?course_id=in.(${courseIds.join(',')})`);
       
       const studentMap = new Map<string, InstructorStudent>();
 
-      allEnrollments.forEach((enrollment: {
-        id: string;
-        user_id: string | { _id: string };
-        course_id: string;
-        user_name?: string;
-        user_email?: string;
-        progress_percentage?: number;
-        last_accessed_at?: string;
-        enrolled_at?: string;
-      }) => {
-        const userId = typeof enrollment.user_id === 'string' 
-            ? enrollment.user_id 
-            : enrollment.user_id?._id?.toString();
+      allEnrollments.forEach((enrollment) => {
+        const u = enrollment.user_id;
+        const userId = typeof u === 'string' ? u : u?._id?.toString() || u?.id;
         
         if (!userId) return;
 
         // Skip if the student is the instructor themselves
         if (userId === user.id?.toString()) return;
 
-        const course = courses.find((c: Course) => c.id === enrollment.course_id);
-        const courseTitle = course?.title || 'Unknown Course';
+        const course = enrollment.course_id;
+        const courseTitle = (typeof course === 'object' && course?.title) ? course.title : 'Unknown Course';
+        const courseId = typeof course === 'string' ? course : course?._id?.toString() || course?.id;
 
         if (studentMap.has(userId)) {
           const existing = studentMap.get(userId)!;
@@ -979,7 +968,7 @@ export function useInstructorAllStudents() {
           }
 
           existing.overallProgress = Math.round(
-            (existing.overallProgress + progress) / existing.enrolledCourses
+            ((existing.overallProgress * (existing.enrolledCourses - 1)) + progress) / existing.enrolledCourses
           );
 
           const lastWatched = new Date(enrollment.last_accessed_at || enrollment.enrolled_at);
@@ -989,7 +978,7 @@ export function useInstructorAllStudents() {
           }
 
           existing.courseEnrollments.push({
-            courseId: enrollment.course_id,
+            courseId: courseId,
             courseTitle: courseTitle,
             progress: progress,
             lastWatchedAt: enrollment.last_accessed_at || enrollment.enrolled_at
@@ -1005,9 +994,10 @@ export function useInstructorAllStudents() {
           studentMap.set(userId, {
             id: enrollment.id,
             userId: userId,
-            name: enrollment.user_name || 'Student', 
-            email: enrollment.user_email || '',
-            avatarUrl: undefined,
+            name: (typeof u === 'object' && u?.full_name) ? u.full_name : 'Student', 
+            email: (typeof u === 'object' && u?.email) ? u.email : '',
+            avatarUrl: (typeof u === 'object' && u?.avatar_url) ? u.avatar_url : undefined,
+            mobileNumber: (typeof u === 'object' && u?.phone) ? u.phone : undefined,
             enrolledCourses: 1,
             completedCourses: progress === 100 ? 1 : 0,
             inProgressCourses: progress > 0 && progress < 100 ? 1 : 0,
@@ -1018,7 +1008,7 @@ export function useInstructorAllStudents() {
             enrolledAt: enrollment.enrolled_at || new Date().toISOString(),
             certificates: progress === 100 ? 1 : 0,
             courseEnrollments: [{
-              courseId: enrollment.course_id,
+              courseId: courseId,
               courseTitle: courseTitle,
               progress: progress,
               lastWatchedAt: enrollment.last_accessed_at || enrollment.enrolled_at
@@ -1026,30 +1016,6 @@ export function useInstructorAllStudents() {
           });
         }
       });
-      
-      // Fetch core account info from Users collection and additional info from Profiles
-      const studentIds = Array.from(studentMap.keys());
-      if (studentIds.length > 0) {
-          const [usersBatch, profilesBatch] = await Promise.all([
-              fetchWithAuth(`/data/users?id=in.(${studentIds.join(',')})`),
-              fetchWithAuth(`/data/profiles?user_id=in.(${studentIds.join(',')})`)
-          ]);
-
-          const profileMap = new Map();
-          profilesBatch.forEach((p: { id?: string; user_id?: string; [key: string]: unknown }) => profileMap.set((p.id || p.user_id)?.toString(), p));
-
-          usersBatch.forEach((u: { id?: string; _id?: string; full_name?: string; email?: string; avatar_url?: string; [key: string]: unknown }) => {
-              const userIdStr = (u.id || u._id)?.toString();
-              const student = studentMap.get(userIdStr);
-              if (student) {
-                  const profile = profileMap.get(userIdStr);
-                  student.name = u.full_name || profile?.full_name || u.user_name || student.name;
-                  student.email = u.email || profile?.email || student.email;
-                  student.avatarUrl = u.avatar_url || profile?.avatar_url || student.avatarUrl;
-                  student.mobileNumber = profile?.mobile_number || profile?.phone || u.phone || student.mobileNumber;
-              }
-          });
-      }
 
       // Convert map to array and deduplicate by email (handle different IDs with same email)
       const uniqueStudentsMap = new Map<string, InstructorStudent>();

@@ -98,7 +98,7 @@ export function SuspensionOverlay() {
 
                         <div className="relative group">
                             <div className="absolute -inset-8 bg-red-600/20 rounded-[4rem] blur-3xl opacity-50 animate-pulse"></div>
-                            <div className="relative bg-zinc-900/80 backdrop-blur-3xl border-2 border-red-600/50 rounded-[3rem] p-12 md:p-16 shadow-[0_0_50px_rgba(220,38,38,0.3)] text-center min-w-[320px] md:min-w-[500px]">
+                            <div className="relative bg-zinc-900/80 backdrop-blur-3xl border-2 border-red-600/50 rounded-2xl sm:rounded-[3rem] p-6 sm:p-12 md:p-16 shadow-[0_0_50px_rgba(220,38,38,0.3)] text-center w-[90vw] sm:w-auto sm:min-w-[320px] md:min-w-[500px]">
                                 <div className="text-red-500 text-xs font-black uppercase tracking-[0.4em] mb-8 flex items-center justify-center gap-3">
                                     <Timer className="h-4 w-4" />
                                     Time Remaining Until Restoration

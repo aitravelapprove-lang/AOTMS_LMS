@@ -125,7 +125,7 @@ export function ManagerEnrollments({ enrollments, loading, onRefresh }: ManagerE
         <select
           value={filterCourse}
           onChange={(e) => setFilterCourse(e.target.value)}
-          className="h-10 px-3 rounded-lg border border-input bg-background text-sm min-w-[160px]"
+          className="h-10 px-3 rounded-lg border border-input bg-background text-sm w-full sm:min-w-[160px] sm:w-auto"
         >
           <option value="all">All Courses</option>
           {courses.map(course => (
@@ -150,7 +150,7 @@ export function ManagerEnrollments({ enrollments, loading, onRefresh }: ManagerE
           {filteredEnrollments.map((enrollment) => (
             <Card key={enrollment.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-4">
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                   <div className="flex items-center gap-4">
                     <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
                       <span className="text-sm font-bold text-primary">
@@ -167,8 +167,8 @@ export function ManagerEnrollments({ enrollments, loading, onRefresh }: ManagerE
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-6">
-                    <div className="text-right">
+                  <div className="flex flex-wrap items-center gap-3 sm:gap-6">
+                    <div className="text-left sm:text-right">
                       <Badge variant="secondary" className="mb-1">
                         {enrollment.course_name}
                       </Badge>
@@ -176,7 +176,7 @@ export function ManagerEnrollments({ enrollments, loading, onRefresh }: ManagerE
                         {formatDate(enrollment.enrollment_date)}
                       </p>
                     </div>
-                    <div className="text-right min-w-[80px]">
+                    <div className="text-left sm:text-right min-w-0">
                       <p className="text-lg font-bold text-green-600">
                         {enrollment.price}
                       </p>

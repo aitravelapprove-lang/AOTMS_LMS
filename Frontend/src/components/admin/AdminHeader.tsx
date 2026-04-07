@@ -45,8 +45,8 @@ export function AdminHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-50 flex h-16 sm:h-20 items-center justify-between bg-white/80 backdrop-blur-xl border-b border-slate-200/60 px-4 md:px-6 lg:px-10 transition-all duration-300">
-      <div className="flex items-center gap-4 lg:gap-6">
+    <header className="sticky top-0 z-50 flex h-14 sm:h-16 md:h-20 items-center justify-between bg-white/80 backdrop-blur-xl border-b border-slate-200/60 px-3 sm:px-4 md:px-6 lg:px-10 transition-all duration-300">
+      <div className="flex items-center gap-2 sm:gap-4 lg:gap-6">
         <SidebarTrigger className="h-10 w-10 text-slate-600 hover:text-slate-700 hover:bg-slate-100/80 rounded-xl transition-all" />
 
         {/* Search */}
@@ -59,7 +59,7 @@ export function AdminHeader() {
         </div>
       </div>
 
-      <div className="flex items-center gap-3 lg:gap-5">
+      <div className="flex items-center gap-2 sm:gap-3 lg:gap-5">
         {/* Notifications */}
         <div className="relative group">
           <Button

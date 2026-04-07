@@ -23,7 +23,9 @@ import {
   Eye,
   Hash,
   GraduationCap,
-  MoreVertical
+  MoreVertical,
+  Copy,
+  Check
 } from "lucide-react";
 import { CourseEnrollment } from "@/hooks/useCourses";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -56,6 +58,17 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
   const [timeFilter, setTimeFilter] = useState("all");
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [selectedEnrollment, setSelectedEnrollment] = useState<CourseEnrollment | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const copyToClipboard = async (text: string, enrollmentId: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(enrollmentId);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
 
   const handleUpdateStatus = async (id: string, status: 'active' | 'rejected') => {
     if (!onUpdateStatus) return;
@@ -321,11 +334,35 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                           <div className="overflow-hidden">
                              <h4 className="font-bold text-slate-900 text-base leading-tight truncate">{enrollment.user_name}</h4>
                              <p className="text-xs text-muted-foreground truncate">{enrollment.user_email}</p>
-                             <div className="flex items-center gap-1.5 mt-1">
-                                <Fingerprint className="h-3 w-3 text-slate-400" />
-                                <span className="text-[10px] font-mono text-slate-400">{enrollment.user_id?.substring(0, 12)}...</span>
-                             </div>
                           </div>
+                       </div>
+
+                       {/* UUID Display with Copy - Mobile */}
+                       <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1.5">
+                          <div className="flex items-center justify-between">
+                             <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                                <Fingerprint className="h-3 w-3" /> Student UUID
+                             </span>
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               className={`h-7 px-2.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
+                                 copiedId === enrollment.id + '-mobile'
+                                   ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100'
+                                   : 'bg-white text-slate-500 hover:text-primary hover:bg-primary/5 border border-slate-200'
+                               }`}
+                               onClick={() => copyToClipboard(enrollment.user_id || '', enrollment.id + '-mobile')}
+                             >
+                               {copiedId === enrollment.id + '-mobile' ? (
+                                 <><Check className="h-3 w-3 mr-1" /> Copied!</>
+                               ) : (
+                                 <><Copy className="h-3 w-3 mr-1" /> Copy</>
+                               )}
+                             </Button>
+                          </div>
+                          <p className="font-mono font-bold text-sm text-slate-700 break-all leading-relaxed select-all">
+                             {enrollment.user_id || 'N/A'}
+                          </p>
                        </div>
 
                        <div className="space-y-2.5 pt-2">
@@ -399,7 +436,7 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                 <table className="w-full">
                   <thead className="bg-slate-50/80 border-b border-slate-200/60">
                     <tr>
-                      <th className="text-left px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest min-w-[200px]">Student / Ref</th>
+                      <th className="text-left px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest min-w-[320px]">Student / UUID</th>
                       <th className="text-left px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Course</th>
                       <th className="text-left px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Billing & Term</th>
                       <th className="text-left px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Payment Proof</th>
@@ -412,46 +449,71 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                     {filteredEnrollments.map((enrollment) => (
                       <tr key={enrollment.id} className="hover:bg-primary/[0.02] transition-colors group border-b border-slate-100 last:border-0 italic-none">
                         <td className="px-6 py-5">
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center border border-slate-200 group-hover:border-primary/30 group-hover:bg-white transition-all font-bold text-primary shrink-0">
+                          <div className="flex items-center gap-4">
+                            <div className="h-12 w-12 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-200 group-hover:border-primary/40 group-hover:bg-white shadow-sm transition-all font-black text-lg text-primary shrink-0">
                                {enrollment.user_name?.charAt(0) || 'U'}
                             </div>
-                            <div className="overflow-hidden">
-                              <p className="text-sm font-black text-slate-900 truncate">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-base font-black text-slate-900 truncate">
                                 {enrollment.user_name || 'Unknown'}
                               </p>
-                              <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 group-hover:text-slate-500 transition-colors uppercase tracking-tight">
-                                <span className="truncate max-w-[120px]">{enrollment.user_email}</span>
-                                <span className="text-slate-200">•</span>
-                                <span className="font-mono">{enrollment.user_id?.substring(0, 6)}</span>
+                              <p className="text-[11px] font-bold text-slate-500 group-hover:text-slate-600 transition-colors tracking-tight truncate">
+                                {enrollment.user_email}
+                              </p>
+                              {/* UUID with Copy Button */}
+                              <div className="flex items-center gap-2 mt-1.5 bg-slate-50 rounded-lg px-2.5 py-1.5 border border-slate-100 group-hover:border-primary/20 transition-all w-fit max-w-full">
+                                <Fingerprint className="h-3.5 w-3.5 text-primary/60 shrink-0" />
+                                <span className="font-mono text-[13px] font-bold text-slate-700 tracking-wide select-all truncate" title={enrollment.user_id}>
+                                  {enrollment.user_id || 'N/A'}
+                                </span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className={`h-6 w-6 p-0 rounded-md shrink-0 transition-all ${
+                                    copiedId === enrollment.id
+                                      ? 'bg-emerald-100 text-emerald-600 hover:bg-emerald-100'
+                                      : 'text-slate-400 hover:text-primary hover:bg-primary/10'
+                                  }`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    copyToClipboard(enrollment.user_id || '', enrollment.id);
+                                  }}
+                                  title="Copy UUID"
+                                >
+                                  {copiedId === enrollment.id ? (
+                                    <Check className="h-3.5 w-3.5" />
+                                  ) : (
+                                    <Copy className="h-3.5 w-3.5" />
+                                  )}
+                                </Button>
                               </div>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-5">
-                          <div className="space-y-1">
-                            <p className="text-xs font-bold text-slate-700 line-clamp-1">{enrollment.course_name || "Unknown"}</p>
-                            <div className="h-1 w-12 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="space-y-1.5 w-[200px]">
+                            <p className="text-sm font-bold text-slate-800 line-clamp-2 leading-tight">{enrollment.course_name || "Unknown Program"}</p>
+                            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
                               <div className="h-full bg-primary" style={{ width: '40%' }} />
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-5">
-                          <div className="flex flex-col gap-1.5">
-                            <div className="flex items-center gap-2">
-                               <span className="text-sm font-black text-emerald-600">₹{(enrollment.final_price ?? enrollment.price)?.toLocaleString('en-IN')}</span>
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-2.5">
+                               <span className="text-base font-black text-emerald-600">₹{(enrollment.final_price ?? enrollment.price)?.toLocaleString('en-IN')}</span>
                                {enrollment.payment_term === 'full' ? (
-                                 <Badge className="text-[8px] font-black uppercase bg-emerald-50 text-emerald-600 h-4 px-1 border-emerald-100 border">Paid Full</Badge>
+                                 <Badge className="text-[9px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-700 h-5 px-2 border-emerald-200 border shadow-sm">Paid Full</Badge>
                                ) : (
-                                 <Badge className="text-[8px] font-black uppercase bg-blue-50 text-blue-600 h-4 px-1 border-blue-100 border">Installment</Badge>
+                                 <Badge className="text-[9px] font-black uppercase tracking-widest bg-indigo-50 text-indigo-700 h-5 px-2 border-indigo-200 border shadow-sm">Installment</Badge>
                                )}
                             </div>
                             {enrollment.remaining_balance ? (
-                              <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest bg-amber-50/50 px-1.5 py-0.5 rounded border border-amber-100/50 w-fit">
-                                Due: ₹{enrollment.remaining_balance.toLocaleString('en-IN')}
+                              <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest bg-amber-50/50 px-2 py-0.5 rounded border border-amber-200 w-fit">
+                                Due: ₹{enrollment.remaining_balance?.toLocaleString('en-IN')}
                               </p>
                             ) : (
-                               <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">N/A</p>
+                              <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">N/A</p>
                             )}
                           </div>
                         </td>
@@ -533,20 +595,30 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                                </Button>
                             )}
                             
-                            {onDelete && (
-                               <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-slate-600">
-                                        <MoreVertical className="h-4 w-4" />
-                                     </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                     <DropdownMenuItem className="text-rose-600 focus:text-rose-700" onClick={() => handleDelete(enrollment.id)}>
-                                        <Trash2 className="h-4 w-4 mr-2" /> Delete Record
-                                     </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                               </DropdownMenu>
-                            )}
+                            <DropdownMenu>
+                               <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-slate-600">
+                                     <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                               </DropdownMenuTrigger>
+                               <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onClick={() => copyToClipboard(enrollment.user_id || '', enrollment.id + '-menu')}
+                                    className="gap-2"
+                                  >
+                                    {copiedId === enrollment.id + '-menu' ? (
+                                      <><Check className="h-4 w-4 text-emerald-600" /> <span className="text-emerald-600 font-medium">Copied!</span></>
+                                    ) : (
+                                      <><Copy className="h-4 w-4" /> Copy Student UUID</>
+                                    )}
+                                  </DropdownMenuItem>
+                                  {onDelete && (
+                                    <DropdownMenuItem className="text-rose-600 focus:text-rose-700" onClick={() => handleDelete(enrollment.id)}>
+                                       <Trash2 className="h-4 w-4 mr-2" /> Delete Record
+                                    </DropdownMenuItem>
+                                  )}
+                               </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         </td>
                       </tr>

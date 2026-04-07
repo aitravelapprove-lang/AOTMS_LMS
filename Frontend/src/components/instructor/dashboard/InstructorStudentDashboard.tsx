@@ -494,7 +494,7 @@ export function InstructorStudentDashboard() {
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Student Dashboard</h2>
+          <h2 className="text-lg sm:text-2xl font-bold tracking-tight">Student Dashboard</h2>
           <p className="text-sm text-muted-foreground mt-1">
             Monitor student progress and engagement across all your courses
           </p>
@@ -557,7 +557,7 @@ export function InstructorStudentDashboard() {
                       placeholder="Search students..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9 h-9 w-[200px]"
+                      className="pl-9 h-9 w-full sm:w-[200px]"
                     />
                   </div>
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -682,7 +682,7 @@ export function InstructorStudentDashboard() {
       </div>
 
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none shadow-2xl rounded-[2rem]">
+        <DialogContent className="w-[95vw] sm:max-w-[500px] p-0 overflow-hidden border-none shadow-2xl rounded-2xl sm:rounded-[2rem]">
           {selectedStudent && (
             <div className="bg-white">
               <DialogHeader className="sr-only">
@@ -701,7 +701,7 @@ export function InstructorStudentDashboard() {
               <div className="pt-12 px-8 pb-8 space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-2xl font-black text-slate-900">{selectedStudent.name}</h3>
+                    <h3 className="text-xl sm:text-2xl font-black text-slate-900">{selectedStudent.name}</h3>
                     <p className="text-sm font-medium text-slate-400">Student ID: {selectedStudent.userId.slice(0, 8)}...</p>
                   </div>
                   <Badge className={`${getStatusConfig(selectedStudent.status).bg} ${getStatusConfig(selectedStudent.status).text} h-8 px-4 rounded-full font-bold border-none`}>

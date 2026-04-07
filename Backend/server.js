@@ -1319,32 +1319,42 @@ app.get('/api/admin/course-enrollments/:courseId', authenticateToken, requireAdm
 
 app.get('/api/admin/instructors', authenticateToken, requireAdminOrManager, async (req, res) => {
     try {
-        const roles = await UserRole.find({ role: 'instructor' });
-        const userIds = roles.map(r => r.user_id);
-        const profiles = await Profile.find({ user_id: { $in: userIds } });
+        // 1. Get everyone with instructor role
+        const roleUsers = await UserRole.find({ role: 'instructor' });
+        const instructorRoleIds = roleUsers.map(r => r.user_id.toString());
 
-        // Deduplicate by email (handle case where multiple accounts exist for same email)
-        const uniqueData = [];
-        const seenEmails = new Set();
-        
-        profiles.forEach(p => {
-            const email = p.email?.toLowerCase();
-            if (!email || seenEmails.has(email)) return;
-            seenEmails.add(email);
-            
-            uniqueData.push({
-                user_id: p.user_id,
-                full_name: p.full_name,
-                email: p.email,
-                mobile_number: p.mobile_number,
-                phone: p.phone,
-                role: 'instructor',
-                created_at: p.created_at,
-                avatar_url: p.avatar_url
-            });
+        // 2. Get everyone assigned to a course (handles admins/managers who are teaching)
+        const courses = await Course.find({ instructor_id: { $ne: null } }).select('instructor_id');
+        const assignedIds = courses.map(c => c.instructor_id.toString());
+
+        // 3. Combine unique IDs
+        const allInstructorIds = Array.from(new Set([...instructorRoleIds, ...assignedIds]));
+
+        // 4. Fetch Users and Profiles
+        const [users, profiles] = await Promise.all([
+            User.find({ _id: { $in: allInstructorIds } }).select('full_name email avatar_url created_at'),
+            Profile.find({ user_id: { $in: allInstructorIds } })
+        ]);
+
+        const profileMap = new Map(profiles.map(p => [p.user_id.toString(), p]));
+
+        const result = users.map(u => {
+            const userId = u._id.toString();
+            const p = profileMap.get(userId);
+            const roleDoc = roleUsers.find(r => r.user_id.toString() === userId);
+
+            return {
+                user_id: userId,
+                full_name: u.full_name || p?.full_name || 'Instructor',
+                email: u.email || p?.email,
+                mobile_number: p?.mobile_number || u.phone,
+                role: roleDoc?.role || 'instructor', // Default to instructor if teaching but has other role
+                created_at: u.created_at || p?.created_at,
+                avatar_url: u.avatar_url || p?.avatar_url
+            };
         });
-        
-        res.json(uniqueData);
+
+        res.json(result);
     } catch (err) {
         handleError(res, err, 'get-admin-instructors');
     }
@@ -3960,8 +3970,8 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
             }
         }
 
-        // Student-specific scoping logic
-        if (role !== 'admin' && role !== 'manager') {
+        // Student-specific scoping logic - only apply to students
+        if (role === 'student') {
             const studentScopedTables = {
                 'exam_results': 'student_id',
                 'resume_scans': 'user_id',
@@ -3971,15 +3981,19 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
 
             if (studentScopedTables[table]) {
                 const scopeField = studentScopedTables[table];
-                // CRITICAL: Overwrite any attempted ID with the actual user ID
+                // Overwrite any attempted ID with the actual user ID to prevent unauthorized access
                 query[scopeField] = req.user.id;
-                console.log(`[ACL] Scoping ${table} to ${scopeField}=${req.user.id}`);
+                console.log(`[ACL] Student scoping ${table} to ${scopeField}=${req.user.id}`);
             }
             
-            if (table === 'courses' && role !== 'instructor') {
+            if (table === 'courses') {
                 query['is_active'] = { $ne: false };
                 query['status'] = { $in: ['approved', 'published'] };
             }
+        } else if (role === 'instructor') {
+            console.log(`[ACL] Instructor access to ${table}`);
+            // Instructors can see their own courses but logic is often in the data fetch
+            // We'll let them fetch anything they query, but we assume course_id filtering is used
         } else {
             console.log(`[ACL] Admin/Manager access to ${table}`);
         }
@@ -4001,6 +4015,13 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
             data = await Model.find(query).sort(sort).limit(limit).skip(skip)
                 .populate('exam_id', 'title')
                 .populate('mock_paper_id', 'title');
+        } else if (table === 'courses') {
+            data = await Model.find(query).sort(sort).limit(limit).skip(skip)
+                .populate('instructor_id', 'full_name avatar_url');
+        } else if (table === 'course_enrollments') {
+            data = await Model.find(query).sort(sort).limit(limit).skip(skip)
+                .populate('user_id', 'full_name email avatar_url phone')
+                .populate('course_id', 'title category image');
         } else {
             data = await Model.find(query).sort(sort).limit(limit).skip(skip);
         }

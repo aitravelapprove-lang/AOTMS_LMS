@@ -41,7 +41,7 @@ export function ChatMonitor() {
   const fetchConversations = async () => {
     try {
       const data = await fetchWithAuth('/admin/conversations');
-      setConversations(data);
+      setConversations((data as any[]) || []);
     } catch (err) {
       console.error("Failed to load admin conversations", err);
     }
@@ -50,7 +50,7 @@ export function ChatMonitor() {
   const fetchMessages = async (convId) => {
     try {
       const data = await fetchWithAuth(`/admin/conversations/${convId}/messages`);
-      setMessages(data);
+      setMessages((data as any[]) || []);
     } catch (err) {
       console.error("Failed to load messages", err);
     }
@@ -82,9 +82,9 @@ export function ChatMonitor() {
   const selectedConv = conversations.find(c => c.id === selectedConvId);
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] w-full bg-white rounded-lg border shadow-sm overflow-hidden">
+    <div className="flex flex-col sm:flex-row h-[calc(100vh-8rem)] w-full bg-white rounded-lg border shadow-sm overflow-hidden">
       {/* List */}
-      <div className="w-1/3 border-r flex flex-col">
+      <div className={cn("sm:w-1/3 border-b sm:border-b-0 sm:border-r flex flex-col", selectedConvId ? 'hidden sm:flex' : 'flex')}>
         <div className="p-4 border-b">
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -131,24 +131,27 @@ export function ChatMonitor() {
       </div>
 
       {/* Chat View */}
-      <div className="w-2/3 flex flex-col bg-slate-50">
+      <div className={cn("flex-1 sm:w-2/3 flex flex-col bg-slate-50", !selectedConvId ? 'hidden sm:flex' : 'flex')}>
         {selectedConv ? (
           <>
             {/* Header */}
-            <div className="h-16 border-b bg-white px-4 flex items-center justify-between">
-               <div className="flex items-center gap-2">
+            <div className="h-14 sm:h-16 border-b bg-white px-3 sm:px-4 flex items-center justify-between">
+               <div className="flex items-center gap-2 overflow-hidden">
+                 <Button variant="ghost" size="icon" className="sm:hidden h-8 w-8 flex-shrink-0" onClick={() => setSelectedConvId(null)}>
+                   <X className="h-4 w-4" />
+                 </Button>
                  {selectedConv.participants.map(p => (
-                   <div key={p.id} className="flex items-center gap-2 mr-4">
+                   <div key={p.id} className="flex items-center gap-2 mr-2 sm:mr-4 min-w-0">
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={p.avatar} />
                         <AvatarFallback>{p.name?.[0]}</AvatarFallback>
                       </Avatar>
                       <div>
                         <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium leading-none">{p.name}</p>
+                            <p className="text-sm font-medium leading-none truncate max-w-[100px] sm:max-w-none">{p.name}</p>
                             {p.status === 'rejected' && <span className="text-[10px] text-red-600 bg-red-100 px-1 rounded">BLOCKED</span>}
                         </div>
-                        <p className="text-xs text-muted-foreground">{p.email}</p>
+                        <p className="text-xs text-muted-foreground truncate hidden sm:block">{p.email}</p>
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>

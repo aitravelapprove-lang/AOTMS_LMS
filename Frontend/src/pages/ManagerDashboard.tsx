@@ -150,7 +150,7 @@ export default function ManagerDashboard() {
       {/* Search and Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">
             Manager Dashboard
           </h2>
           <p className="text-sm text-muted-foreground">
@@ -220,7 +220,7 @@ export default function ManagerDashboard() {
         ))}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-3">
         {/* Main Quick Actions Section */}
         <Card className="md:col-span-2 rounded-xl border-none shadow-sm bg-muted/30">
           <CardHeader>
@@ -228,7 +228,7 @@ export default function ManagerDashboard() {
             <CardDescription>Commonly used management tools</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {[
                 {
                   id: "exams",
@@ -416,7 +416,7 @@ export default function ManagerDashboard() {
       />
       <SidebarInset className="flex flex-col h-[100dvh] w-full overflow-hidden bg-transparent">
         <ManagerHeader />
-        <main className="flex-1 w-full overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-10 custom-scrollbar">
+        <main className="flex-1 w-full overflow-y-auto overflow-x-hidden p-3 sm:p-6 lg:p-10 custom-scrollbar">
           <div className="max-w-6xl mx-auto h-full space-y-6">{renderContent()}</div>
         </main>
       </SidebarInset>

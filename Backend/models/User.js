@@ -13,7 +13,7 @@ const UserSchema = new mongoose.Schema({
 UserSchema.set('toJSON', {
     virtuals: true,
     versionKey: false,
-    transform: function (doc, ret) { delete ret._id; delete ret.password_hash; }
+    transform: function (doc, ret) { ret.id = ret._id; delete ret._id; delete ret.password_hash; }
 });
 
 const ProfileSchema = new mongoose.Schema({

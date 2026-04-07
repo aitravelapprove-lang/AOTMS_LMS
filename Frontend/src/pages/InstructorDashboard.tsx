@@ -80,26 +80,26 @@ function FeedbackModal({
 }) {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl p-0 overflow-hidden bg-white border-none shadow-2xl rounded-3xl">
-        <DialogHeader className="p-10 border-b border-slate-50 bg-slate-50/50">
+      <DialogContent className="w-[95vw] sm:max-w-4xl p-0 overflow-hidden bg-white border-none shadow-2xl rounded-2xl sm:rounded-3xl">
+        <DialogHeader className="p-6 sm:p-10 border-b border-slate-50 bg-slate-50/50">
            <div className="flex items-center gap-4">
               <div className="h-14 w-14 rounded-2xl bg-yellow-400 flex items-center justify-center text-white shadow-lg shadow-yellow-400/20">
                  <Star className="h-7 w-7 fill-white" />
               </div>
               <div>
-                 <DialogTitle className="text-3xl font-black text-slate-900 tracking-tight italic uppercase">Student Pulse Detail</DialogTitle>
+                  <DialogTitle className="text-xl sm:text-3xl font-black text-slate-900 tracking-tight italic uppercase">Student Pulse Detail</DialogTitle>
                  <DialogDescription className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">Full analytical breakdown of scholar testimonials</DialogDescription>
               </div>
            </div>
         </DialogHeader>
-        <div className="p-10 max-h-[60vh] overflow-y-auto custom-scrollbar bg-white">
+        <div className="p-6 sm:p-10 max-h-[60vh] overflow-y-auto custom-scrollbar bg-white">
           {ratings.length === 0 ? (
             <div className="py-20 text-center opacity-40">
                <MessageSquare className="h-16 w-16 mx-auto mb-6 text-slate-300" />
                <p className="text-xl font-bold uppercase tracking-widest text-slate-500">Zero Pulse Detected</p>
             </div>
           ) : (
-            <div className="grid gap-8 sm:grid-cols-2 text-left">
+            <div className="grid gap-6 sm:gap-8 grid-cols-1 sm:grid-cols-2 text-left">
               {ratings.map((r: CourseRating) => (
                 <div key={r.id} className="p-8 rounded-[2rem] bg-slate-50 border border-slate-100 group hover:bg-white hover:shadow-2xl hover:border-transparent transition-all duration-500">
                   <div className="flex items-center gap-5 mb-6">
@@ -230,7 +230,7 @@ function WelcomeBanner({
           <Badge className="bg-primary/20 text-blue-400 border-primary/20 font-bold px-3 py-1 rounded-full text-xs uppercase tracking-widest shadow-sm">
             Instructor Hub
           </Badge>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-white">
             {greeting},{" "}
             <span className="font-black italic">
               {name.split(" ")[0]}
@@ -352,7 +352,7 @@ export default function InstructorDashboard() {
       <SidebarInset className="flex flex-col h-screen w-full overflow-hidden bg-transparent">
         <InstructorHeader />
 
-        <main className="flex-1 w-full overflow-y-auto overflow-x-hidden p-4 md:p-8 lg:p-10 custom-scrollbar">
+        <main className="flex-1 w-full overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-8 lg:p-10 custom-scrollbar">
           <div className="max-w-7xl mx-auto space-y-10">
             <AnimatePresence mode="wait">
               {/* ── Dashboard Root ─────────────────────────────────────────── */}
@@ -378,9 +378,9 @@ export default function InstructorDashboard() {
 
                   <div className="space-y-10">
                     <div className="pro-card p-1 bg-white min-w-0 overflow-hidden mt-6 lg:mt-10 border-slate-200 shadow-md">
-                      <div className="p-6 sm:p-10 md:p-12 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-slate-50/30">
+                      <div className="p-4 sm:p-6 md:p-10 lg:p-12 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 bg-slate-50/30">
                         <div className="space-y-2">
-                           <h3 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
+                           <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
                               Featured & Recent Curricula
                            </h3>
                            <p className="text-sm font-bold text-slate-400 mt-1">Manage and oversee your latest course developments</p>
@@ -414,7 +414,7 @@ export default function InstructorDashboard() {
                         </Badge>
                       </div>
                       <div className="overflow-x-auto w-full custom-scrollbar pb-6">
-                         <div className="min-w-[800px] lg:min-w-0 p-6 md:p-10 lg:p-14">
+                         <div className="min-w-0 lg:min-w-0 p-4 sm:p-6 md:p-10 lg:p-14">
                            <InstructorCourses limit={6} hideHeader />
                          </div>
                       </div>

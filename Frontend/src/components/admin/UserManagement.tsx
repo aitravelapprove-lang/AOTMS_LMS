@@ -82,6 +82,7 @@ export function UserManagement({
   const [newRole, setNewRole] = useState<string>("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingAction, setProcessingAction] = useState<string | null>(null);
   const [showSuspendDialog, setShowSuspendDialog] = useState(false);
   const [suspensionDays, setSuspensionDays] = useState("7");
   interface PerformanceData {
@@ -618,38 +619,38 @@ export function UserManagement({
               <Button
                 variant="outline"
                 className="w-full sm:w-auto rounded-xl font-semibold border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 h-11 px-6 active:scale-95 transition-all shadow-sm"
-                disabled={isProcessing}
+                disabled={processingAction !== null}
                 onClick={async () => {
                   if (selectedUser) {
-                    setIsProcessing(true);
+                    setProcessingAction("reject");
                     try {
                       const success = await onUpdateStatus(selectedUser.id, "rejected");
                       if (success) setShowApprovalDialog(false);
                     } finally {
-                      setIsProcessing(false);
+                      setProcessingAction(null);
                     }
                   }
                 }}
               >
-                {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Reject"}
+                {processingAction === "reject" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Reject"}
               </Button>
 
               <Button
                 className="w-full sm:w-auto rounded-xl font-semibold bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm shadow-emerald-500/20 gap-2 h-11 px-6 active:scale-95 transition-all"
-                disabled={isProcessing || selectedUser?.approval_status === "approved"}
+                disabled={processingAction !== null || selectedUser?.approval_status === "approved"}
                 onClick={async () => {
                   if (selectedUser) {
-                    setIsProcessing(true);
+                    setProcessingAction("approve");
                     try {
                       const success = await onUpdateStatus(selectedUser.id, "approved");
                       if (success) setShowApprovalDialog(false);
                     } finally {
-                      setIsProcessing(false);
+                      setProcessingAction(null);
                     }
                   }
                 }}
               >
-                {isProcessing ? (
+                {processingAction === "approve" ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <>
@@ -661,20 +662,20 @@ export function UserManagement({
 
               <Button
                 className="w-full sm:w-auto rounded-xl font-semibold bg-primary hover:bg-primary/90 text-white shadow-sm shadow-primary/20 gap-2 h-11 px-6 active:scale-95 transition-all"
-                disabled={isProcessing}
+                disabled={processingAction !== null}
                 onClick={async () => {
                   if (selectedUser) {
-                    setIsProcessing(true);
+                    setProcessingAction("email");
                     try {
                       await onSendEmail(selectedUser.id);
                       setShowApprovalDialog(false);
                     } finally {
-                      setIsProcessing(false);
+                      setProcessingAction(null);
                     }
                   }
                 }}
               >
-                {isProcessing ? (
+                {processingAction === "email" ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <>

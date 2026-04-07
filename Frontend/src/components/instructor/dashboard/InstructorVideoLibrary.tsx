@@ -29,7 +29,8 @@ interface Video {
 
 export function InstructorVideoLibrary() {
   const [videos, setVideos] = useState<Video[]>([]);
-  const { data: courses = [], isLoading: coursesLoading } = useInstructorCourses();
+  const { data, isLoading: coursesLoading } = useInstructorCourses();
+  const courses = (data as any[]) || [];
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCourse, setFilterCourse] = useState("all");
@@ -52,7 +53,7 @@ export function InstructorVideoLibrary() {
       const courseIds = courses.map(c => c.id).join(',');
       // Fetch videos only for the instructor's courses
       const videosRes = await fetchWithAuth(`/data/course_videos?course_id=in.(${courseIds})&sort=created_at&order=desc`);
-      setVideos(videosRes || []);
+      setVideos((videosRes as Video[]) || []);
     } catch (err) {
       console.error('Failed to load videos:', err);
     } finally {
@@ -189,7 +190,7 @@ export function InstructorVideoLibrary() {
               Upload New Video
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl p-0 overflow-hidden border-none glass-morphism shadow-2xl">
+          <DialogContent className="w-[calc(100%-2rem)] sm:w-full max-w-4xl max-h-[85vh] overflow-y-auto rounded-2xl sm:rounded-3xl p-0 border-none glass-morphism shadow-2xl">
             <div className="p-8 space-y-8 bg-white/95 backdrop-blur-xl">
               <DialogHeader className="p-0 border-b border-indigo-50 pb-6 mb-4">
                 <DialogDescription className="sr-only">Upload and deploy video assets to courses.</DialogDescription>

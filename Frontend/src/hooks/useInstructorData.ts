@@ -944,17 +944,17 @@ export function useInstructorAllStudents() {
       const studentMap = new Map<string, InstructorStudent>();
 
       allEnrollments.forEach((enrollment) => {
-        const userId = typeof enrollment.user_id === 'string' 
-            ? enrollment.user_id 
-            : enrollment.user_id?.id || enrollment.user_id?._id?.toString();
+        const u = enrollment.user_id;
+        const userId = typeof u === 'string' ? u : u?._id?.toString() || u?.id;
         
         if (!userId) return;
 
         // Skip if the student is the instructor themselves
         if (userId === user.id?.toString()) return;
 
-        const course = courses.find(c => (c.id || c._id) === enrollment.course_id);
-        const courseTitle = course?.title || 'Unknown Course';
+        const course = enrollment.course_id;
+        const courseTitle = (typeof course === 'object' && course?.title) ? course.title : 'Unknown Course';
+        const courseId = typeof course === 'string' ? course : course?._id?.toString() || course?.id;
 
         if (studentMap.has(userId)) {
           const existing = studentMap.get(userId)!;
@@ -978,7 +978,7 @@ export function useInstructorAllStudents() {
           }
 
           existing.courseEnrollments.push({
-            courseId: enrollment.course_id,
+            courseId: courseId,
             courseTitle: courseTitle,
             progress: progress,
             lastWatchedAt: enrollment.last_accessed_at || enrollment.enrolled_at
@@ -994,9 +994,10 @@ export function useInstructorAllStudents() {
           studentMap.set(userId, {
             id: enrollment.id,
             userId: userId,
-            name: enrollment.user_name || 'Student', 
-            email: enrollment.user_email || '',
-            avatarUrl: undefined,
+            name: (typeof u === 'object' && u?.full_name) ? u.full_name : 'Student', 
+            email: (typeof u === 'object' && u?.email) ? u.email : '',
+            avatarUrl: (typeof u === 'object' && u?.avatar_url) ? u.avatar_url : undefined,
+            mobileNumber: (typeof u === 'object' && u?.phone) ? u.phone : undefined,
             enrolledCourses: 1,
             completedCourses: progress === 100 ? 1 : 0,
             inProgressCourses: progress > 0 && progress < 100 ? 1 : 0,
@@ -1007,7 +1008,7 @@ export function useInstructorAllStudents() {
             enrolledAt: enrollment.enrolled_at || new Date().toISOString(),
             certificates: progress === 100 ? 1 : 0,
             courseEnrollments: [{
-              courseId: enrollment.course_id,
+              courseId: courseId,
               courseTitle: courseTitle,
               progress: progress,
               lastWatchedAt: enrollment.last_accessed_at || enrollment.enrolled_at
@@ -1015,30 +1016,6 @@ export function useInstructorAllStudents() {
           });
         }
       });
-      
-      // Fetch core account info from Users collection and additional info from Profiles
-      const studentIds = Array.from(studentMap.keys());
-      if (studentIds.length > 0) {
-          const [usersBatch, profilesBatch] = await Promise.all([
-              fetchWithAuth<any[]>(`/data/users?id=in.(${studentIds.join(',')})`),
-              fetchWithAuth<any[]>(`/data/profiles?user_id=in.(${studentIds.join(',')})`)
-          ]);
-
-          const profileMap = new Map();
-          profilesBatch.forEach((p: any) => profileMap.set((p.id || p.user_id)?.toString(), p));
-
-          usersBatch.forEach((u: any) => {
-              const userIdStr = (u.id || u._id)?.toString();
-              const student = studentMap.get(userIdStr);
-              if (student) {
-                  const profile = profileMap.get(userIdStr);
-                  student.name = u.full_name || profile?.full_name || u.user_name || student.name;
-                  student.email = u.email || profile?.email || student.email;
-                  student.avatarUrl = u.avatar_url || profile?.avatar_url || student.avatarUrl;
-                  student.mobileNumber = profile?.mobile_number || profile?.phone || u.phone || student.mobileNumber;
-              }
-          });
-      }
 
       // Convert map to array and deduplicate by email (handle different IDs with same email)
       const uniqueStudentsMap = new Map<string, InstructorStudent>();

@@ -1,20 +1,26 @@
 import React, { useState, useEffect } from "react";
-import { 
-  Ticket, 
-  UserPlus, 
-  Search, 
-  Gift, 
-  RefreshCw, 
-  CheckCircle2, 
+import {
+  Ticket,
+  UserPlus,
+  Search,
+  Gift,
+  RefreshCw,
+  CheckCircle2,
   AlertCircle,
   Loader2,
   Send,
-  User as UserIcon
+  User as UserIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { fetchWithAuth } from "@/lib/api";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -48,10 +54,10 @@ export function CouponManager() {
   const fetchStudents = async () => {
     setLoading(true);
     try {
-      const studentUsers = await fetchWithAuth<Student[]>('/admin/students');
+      const studentUsers = await fetchWithAuth<Student[]>("/admin/students");
       setStudents(studentUsers || []);
     } catch (err) {
-      console.error('Failed to fetch students:', err);
+      console.error("Failed to fetch students:", err);
       toast.error("Failed to load student list");
     } finally {
       setLoading(false);
@@ -71,17 +77,22 @@ export function CouponManager() {
 
     setIsGenerating(true);
     try {
-      const response = await fetchWithAuth<CouponResponse>('/admin/coupons/generate', {
-        method: 'POST',
-        body: JSON.stringify({ 
-          userId: selectedStudent.id,
-          amount: Number(discountAmount)
-        })
-      });
+      const response = await fetchWithAuth<CouponResponse>(
+        "/admin/coupons/generate",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            userId: selectedStudent.id,
+            amount: Number(discountAmount),
+          }),
+        },
+      );
 
       if (response && response.success) {
         setGeneratedCode(response.code);
-        toast.success(`Coupon ${response.code} (₹${discountAmount}) assigned to ${selectedStudent.full_name}`);
+        toast.success(
+          `Coupon ${response.code} (₹${discountAmount}) assigned to ${selectedStudent.full_name}`,
+        );
         // Clear selection after 5 seconds
         setTimeout(() => {
           setGeneratedCode(null);
@@ -90,16 +101,17 @@ export function CouponManager() {
         }, 5000);
       }
     } catch (err) {
-      console.error('Failed to generate coupon:', err);
+      console.error("Failed to generate coupon:", err);
       toast.error("Generation failed");
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const filteredStudents = students.filter(s => 
-    s.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    s.email?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredStudents = students.filter(
+    (s) =>
+      s.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      s.email?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
@@ -110,12 +122,17 @@ export function CouponManager() {
             <Ticket className="h-5 w-5 sm:h-7 sm:w-7 text-primary flex-shrink-0" />
             Coupon Rewards Engine
           </h1>
-          <p className="text-slate-500 font-medium text-xs sm:text-base">Assign dynamic discount codes to students for rewards.</p>
+          <p className="text-slate-500 font-medium text-xs sm:text-base">
+            Assign dynamic discount codes to students for rewards.
+          </p>
         </div>
         <div className="flex bg-white p-1 rounded-xl shadow-sm border border-slate-200">
-            <Badge variant="secondary" className="bg-primary/5 text-primary border-transparent px-4 py-1.5 rounded-lg font-bold">
-                {students.length} Active Students
-            </Badge>
+          <Badge
+            variant="secondary"
+            className="bg-primary/5 text-primary border-transparent px-4 py-1.5 rounded-lg font-bold"
+          >
+            {students.length} Active Students
+          </Badge>
         </div>
       </div>
 
@@ -128,57 +145,71 @@ export function CouponManager() {
                 <UserIcon className="h-5 w-5 text-slate-400" />
                 Step 1: Select Target Student
               </CardTitle>
-              <CardDescription>Search and select the student who will receive the reward.</CardDescription>
+              <CardDescription>
+                Search and select the student who will receive the reward.
+              </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-               <div className="p-4 border-b border-slate-100 bg-white sticky top-0 z-10">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input 
-                      placeholder="Search by name or email..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 h-11 bg-slate-50 border-slate-200 rounded-xl"
-                    />
-                  </div>
-               </div>
+              <div className="p-4 border-b border-slate-100 bg-white sticky top-0 z-10">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input
+                    placeholder="Search by name or email..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 h-11 bg-slate-50 border-slate-200 rounded-xl"
+                  />
+                </div>
+              </div>
 
-               <div className="max-h-[500px] overflow-y-auto custom-scrollbar">
-                  {loading ? (
-                    <div className="py-20 text-center space-y-4">
-                      <Loader2 className="h-8 w-8 text-primary animate-spin mx-auto" />
-                      <p className="text-sm text-slate-500 font-medium">Synchronizing student database...</p>
-                    </div>
-                  ) : filteredStudents.length === 0 ? (
-                    <div className="py-20 text-center space-y-2 opacity-50">
-                      <AlertCircle className="h-10 w-10 text-slate-300 mx-auto" />
-                      <p className="text-sm font-bold text-slate-400">No students found</p>
-                    </div>
-                  ) : (
-                    <div className="divide-y divide-slate-50">
-                      {filteredStudents.map((student) => (
-                        <div 
-                          key={student.id}
-                          onClick={() => setSelectedStudent(student)}
-                          className={`p-4 flex items-center justify-between cursor-pointer transition-all hover:bg-primary/5 ${selectedStudent?.id === student.id ? 'bg-primary/10 border-l-4 border-primary' : 'bg-white'}`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={`h-10 w-10 rounded-xl flex items-center justify-center font-bold ${selectedStudent?.id === student.id ? 'bg-primary text-white' : 'bg-slate-100 text-slate-500'}`}>
-                              {student.full_name?.charAt(0) || 'S'}
-                            </div>
-                            <div>
-                               <p className={`text-sm font-bold ${selectedStudent?.id === student.id ? 'text-primary' : 'text-slate-900'}`}>{student.full_name}</p>
-                               <p className="text-xs text-slate-500">{student.email}</p>
-                            </div>
+              <div className="max-h-[500px] overflow-y-auto custom-scrollbar">
+                {loading ? (
+                  <div className="py-20 text-center space-y-4">
+                    <Loader2 className="h-8 w-8 text-primary animate-spin mx-auto" />
+                    <p className="text-sm text-slate-500 font-medium">
+                      Synchronizing student database...
+                    </p>
+                  </div>
+                ) : filteredStudents.length === 0 ? (
+                  <div className="py-20 text-center space-y-2 opacity-50">
+                    <AlertCircle className="h-10 w-10 text-slate-300 mx-auto" />
+                    <p className="text-sm font-bold text-slate-400">
+                      No students found
+                    </p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-50">
+                    {filteredStudents.map((student) => (
+                      <div
+                        key={student.id}
+                        onClick={() => setSelectedStudent(student)}
+                        className={`p-4 flex items-center justify-between cursor-pointer transition-all hover:bg-primary/5 ${selectedStudent?.id === student.id ? "bg-primary/10 border-l-4 border-primary" : "bg-white"}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`h-10 w-10 rounded-xl flex items-center justify-center font-bold ${selectedStudent?.id === student.id ? "bg-primary text-white" : "bg-slate-100 text-slate-500"}`}
+                          >
+                            {student.full_name?.charAt(0) || "S"}
                           </div>
-                          {selectedStudent?.id === student.id && (
-                            <CheckCircle2 className="h-5 w-5 text-primary" />
-                          )}
+                          <div>
+                            <p
+                              className={`text-sm font-bold ${selectedStudent?.id === student.id ? "text-primary" : "text-slate-900"}`}
+                            >
+                              {student.full_name}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {student.email}
+                            </p>
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
-               </div>
+                        {selectedStudent?.id === student.id && (
+                          <CheckCircle2 className="h-5 w-5 text-primary" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>

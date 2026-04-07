@@ -396,13 +396,11 @@ export function CourseAssignment() {
                         <Select
                           value={course.instructor_id || "unassigned"}
                           onValueChange={(value) => {
-                            if (value !== "unassigned") {
-                              handleAssign(course.id, value);
-                            }
+                            handleAssign(course.id, value === "unassigned" ? "" : value);
                           }}
                           disabled={assigning === String(course.id)}
                         >
-                          <SelectTrigger className="h-10 border-none shadow-none focus:ring-0 focus:ring-offset-0 bg-transparent text-xs font-bold">
+                          <SelectTrigger className="h-10 border-none shadow-none focus:ring-0 focus:ring-offset-0 bg-transparent text-xs font-bold" onClick={(e) => e.stopPropagation()}>
                             {assigning === String(course.id) ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (

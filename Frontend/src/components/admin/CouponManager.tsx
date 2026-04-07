@@ -27,6 +27,11 @@ interface Student {
   role: string;
 }
 
+interface CouponResponse {
+  success: boolean;
+  code: string;
+}
+
 export function CouponManager() {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +48,7 @@ export function CouponManager() {
   const fetchStudents = async () => {
     setLoading(true);
     try {
-      const studentUsers = await fetchWithAuth('/admin/students');
+      const studentUsers = await fetchWithAuth<Student[]>('/admin/students');
       setStudents(studentUsers || []);
     } catch (err) {
       console.error('Failed to fetch students:', err);
@@ -66,7 +71,7 @@ export function CouponManager() {
 
     setIsGenerating(true);
     try {
-      const response = await fetchWithAuth('/admin/coupons/generate', {
+      const response = await fetchWithAuth<CouponResponse>('/admin/coupons/generate', {
         method: 'POST',
         body: JSON.stringify({ 
           userId: selectedStudent.id,
@@ -74,7 +79,7 @@ export function CouponManager() {
         })
       });
 
-      if (response.success) {
+      if (response && response.success) {
         setGeneratedCode(response.code);
         toast.success(`Coupon ${response.code} (₹${discountAmount}) assigned to ${selectedStudent.full_name}`);
         // Clear selection after 5 seconds
@@ -179,40 +184,63 @@ export function CouponManager() {
         </div>
 
         {/* Step 2: Generation */}
-        <div className="space-y-6">
-           <Card className="border-slate-200 shadow-xl overflow-hidden rounded-3xl bg-slate-900 text-white">
-              <CardHeader className="border-b border-white/10">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Gift className="h-5 w-5 text-primary text" />
-                  Reward Controls
+        <div className="space-y-4">
+           <Card className="border-white/5 shadow-2xl overflow-hidden rounded-[2rem] bg-gradient-to-b from-[#001F3D] to-[#000d1a] text-white border-0 relative group">
+              {/* Refined Brand Ambient Glow */}
+              <div className="absolute top-0 right-0 w-48 h-48 bg-[#FD5A1A]/5 blur-[80px] rounded-full pointer-events-none" />
+              
+              <CardHeader className="border-b border-white/5 pt-6 pb-5 relative z-10 bg-black/5">
+                <div className="flex items-center justify-between">
+                  <div className="px-2.5 py-1 bg-[#FD5A1A]/10 border border-[#FD5A1A]/20 rounded-md">
+                    <p className="text-[9px] font-black text-[#FD5A1A] uppercase tracking-widest">Administrator</p>
+                  </div>
+                  <Gift className="h-4 w-4 text-[#FD5A1A]/80" />
+                </div>
+                <CardTitle className="text-xl font-bold tracking-tight mt-4 text-white">
+                  Reward Dispatch <span className="text-[#0075CF]">Portal</span>
                 </CardTitle>
+                <CardDescription className="text-slate-400 text-[10px] font-medium tracking-tight">Generate and assign student discount codes</CardDescription>
               </CardHeader>
-              <CardContent className="p-8 space-y-8 text-center">
-                 <div className="space-y-4">
-                    <div className="h-24 w-24 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(var(--primary-rgb),0.2)]">
-                      <Ticket className={`h-12 w-12 text-primary ${isGenerating ? 'animate-bounce' : ''}`} />
+
+              <CardContent className="p-6 md:p-8 space-y-8 text-center relative z-10">
+                 <div className="space-y-6">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-[#0075CF]/10 blur-[30px] rounded-full" />
+                      <div className="relative h-20 w-20 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl flex items-center justify-center mx-auto shadow-xl transition-all">
+                        <Ticket className={`h-8 w-8 text-white/90 ${isGenerating ? 'animate-pulse' : ''}`} />
+                      </div>
                     </div>
+
                     {selectedStudent ? (
-                      <div className="space-y-6">
-                        <div className="space-y-1">
-                          <p className="text-sm font-bold text-white uppercase tracking-widest">Assigning to</p>
-                          <p className="text-xl font-black text-primary">{selectedStudent.full_name}</p>
+                      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                        <div className="space-y-2">
+                          <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Active Recipient</p>
+                          <div className="px-5 py-3 bg-white/5 rounded-xl border border-white/10 inline-block shadow-sm">
+                            <p className="text-base font-bold text-white">{selectedStudent.full_name}</p>
+                            <p className="text-[10px] text-slate-400 font-medium lowercase tracking-tight opacity-70">{selectedStudent.email}</p>
+                          </div>
                         </div>
                         
                         <div className="space-y-2 text-left">
-                           <label className="text-[11px] font-black uppercase tracking-widest text-white/90">Target Discounted Price (₹)</label>
-                           <Input 
-                              type="number"
-                              placeholder="e.g. 28000"
-                              value={discountAmount}
-                              onChange={(e) => setDiscountAmount(e.target.value)}
-                              className="bg-white/5 border-white/10 h-12 text-lg font-black !text-white placeholder:text-white/30 focus:border-primary rounded-xl [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all"
-                           />
+                           <label className="text-[10px] font-bold text-slate-400 ml-1">Reward Value (₹)</label>
+                           <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#FD5A1A] font-bold text-base">₹</span>
+                            <Input 
+                                type="number"
+                                placeholder="Enter amount"
+                                value={discountAmount}
+                                onChange={(e) => setDiscountAmount(e.target.value)}
+                                className="bg-white/5 border-white/10 h-12 pl-10 text-base font-bold text-white placeholder:text-slate-600 focus:border-[#0075CF] focus:ring-1 focus:ring-[#0075CF]/20 rounded-xl transition-all"
+                            />
+                           </div>
                         </div>
                       </div>
                     ) : (
-                      <div className="text-slate-500 italic py-4">
-                        Select a student from the list to enable generation.
+                      <div className="py-8 flex flex-col items-center gap-3 opacity-30">
+                        <div className="h-0.5 w-8 bg-slate-700 rounded-full" />
+                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] text-center">
+                          Select student to proceed
+                        </p>
                       </div>
                     )}
                  </div>
@@ -220,15 +248,15 @@ export function CouponManager() {
                  <AnimatePresence mode="wait">
                     {generatedCode ? (
                       <motion.div 
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        className="p-6 bg-white/5 border border-white/10 rounded-2xl space-y-3"
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        className="p-6 bg-[#FD5A1A]/5 border border-[#FD5A1A]/10 rounded-2xl space-y-3 relative shadow-inner"
                       >
-                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Coupon Created Successfully</p>
-                         <h2 className="text-3xl font-black text-white tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">{generatedCode}</h2>
-                         <div className="flex items-center justify-center gap-2 text-xs font-bold text-green-400">
-                            <Send className="h-3 w-3" />
-                            Notification Dispatched
+                         <p className="text-[9px] font-black uppercase tracking-widest text-[#FD5A1A]">Assignment Secure</p>
+                         <h2 className="text-3xl font-black text-white tracking-widest">{generatedCode}</h2>
+                         <div className="flex items-center justify-center gap-2 text-[9px] font-bold text-slate-400">
+                            <Send className="h-3 w-3 text-[#FD5A1A]" />
+                            Notified successfully
                          </div>
                       </motion.div>
                     ) : (
@@ -236,33 +264,32 @@ export function CouponManager() {
                         size="lg"
                         disabled={!selectedStudent || isGenerating}
                         onClick={generateCoupon}
-                        className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest text-sm shadow-[0_10px_20px_rgba(var(--primary-rgb),0.3)] disabled:opacity-20 transition-all border-none"
+                        className="w-full h-14 rounded-xl bg-[#0075CF] hover:bg-[#0075CF]/90 text-white font-bold tracking-tight text-sm shadow-lg disabled:opacity-30 transition-all border-0 active:scale-[0.98]"
                       >
                         {isGenerating ? (
                            <Loader2 className="h-5 w-5 animate-spin" />
                         ) : (
-                           <>
-                            <Gift className="h-5 w-5 mr-3" />
-                            Generate & Send
-                           </>
+                           <div className="flex items-center gap-2">
+                            <Gift className="h-4 w-4" />
+                            <span>Assign Reward Code</span>
+                           </div>
                         )}
                       </Button>
                     )}
                  </AnimatePresence>
 
-                 <div className="pt-4 border-t border-white/10">
-                    <p className="text-[10px] text-slate-500 font-medium leading-relaxed uppercase tracking-tighter">
-                      Assigning a coupon will automatically notify the student and persist the code in their rewards history.
+                 <div className="pt-6 border-t border-white/5 opacity-40">
+                    <p className="text-[8px] text-slate-500 font-medium leading-relaxed uppercase tracking-wider text-center">
+                      Auto-notification and persistence protocols active
                     </p>
                  </div>
               </CardContent>
            </Card>
 
-           <Card className="border-slate-200 shadow-sm rounded-3xl bg-slate-50 border-dashed">
-              <CardContent className="p-6 text-center space-y-2">
-                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Generation Rule</p>
-                 <p className="text-sm font-medium text-slate-600">
-                    Codes are prefixed with <span className="font-bold text-primary">AOTMS</span> followed by 5 high-entropy numeric digits for uniqueness.
+           <Card className="border-white/5 shadow-sm rounded-2xl bg-white/5 border-dashed">
+              <CardContent className="p-4 text-center">
+                 <p className="text-[10px] font-medium text-slate-500">
+                    Pattern: <span className="font-bold text-[#FD5A1A]">AOTMS</span> + 5 Digit Entropy
                  </p>
               </CardContent>
            </Card>

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import { useCourseModules, useModuleVideos, useS3Upload, CourseModule, S3CourseVideo, useCreateCourseVideo, useDeleteCourseVideo, useCreateCourseModule } from "@/hooks/useCourseBuilder";
 import { fetchWithAuth } from "@/lib/api";
-import { Trash2, Lock, PlayCircle, MoreVertical, CheckCircle, Loader2, Plus, X, Video, Layers, Image as ImageIcon, Camera } from "lucide-react";
+import { Trash2, Lock, PlayCircle, MoreVertical, CheckCircle, Loader2, Plus, X, Video, Layers, Image as ImageIcon, Camera, Clock } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { motion, AnimatePresence } from "framer-motion";
@@ -27,16 +27,10 @@ interface VideoUploaderProps {
 }
 
 export function VideoUploader({ courseId, courseStatus, hideVideoList = false, onSuccess, initialModuleId }: VideoUploaderProps) {
-  const { data: modules, isLoading: modulesLoading } = useCourseModules(courseId);
-  // Debug logs for troubleshooting "No modules found"
-  console.log("VideoUploader Render Debug:", { 
-      courseId, 
-      modulesCount: modules?.length, 
-      modulesData: modules,
-      isLoading: modulesLoading 
-  });
-
-  const { data: videos = [], isLoading: videosLoading } = useModuleVideos(null, courseId);
+  const { data: modulesData, isLoading: modulesLoading } = useCourseModules(courseId);
+  const modules = useMemo(() => (modulesData || []) as CourseModule[], [modulesData]);
+  const { data: videosData, isLoading: videosLoading } = useModuleVideos(null, courseId);
+  const videos = useMemo(() => (videosData || []) as S3CourseVideo[], [videosData]);
   const uploadS3 = useS3Upload();
   const createVideo = useCreateCourseVideo();
   const deleteVideo = useDeleteCourseVideo();
@@ -169,12 +163,12 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
       // Step 0: Create Module if needed
       if (isCreatingModule) {
          console.log('Step 0: Creating new module inline...');
-         const newModule = await createModule.mutateAsync({
-             course_id: courseId,
-             title: newModuleName,
-             order_index: modules?.length || 0
-         });
-         targetModuleId = newModule.id;
+          const newModule = await createModule.mutateAsync({
+              course_id: courseId,
+              title: newModuleName,
+              order_index: modules?.length || 0
+          }) as CourseModule;
+          targetModuleId = newModule.id;
          console.log('Step 0 complete: Created module', targetModuleId);
       }
 
@@ -275,10 +269,10 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
   return (
     <div className="space-y-6">
       {/* Upload Form Section */}
-      <div className="pro-card bg-white rounded-[2.5rem] border-slate-100 p-8 shadow-sm">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold tracking-tight text-slate-800">Upload Course Video</h2>
-          <p className="text-sm text-slate-500 mt-1">
+      <div className="pro-card bg-white rounded-2xl sm:rounded-[2.5rem] border-slate-100 p-5 sm:p-8 shadow-sm">
+        <div className="mb-5 sm:mb-6">
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-800">Upload Course Video</h2>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium italic opacity-70">
             Choose a module and title to add a new video asset to your course library.
           </p>
         </div>
@@ -299,14 +293,14 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
             {/* Module Selector / Creator */}
             <div className="space-y-3">
               <div className="flex items-center justify-between px-1">
-                 <Label className="text-sm font-semibold text-slate-700">Target Module</Label>
+                 <Label className="text-xs sm:text-sm font-black text-slate-700 uppercase tracking-widest">Target Module</Label>
                  <Button 
                     variant="link" 
                     size="sm" 
-                    className="h-auto p-0 text-primary font-bold text-xs"
+                    className="h-auto p-0 text-primary font-black text-[10px] sm:text-xs uppercase"
                     onClick={() => setIsCreatingModule(!isCreatingModule)}
                  >
-                    {isCreatingModule ? "Select existing module" : "+ Create new module"}
+                    {isCreatingModule ? "Existing" : "+ New Module"}
                  </Button>
               </div>
               
@@ -359,7 +353,7 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
               </AnimatePresence>
             </div>
 
-            <div className="flex gap-3 pt-2">
+            <div className="flex flex-row gap-3 pt-3">
               <Button 
                 variant="ghost" 
                 onClick={() => {
@@ -368,18 +362,18 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
                   setNewModuleName("");
                 }} 
                 disabled={uploading}
-                className="rounded-xl h-12 px-6 border border-slate-100 hover:bg-slate-50"
+                className="flex-1 sm:flex-none rounded-xl h-11 sm:h-12 px-4 sm:px-6 border border-slate-100 hover:bg-slate-50 font-black text-xs uppercase tracking-widest"
               >
                 Cancel
               </Button>
               <Button 
                 onClick={() => handleUpload()}
                 disabled={uploading || !selectedFile || !newVideo.title || (!isCreatingModule && !newVideo.module_id) || (isCreatingModule && !newModuleName)}
-                className={`flex-1 rounded-xl h-12 font-bold shadow-lg transition-all ${uploadSuccess ? 'bg-green-600 hover:bg-green-700 shadow-green-200' : 'pro-button-primary shadow-primary/20'}`}
+                className={`flex-[2] sm:flex-1 rounded-xl h-11 sm:h-12 font-black text-xs uppercase tracking-widest shadow-lg transition-all ${uploadSuccess ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200' : 'pro-button-primary shadow-primary/20'}`}
               >
-                {uploading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Video className="h-5 w-5 mr-2" />}
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Video className="h-4 w-4 mr-2" />}
                 {uploadSuccess ? (
-                  <span className="flex items-center gap-2"><CheckCircle className="h-5 w-5" /> {isCreatingModule ? "Created & Uploaded!" : "Uploaded!"}</span>
+                  <span className="flex items-center gap-2"><CheckCircle className="h-4 w-4" /> {isCreatingModule ? "Created!" : "Uploaded!"}</span>
                 ) : (isCreatingModule ? 'Create & Upload' : 'Confirm Upload')}
               </Button>
             </div>
@@ -389,9 +383,9 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
           <div className="space-y-6">
             {/* Video File Upload */}
             <div className="space-y-3">
-              <Label className="text-sm font-semibold text-slate-700 ml-1">Video File</Label>
+              <Label className="text-xs sm:text-sm font-black text-slate-700 uppercase tracking-widest ml-1">Video File</Label>
               <div 
-                className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all cursor-pointer group min-h-[200px] flex flex-col items-center justify-center
+                className={`border-2 border-dashed rounded-2xl p-6 sm:p-8 text-center transition-all cursor-pointer group min-h-[160px] sm:min-h-[200px] flex flex-col items-center justify-center
                   ${selectedFile ? 'border-primary/30 bg-primary/5' : 'border-slate-200 bg-slate-50/50 hover:border-primary/40 hover:bg-slate-50'}`}
                 onClick={() => fileInputRef.current?.click()}
               >
@@ -404,19 +398,19 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
                 />
                 {videoPreviewUrl ? (
                   <div className="space-y-4 w-full">
-                    <div className="relative mx-auto max-w-[280px] aspect-video rounded-xl overflow-hidden shadow-md">
+                    <div className="relative mx-auto max-w-[240px] sm:max-w-[280px] aspect-video rounded-xl overflow-hidden shadow-md">
                       <video src={videoPreviewUrl} className="h-full w-full object-cover" />
                       <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <PlayCircle className="h-8 w-8 text-white" />
                       </div>
                     </div>
-                    <div className="flex items-center justify-center gap-2 text-primary font-medium">
-                      <Video className="h-4 w-4" />
-                      <span className="text-sm truncate max-w-[200px]">{selectedFile?.name}</span>
+                    <div className="flex items-center justify-center gap-2 text-primary font-black text-[10px] sm:text-xs tracking-widest uppercase">
+                      <Video className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="truncate max-w-[140px] sm:max-w-[200px]">{selectedFile?.name}</span>
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="h-6 w-6 rounded-full hover:bg-red-50 hover:text-red-500" 
+                        className="h-6 w-6 rounded-full hover:bg-rose-50 hover:text-rose-500" 
                         onClick={(e) => { e.stopPropagation(); clearFile(); }}
                       >
                         <X className="h-3 w-3" />
@@ -424,13 +418,13 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-3 py-4">
-                    <div className="h-16 w-16 bg-white rounded-3xl shadow-sm flex items-center justify-center mx-auto text-slate-400 group-hover:text-primary transition-all group-hover:scale-110">
-                      <Plus className="h-8 w-8" />
+                  <div className="space-y-3 py-2">
+                    <div className="h-12 w-12 sm:h-16 sm:w-16 bg-white rounded-2xl sm:rounded-3xl shadow-sm flex items-center justify-center mx-auto text-slate-400 group-hover:text-primary transition-all group-hover:scale-110">
+                      <Plus className="h-6 w-6 sm:h-8 sm:w-8" />
                     </div>
                     <div>
-                      <p className="text-base font-semibold text-slate-700">Click or drag video here</p>
-                      <p className="text-xs text-slate-400 mt-1">MP4, WebM or Ogg (Max 500MB)</p>
+                      <p className="text-sm sm:text-base font-black text-slate-700 tracking-tight">Drop video here</p>
+                      <p className="text-[10px] text-slate-400 mt-1 uppercase font-black tracking-tighter">MP4, WebM (Max 500MB)</p>
                     </div>
                   </div>
                 )}
@@ -439,39 +433,49 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
             
             {/* Thumbnail Upload */}
             <div className="space-y-3">
-              <Label className="text-sm font-semibold text-slate-700 ml-1">Thumbnail Image</Label>
+              <Label className="text-xs sm:text-sm font-black text-slate-700 uppercase tracking-widest ml-1">Thumbnail</Label>
               <div 
-                className={`border-2 border-dashed rounded-2xl p-4 text-center transition-all cursor-pointer group min-h-[140px] flex flex-col items-center justify-center
+                className={`border-2 border-dashed rounded-2xl p-4 text-center transition-all cursor-pointer group min-h-[110px] sm:min-h-[140px] flex flex-col items-center justify-center
                   ${thumbnailFile ? 'border-primary/30 bg-primary/5' : 'border-slate-200 bg-slate-50/50 hover:border-primary/40 hover:bg-slate-50'}`}
                 onClick={() => {
                   const input = document.createElement('input');
                   input.type = 'file';
                   input.accept = 'image/*';
-                  input.onchange = (e) => handleThumbnailSelect(e as any);
+                  input.onchange = (e: Event) => {
+                    const target = e.target as HTMLInputElement;
+                    if (target.files && target.files[0]) {
+                      const file = target.files[0];
+                      if (thumbnailPreviewUrl) {
+                        URL.revokeObjectURL(thumbnailPreviewUrl);
+                      }
+                      setThumbnailFile(file);
+                      setThumbnailPreviewUrl(URL.createObjectURL(file));
+                    }
+                  };
                   input.click();
                 }}
               >
                 {thumbnailPreviewUrl ? (
-                  <div className="relative w-full aspect-video rounded-xl overflow-hidden shadow-sm group">
+                  <div className="relative w-full aspect-video rounded-xl overflow-hidden shadow-sm group mx-auto max-w-[200px]">
                     <img src={thumbnailPreviewUrl} className="h-full w-full object-cover" />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                       <Camera className="h-6 w-6 text-white" />
+                       <Camera className="h-5 w-5 text-white" />
                     </div>
                     <Button 
                         variant="destructive" 
                         size="icon" 
-                        className="absolute top-2 right-2 h-7 w-7 rounded-full scale-0 group-hover:scale-100 transition-transform" 
+                        className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full scale-0 group-hover:scale-100 transition-transform" 
                         onClick={(e) => { e.stopPropagation(); clearThumbnail(); }}
                       >
-                        <X className="h-3.5 w-3.5" />
+                        <X className="h-3 w-3" />
                     </Button>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="h-10 w-10 bg-white rounded-full shadow-sm flex items-center justify-center text-slate-400 group-hover:text-primary transition-all">
-                       <ImageIcon className="h-5 w-5" />
+                  <div className="flex flex-col items-center gap-1.5">
+                    <div className="h-8 w-8 sm:h-10 sm:w-10 bg-white rounded-full shadow-sm flex items-center justify-center text-slate-400 group-hover:text-primary transition-all">
+                       <ImageIcon className="h-4 w-4 sm:h-5 sm:w-5" />
                     </div>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-tighter group-hover:text-primary transition-colors">Select Thumbnail</p>
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-tighter group-hover:text-primary transition-colors">Select Image</p>
                   </div>
                 )}
               </div>

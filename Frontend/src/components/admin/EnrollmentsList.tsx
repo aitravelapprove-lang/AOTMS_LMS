@@ -21,10 +21,25 @@ import {
   Loader2,
   Trash2,
   Eye,
-  Hash
+  Hash,
+  GraduationCap,
+  MoreVertical
 } from "lucide-react";
 import { CourseEnrollment } from "@/hooks/useCourses";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface EnrollmentsListProps {
   enrollments: CourseEnrollment[];
@@ -127,7 +142,7 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -191,68 +206,83 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
 
       {/* Search and Filter */}
       <div className="flex flex-col lg:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="relative flex-1 group">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
           <Input
             placeholder="Search by name, email, course or UUID..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 h-10"
+            className="pl-10 h-11 bg-background/50 border-slate-200 focus:border-primary/50 focus:ring-primary/20 transition-all rounded-xl"
           />
         </div>
-        <div className="flex flex-wrap gap-2">
-          <div className="relative w-full sm:w-48">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <select
-              value={filterCourse}
-              onChange={(e) => setFilterCourse(e.target.value)}
-              className="w-full h-10 pl-10 pr-4 rounded-lg border border-input bg-background text-sm focus:ring-2 focus:ring-primary/20"
-            >
-              <option value="all">All Courses</option>
-              {courses.map(course => (
-                <option key={course} value={course}>{course}</option>
-              ))}
-            </select>
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3">
+          <div className="w-full sm:w-48">
+            <Select value={filterCourse} onValueChange={setFilterCourse}>
+              <SelectTrigger className="h-11 rounded-xl bg-background border-slate-200">
+                 <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-muted-foreground" />
+                    <SelectValue placeholder="All Courses" />
+                 </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Courses</SelectItem>
+                {courses.map(course => (
+                  <SelectItem key={course} value={course}>{course}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <div className="relative w-full sm:w-40">
-            <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <select
-              value={filterTerm}
-              onChange={(e) => setFilterTerm(e.target.value)}
-              className="w-full h-10 pl-10 pr-4 rounded-lg border border-input bg-background text-sm focus:ring-2 focus:ring-primary/20"
-            >
-              <option value="all">All Terms</option>
-              <option value="full">Full Term</option>
-              <option value="term1">Term 1</option>
-              <option value="term2">Term 2</option>
-            </select>
+
+          <div className="w-full sm:w-40">
+            <Select value={filterTerm} onValueChange={setFilterTerm}>
+              <SelectTrigger className="h-11 rounded-xl bg-background border-slate-200">
+                 <div className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                    <SelectValue placeholder="All Terms" />
+                 </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Terms</SelectItem>
+                <SelectItem value="full">Full Term</SelectItem>
+                <SelectItem value="term1">Term 1</SelectItem>
+                <SelectItem value="term2">Term 2</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <div className="relative w-full sm:w-40">
-            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full h-10 pl-10 pr-4 rounded-lg border border-input bg-background text-sm focus:ring-2 focus:ring-primary/20"
-            >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="active">Approved</option>
-              <option value="rejected">Rejected</option>
-            </select>
+
+          <div className="w-full sm:w-40">
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="h-11 rounded-xl bg-background border-slate-200">
+                 <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <SelectValue placeholder="All Status" />
+                 </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="active">Approved</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <div className="relative w-full sm:w-40">
-            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <select
-              value={timeFilter}
-              onChange={(e) => setTimeFilter(e.target.value)}
-              className="w-full h-10 pl-10 pr-4 rounded-lg border border-input bg-background text-sm focus:ring-2 focus:ring-primary/20"
-            >
-              <option value="all">All Time</option>
-              <option value="day">Today</option>
-              <option value="weekly">This Week</option>
-              <option value="monthly">This Month</option>
-              <option value="yearly">This Year</option>
-            </select>
+
+          <div className="w-full sm:w-40">
+            <Select value={timeFilter} onValueChange={setTimeFilter}>
+              <SelectTrigger className="h-11 rounded-xl bg-background border-slate-200">
+                 <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <SelectValue placeholder="All Time" />
+                 </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Time</SelectItem>
+                <SelectItem value="day">Today</SelectItem>
+                <SelectItem value="weekly">This Week</SelectItem>
+                <SelectItem value="monthly">This Month</SelectItem>
+                <SelectItem value="yearly">This Year</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
@@ -267,323 +297,403 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
           <CardDescription>
             {filteredEnrollments.length} of {enrollments.length} enrollments
           </CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
+        </CardHeader>        <CardContent className="p-0 sm:p-6">
           {filteredEnrollments.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>No enrollments found</p>
             </div>
           ) : (
-            <div className="overflow-x-auto custom-scrollbar-horizontal pb-4">
-              <table className="w-full min-w-[1000px]">
-                <thead className="bg-muted/50">
-                  <tr>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Student</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">UUID</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Course</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Term / Balance</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">UTR / Proof</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Price</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Progress</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Status</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Date</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {filteredEnrollments.map((enrollment) => (
-                    <tr key={enrollment.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
-                            <span className="text-xs font-bold text-primary">
-                              {enrollment.user_name?.charAt(0) || 'U'}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-foreground">
-                              {enrollment.user_name || 'Unknown'}
-                            </p>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Mail className="h-3 w-3" />
-                              {enrollment.user_email}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground bg-muted/50 px-2 py-1 rounded w-fit">
-                          <Fingerprint className="h-3.5 w-3.5 text-primary/60" />
-                          {enrollment.user_id?.substring(0, 8)}...
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap max-w-[180px]">
-                        <Badge variant="outline" className="font-bold border-primary/20 bg-primary/5 text-primary max-w-full truncate block text-center">
-                          {enrollment.course_name || "Unknown"}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          {enrollment.payment_term === 'term1' ? (
-                            <Badge className="text-[10px] font-black uppercase bg-blue-100 text-blue-700 border-blue-200">1st Term</Badge>
-                          ) : enrollment.payment_term === 'term2' ? (
-                            <Badge className="text-[10px] font-black uppercase bg-purple-100 text-purple-700 border-purple-200">2nd Term</Badge>
-                          ) : (
-                            <Badge className="text-[10px] font-black uppercase bg-emerald-100 text-emerald-700 border-emerald-200 border">Full Term</Badge>
-                          )}
-                          
-                          {enrollment.remaining_balance ? (
-                            <Badge variant="outline" className="text-[10px] font-black text-amber-600 border-amber-200 bg-amber-50 animate-pulse">
-                               OWED: ₹{enrollment.remaining_balance.toLocaleString('en-IN')}
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-[10px] font-bold text-slate-400 border-slate-200">
-                               PAID
-                            </Badge>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-col gap-1.5">
-                          <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-50 border border-slate-100 w-fit">
-                            <span className="text-[10px] font-mono font-black text-slate-600 uppercase">UTR:</span>
-                            <span className="text-[10px] font-mono font-bold text-primary group-hover:text-primary transition-colors">
-                              {enrollment.utr_number || "PENDING"}
-                            </span>
-                          </div>
-                          {enrollment.payment_proof_url && (
-                             <div 
-                                className="h-8 w-14 rounded-md overflow-hidden border border-slate-200 shadow-sm cursor-zoom-in hover:border-primary transition-all group"
-                                onClick={() => setSelectedEnrollment(enrollment)}
-                             >
-                                <img src={enrollment.payment_proof_url} alt="Proof" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
-                             </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-sm font-bold text-green-700">
-                            ₹{(enrollment.final_price ?? enrollment.price)?.toLocaleString('en-IN')}
-                          </span>
-                          {enrollment.applied_coupon && (
-                            <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 text-[8px] uppercase tracking-tighter w-fit">
-                              Code: {enrollment.applied_coupon}
-                            </Badge>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                           <div className="flex-1 h-1.5 w-16 bg-slate-100 rounded-full overflow-hidden">
-                              <div 
-                                className={`h-full ${enrollment.progress_percentage && enrollment.progress_percentage >= 95 ? 'bg-green-500' : 'bg-primary'}`} 
-                                style={{ width: `${enrollment.progress_percentage || 0}%` }}
-                              />
-                           </div>
-                           <span className="text-xs font-bold text-slate-600">
-                             {enrollment.progress_percentage || 0}%
-                           </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        {getStatusBadge(enrollment.status || 'pending')}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="text-[11px] font-bold text-slate-500 bg-slate-50 px-2 py-1.5 rounded-full border border-slate-100 flex items-center gap-1.5 w-fit">
-                          <Calendar className="h-3 w-3 text-primary/60" />
-                          {new Date(enrollment.enrollment_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} • {new Date(enrollment.enrollment_date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-8 border-primary/20 text-primary hover:bg-primary/5"
-                            onClick={() => setSelectedEnrollment(enrollment)}
-                            title="View Enrollment Details"
-                          >
-                            <Eye className="h-4 w-4 mr-1.5" />
-                            Details
-                          </Button>
+            <div className="space-y-4">
+              {/* Mobile Card View (shown only on mobile/tablet) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-4 p-4">
+                 {filteredEnrollments.map((enrollment) => (
+                    <div key={enrollment.id} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-5 relative group hover:shadow-md transition-all">
+                       {/* Floating Status Badge */}
+                       <div className="absolute top-4 right-4 h-fit">
+                          {getStatusBadge(enrollment.status || 'pending')}
+                       </div>
 
+                       <div className="flex gap-3 pr-16">
+                          <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
+                             <span className="text-lg font-bold text-primary">{enrollment.user_name?.charAt(0) || 'U'}</span>
+                          </div>
+                          <div className="overflow-hidden">
+                             <h4 className="font-bold text-slate-900 text-base leading-tight truncate">{enrollment.user_name}</h4>
+                             <p className="text-xs text-muted-foreground truncate">{enrollment.user_email}</p>
+                             <div className="flex items-center gap-1.5 mt-1">
+                                <Fingerprint className="h-3 w-3 text-slate-400" />
+                                <span className="text-[10px] font-mono text-slate-400">{enrollment.user_id?.substring(0, 12)}...</span>
+                             </div>
+                          </div>
+                       </div>
+
+                       <div className="space-y-2.5 pt-2">
+                          <div className="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                             <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Course</span>
+                             <Badge variant="outline" className="font-bold border-primary/20 bg-primary/5 text-primary text-[10px]">
+                                {enrollment.course_name}
+                             </Badge>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex flex-col gap-1">
+                               <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Term</span>
+                               <div className="flex items-center gap-1.5">
+                                  {enrollment.payment_term === 'term1' ? (
+                                      <Badge className="text-[9px] h-4 px-1.5 font-black uppercase bg-blue-100 text-blue-700">1st Term</Badge>
+                                  ) : enrollment.payment_term === 'term2' ? (
+                                      <Badge className="text-[9px] h-4 px-1.5 font-black uppercase bg-purple-100 text-purple-700">2nd Term</Badge>
+                                  ) : (
+                                      <Badge className="text-[9px] h-4 px-1.5 font-black uppercase bg-emerald-100 text-emerald-700">Full</Badge>
+                                  )}
+                               </div>
+                            </div>
+                            <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex flex-col gap-1">
+                               <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Price</span>
+                               <span className="font-bold text-green-700 text-sm">₹{(enrollment.final_price ?? enrollment.price)?.toLocaleString('en-IN')}</span>
+                            </div>
+                          </div>
+
+                          <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex flex-col gap-1">
+                             <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">UTR Reference</span>
+                             <div className="flex items-center justify-between">
+                                <span className="font-mono font-bold text-slate-600 text-xs truncate max-w-[150px]">{enrollment.utr_number || "PENDING"}</span>
+                                <div className="text-[9px] font-bold text-slate-400">{formatDate(enrollment.enrollment_date).split(',')[0]}</div>
+                             </div>
+                          </div>
+                       </div>
+
+                       <div className="pt-2 flex flex-col gap-2">
+                          <Button
+                            variant="secondary"
+                            className="w-full h-10 rounded-xl text-sm font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border-none group/btn"
+                            onClick={() => setSelectedEnrollment(enrollment)}
+                          >
+                            <Eye className="h-4 w-4 mr-2 group-hover/btn:text-primary transition-colors" /> View Payment Proof
+                          </Button>
+                          
                           {(enrollment.status === 'pending' || !enrollment.status) && onUpdateStatus && (
-                            <>
+                            <div className="grid grid-cols-2 gap-2">
                               <Button 
-                                size="sm" 
-                                variant="default"
-                                disabled={processingId === enrollment.id}
-                                className="h-8 bg-green-600 hover:bg-green-700 text-white"
+                                className="h-10 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm shadow-sm shadow-emerald-500/20"
                                 onClick={() => handleUpdateStatus(enrollment.id, 'active')}
                               >
-                                {processingId === enrollment.id ? <Loader2 className="h-4 w-4 animate-spin" /> : "Approve"}
+                                Approve
                               </Button>
                               <Button 
-                                size="sm" 
-                                variant="ghost"
-                                disabled={processingId === enrollment.id}
-                                className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                variant="outline"
+                                className="h-10 rounded-xl text-rose-600 border-rose-100 hover:bg-rose-50 hover:text-rose-700 font-bold text-sm"
                                 onClick={() => handleUpdateStatus(enrollment.id, 'rejected')}
                               >
                                 Reject
                               </Button>
-                            </>
+                            </div>
                           )}
-                          
-                          {enrollment.status === 'active' && (
-                            <Badge variant="outline" className="h-8 bg-green-50 text-green-600 border-green-200">
-                              Approved
-                            </Badge>
-                          )}
+                       </div>
+                    </div>
+                 ))}
+              </div>
 
-                          {enrollment.status === 'rejected' && (
-                            <Badge variant="outline" className="h-8 bg-red-50 text-red-600 border-red-200">
-                              Rejected
-                            </Badge>
-                          )}
-
-                          {onDelete && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 ml-1"
-                              onClick={() => handleDelete(enrollment.id)}
-                              disabled={processingId === enrollment.id}
-                              title="Delete Enrollment"
-                            >
-                              {processingId === enrollment.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-4 w-4" />
-                              )}
-                            </Button>
-                          )}
-                        </div>
-                      </td>
+              <div className="hidden lg:block overflow-x-auto custom-scrollbar-horizontal rounded-xl border border-slate-200/60 shadow-sm">
+                <table className="w-full">
+                  <thead className="bg-slate-50/80 border-b border-slate-200/60">
+                    <tr>
+                      <th className="text-left px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest min-w-[200px]">Student / Ref</th>
+                      <th className="text-left px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Course</th>
+                      <th className="text-left px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Billing & Term</th>
+                      <th className="text-left px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Payment Proof</th>
+                      <th className="text-left px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Fulfillment</th>
+                      <th className="text-left px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Timeline</th>
+                      <th className="text-right px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredEnrollments.map((enrollment) => (
+                      <tr key={enrollment.id} className="hover:bg-primary/[0.02] transition-colors group border-b border-slate-100 last:border-0 italic-none">
+                        <td className="px-6 py-5">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center border border-slate-200 group-hover:border-primary/30 group-hover:bg-white transition-all font-bold text-primary shrink-0">
+                               {enrollment.user_name?.charAt(0) || 'U'}
+                            </div>
+                            <div className="overflow-hidden">
+                              <p className="text-sm font-black text-slate-900 truncate">
+                                {enrollment.user_name || 'Unknown'}
+                              </p>
+                              <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 group-hover:text-slate-500 transition-colors uppercase tracking-tight">
+                                <span className="truncate max-w-[120px]">{enrollment.user_email}</span>
+                                <span className="text-slate-200">•</span>
+                                <span className="font-mono">{enrollment.user_id?.substring(0, 6)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="space-y-1">
+                            <p className="text-xs font-bold text-slate-700 line-clamp-1">{enrollment.course_name || "Unknown"}</p>
+                            <div className="h-1 w-12 bg-slate-100 rounded-full overflow-hidden">
+                              <div className="h-full bg-primary" style={{ width: '40%' }} />
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center gap-2">
+                               <span className="text-sm font-black text-emerald-600">₹{(enrollment.final_price ?? enrollment.price)?.toLocaleString('en-IN')}</span>
+                               {enrollment.payment_term === 'full' ? (
+                                 <Badge className="text-[8px] font-black uppercase bg-emerald-50 text-emerald-600 h-4 px-1 border-emerald-100 border">Paid Full</Badge>
+                               ) : (
+                                 <Badge className="text-[8px] font-black uppercase bg-blue-50 text-blue-600 h-4 px-1 border-blue-100 border">Installment</Badge>
+                               )}
+                            </div>
+                            {enrollment.remaining_balance ? (
+                              <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest bg-amber-50/50 px-1.5 py-0.5 rounded border border-amber-100/50 w-fit">
+                                Due: ₹{enrollment.remaining_balance.toLocaleString('en-IN')}
+                              </p>
+                            ) : (
+                               <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">N/A</p>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="flex items-center gap-3">
+                             <div className="flex flex-col gap-1">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Ref: {enrollment.utr_number || "---"}</span>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-7 text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary hover:bg-primary/5 p-0 justify-start"
+                                  onClick={() => setSelectedEnrollment(enrollment)}
+                                >
+                                  Open Receipt
+                                </Button>
+                             </div>
+                             {enrollment.payment_proof_url && (
+                                <div 
+                                   className="h-10 w-10 rounded-lg overflow-hidden border border-slate-200 shadow-sm cursor-pointer hover:border-primary transition-all shrink-0"
+                                   onClick={() => setSelectedEnrollment(enrollment)}
+                                >
+                                   <img src={enrollment.payment_proof_url} alt="Proof" className="w-full h-full object-cover" />
+                                </div>
+                             )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                           <div className="flex flex-col items-center gap-2">
+                              {getStatusBadge(enrollment.status || 'pending')}
+                              <div className="flex items-center gap-1.5">
+                                <div className="h-1 w-12 bg-slate-100 rounded-full overflow-hidden">
+                                   <div 
+                                     className={`h-full ${enrollment.progress_percentage && enrollment.progress_percentage >= 95 ? 'bg-green-500' : 'bg-primary'} transition-all`} 
+                                     style={{ width: `${enrollment.progress_percentage || 0}%` }}
+                                   />
+                                </div>
+                                <span className="text-[9px] font-black text-slate-400">
+                                  {enrollment.progress_percentage || 0}%
+                                </span>
+                              </div>
+                           </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="flex flex-col text-[10px] font-bold text-slate-500 whitespace-nowrap">
+                             <span className="text-slate-900">{new Date(enrollment.enrollment_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
+                             <span className="text-slate-400 font-medium uppercase tracking-tighter">{new Date(enrollment.enrollment_date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {(enrollment.status === 'pending' || !enrollment.status) ? (
+                              <div className="flex gap-1">
+                                <Button 
+                                  size="sm" 
+                                  disabled={processingId === enrollment.id}
+                                  className="h-8 bg-slate-900 hover:bg-black text-white text-[10px] font-black uppercase tracking-widest rounded-lg px-3"
+                                  onClick={() => handleUpdateStatus(enrollment.id, 'active')}
+                                >
+                                  {processingId === enrollment.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "Approve"}
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost"
+                                  disabled={processingId === enrollment.id}
+                                  className="h-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 text-[10px] font-black uppercase tracking-widest rounded-lg px-2"
+                                  onClick={() => handleUpdateStatus(enrollment.id, 'rejected')}
+                                >
+                                  Reject
+                                </Button>
+                              </div>
+                            ) : (
+                               <Button
+                                 size="sm"
+                                 variant="ghost"
+                                 className="h-8 w-8 p-0 text-slate-300 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"
+                                 onClick={() => setSelectedEnrollment(enrollment)}
+                               >
+                                 <Eye className="h-4 w-4" />
+                               </Button>
+                            )}
+                            
+                            {onDelete && (
+                               <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-slate-600">
+                                        <MoreVertical className="h-4 w-4" />
+                                     </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                     <DropdownMenuItem className="text-rose-600 focus:text-rose-700" onClick={() => handleDelete(enrollment.id)}>
+                                        <Trash2 className="h-4 w-4 mr-2" /> Delete Record
+                                     </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                               </DropdownMenu>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Proof & Details Viewer Dialog */}
       <Dialog open={!!selectedEnrollment} onOpenChange={(open) => !open && setSelectedEnrollment(null)}>
-        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-slate-900 border-slate-800 rounded-3xl shadow-2xl">
-          <div className="flex flex-col md:flex-row min-h-[500px]">
-            {/* Left: Metadata */}
-            <div className="md:w-80 bg-slate-800/50 p-8 border-r border-slate-700 flex flex-col justify-between">
-                <div className="space-y-8">
+        <DialogContent className="w-[95vw] sm:max-w-4xl h-[92vh] p-0 overflow-hidden bg-[#0f172a] border-slate-800 rounded-[2rem] shadow-2xl flex flex-col">
+          {/* Main Scrollable Content */}
+          <div className="flex-1 overflow-y-auto scrollbar-none">
+            <div className="flex flex-col md:flex-row min-h-full">
+              {/* Left: Metadata */}
+              <div className="w-full md:w-80 bg-slate-900/40 p-6 sm:p-8 md:border-r border-slate-800 flex flex-col justify-between shrink-0">
+                  <div className="space-y-8">
                     <div>
-                        <h3 className="text-xl font-bold text-white mb-1">Enrollment Detail</h3>
-                        <p className="text-xs text-slate-400 font-medium">Verification required for activation</p>
+                        <Badge className="bg-primary/20 text-primary border-primary/20 hover:bg-primary/30 rounded-full px-3 py-1 text-[10px] uppercase font-bold tracking-wider mb-3">
+                           Verification Terminal
+                        </Badge>
+                        <h3 className="text-2xl font-black text-white leading-tight">Enrollment <br/><span className="text-primary font-light">Verification</span></h3>
                     </div>
 
                     <div className="space-y-6">
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-primary">UTR Number / TXN ID</label>
-                            <div className="flex items-center gap-3 bg-slate-900/50 p-3 rounded-xl border border-slate-700 group hover:border-primary transition-colors">
-                                <Hash className="h-4 w-4 text-slate-500" />
-                                <span className="text-sm font-mono font-bold text-white tracking-wider">
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                               <RefreshCw className="h-3 w-3" /> Transaction Identifier
+                            </label>
+                            <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/50 group hover:border-primary transition-all shadow-inner">
+                                <span className="text-sm font-mono font-bold text-white tracking-widest break-all">
                                     {selectedEnrollment?.utr_number || "NOT PROVIDED"}
                                 </span>
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Student Info</label>
-                            <div className="space-y-1">
-                                <p className="text-sm font-bold text-white">{selectedEnrollment?.user_name}</p>
-                                <p className="text-xs text-slate-400 font-medium">{selectedEnrollment?.user_phone}</p>
-                                <p className="text-xs text-slate-500 truncate">{selectedEnrollment?.user_email}</p>
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-xl bg-slate-800 flex items-center justify-center border border-slate-700">
+                                   <Users className="h-5 w-5 text-slate-400" />
+                                </div>
+                                <div className="space-y-0.5">
+                                    <p className="text-[9px] font-bold text-slate-500 uppercase">Student</p>
+                                    <p className="text-sm font-bold text-white leading-tight">{selectedEnrollment?.user_name}</p>
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Target Course</label>
-                            <div className="space-y-1">
-                                <p className="text-sm font-bold text-primary">{selectedEnrollment?.course_name}</p>
-                                <p className="text-[10px] text-slate-500 font-medium">Progress: {selectedEnrollment?.progress_percentage || 0}%</p>
+                            <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-xl bg-slate-800 flex items-center justify-center border border-slate-700">
+                                   <GraduationCap className="h-5 w-5 text-primary" />
+                                </div>
+                                <div className="space-y-0.5">
+                                    <p className="text-[9px] font-bold text-slate-500 uppercase">Course</p>
+                                    <p className="text-sm font-bold text-white leading-tight">{selectedEnrollment?.course_name}</p>
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Payment Term & Balance</label>
-                            <div className="space-y-1">
-                                <Badge className="bg-slate-700 text-primary border-slate-600 font-bold">
-                                    {selectedEnrollment?.payment_term === 'term1' ? '1st Term (60%)' : selectedEnrollment?.payment_term === 'term2' ? '2nd Term (40%)' : 'Full Payment'}
-                                </Badge>
-                                {selectedEnrollment?.remaining_balance ? (
-                                    <p className="text-sm font-bold text-amber-500">Owed: ₹{selectedEnrollment.remaining_balance.toLocaleString('en-IN')}</p>
-                                ) : (
-                                    <p className="text-sm font-bold text-emerald-500">Fully Paid</p>
-                                )}
+                            <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-xl bg-slate-800 flex items-center justify-center border border-slate-700">
+                                   <CreditCard className="h-5 w-5 text-emerald-500" />
+                                </div>
+                                <div className="space-y-0.5">
+                                    <p className="text-[9px] font-bold text-slate-500 uppercase">Payment Structure</p>
+                                    <p className="text-sm font-bold text-emerald-500 leading-tight">
+                                       {selectedEnrollment?.payment_term === 'term1' ? '1st Installment' : selectedEnrollment?.payment_term === 'term2' ? '2nd Installment' : 'Full Payment'}
+                                    </p>
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Submission Date</label>
-                            <p className="text-sm font-bold text-white">
-                                {selectedEnrollment?.enrollment_date ? formatDate(selectedEnrollment.enrollment_date) : 'N/A'}
-                            </p>
+                            <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-xl bg-slate-800 flex items-center justify-center border border-slate-700">
+                                   <Clock className="h-5 w-5 text-amber-500" />
+                                </div>
+                                <div className="space-y-0.5">
+                                    <p className="text-[9px] font-bold text-slate-500 uppercase">Submitted On</p>
+                                    <p className="text-sm font-bold text-white leading-tight">
+                                       {selectedEnrollment?.enrollment_date ? formatDate(selectedEnrollment.enrollment_date).split(',')[0] : 'N/A'}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="pt-8 border-t border-slate-700/50">
-                    <p className="text-[10px] text-slate-500 leading-relaxed uppercase tracking-tighter">
-                        Please verify the UTR against your Vyapar/Bank statements before approving.
-                    </p>
+                <div className="mt-12 pt-6 border-t border-slate-800">
+                    <div className="flex items-start gap-3 bg-primary/10 p-3 rounded-xl border border-primary/20">
+                       <Fingerprint className="h-4 w-4 text-primary shrink-0" />
+                       <p className="text-[10px] text-slate-300 leading-relaxed font-bold uppercase tracking-tight">
+                        Verify Transaction against Statements <br/> 
+                        <span className="text-slate-500 font-medium">Internal Ref: {selectedEnrollment?.id?.substring(0,10)}</span>
+                       </p>
+                    </div>
                 </div>
             </div>
-
             {/* Right: Payment Proof Image */}
-            <div className="flex-1 flex flex-col">
-                <div className="flex-1 p-4 flex items-center justify-center bg-black/20">
+            <div className="flex-1 flex flex-col min-h-[450px] bg-black/60 relative">
+                <div className="flex-1 p-4 sm:p-8 flex items-center justify-center">
                     {selectedEnrollment?.payment_proof_url ? (
-                        <img 
-                            src={selectedEnrollment.payment_proof_url} 
-                            alt="Payment Proof" 
-                            className="max-w-full max-h-[60dvh] object-contain rounded-lg shadow-2xl border border-white/5"
-                        />
+                        <div className="relative p-2 sm:p-4 bg-white rounded-xl shadow-[0_0_50px_rgba(37,99,235,0.15)] group/img max-w-full">
+                            <img 
+                                src={selectedEnrollment.payment_proof_url} 
+                                alt="Payment Proof" 
+                                className="max-w-full max-h-[55vh] rounded-lg object-contain"
+                            />
+                            <div className="absolute top-0 right-0 p-2 opacity-20 group-hover/img:opacity-100 transition-opacity">
+                               <Eye className="h-5 w-5 text-slate-400" />
+                            </div>
+                        </div>
                     ) : (
                         <div className="text-center space-y-4 py-20 grayscale opacity-40">
-                             <div className="h-20 w-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto border border-slate-700">
+                             <div className="h-24 w-24 bg-slate-800 rounded-[2rem] flex items-center justify-center mx-auto border border-slate-700 rotate-12">
                                 <CreditCard className="h-10 w-10 text-slate-500" />
                              </div>
-                             <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">No Screenshot Uploaded</p>
+                             <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Digital Receipt Missing</p>
                         </div>
                     )}
                 </div>
-                
-                <div className="p-6 bg-slate-800/30 border-t border-slate-700 flex justify-end gap-3">
-                    <Button variant="ghost" onClick={() => setSelectedEnrollment(null)} className="text-slate-400 hover:text-white hover:bg-slate-700 rounded-xl">
-                        Close
-                    </Button>
-                    <Button 
-                        className="bg-red-500/10 text-red-500 hover:bg-red-500/20 border-red-500/20 rounded-xl"
-                        onClick={() => {
-                            if(selectedEnrollment) handleUpdateStatus(selectedEnrollment.id, 'rejected');
-                            setSelectedEnrollment(null);
-                        }}
-                    >
-                        Reject
-                    </Button>
-                    <Button 
-                        className="bg-primary hover:bg-primary/90 text-white rounded-xl shadow-lg shadow-primary/20"
-                        onClick={() => {
-                            if(selectedEnrollment) handleUpdateStatus(selectedEnrollment.id, 'active');
-                            setSelectedEnrollment(null);
-                        }}
-                    >
-                        Approve Enrollment
-                    </Button>
-                </div>
             </div>
+          </div>
+        </div>
+
+        {/* Sticky Action Footer */}
+          <div className="p-4 sm:p-6 bg-[#0f172a]/95 backdrop-blur-xl border-t border-slate-800 flex flex-wrap justify-center sm:justify-end gap-2 sm:gap-3 shrink-0 z-10">
+              <Button variant="ghost" onClick={() => setSelectedEnrollment(null)} className="flex-1 sm:flex-none text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl h-11 px-6">
+                  Close
+              </Button>
+              <Button 
+                  className="flex-1 sm:flex-none bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 border border-rose-500/20 rounded-xl h-11 px-6 font-bold"
+                  onClick={() => {
+                      if(selectedEnrollment) handleUpdateStatus(selectedEnrollment.id, 'rejected');
+                      setSelectedEnrollment(null);
+                  }}
+              >
+                  Reject
+              </Button>
+              <Button 
+                  className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white rounded-xl shadow-lg shadow-primary/20 h-11 px-8 font-bold"
+                  onClick={() => {
+                      if(selectedEnrollment) handleUpdateStatus(selectedEnrollment.id, 'active');
+                      setSelectedEnrollment(null);
+                  }}
+              >
+                  Approve Enrollment
+              </Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -16,6 +16,8 @@ import {
   SheetContent,
   SheetTrigger,
   SheetClose,
+  SheetHeader,
+  SheetTitle,
 } from "@/components/ui/sheet";
 import logo from "@/assets/logo.png";
 
@@ -286,9 +288,12 @@ const Header = () => {
               >
                 <div className="flex flex-col h-full">
                   {/* Mobile Header */}
-                  <div className="flex items-center justify-between p-4 border-b border-border">
-                    <img src={logo} alt="AOTMS Logo" className="h-12 w-auto" />
-                  </div>
+                  <SheetHeader className="px-4 py-4 border-b border-border">
+                    <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+                    <div className="flex items-center justify-between">
+                      <img src={logo} alt="AOTMS Logo" className="h-12 w-auto" />
+                    </div>
+                  </SheetHeader>
 
                   {/* Mobile Navigation */}
                   <nav className="flex-1 p-4">

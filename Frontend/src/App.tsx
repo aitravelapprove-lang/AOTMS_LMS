@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { SocketProvider } from "@/hooks/useSocket";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import InstructorRegister from "./pages/InstructorRegister";
@@ -31,6 +31,8 @@ import Features from "./pages/Features";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import ScrollToTop from "@/components/ScrollToTop";
 import { SuspensionOverlay } from "@/components/auth/SuspensionOverlay";
+import PageLoader from "@/components/PageLoader";
+import CustomCursor from "@/components/CustomCursor";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -126,6 +128,35 @@ const RoleRedirector = () => {
   return null;
 };
 
+const RouteChangeLoader = () => {
+  const location = useLocation();
+  const [isLoading, setIsLoading] = useState(false);
+  const prevPathRef = useRef(location.pathname);
+
+  useEffect(() => {
+    if (location.pathname !== prevPathRef.current) {
+      setIsLoading(true);
+      prevPathRef.current = location.pathname;
+      
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 700);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [location.pathname]);
+
+  useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return <PageLoader isVisible={isLoading} />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -133,7 +164,9 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <CustomCursor />
           <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <RouteChangeLoader />
             <SuspensionOverlay />
             <ScrollToTop />
             <BackNavigationHandler />

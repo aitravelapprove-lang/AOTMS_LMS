@@ -239,73 +239,88 @@ export default function InstructorCourses() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-blue-600">Total Courses</p>
-                <p className="text-3xl font-bold text-blue-700">{stats.total}</p>
+      {/* Stats Cards Section */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6">
+        <Card className="pro-card relative overflow-hidden bg-white hover:border-blue-200 transition-all group">
+          <div className="absolute top-0 left-0 w-1 h-full bg-blue-500" />
+          <CardContent className="pt-6 relative">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500">Total Courses</p>
+                <div className="flex items-baseline gap-1">
+                  <p className="text-3xl font-black text-slate-800">{stats.total}</p>
+                </div>
               </div>
-              <div className="h-12 w-12 rounded-full bg-blue-500/20 flex items-center justify-center">
-                <BookOpen className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100/50 border-yellow-200">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-yellow-600">Pending</p>
-                <p className="text-3xl font-bold text-yellow-700">{stats.pending}</p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-yellow-500/20 flex items-center justify-center">
-                <Clock className="h-6 w-6 text-yellow-600" />
+              <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100/50 group-hover:scale-110 transition-transform">
+                <BookOpen className="h-5 w-5 text-blue-600" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-green-50 to-green-100/50 border-green-200">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-green-600">Approved</p>
-                <p className="text-3xl font-bold text-green-700">{stats.approved}</p>
+        <Card className="pro-card relative overflow-hidden bg-white hover:border-yellow-200 transition-all group">
+          <div className="absolute top-0 left-0 w-1 h-full bg-yellow-500" />
+          <CardContent className="pt-6 relative">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-yellow-500">Pending</p>
+                <div className="flex items-baseline gap-1">
+                  <p className="text-3xl font-black text-slate-800">{stats.pending}</p>
+                </div>
               </div>
-              <div className="h-12 w-12 rounded-full bg-green-500/20 flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-red-50 to-red-100/50 border-red-200">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-red-600">Rejected</p>
-                <p className="text-3xl font-bold text-red-700">{stats.rejected}</p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-red-500/20 flex items-center justify-center">
-                <XCircle className="h-6 w-6 text-red-600" />
+              <div className="h-10 w-10 rounded-xl bg-yellow-50 flex items-center justify-center border border-yellow-100/50 group-hover:scale-110 transition-transform">
+                <Clock className="h-5 w-5 text-yellow-600" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-slate-50 to-slate-100/50 border-slate-200">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600">Drafts</p>
-                <p className="text-3xl font-bold text-slate-700">{stats.draft}</p>
+        <Card className="pro-card relative overflow-hidden bg-white hover:border-green-200 transition-all group">
+          <div className="absolute top-0 left-0 w-1 h-full bg-green-500" />
+          <CardContent className="pt-6 relative">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-green-500">Approved</p>
+                <div className="flex items-baseline gap-1">
+                  <p className="text-3xl font-black text-slate-800">{stats.approved}</p>
+                </div>
               </div>
-              <div className="h-12 w-12 rounded-full bg-slate-500/20 flex items-center justify-center">
-                <FileText className="h-6 w-6 text-slate-600" />
+              <div className="h-10 w-10 rounded-xl bg-green-50 flex items-center justify-center border border-green-100/50 group-hover:scale-110 transition-transform">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="pro-card relative overflow-hidden bg-white hover:border-red-200 transition-all group">
+          <div className="absolute top-0 left-0 w-1 h-full bg-red-500" />
+          <CardContent className="pt-6 relative">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-500">Rejected</p>
+                <div className="flex items-baseline gap-1">
+                  <p className="text-3xl font-black text-slate-800">{stats.rejected}</p>
+                </div>
+              </div>
+              <div className="h-10 w-10 rounded-xl bg-red-50 flex items-center justify-center border border-red-100/50 group-hover:scale-110 transition-transform">
+                <XCircle className="h-5 w-5 text-red-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="pro-card relative overflow-hidden bg-white hover:border-slate-300 transition-all group">
+          <div className="absolute top-0 left-0 w-1 h-full bg-slate-400" />
+          <CardContent className="pt-6 relative">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Drafts</p>
+                <div className="flex items-baseline gap-1">
+                  <p className="text-3xl font-black text-slate-800">{stats.draft}</p>
+                </div>
+              </div>
+              <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100/50 group-hover:scale-110 transition-transform">
+                <FileText className="h-5 w-5 text-slate-400" />
               </div>
             </div>
           </CardContent>
@@ -313,26 +328,31 @@ export default function InstructorCourses() {
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+      <Card className="border-none shadow-xl shadow-slate-200/40 rounded-2xl overflow-hidden bg-white/80 backdrop-blur-md">
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex flex-col gap-5">
+            <div className="relative w-full">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
                 placeholder="Search courses or instructors..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-11 h-12 rounded-xl bg-slate-50/50 border-slate-100 focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium"
               />
             </div>
-            <div className="flex gap-2">
+            
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
               {['all', 'pending', 'approved', 'published', 'rejected', 'draft'].map((status) => (
                 <Button
                   key={status}
                   variant={statusFilter === status ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setStatusFilter(status)}
-                  className="capitalize"
+                  className={`capitalize rounded-full px-5 h-9 text-[11px] font-black tracking-widest transition-all whitespace-nowrap ${
+                    statusFilter === status 
+                      ? 'shadow-lg shadow-primary/20' 
+                      : 'bg-white border-slate-200 text-slate-500 hover:border-primary/40'
+                  }`}
                 >
                   {status}
                 </Button>
@@ -369,95 +389,122 @@ export default function InstructorCourses() {
               <p className="text-slate-500">No courses found</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="grid gap-5">
               {filteredCourses.map((course) => (
                 <div
                   key={course.id}
-                  className="flex items-center gap-4 p-4 rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all bg-white"
+                  className="flex flex-col lg:flex-row lg:items-center gap-5 p-5 rounded-2xl border border-slate-200 hover:border-primary/50 hover:shadow-xl transition-all bg-white group relative overflow-hidden"
                 >
-                  <div className="h-16 w-28 rounded-lg bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+                  {/* Status Indicator Strip */}
+                  <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+                    course.status === 'published' || course.status === 'approved' ? 'bg-emerald-500' :
+                    course.status === 'pending' ? 'bg-amber-500' :
+                    course.status === 'rejected' ? 'bg-rose-500' : 'bg-slate-300'
+                  }`} />
+
+                  <div className="h-44 sm:h-32 lg:h-24 w-full lg:w-44 rounded-xl bg-slate-50 flex items-center justify-center overflow-hidden border border-slate-100 shrink-0 relative">
                     {course.image || course.thumbnail_url ? (
-                      <img src={course.image || course.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                      <img 
+                        src={course.image || course.thumbnail_url || ''} 
+                        alt="" 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                      />
                     ) : (
-                      <BookOpen className="h-6 w-6 text-slate-400" />
+                      <div className="flex flex-col items-center gap-1 opacity-20">
+                         <BookOpen className="h-8 w-8 text-primary" />
+                         <span className="text-[10px] font-black uppercase">No Preview</span>
+                      </div>
                     )}
+                    <div className="absolute top-2 right-2 flex lg:hidden">
+                       {getStatusBadge(course.status)}
+                    </div>
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-slate-900 truncate">{course.title}</h3>
-                      {getStatusBadge(course.status)}
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <h3 className="text-base sm:text-lg lg:text-base font-black text-slate-900 group-hover:text-primary transition-colors truncate">
+                        {course.title}
+                      </h3>
+                      <div className="hidden lg:flex">
+                        {getStatusBadge(course.status)}
+                      </div>
+                      {course.category && (
+                        <Badge variant="outline" className="text-[9px] uppercase font-black tracking-tight border-slate-200 bg-slate-50 text-slate-500 rounded-md">
+                          {course.category}
+                        </Badge>
+                      )}
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-slate-500">
+                    
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
                       {course.instructor_id ? (
                         <div 
-                          className="flex items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100 cursor-pointer hover:bg-slate-100 transition-colors group"
+                          className="flex items-center gap-3 bg-slate-50/80 p-1.5 pr-4 rounded-full border border-slate-100 cursor-pointer hover:bg-white hover:shadow-md hover:border-primary/20 transition-all group/inst max-w-full overflow-hidden"
                           onClick={() => handleViewInstructor(course.instructor_id!)}
                         >
                           {course.instructor_avatar ? (
                             <img 
                               src={course.instructor_avatar} 
                               alt="" 
-                              className="h-8 w-8 rounded-full object-cover border border-slate-200" 
+                              className="h-8 w-8 rounded-full object-cover border-2 border-white shadow-sm shrink-0" 
                             />
                           ) : (
-                            <div className="h-8 w-8 rounded-full bg-slate-200 flex items-center justify-center">
-                              <User className="h-4 w-4 text-slate-500" />
+                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center border-2 border-white shadow-sm shrink-0">
+                              <User className="h-4 w-4 text-primary" />
                             </div>
                           )}
-                          <div className="flex flex-col leading-none">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-sm font-semibold text-slate-800">{course.instructor_name || 'Unknown'}</span>
-                              <Eye className="h-3 w-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </div>
-                            {course.instructor_email && (
-                              <span className="text-xs text-slate-500">{course.instructor_email}</span>
-                            )}
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-xs font-black text-slate-800 truncate leading-none mb-0.5">{course.instructor_name || 'Unknown'}</span>
+                            <span className="text-[10px] font-medium text-slate-400 truncate leading-none">{course.instructor_email}</span>
                           </div>
                         </div>
                       ) : (
-                        <span className="flex items-center gap-1">
-                          <User className="h-3 w-3" />
-                          No Instructor
-                        </span>
+                        <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-2 px-3 rounded-xl border border-amber-100">
+                          <User className="h-4 w-4" />
+                          <span className="text-xs font-black uppercase tracking-tighter">No Instructor</span>
+                        </div>
                       )}
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
+                      
+                      <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 tracking-widest border-t sm:border-t-0 sm:border-l pt-3 sm:pt-0 sm:pl-6 leading-none">
+                        <Calendar className="h-3.5 w-3.5" />
                         {formatDate(course.submitted_at || course.created_at)}
-                      </span>
-                      {course.category && (
-                        <Badge variant="outline" className="text-xs">{course.category}</Badge>
-                      )}
+                      </div>
                     </div>
+
                     {course.description && (
-                      <p className="text-sm text-slate-500 truncate mt-1">{course.description}</p>
+                      <p className="text-xs text-slate-500 truncate mt-3 font-medium opacity-70 italic">
+                        {course.description}
+                      </p>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      title="View Syllabus"
-                      onClick={() => setBuildingCourse(course)}
-                      className="text-primary hover:bg-primary/5"
-                    >
-                      <Layers className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      title="View Students"
-                      onClick={() => handleViewStudents(course)}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
+                  <div className="flex items-center gap-2 shrink-0 border-t lg:border-t-0 pt-4 lg:pt-0 justify-end">
+                    <div className="flex items-center gap-1.5 p-1 bg-slate-50 rounded-xl border border-slate-100">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        title="View Syllabus"
+                        onClick={() => setBuildingCourse(course)}
+                        className="h-10 w-10 text-primary hover:bg-white hover:shadow-sm rounded-lg transition-all"
+                      >
+                        <Layers className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        title="View Students"
+                        onClick={() => handleViewStudents(course)}
+                        className="h-10 w-10 text-slate-600 hover:bg-white hover:shadow-sm rounded-lg transition-all"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </div>
+
                     {(course.status === 'pending' || course.status === 'draft') && (
-                      <>
+                      <div className="flex items-center gap-1.5 p-1 bg-white rounded-xl border border-slate-100 shadow-sm">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                          className="h-10 w-10 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
                           title="Approve"
                           disabled={processing}
                           onClick={() => handleApprove(course.id)}
@@ -467,7 +514,7 @@ export default function InstructorCourses() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="h-10 w-10 text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
                           title="Reject"
                           disabled={processing}
                           onClick={() => {
@@ -477,7 +524,7 @@ export default function InstructorCourses() {
                         >
                           <XCircle className="h-4 w-4" />
                         </Button>
-                      </>
+                      </div>
                     )}
                   </div>
                 </div>

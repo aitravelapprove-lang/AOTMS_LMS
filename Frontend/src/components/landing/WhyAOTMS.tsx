@@ -151,7 +151,7 @@ const WhyAOTMS = () => (
         className="relative group "
       >
         <div className="absolute -inset-1 bg-gradient-to-r from-[#0075CF]/20 via-[#FD5A1A]/20 to-[#0075CF]/20 rounded-[3rem] blur-xl opacity-50 group-hover:opacity-100 transition duration-1000" />
-        <div className="relative grid grid-cols-2 lg:grid-cols-4 gap-8 bg-white border border-slate-100 rounded-[3rem] p-10 md:p-16 shadow-2xl">
+        <div className="relative grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8 bg-white border border-slate-100 rounded-[2.5rem] sm:rounded-[3rem] p-6 sm:p-10 md:p-16 shadow-2xl">
           {[
             {
               value: "2000+",
@@ -176,18 +176,19 @@ const WhyAOTMS = () => (
           ].map((s) => (
             <div key={s.label} className="text-center">
               <div
-                className={`text-4xl md:text-5xl lg:text-6xl font-black ${s.color} tracking-tighter mb-2 overflow-hidden`}
+                className={`text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black ${s.color} tracking-tighter mb-1 overflow-visible sm:overflow-hidden`}
               >
                 <motion.span
-                  initial={{ y: 50 }}
-                  whileInView={{ y: 0 }}
-                  transition={{ duration: 0.8, ease: "circOut" }}
+                  initial={{ y: 20, opacity: 0 }}
+                  whileInView={{ y: 0, opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
                   className="block"
                 >
                   {s.value}
                 </motion.span>
               </div>
-              <div className="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-[0.2em]">
+              <div className="text-[8px] sm:text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-[0.1em] sm:tracking-[0.2em] leading-tight">
                 {s.label}
               </div>
             </div>

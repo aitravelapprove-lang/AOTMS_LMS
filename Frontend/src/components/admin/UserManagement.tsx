@@ -248,7 +248,7 @@ export function UserManagement({
             filteredUsers.map((user) => (
               <div
                 key={user.id}
-                className="flex flex-col xl:flex-row gap-4 p-3 sm:p-4 rounded-xl bg-muted/40 hover:bg-muted/80 transition-all border border-transparent hover:border-border/50"
+                className="flex flex-col xl:flex-row gap-3 p-3 sm:p-4 rounded-xl bg-muted/40 hover:bg-muted/80 transition-all border border-slate-200/50"
               >
                 <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
                   <div className="h-10 w-10 shrink-0 rounded-full bg-primary/10 flex items-center justify-center">
@@ -437,14 +437,14 @@ export function UserManagement({
       {/* Role Change Dialog */}
       <Dialog open={showRoleDialog} onOpenChange={setShowRoleDialog}>
         <DialogContent aria-describedby="role-dialog-description" className="max-w-md overflow-hidden bg-white/95 backdrop-blur-2xl border border-slate-200/60 shadow-2xl rounded-2xl p-0">
-          <DialogHeader className="px-6 py-5 border-b border-slate-100 bg-slate-50/50">
+          <DialogHeader className="px-4 sm:px-6 py-5 border-b border-slate-100 bg-slate-50/50">
             <DialogTitle className="flex items-center gap-3 text-lg font-semibold text-slate-800">
               <div className="h-10 w-10 rounded-xl bg-accent/10 flex items-center justify-center shadow-inner">
                 <UserCog className="h-5 w-5 text-accent" />
               </div>
               Modify User Role
             </DialogTitle>
-            <DialogDescription id="role-dialog-description" className="text-sm text-slate-600 font-medium ml-13">
+            <DialogDescription id="role-dialog-description" className="text-sm text-slate-600 font-medium sm:ml-13">
               Change the system permissions for{" "}
               <span className="text-slate-700 font-semibold">
                 {selectedUser?.full_name || selectedUser?.email}
@@ -503,102 +503,109 @@ export function UserManagement({
 
       {/* Approval Confirmation Dialog */}
       <Dialog open={showApprovalDialog} onOpenChange={setShowApprovalDialog}>
-        <DialogContent aria-describedby="approval-dialog-description" className="max-w-md sm:max-w-lg overflow-hidden bg-white/95 backdrop-blur-2xl border border-slate-200/60 shadow-2xl rounded-2xl p-0">
-          <DialogHeader className="px-6 py-5 border-b border-slate-100 bg-slate-50/50">
+        <DialogContent aria-describedby="approval-dialog-description" className="w-[95vw] sm:max-w-lg max-h-[92vh] overflow-y-auto bg-white/95 backdrop-blur-2xl border border-slate-200/60 shadow-2xl rounded-2xl p-0 scrollbar-none">
+          <DialogHeader className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 bg-slate-50/50 sticky top-0 z-10 backdrop-blur-md">
             <DialogTitle className="flex items-center gap-3 text-lg font-semibold text-slate-800">
               <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shadow-inner">
                 <Users className="h-5 w-5 text-primary" />
               </div>
               User Review & Approval
             </DialogTitle>
-            <DialogDescription id="approval-dialog-description" className="text-sm text-slate-600 font-medium ml-13">
+            <DialogDescription id="approval-dialog-description" className="text-sm text-slate-600 font-medium sm:ml-13">
               Review credential details before granting platform access.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="px-6 py-6 space-y-6">
-            <div className="grid grid-cols-2 gap-6 bg-slate-50/50 p-5 rounded-xl border border-slate-100">
-              <div className="space-y-1.5">
-                <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest whitespace-nowrap">
-                  Full Name
-                </p>
-                <p className="text-sm font-semibold text-slate-800 truncate">
-                  {selectedUser?.full_name || "Not provided"}
-                </p>
-              </div>
-              <div className="space-y-1.5">
-                <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest whitespace-nowrap">
-                  Role Status
-                </p>
-                <div>
-                  <Badge
-                    variant="secondary"
-                    className="bg-white border text-slate-600 border-slate-200 hover:bg-slate-50 font-semibold uppercase tracking-wider text-[10px] px-2.5 shadow-sm"
-                  >
-                    {selectedUser?.role || "student"}
-                  </Badge>
+          <div className="px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
+            <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 space-y-4 shadow-sm">
+              <div className="grid grid-cols-2 gap-4 pb-4 border-b border-slate-200/50">
+                <div className="space-y-1">
+                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">
+                    Full Name
+                  </p>
+                  <p className="text-sm font-bold text-slate-900 leading-tight">
+                    {selectedUser?.full_name || "Not provided"}
+                  </p>
+                </div>
+                <div className="space-y-1 text-right">
+                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">
+                    Role Status
+                  </p>
+                  <div>
+                    <Badge
+                      variant="secondary"
+                      className="h-5 px-2 bg-white border text-slate-700 border-slate-200 shadow-sm font-bold uppercase tracking-tighter text-[9px]"
+                    >
+                      {selectedUser?.role || "student"}
+                    </Badge>
+                  </div>
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest whitespace-nowrap">
+
+              <div className="pb-4 border-b border-slate-200/50 space-y-1.5">
+                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">
                   Email Address
                 </p>
                 <p
-                  className="text-sm font-semibold text-slate-800 truncate"
+                  className="text-sm font-semibold text-slate-800 break-all leading-tight"
                   title={selectedUser?.email}
                 >
                   {selectedUser?.email}
                 </p>
               </div>
-              <div className="space-y-1.5">
-                <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest whitespace-nowrap">
+
+              <div className="pb-4 border-b border-slate-200/50 space-y-1.5">
+                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">
                   UUID
                 </p>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-mono text-slate-600 truncate">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-mono text-slate-600 break-all leading-tight flex-1">
                     {selectedUser?.id}
                   </p>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 px-2 shrink-0"
+                    className="h-8 w-8 p-0 shrink-0 hover:bg-slate-200/50 rounded-lg transition-colors"
                     onClick={() => selectedUser?.id && copyToClipboard(selectedUser.id)}
                   >
                     {copiedId === selectedUser?.id ? (
-                      <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+                      <CheckCircle className="h-4 w-4 text-emerald-500" />
                     ) : (
-                      <Copy className="h-3.5 w-3.5 text-slate-400" />
+                      <Copy className="h-4 w-4 text-slate-400" />
                     )}
                   </Button>
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest whitespace-nowrap">
-                  Join Date
+
+              <div className="pt-2 flex justify-between items-center">
+                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">
+                  Membership Date
                 </p>
-                <p className="text-sm font-semibold text-slate-800">
+                <p className="text-sm font-bold text-slate-800">
                   {selectedUser?.created_at
-                    ? new Date(selectedUser.created_at).toLocaleDateString()
+                    ? new Date(selectedUser.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
                     : "N/A"}
                 </p>
               </div>
             </div>
 
-            <div className="p-4 rounded-xl bg-amber-50 border border-amber-200/50 flex gap-3 items-start shadow-inner">
-              <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+            <div className="p-4 rounded-2xl bg-amber-50/50 border border-amber-200/40 flex gap-3 items-start shadow-sm">
+              <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                <AlertCircle className="h-4 w-4 text-amber-600" />
+              </div>
               <div className="space-y-1">
-                <p className="text-sm font-bold text-amber-800">
-                  Automated Email Trigger
+                <p className="text-xs font-bold text-amber-900 uppercase tracking-tight">
+                  Automated Workflow
                 </p>
-                <p className="text-xs font-medium text-amber-700/80 leading-relaxed">
+                <p className="text-[11px] font-medium text-amber-800/70 leading-normal">
                   Confirming approval will instantly trigger the onboarding
-                  welcome sequence via our automated workflow systems.
+                  welcome sequence via our automated systems.
                 </p>
               </div>
             </div>
           </div>
 
-          <DialogFooter className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-3">
+          <DialogFooter className="px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/50 flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 sticky bottom-0 z-10 backdrop-blur-md">
             <Button
               variant="ghost"
               className="w-full sm:w-auto rounded-xl font-semibold text-slate-600 hover:text-slate-700 hover:bg-slate-200/50 h-11 px-6 active:scale-95 transition-all"

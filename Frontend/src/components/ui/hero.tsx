@@ -60,25 +60,26 @@ export default function ShaderShowcase() {
         speed={0.07}
       />
 
-      <main className="relative z-20 container-width mx-auto px-6 flex flex-col lg:flex-row items-center justify-between gap-12 w-full py-20">
+      <main className="relative z-20 container-width mx-auto px-6 flex flex-col lg:flex-row items-center justify-between gap-12 w-full pt-24 sm:pt-32 lg:pt-36 pb-20">
         {/* Left side: Content */}
         <div className="w-full lg:w-1/2 text-center lg:text-left">
           <motion.h1
-            className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-white mb-8 leading-[0.95] tracking-tight drop-shadow-2xl"
+            className="text-[3.25rem] leading-[0.85] sm:text-7xl lg:text-8xl font-black text-white mb-6 tracking-tighter drop-shadow-2xl flex flex-col items-center lg:items-start"
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
-            SMART <br className="hidden md:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-[#0075CF]">
+            <span className="block">SMART</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-100 to-[#0075CF] block">
               LEARNING
             </span>
-            <br className="hidden md:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FD5A1A] to-[#FF7A00]">SYSTEM</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FD5A1A] via-orange-300 to-[#FF7A00] block">
+              SYSTEM
+            </span>
           </motion.h1>
 
           <motion.p
-            className="text-lg md:text-xl font-medium text-white/80 mb-12 leading-relaxed max-w-xl mx-auto lg:mx-0"
+            className="text-sm md:text-xl font-medium text-white/80 mb-10 leading-relaxed max-w-sm sm:max-w-xl mx-auto lg:mx-0 px-4 sm:px-0"
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
@@ -88,14 +89,14 @@ export default function ShaderShowcase() {
           </motion.p>
 
           <motion.div
-            className="flex items-center justify-center lg:justify-start gap-6 flex-wrap"
+            className="flex items-center justify-center lg:justify-start gap-4 sm:gap-6 flex-wrap px-4 sm:px-0"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.6 }}
           >
             <Button
               size="lg"
-              className="h-16 px-10 rounded-2xl bg-white text-[#0075CF] font-black text-lg hover:bg-slate-100 transition-all shadow-xl hover:scale-105"
+              className="h-14 sm:h-16 px-8 sm:px-10 rounded-xl sm:rounded-2xl bg-white text-[#0075CF] font-black text-sm sm:text-lg hover:bg-slate-100 transition-all shadow-xl hover:scale-105 w-full sm:w-auto"
               onClick={() => navigate("/auth")}
             >
               Get Started
@@ -103,8 +104,8 @@ export default function ShaderShowcase() {
             <Button
               size="lg"
               variant="outline"
-              className="h-16 px-10 rounded-2xl bg-white/10 border-white/20 text-white font-black text-lg hover:bg-white/20 transition-all backdrop-blur-md hover:scale-105"
-              onClick={() => window.location.href = "https://www.aotms.in/#/courses"}
+              className="h-14 sm:h-16 px-8 sm:px-10 rounded-xl sm:rounded-2xl bg-white/10 border-white/20 text-white font-black text-sm sm:text-lg hover:bg-white/20 transition-all backdrop-blur-md hover:scale-105 w-full sm:w-auto"
+              onClick={() => (window.location.href = "https://www.aotms.in/#/courses")}
             >
               Explore Catalog
             </Button>

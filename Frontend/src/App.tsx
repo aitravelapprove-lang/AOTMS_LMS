@@ -32,6 +32,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import ScrollToTop from "@/components/ScrollToTop";
 import { SuspensionOverlay } from "@/components/auth/SuspensionOverlay";
 import PageLoader from "@/components/PageLoader";
+import CustomCursor from "@/components/CustomCursor";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -163,6 +164,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <CustomCursor />
           <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <RouteChangeLoader />
             <SuspensionOverlay />

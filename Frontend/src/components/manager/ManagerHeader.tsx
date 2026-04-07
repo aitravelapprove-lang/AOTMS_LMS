@@ -36,8 +36,8 @@ export function ManagerHeader() {
       .toUpperCase() || "MG";
 
   return (
-    <header className="sticky top-0 z-50 flex h-16 sm:h-20 items-center justify-between border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 md:px-6 lg:px-10 transition-all">
-      <div className="flex items-center gap-4">
+    <header className="sticky top-0 z-50 flex h-14 sm:h-16 md:h-20 items-center justify-between border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-3 sm:px-4 md:px-6 lg:px-10 transition-all">
+      <div className="flex items-center gap-2 sm:gap-4">
         <SidebarTrigger className="-ml-1" />
 
         {/* Search */}
@@ -50,7 +50,7 @@ export function ManagerHeader() {
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4">
         {/* Notifications */}
         <Button 
           variant="ghost" 

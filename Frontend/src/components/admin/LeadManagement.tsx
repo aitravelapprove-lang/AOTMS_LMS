@@ -95,11 +95,11 @@ export function LeadManagement() {
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-            <Zap className="h-6 w-6 text-[#FD5A1A]" />
+          <h2 className="text-lg sm:text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+            <Zap className="h-5 w-5 sm:h-6 sm:w-6 text-[#FD5A1A] flex-shrink-0" />
             Landing Page leads
           </h2>
-          <p className="text-slate-500">Manage inquiries from potential students</p>
+          <p className="text-slate-500 text-xs sm:text-base">Manage inquiries from potential students</p>
         </div>
         <div className="flex items-center gap-3">
           <Button 

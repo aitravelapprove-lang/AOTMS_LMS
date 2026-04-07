@@ -535,7 +535,7 @@ export function InstructorManagement() {
                           value={String(course.id)}
                           disabled={isAssignedToThis}
                         >
-                          <div className="flex items-center justify-between w-full gap-2 min-w-[300px]">
+                          <div className="flex items-center justify-between w-full gap-2 min-w-0">
                             <span className="truncate max-w-[200px] font-medium">{course.title}</span>
                             <div className="shrink-0 flex items-center">
                               {isAssignedToThis && <Badge variant="secondary" className="text-[10px]">Current</Badge>}

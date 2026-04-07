@@ -36,7 +36,7 @@ export function InstructorHeader() {
       .toUpperCase() || "IN";
 
   return (
-    <header className="sticky top-0 z-50 flex h-16 sm:h-20 items-center justify-between glass-panel border-b border-black/5 bg-white/80 backdrop-blur-2xl px-4 md:px-6 lg:px-10 transition-all duration-300">
+    <header className="sticky top-0 z-50 flex h-14 sm:h-16 md:h-20 items-center justify-between glass-panel border-b border-black/5 bg-white/80 backdrop-blur-2xl px-3 sm:px-4 md:px-6 lg:px-10 transition-all duration-300">
       <div className="flex items-center gap-4 lg:gap-6">
         <SidebarTrigger className="h-10 w-10 text-primary hover:bg-primary/5 rounded-xl transition-all" />
 

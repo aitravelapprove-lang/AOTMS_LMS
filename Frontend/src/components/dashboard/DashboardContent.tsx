@@ -223,7 +223,7 @@ function CoursesTab() {
     <div className="w-full space-y-8 h-full">
       {/* Payment Modal JSX */}
       <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
-        <DialogContent className="max-w-xl p-0 overflow-hidden border-0 rounded-[2rem] shadow-2xl bg-white max-h-[90vh] flex flex-col">
+        <DialogContent className="w-[95vw] sm:max-w-xl p-0 overflow-hidden border-0 rounded-[1.5rem] sm:rounded-[2rem] shadow-2xl bg-white max-h-[90vh] flex flex-col">
           {/* Top Course Strip (Compact) */}
           {paymentCourse && (
             <div className="bg-slate-900 px-6 py-4 text-white flex items-center justify-between shrink-0">
@@ -276,10 +276,10 @@ function CoursesTab() {
             </div>
 
             {/* Payment Section (Horizontal Mix) */}
-            <div className="grid grid-cols-5 gap-6 items-start">
+            <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 sm:gap-6 items-start">
                {/* QR Section (Small) */}
-               <div className="col-span-2 space-y-3">
-                  <div className="relative h-32 w-32 mx-auto bg-slate-50 rounded-2xl p-2 border-2 border-slate-100 group">
+               <div className="col-span-1 sm:col-span-2 space-y-3">
+                  <div className="relative h-28 w-28 sm:h-32 sm:w-32 mx-auto bg-slate-50 rounded-2xl p-2 border-2 border-slate-100 group">
                     <img src="/scanner.jpeg" alt="QR" className="w-full h-full object-contain" />
                   </div>
                   <div className="text-center">
@@ -289,7 +289,7 @@ function CoursesTab() {
                </div>
 
                {/* Inputs Column (Compressed) */}
-               <div className="col-span-3 space-y-4">
+               <div className="col-span-1 sm:col-span-3 space-y-4">
                   {/* Coupon (Low Height) */}
                   <div className="space-y-1.5">
                     <div className="flex gap-2 h-9">
@@ -1072,18 +1072,18 @@ export function DashboardContent() {
             courseTitle={selectedCourseForRating.title}
           />
 
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 border-b border-slate-200 pb-6">
-            <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 border border-primary/10">
-              <config.icon className="h-7 w-7 text-primary" />
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 border-b border-slate-200 pb-4 sm:pb-6">
+            <div className="h-11 w-11 sm:h-14 sm:w-14 rounded-xl sm:rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 border border-primary/10">
+              <config.icon className="h-5 w-5 sm:h-7 sm:w-7 text-primary" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+              <h1 className="text-xl sm:text-3xl font-bold text-slate-900 tracking-tight">
                 {config.title}
               </h1>
-              <p className="text-base font-medium text-slate-600 mt-1">{config.description}</p>
+              <p className="text-sm sm:text-base font-medium text-slate-600 mt-1 hidden sm:block">{config.description}</p>
             </div>
             
-            <div className="ml-auto flex items-center gap-3">
+            <div className="md:ml-auto flex items-center gap-3 w-full md:w-auto">
               {currentPath === "/student-dashboard/courses" && (
                 <Button 
                   variant="outline"
@@ -1091,7 +1091,7 @@ export function DashboardContent() {
                     setSelectedCourseForRating({ id: 'GENERAL', title: 'AOTMS Pro Academy' });
                     setRatingModalOpen(true);
                   }}
-                  className="bg-white border-2 border-slate-100 text-slate-900 font-black rounded-xl px-6 h-12 shadow-sm hover:border-yellow-400 hover:text-yellow-600 transition-all gap-2 text-xs uppercase"
+                  className="bg-white border-2 border-slate-100 text-slate-900 font-black rounded-xl px-4 sm:px-6 h-10 sm:h-12 shadow-sm hover:border-yellow-400 hover:text-yellow-600 transition-all gap-2 text-[10px] sm:text-xs uppercase w-full sm:w-auto"
                 >
                   <Star className="h-4 w-4 fill-current" />
                   Pulse Your Rating

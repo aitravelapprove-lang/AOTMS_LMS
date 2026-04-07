@@ -203,9 +203,9 @@ function ExamCard({
         </div>
       </div>
       
-      <div className="p-8 flex flex-col justify-between flex-1 space-y-4">
+      <div className="p-4 sm:p-8 flex flex-col justify-between flex-1 space-y-4">
         <div className="space-y-3">
-          <h4 className="font-bold text-xl text-slate-900 leading-tight transition-colors line-clamp-2 uppercase tracking-tighter">{exam.title}</h4>
+          <h4 className="font-bold text-base sm:text-xl text-slate-900 leading-tight transition-colors line-clamp-2 uppercase tracking-tighter">{exam.title}</h4>
           <div className="flex flex-wrap items-center gap-3 text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em]">
             <span className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> {exam.duration_minutes} min</span>
             <span className="h-1 w-1 rounded-full bg-slate-100" />
@@ -452,19 +452,19 @@ export function ExamScheduler() {
           }
         }}>
           <DialogTrigger asChild>
-            <Button className="rounded-2xl h-14 px-12 bg-slate-900 hover:bg-black text-white font-bold uppercase tracking-widest text-[10px] gap-2 shadow-2xl transition-all hover:scale-105 active:scale-95">
+            <Button className="rounded-xl sm:rounded-2xl h-11 sm:h-14 px-6 sm:px-12 bg-slate-900 hover:bg-black text-white font-bold uppercase tracking-widest text-[10px] gap-2 shadow-2xl transition-all hover:scale-105 active:scale-95">
               <Plus className="h-4 w-4" /> Initialize Workspace
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-2xl p-0 overflow-hidden border-none shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] rounded-[3rem] bg-white">
-            <DialogHeader className="p-16 border-b border-slate-50 relative space-y-0">
-               <DialogTitle className="text-4xl font-bold text-slate-900 tracking-tighter italic uppercase leading-none">Initialize <br/> Workspace</DialogTitle>
-               <DialogDescription className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.5em] mt-3 block">Unified Assessment Module Builder</DialogDescription>
-               <div className="absolute top-16 right-16 h-12 w-12 rounded-full border border-slate-100 flex items-center justify-center text-slate-200">
+          <DialogContent className="w-[calc(100%-1rem)] sm:max-w-2xl p-0 overflow-hidden border-none shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] rounded-2xl sm:rounded-[3rem] bg-white">
+            <DialogHeader className="p-6 sm:p-16 border-b border-slate-50 relative space-y-0">
+               <DialogTitle className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight uppercase leading-none">Initialize <br/> Workspace</DialogTitle>
+               <DialogDescription className="text-xs font-semibold text-slate-500 uppercase tracking-widest mt-2 block">Unified Assessment Module Builder</DialogDescription>
+               <div className="absolute top-6 right-6 sm:top-16 sm:right-16 h-10 w-10 sm:h-12 sm:w-12 rounded-full border border-slate-100 flex items-center justify-center text-slate-200">
                   <Layout className="h-5 w-5" />
                </div>
             </DialogHeader>
-            <div className="p-16 overflow-y-auto max-h-[65vh] custom-scrollbar bg-white/50">
+            <div className="p-6 sm:p-12 overflow-y-auto max-h-[60vh] sm:max-h-[65vh] custom-scrollbar bg-gradient-to-b from-slate-50 to-white border-t border-slate-200">
                <Form {...form}>
                  <form onSubmit={form.handleSubmit(onSubmitProfile)} className="space-y-12">
                    <div className="space-y-10">
@@ -475,7 +475,7 @@ export function ExamScheduler() {
                          <FormItem>
                            <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-2">Assessment Identity</FormLabel>
                            <FormControl>
-                             <Input placeholder="E.g. FullStack Logic Protocol" className="h-16 rounded-[1.5rem] border-slate-100 bg-slate-50/30 font-medium px-8 focus:bg-white focus:border-slate-900 transition-all text-sm outline-none shadow-none" {...field} />
+                              <Input placeholder="E.g. FullStack Logic Protocol" className="h-14 sm:h-16 rounded-xl sm:rounded-2xl border-2 border-slate-200 bg-white font-semibold px-4 sm:px-6 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-base outline-none shadow-sm" {...field} />
                            </FormControl>
                            <FormMessage />
                          </FormItem>
@@ -488,12 +488,12 @@ export function ExamScheduler() {
                           name="exam_type"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-2">Class Profile</FormLabel>
+                              <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-700 ml-1">Class Profile</FormLabel>
                               {isOtherType ? (
                                 <div className="relative group">
                                   <Input 
                                     placeholder="Enter custom type..." 
-                                    className="h-16 rounded-[1.5rem] border-slate-100 bg-slate-50/30 font-medium px-8 focus:bg-white focus:border-slate-900 transition-all text-sm outline-none shadow-none pr-12"
+                                    className="h-14 sm:h-16 rounded-xl sm:rounded-2xl border-2 border-slate-200 bg-white font-semibold flex items-center px-4 sm:px-6 focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-base shadow-sm pr-12"
                                     {...field}
                                     autoFocus
                                   />
@@ -520,8 +520,8 @@ export function ExamScheduler() {
                                   }
                                 }} value={field.value}>
                                   <FormControl>
-                                    <SelectTrigger className="h-16 rounded-[1.5rem] border-slate-100 bg-slate-50/30 font-medium px-8 outline-none shadow-none">
-                                      <SelectValue placeholder="Type" />
+                                    <SelectTrigger className="h-14 sm:h-16 rounded-xl sm:rounded-2xl border-2 border-slate-200 bg-white font-semibold flex items-center px-4 sm:px-6 focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-base shadow-sm outline-none">
+                                      <SelectValue placeholder="Select type" />
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent className="rounded-2xl border-slate-100 p-2 shadow-2xl">
@@ -539,7 +539,7 @@ export function ExamScheduler() {
                           name="assigned_image"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-2">Visual Poster</FormLabel>
+                              <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-700 ml-1">Visual Poster</FormLabel>
                               <FormControl>
                                 <div className="space-y-4">
                                   {field.value ? (
@@ -553,13 +553,13 @@ export function ExamScheduler() {
                                     </div>
                                   ) : (
                                     <div 
-                                      className="group h-16 rounded-[1.5rem] border-2 border-dashed border-slate-100 bg-slate-50/30 flex items-center px-8 hover:border-slate-900 transition-all cursor-pointer"
+                                      className="group h-14 sm:h-16 rounded-xl sm:rounded-2xl border-2 border-dashed border-slate-300 bg-white flex items-center px-4 sm:px-6 hover:border-primary hover:bg-slate-50 transition-all cursor-pointer shadow-sm"
                                       onDragOver={(e) => e.preventDefault()}
                                       onDrop={onDropPoster}
                                       onClick={() => document.getElementById('init-pos')?.click()}
                                     >
-                                       <ImageIcon className="h-4 w-4 text-slate-200 mr-4 group-hover:text-slate-900 transition-colors" />
-                                       <span className="text-[10px] font-bold text-slate-300 group-hover:text-slate-900 uppercase tracking-[0.2em] transition-colors font-sans">Initialize Poster</span>
+                                       <ImageIcon className="h-5 w-5 text-slate-400 mr-4 group-hover:text-primary transition-colors" />
+                                       <span className="text-xs font-bold text-slate-500 group-hover:text-slate-900 uppercase tracking-widest transition-colors">Initialize Poster</span>
                                     </div>
                                   )}
                                   <input id="init-pos" type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
@@ -570,13 +570,13 @@ export function ExamScheduler() {
                         />
                      </div>
 
-                     <div className="p-10 rounded-[2.5rem] bg-slate-50/50 border border-slate-100/50 space-y-10">
+                     <div className="p-5 sm:p-10 rounded-2xl sm:rounded-[2.5rem] bg-gradient-to-br from-slate-100 via-slate-50 to-white border-2 border-slate-200 space-y-6 sm:space-y-10 shadow-sm">
                         <FormField
                            control={form.control}
                            name="scheduled_date"
                            render={({ field }) => (
                              <FormItem>
-                               <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-2 flex items-center gap-2">
+                               <FormLabel className="text-xs font-bold uppercase tracking-wider text-slate-700 ml-1 flex items-center gap-2">
                                   <CalendarIcon className="h-3 w-3" /> Activation Timeline
                                </FormLabel>
                                <FormControl>
@@ -586,7 +586,7 @@ export function ExamScheduler() {
                            )}
                          />
                          
-                         <div className="grid grid-cols-2 gap-8">
+                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
                             <FormField
                               control={form.control}
                               name="duration_minutes"
@@ -613,7 +613,7 @@ export function ExamScheduler() {
                             />
                          </div>
 
-                         <div className="grid grid-cols-3 gap-6">
+                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6 pt-2">
                             <FormField
                               control={form.control}
                               name="negative_marking"
@@ -666,7 +666,7 @@ export function ExamScheduler() {
                         )}
                       />
                    </div>
-                   <div className="flex gap-4 pt-10">
+                   <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6 sm:pt-10">
                      <Button type="button" variant="ghost" className="h-18 flex-1 rounded-2xl font-bold uppercase text-[10px] tracking-widest text-slate-300 hover:text-slate-900 hover:bg-slate-50" onClick={() => setIsAddOpen(false)}>Abort Change</Button>
                      <Button 
                         type="submit"
@@ -694,14 +694,14 @@ export function ExamScheduler() {
       </div>
 
         <Tabs defaultValue="pending" className="w-full">
-        <TabsList className="mb-12 h-20 rounded-[2.5rem] bg-white border border-slate-100 p-2 shadow-sm flex items-center gap-2">
+        <TabsList className="mb-6 sm:mb-12 h-auto sm:h-20 rounded-2xl sm:rounded-[2.5rem] bg-white border border-slate-100 p-1.5 sm:p-2 shadow-sm flex flex-wrap sm:flex-nowrap items-center gap-1 sm:gap-2">
            {['pending', 'approved', 'rejected'].map(tab => (
              <TabsTrigger 
                key={tab} 
                value={tab} 
-               className="flex-1 h-full rounded-full font-bold text-[10px] uppercase tracking-widest text-slate-300 data-[state=active]:bg-slate-900 data-[state=active]:text-white transition-all duration-500"
+                className="flex-1 h-10 sm:h-full rounded-xl sm:rounded-full font-bold text-[8px] sm:text-[10px] uppercase tracking-wider sm:tracking-widest text-slate-300 data-[state=active]:bg-slate-900 data-[state=active]:text-white transition-all duration-500 whitespace-nowrap"
              >
-               {tab === 'pending' ? `Pending Approval (${pendingExams.length})` : tab === 'approved' ? `Approved Protocols (${approvedExams.length})` : `Rejected Protocols (${rejectedExams.length})`}
+                {tab === 'pending' ? `Approval (${pendingExams.length})` : tab === 'approved' ? `Approved Protocols (${approvedExams.length})` : `Rejected (${rejectedExams.length})`}
              </TabsTrigger>
            ))}
         </TabsList>

@@ -47,8 +47,8 @@ export function DashboardHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 sm:h-20 items-center justify-between gap-2 sm:gap-4 glass-panel px-4 md:px-6 lg:px-10 border-b border-black/5 transition-all duration-300 bg-white/90 backdrop-blur-xl shadow-sm">
-      <div className="flex items-center gap-6">
+    <header className="sticky top-0 z-40 flex h-14 sm:h-16 md:h-20 items-center justify-between gap-2 sm:gap-4 glass-panel px-3 sm:px-4 md:px-6 lg:px-10 border-b border-black/5 transition-all duration-300 bg-white/90 backdrop-blur-xl shadow-sm">
+      <div className="flex items-center gap-2 sm:gap-4 lg:gap-6">
         <SidebarTrigger className="-ml-2 h-10 w-10 text-primary hover:bg-primary/5 rounded-xl transition-all" />
 
         <div className="relative hidden md:flex items-center group">

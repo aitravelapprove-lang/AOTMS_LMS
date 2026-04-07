@@ -933,38 +933,27 @@ export function useInstructorAllStudents() {
       if (!user?.id) return [];
 
       // 1. Fetch instructor's courses
-      const courses = await fetchWithAuth(`/data/courses?instructor_id=eq.${user.id}`);
-      const courseIds = courses.map((c: Course) => c.id);
+      const courses = await fetchWithAuth<Course[]>(`/data/courses?instructor_id=eq.${user.id}`);
+      const courseIds = courses.map(c => c.id || c._id).filter(Boolean);
 
       if (courseIds.length === 0) return [];
 
       // 2. Fetch enrollments for these courses
-      // Note: We might need to chunk this if there are too many courses, but for now we'll assume it fits in the URL length or use a different strategy if backend supports it.
-      // Using 'in' filter for course_id
-      const allEnrollments = await fetchWithAuth(`/data/course_enrollments?course_id=in.(${courseIds.join(',')})`);
+      const allEnrollments = await fetchWithAuth<any[]>(`/data/course_enrollments?course_id=in.(${courseIds.join(',')})`);
       
       const studentMap = new Map<string, InstructorStudent>();
 
-      allEnrollments.forEach((enrollment: {
-        id: string;
-        user_id: string | { _id: string };
-        course_id: string;
-        user_name?: string;
-        user_email?: string;
-        progress_percentage?: number;
-        last_accessed_at?: string;
-        enrolled_at?: string;
-      }) => {
+      allEnrollments.forEach((enrollment) => {
         const userId = typeof enrollment.user_id === 'string' 
             ? enrollment.user_id 
-            : enrollment.user_id?._id?.toString();
+            : enrollment.user_id?.id || enrollment.user_id?._id?.toString();
         
         if (!userId) return;
 
         // Skip if the student is the instructor themselves
         if (userId === user.id?.toString()) return;
 
-        const course = courses.find((c: Course) => c.id === enrollment.course_id);
+        const course = courses.find(c => (c.id || c._id) === enrollment.course_id);
         const courseTitle = course?.title || 'Unknown Course';
 
         if (studentMap.has(userId)) {
@@ -979,7 +968,7 @@ export function useInstructorAllStudents() {
           }
 
           existing.overallProgress = Math.round(
-            (existing.overallProgress + progress) / existing.enrolledCourses
+            ((existing.overallProgress * (existing.enrolledCourses - 1)) + progress) / existing.enrolledCourses
           );
 
           const lastWatched = new Date(enrollment.last_accessed_at || enrollment.enrolled_at);
@@ -1031,14 +1020,14 @@ export function useInstructorAllStudents() {
       const studentIds = Array.from(studentMap.keys());
       if (studentIds.length > 0) {
           const [usersBatch, profilesBatch] = await Promise.all([
-              fetchWithAuth(`/data/users?id=in.(${studentIds.join(',')})`),
-              fetchWithAuth(`/data/profiles?user_id=in.(${studentIds.join(',')})`)
+              fetchWithAuth<any[]>(`/data/users?id=in.(${studentIds.join(',')})`),
+              fetchWithAuth<any[]>(`/data/profiles?user_id=in.(${studentIds.join(',')})`)
           ]);
 
           const profileMap = new Map();
-          profilesBatch.forEach((p: { id?: string; user_id?: string; [key: string]: unknown }) => profileMap.set((p.id || p.user_id)?.toString(), p));
+          profilesBatch.forEach((p: any) => profileMap.set((p.id || p.user_id)?.toString(), p));
 
-          usersBatch.forEach((u: { id?: string; _id?: string; full_name?: string; email?: string; avatar_url?: string; [key: string]: unknown }) => {
+          usersBatch.forEach((u: any) => {
               const userIdStr = (u.id || u._id)?.toString();
               const student = studentMap.get(userIdStr);
               if (student) {

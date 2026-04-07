@@ -203,10 +203,17 @@ const Footer = () => {
 
       {/* Bottom Bar */}
       <div className="border-t border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-[#FDFEFE]/75 text-sm font-medium">
-            © {year} AOTMS. All rights reserved.
-          </p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col lg:flex-row items-center justify-between gap-6 text-center lg:text-left">
+          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8">
+            <p className="text-[#FDFEFE]/75 text-sm font-medium">
+              © {year} AOTMS. All rights reserved.
+            </p>
+            <div className="hidden sm:block h-4 w-px bg-white/20" />
+            <p className="text-[#FDFEFE]/60 text-[9px] sm:text-[11px] font-black uppercase tracking-[0.2em] flex items-center gap-2 leading-none">
+              <span className="hidden sm:block w-4 h-[1px] bg-[#FD5A1A]" />
+              Designed & Developed By <span className="text-[#FDFEFE] border-b border-[#FD5A1A]/40 pb-0.5 tracking-normal normal-case font-bold">Team AOTMS</span>
+            </p>
+          </div>
           <div className="flex gap-4">
             {socials.map((s) => (
               <a

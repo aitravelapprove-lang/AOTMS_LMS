@@ -20,13 +20,13 @@ export default function FeaturedCourses() {
   if (loading && courses.length === 0) return null;
 
   return (
-    <section id="courses" className="py-24 bg-white relative overflow-hidden">
+    <section id="courses" className="pt-12 md:pt-16 pb-12 md:pb-16 bg-white relative overflow-hidden">
       {/* Background patterns */}
       <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-slate-50 to-white -z-10" />
       <div className="absolute top-40 -left-20 w-80 h-80 bg-primary/5 rounded-full blur-3xl -z-10" />
       <div className="absolute bottom-40 -right-20 w-80 h-80 bg-accent/5 rounded-full blur-3xl -z-10" />
 
-      <div className="container-width pt-16 md:pt-24 lg:pt-32 pb-0 relative z-10">
+      <div className="container-width pt-8 md:pt-12 pb-0 relative z-10">
         <div className="text-center mb-0 space-y-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -148,7 +148,7 @@ export default function FeaturedCourses() {
         </motion.div>
       </div>
 
-      <div className="container-width pb-16 md:pb-24 lg:pb-32 pt-8 relative z-10">
+      <div className="container-width pb-8 md:pb-12 pt-8 relative z-10">
         <div className="text-center mt-2">
           <Button
             size="xl"

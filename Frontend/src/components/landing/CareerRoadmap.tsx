@@ -46,7 +46,7 @@ const roadmapSteps = [
 
 export default function CareerRoadmap() {
   return (
-    <section id="roadmap" className="relative py-24 md:py-32 bg-white overflow-hidden">
+    <section id="roadmap" className="relative pt-12 md:pt-16 pb-12 md:pb-16 bg-white overflow-hidden">
       {/* Dynamic Grid Background */}
       <div className="absolute inset-0 opacity-[0.02] pointer-events-none" 
         style={{ 

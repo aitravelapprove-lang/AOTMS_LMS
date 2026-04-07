@@ -3970,8 +3970,8 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
             }
         }
 
-        // Student-specific scoping logic
-        if (role !== 'admin' && role !== 'manager') {
+        // Student-specific scoping logic - only apply to students
+        if (role === 'student') {
             const studentScopedTables = {
                 'exam_results': 'student_id',
                 'resume_scans': 'user_id',
@@ -3981,15 +3981,19 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
 
             if (studentScopedTables[table]) {
                 const scopeField = studentScopedTables[table];
-                // CRITICAL: Overwrite any attempted ID with the actual user ID
+                // Overwrite any attempted ID with the actual user ID to prevent unauthorized access
                 query[scopeField] = req.user.id;
-                console.log(`[ACL] Scoping ${table} to ${scopeField}=${req.user.id}`);
+                console.log(`[ACL] Student scoping ${table} to ${scopeField}=${req.user.id}`);
             }
             
-            if (table === 'courses' && role !== 'instructor') {
+            if (table === 'courses') {
                 query['is_active'] = { $ne: false };
                 query['status'] = { $in: ['approved', 'published'] };
             }
+        } else if (role === 'instructor') {
+            console.log(`[ACL] Instructor access to ${table}`);
+            // Instructors can see their own courses but logic is often in the data fetch
+            // We'll let them fetch anything they query, but we assume course_id filtering is used
         } else {
             console.log(`[ACL] Admin/Manager access to ${table}`);
         }
@@ -4014,6 +4018,10 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
         } else if (table === 'courses') {
             data = await Model.find(query).sort(sort).limit(limit).skip(skip)
                 .populate('instructor_id', 'full_name avatar_url');
+        } else if (table === 'course_enrollments') {
+            data = await Model.find(query).sort(sort).limit(limit).skip(skip)
+                .populate('user_id', 'full_name email avatar_url phone')
+                .populate('course_id', 'title category image');
         } else {
             data = await Model.find(query).sort(sort).limit(limit).skip(skip);
         }

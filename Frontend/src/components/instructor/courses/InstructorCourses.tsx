@@ -180,7 +180,11 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     <AnimatePresence>
                         {courses?.map((course: Course, index: number) => {
-                            const isInstructorOwner = course.instructor_id === user?.id;
+                            const instructor = course.instructor_id as any;
+                            const instructorId = instructor?._id || (typeof instructor === 'string' ? instructor : instructor?.id);
+                            const isInstructorOwner = instructorId === user?.id;
+                            const isAssignedToOther = instructorId && !isInstructorOwner;
+                            
                             const isInstructorApproved = isInstructorOwner && (
                                 course.status?.toLowerCase() === 'approved' || 
                                 course.status?.toLowerCase() === 'published' || 
@@ -232,6 +236,11 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
                                                                     course.status?.toLowerCase() === 'rejected' ? 'bg-red-500/80 hover:bg-red-500 text-white' : 'bg-slate-500/80 hover:bg-slate-500 text-white'
                                                         )}>
                                                             {course.status === 'published' ? 'Published' : course.status === 'pending' ? 'Pending Review' : course.status === 'rejected' ? 'Rejected' : course.status === 'draft' ? 'Draft' : course.status || 'Active'}
+                                                        </Badge>
+                                                    )}
+                                                    {isAssignedToOther && (
+                                                        <Badge variant="secondary" className="bg-red-500/80 text-white border-none backdrop-blur-md text-[10px]">
+                                                            Assigned: {instructor?.full_name?.split(' ')[0] || 'Peer'}
                                                         </Badge>
                                                     )}
                                                 </div>
@@ -292,6 +301,11 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
                                                             {(course.status?.toLowerCase() === 'published' || course.status?.toLowerCase() === 'approved') && <CheckCircle className="h-3 w-3 text-green-600" />}
                                                             <span className="text-xs text-muted-foreground">My Course</span>
                                                         </div>
+                                                    ) : isAssignedToOther ? (
+                                                        <div className="flex items-center gap-1">
+                                                            <ShieldAlert className="h-3 w-3 text-red-500" />
+                                                            <span className="text-[10px] font-medium text-red-500 uppercase tracking-tighter">Already Assigned</span>
+                                                        </div>
                                                     ) : (
                                                         <span className="text-xs text-muted-foreground">{course.duration || 'Flexible'}</span>
                                                     )}
@@ -323,12 +337,15 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
                                                         <Button 
                                                             variant="outline" 
                                                             size="sm" 
-                                                            className="gap-2 border-primary/20 hover:bg-primary/5 text-primary"
-                                                            onClick={(e) => handleAssignToMe(course.id || course._id, e)}
-                                                            disabled={assigning === (course.id || course._id) || isInstructorOwner}
+                                                            className={cn(
+                                                                "gap-2 border-primary/20",
+                                                                isAssignedToOther ? "opacity-50 cursor-not-allowed bg-slate-50 text-slate-400" : "hover:bg-primary/5 text-primary"
+                                                            )}
+                                                            onClick={(e) => !isAssignedToOther && handleAssignToMe(course.id || course._id, e)}
+                                                            disabled={assigning === (course.id || course._id) || isInstructorOwner || isAssignedToOther}
                                                         >
                                                             {assigning === (course.id || course._id) ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                                                            Enroll to Teach
+                                                            {isAssignedToOther ? 'Assigned' : 'Enroll to Teach'}
                                                         </Button>
                                                     )}
                                                 </div>
@@ -403,7 +420,13 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
                                     <div className="space-y-2">
                                         <div className="flex items-center gap-2 text-sm text-slate-700">
                                             <ShieldAlert className="h-4 w-4 text-primary/40" />
-                                            <span className="font-medium truncate">{selectedProfile.instructor_id === user?.id ? 'My Assigned Course' : 'Available for Selection'}</span>
+                                            <span className="font-medium truncate">
+                                                {(selectedProfile.instructor_id as InstructorProfile | undefined)?._id || (selectedProfile.instructor_id as InstructorProfile | undefined)?.id === user?.id 
+                                                    ? 'My Assigned Course' 
+                                                    : selectedProfile.instructor_id 
+                                                        ? `Assigned: ${(selectedProfile.instructor_id as InstructorProfile).full_name || 'Another Instructor'}` 
+                                                        : 'Available for Selection'}
+                                            </span>
                                         </div>
                                         <div className="flex items-center gap-2 text-sm text-slate-700">
                                             <Calendar className="h-4 w-4 text-primary/40" />

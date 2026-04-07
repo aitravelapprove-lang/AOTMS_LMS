@@ -369,9 +369,7 @@ export function CourseAssignment() {
                     <Select
                       value={course.instructor_id || "unassigned"}
                       onValueChange={(value) => {
-                        if (value !== "unassigned") {
-                          handleAssign(course.id, value);
-                        }
+                        handleAssign(course.id, value === "unassigned" ? "" : value);
                       }}
                       disabled={assigning === String(course.id)}
                       onClick={(e) => e.stopPropagation()}

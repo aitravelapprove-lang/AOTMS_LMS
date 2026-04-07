@@ -74,7 +74,7 @@ const ScrollBot = () => {
   };
 
   return (
-    <div className="fixed right-6 bottom-10 z-[100] flex flex-col items-center">
+    <div className="fixed right-6 bottom-28 z-[100] flex flex-col items-center">
       <AnimatePresence mode="wait">
         {isVisible && (
           <>

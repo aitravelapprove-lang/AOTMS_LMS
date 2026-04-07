@@ -106,11 +106,11 @@ export function CouponManager() {
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-3">
-            <Ticket className="h-7 w-7 text-primary" />
+          <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2 sm:gap-3">
+            <Ticket className="h-5 w-5 sm:h-7 sm:w-7 text-primary flex-shrink-0" />
             Coupon Rewards Engine
           </h1>
-          <p className="text-slate-500 font-medium">Assign dynamic discount codes to students for rewards.</p>
+          <p className="text-slate-500 font-medium text-xs sm:text-base">Assign dynamic discount codes to students for rewards.</p>
         </div>
         <div className="flex bg-white p-1 rounded-xl shadow-sm border border-slate-200">
             <Badge variant="secondary" className="bg-primary/5 text-primary border-transparent px-4 py-1.5 rounded-lg font-bold">

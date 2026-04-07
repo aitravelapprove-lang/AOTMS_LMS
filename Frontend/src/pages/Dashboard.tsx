@@ -71,7 +71,7 @@ export default function Dashboard() {
       <SidebarInset className="flex flex-col h-[100dvh] w-full overflow-hidden bg-transparent">
         <DashboardHeader />
 
-        <main className="flex-1 w-full overflow-y-auto overflow-x-hidden p-4 md:p-8 lg:p-10 custom-scrollbar">
+        <main className="flex-1 w-full overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-8 lg:p-10 custom-scrollbar">
           <div className="max-w-7xl mx-auto">
             {isEligibleForUpgrade && needsUpgrade && (
               <div className="mb-6 p-4 bg-[#0075CF]/10 border border-[#0075CF]/20 rounded-xl flex items-center justify-between animate-in slide-in-from-top duration-500">

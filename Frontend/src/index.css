@@ -251,3 +251,187 @@
     width: 100% !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   COMPREHENSIVE MOBILE & TABLET RESPONSIVE OVERRIDES
+   Covers: All Dashboards, Landing, Auth, Dialogs, Tables, Grids
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── MOBILE (≤767px) ───────────────────────────────────────────── */
+@media (max-width: 767px) {
+  /* Prevent horizontal scroll on every element */
+  html, body, #root {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+  }
+
+  /* Fix SidebarInset taking full width on mobile (no sidebar gap) */
+  main {
+    min-width: 0 !important;
+    max-width: 100vw !important;
+  }
+
+  /* Ensure all cards and containers fit viewport */
+  .pro-card,
+  [class*="CardContent"],
+  [data-slot="card"] {
+    max-width: 100% !important;
+    overflow-x: hidden;
+  }
+
+  /* Dialog/Modal responsive mobile sizing */
+  [role="dialog"],
+  [data-slot="dialog-content"] {
+    max-width: 95vw !important;
+    max-height: 85vh !important;
+    overflow-y: auto !important;
+    margin: auto !important;
+    border-radius: 1.25rem !important;
+  }
+
+  /* Tables: horizontal scroll wrapper */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Touch-friendly tap targets */
+  button, [role="button"], a, input, select, textarea {
+    min-height: 36px;
+  }
+
+  /* Scrollbar hide on mobile for cleaner look */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 3px;
+  }
+
+  /* Fix grid overflows: Force single column on very small */
+  .grid {
+    min-width: 0 !important;
+  }
+
+  /* Admin tabs: horizontal scroll strip on mobile */
+  [role="tablist"] {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  [role="tablist"]::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Payment modal QR grid → stack vertically */
+  .grid.grid-cols-5 {
+    grid-template-columns: 1fr !important;
+  }
+  .grid.grid-cols-5 > .col-span-2,
+  .grid.grid-cols-5 > .col-span-3 {
+    grid-column: span 1 !important;
+  }
+
+  /* Fix min-width constraints that break mobile */
+  [class*="min-w-["] {
+    min-width: 0 !important;
+  }
+
+  /* Make wide fixed-width inputs shrink on mobile */
+  input[class*="w-[320px]"],
+  input[class*="w-[400px]"],
+  [class*="lg:w-[400px]"] {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Course builder / Syllabus manager overflow fix */
+  .min-w-\[800px\] {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+}
+
+/* ── TABLET (768px - 1023px) ───────────────────────────────────── */
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* Prevent horizontal scroll */
+  html, body, #root {
+    overflow-x: hidden !important;
+  }
+
+  /* Dialog sizing for tablets */
+  [role="dialog"],
+  [data-slot="dialog-content"] {
+    max-width: 90vw !important;
+    max-height: 85vh !important;
+  }
+
+  /* Fix min-width constraints on tablet */
+  .min-w-\[800px\] {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Scrollbar styling for tablets */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  /* Better grid for tablets - 2 cols instead of 3-5 */
+  .lg\:grid-cols-5 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  /* Fix wide search inputs */
+  input[class*="w-[320px]"],
+  input[class*="w-[400px]"] {
+    width: 240px !important;
+  }
+}
+
+/* ── SMALL MOBILE (≤380px) ─────────────────────────────────────── */
+@media (max-width: 380px) {
+  /* Even tighter constraints for small phones */
+  .section-padding {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+
+  /* Smaller text sizes */
+  h1 {
+    font-size: 1.5rem !important;
+  }
+  h2 {
+    font-size: 1.25rem !important;
+  }
+
+  /* OTP input boxes smaller */
+  input[inputmode="numeric"][maxlength="1"] {
+    width: 2.5rem !important;
+    height: 2.5rem !important;
+  }
+
+  /* Payment term grid: stack */
+  .grid.grid-cols-3 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── Horizontal custom scrollbar for tab strips ──────────────── */
+.custom-scrollbar-horizontal::-webkit-scrollbar {
+  height: 3px;
+}
+.custom-scrollbar-horizontal::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar-horizontal::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 rounded-full hover:bg-slate-300;
+}
+
+/* ── Safe area padding for notched devices ─────────────────────── */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .sticky, header, footer, [class*="sticky"] {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  nav, footer {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

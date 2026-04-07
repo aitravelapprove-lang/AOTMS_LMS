@@ -115,50 +115,55 @@ export function LeaderboardManager() {
                 return (
                 <div
                   key={entry.id}
-                  className={`flex items-center gap-4 p-4 rounded-xl transition-all hover:bg-accent/5 ${
-                    idx < 3 ? 'bg-accent/10 border border-accent/20 shadow-sm' : 'bg-muted/50 border border-transparent'
+                  className={`flex flex-col sm:flex-row sm:items-center p-3 sm:p-4 rounded-xl transition-all hover:bg-slate-50 ${
+                    idx < 3 ? 'bg-amber-500/10 border border-amber-500/20 shadow-sm' : 'bg-slate-50/50 border border-slate-100/50'
                   }`}
                 >
-                  <div className="w-8 flex items-center justify-center shrink-0">
-                    {getRankIcon(idx + 1)}
-                  </div>
-                  
-                  <Avatar className="h-10 w-10 border-2 border-white shadow-sm flex-shrink-0">
-                    <AvatarImage src={avatarUrl} />
-                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold font-mono">
-                      {displayName.slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="flex items-center gap-3 w-full sm:w-[60%]">
+                    <div className="w-6 sm:w-8 flex items-center justify-center shrink-0">
+                      {getRankIcon(idx + 1)}
+                    </div>
+                    
+                    <Avatar className="h-9 w-9 sm:h-10 sm:w-10 border border-white shadow-sm flex-shrink-0">
+                      <AvatarImage src={avatarUrl} />
+                      <AvatarFallback className="bg-primary/10 text-primary text-[10px] sm:text-xs font-bold font-mono">
+                        {displayName.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-bold text-slate-900 truncate">{displayName}</h4>
-                      {entry.is_verified && (
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 text-[10px] uppercase font-black text-slate-400 tracking-wider">
-                      <span>{entry.exams_completed || 0} exams</span>
-                      <span className="w-1 h-1 rounded-full bg-slate-300" />
-                      <span>{entry.average_percentage || 0}% avg</span>
+                    <div className="flex-1 min-w-0 pr-2">
+                      <div className="flex items-center gap-1.5">
+                        <h4 className="font-bold text-sm sm:text-base text-slate-900 truncate">{displayName}</h4>
+                        {entry.is_verified && (
+                          <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-emerald-500 shrink-0" />
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-3 text-[9px] sm:text-[10px] uppercase font-black text-slate-400 tracking-wider">
+                        <span>{entry.exams_completed || 0} exams</span>
+                        <span className="w-1 h-1 rounded-full bg-slate-300 shrink-0" />
+                        <span>{entry.average_percentage || 0}% avg</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-xl font-black text-slate-950 tracking-tighter">{entry.total_score || 0}</div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Points</p>
+
+                  <div className="flex flex-row items-center justify-between sm:justify-end gap-3 sm:gap-4 mt-3 sm:mt-0 pl-11 sm:pl-0 w-full sm:w-auto flex-1 border-t sm:border-0 pt-3 sm:pt-0 border-slate-200/60">
+                    <div className="text-left sm:text-right flex flex-row items-end gap-2 sm:flex-col sm:items-end sm:gap-0">
+                      <div className="text-xl sm:text-2xl font-black text-slate-950 tracking-tighter leading-none">{entry.total_score || 0}</div>
+                      <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest sm:mt-0.5">Points</p>
+                    </div>
+                    {!entry.is_verified && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1.5 sm:gap-2 h-8 sm:h-9 rounded-full border-2 font-bold px-3 sm:px-4 text-[10px] sm:text-xs text-slate-600 hover:text-slate-900 shadow-sm shrink-0"
+                        onClick={() => handleVerify(entry.id)}
+                        disabled={verifyEntry.isPending}
+                      >
+                        <Shield className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        Verify
+                      </Button>
+                    )}
                   </div>
-                  {!entry.is_verified && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-2 rounded-full border-2 font-bold px-4"
-                      onClick={() => handleVerify(entry.id)}
-                      disabled={verifyEntry.isPending}
-                    >
-                      <Shield className="h-3.5 w-3.5" />
-                      Verify
-                    </Button>
-                  )}
                 </div>
                 );
               })}

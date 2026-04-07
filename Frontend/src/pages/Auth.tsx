@@ -351,7 +351,7 @@ export default function Auth() {
       </div>
 
       {/* Left Panel — Purely Visual Spacing */}
-      <div className="md:w-1/2 relative flex flex-col pointer-events-none min-h-0 md:min-h-screen">
+      <div className="hidden md:flex md:w-1/2 relative flex-col pointer-events-none min-h-0 md:min-h-screen">
         <div className="relative md:absolute top-0 left-0 w-full p-8 lg:p-12 z-20 flex justify-center lg:justify-start pointer-events-none">
           <a href="/" className="pointer-events-auto transition-transform hover:scale-105 active:scale-95 inline-block">
             <img src={logo} alt="Logo" className="h-10 lg:h-12" />
@@ -360,8 +360,14 @@ export default function Auth() {
       </div>
 
       {/* Right Panel — Interactive Form Area */}
-      <div className="md:w-1/2 flex items-center justify-center p-6 lg:p-12 relative z-10 min-h-screen">
-        <div className="w-full max-w-md space-y-8 bg-white/80 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/40 shadow-2xl shadow-slate-200/50 relative">
+      <div className="w-full md:w-1/2 flex items-center justify-center p-4 sm:p-6 lg:p-12 relative z-10 min-h-screen">
+        <div className="w-full max-w-md space-y-6 sm:space-y-8 bg-white/80 backdrop-blur-xl p-5 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-white/40 shadow-2xl shadow-slate-200/50 relative">
+          {/* Mobile-only Logo */}
+          <div className="flex justify-center mb-4 md:hidden">
+            <a href="/">
+              <img src={logo} alt="AOTMS Logo" className="h-10" />
+            </a>
+          </div>
           {/* Icon */}
           <div className="flex justify-center mb-6">
             <div className="w-14 h-14 bg-gradient-to-br from-[#0075CF]/10 to-[#FD5A1A]/10 rounded-3xl flex items-center justify-center border border-slate-100 shadow-xl shadow-slate-200/50">

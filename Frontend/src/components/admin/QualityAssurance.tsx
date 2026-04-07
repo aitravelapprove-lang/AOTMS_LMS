@@ -268,18 +268,18 @@ export function QualityAssurance() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                    <h2 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-                        <ShieldCheck className="h-6 w-6 text-primary" />
+                    <h2 className="text-lg sm:text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+                        <ShieldCheck className="h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
                         Quality Assurance
                     </h2>
-                    <p className="text-muted-foreground text-sm font-medium">
+                    <p className="text-muted-foreground text-xs sm:text-sm font-medium">
                         Permanently remove data from the database. This action cannot be undone.
                     </p>
                 </div>
-                <Badge variant="destructive" className="h-7 px-3 flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4" />
+                <Badge variant="destructive" className="h-6 sm:h-7 px-2.5 sm:px-3 flex items-center gap-2 self-start sm:self-auto text-xs">
+                    <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     Destructive Actions
                 </Badge>
             </div>
@@ -374,7 +374,7 @@ export function QualityAssurance() {
             </Card>
 
             <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-                <DialogContent className="sm:max-w-[500px] rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl">
+                <DialogContent className="w-[95vw] sm:max-w-[500px] rounded-2xl sm:rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl">
                     <div className="bg-red-600 p-8 text-white relative">
                         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }} />
                         
@@ -440,7 +440,7 @@ export function QualityAssurance() {
             </Dialog>
 
             <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-                <DialogContent className="sm:max-w-[700px] rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl max-h-[80vh] flex flex-col">
+                <DialogContent className="w-[95vw] sm:max-w-[700px] rounded-2xl sm:rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl max-h-[80vh] flex flex-col">
                     <div className="bg-primary p-8 text-white relative flex-shrink-0">
                         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }} />
                         

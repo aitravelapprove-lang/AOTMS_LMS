@@ -763,20 +763,20 @@ export function QuestionBankManager({
       {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-8">
         <div className="space-y-1">
-          <h2 className="text-3xl font-bold tracking-tighter uppercase italic text-slate-900">Repository <span className="text-slate-300 not-italic font-medium">Core</span></h2>
+          <h2 className="text-xl sm:text-3xl font-bold tracking-tighter uppercase italic text-slate-900">Repository <span className="text-slate-300 not-italic font-medium">Core</span></h2>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em]">
             {stats.total} Analytical Items / {topics.length} Logic Clusters
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
            <Button 
              variant="outline" 
-             className="rounded-xl h-12 px-6 border-slate-100 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 hover:border-slate-900 transition-all"
+              className="rounded-xl h-10 sm:h-12 px-4 sm:px-6 border-slate-100 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 hover:border-slate-900 transition-all"
            >
              Filter Repository
            </Button>
            <Button 
-             className="rounded-xl h-12 px-8 bg-slate-900 hover:bg-black text-white text-[10px] font-bold uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-xl shadow-slate-100"
+              className="rounded-xl h-10 sm:h-12 px-4 sm:px-8 bg-slate-900 hover:bg-black text-white text-[10px] font-bold uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-xl shadow-slate-100"
              onClick={() => onSectionChange?.('exams')}
            >
              Create Exam <ArrowRight className="h-4 w-4 ml-2" />
@@ -860,14 +860,14 @@ export function QuestionBankManager({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-3 pt-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
             <Button
               variant="secondary"
               onClick={() => handleAddBlanks()}
               className="gap-2"
             >
-              <Plus className="h-4 w-4" />
-              Add {globalCount} Blank {globalCount > 1 ? 'Questions' : 'Question'}
+              <Plus className="h-4 w-4 shrink-0" />
+              <span className="truncate">Add {globalCount} Blank {globalCount > 1 ? 'Questions' : 'Question'}</span>
             </Button>
 
             <Button
@@ -875,8 +875,8 @@ export function QuestionBankManager({
               disabled={aiLoading}
               className="gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-700 hover:to-indigo-700"
             >
-              {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
-              Generate with AI
+              {aiLoading ? <Loader2 className="h-4 w-4 animate-spin shrink-0" /> : <Brain className="h-4 w-4 shrink-0" />}
+              <span className="truncate">Generate with AI</span>
             </Button>
           </div>
 
@@ -1091,7 +1091,7 @@ export function QuestionBankManager({
             ))}
           </div>
 
-          <div className="flex flex-col lg:flex-row justify-between items-center gap-6 py-8 bg-slate-50/50 border-2 border-dashed border-slate-100 rounded-3xl p-8 shadow-inner mt-12">
+          <div className="flex flex-col lg:flex-row justify-between items-center gap-6 py-6 sm:py-8 bg-slate-50/50 border-2 border-dashed border-slate-100 rounded-3xl p-4 sm:p-8 shadow-inner mt-8 sm:mt-12">
             <div className="flex flex-col gap-4 w-full lg:w-auto">
               <div className="flex items-center gap-2">
                 <Plus className="h-4 w-4 text-primary" />
@@ -1444,19 +1444,19 @@ export function QuestionBankManager({
       <Dialog open={isSaveWizardOpen} onOpenChange={setIsSaveWizardOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-hidden p-0 border-0 rounded-[2.5rem] shadow-2xl flex flex-col">
           <div className="flex flex-col h-full w-full overflow-hidden min-h-[500px] bg-background">
-            <div className="flex-1 p-12 pt-14 overflow-y-auto custom-scrollbar relative">
+            <div className="flex-1 p-6 pt-8 sm:p-12 sm:pt-14 overflow-y-auto custom-scrollbar relative">
               {/* Background Decorative Gradients */}
               <div className="absolute top-0 right-0 w-80 h-80 bg-primary/5 rounded-full -mr-40 -mt-40 blur-[100px] pointer-events-none" />
               
-              <DialogHeader className="mb-10 relative z-10 text-left">
-                <div className="h-16 w-16 rounded-3xl bg-slate-900 flex items-center justify-center mb-6 shadow-2xl shadow-slate-200">
-                  <Calendar className="h-8 w-8 text-white" />
+              <DialogHeader className="mb-6 sm:mb-10 relative z-10 text-left">
+                <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-2xl sm:rounded-3xl bg-slate-900 flex items-center justify-center mb-4 sm:mb-6 shadow-2xl shadow-slate-200">
+                  <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                 </div>
                 <div className="space-y-2">
-                  <DialogTitle className="text-4xl font-black tracking-tighter italic leading-none uppercase">
+                  <DialogTitle className="text-2xl sm:text-4xl font-black tracking-tighter italic leading-none uppercase">
                     Select Exam Scheduling
                   </DialogTitle>
-                  <DialogDescription className="text-base font-bold text-slate-400 uppercase tracking-widest">
+                  <DialogDescription className="text-xs sm:text-base font-bold text-slate-400 uppercase tracking-widest">
                     Attach this question batch to an active assessment protocol
                   </DialogDescription>
                 </div>
@@ -1474,15 +1474,15 @@ export function QuestionBankManager({
                       key={exam.id}
                       onClick={() => setSelectedExamId(exam.id)}
                       className={cn(
-                        "group p-8 rounded-[2.5rem] border-2 transition-all cursor-pointer flex items-center justify-between",
+                        "group p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border-2 transition-all cursor-pointer flex items-center justify-between",
                         selectedExamId === exam.id 
                           ? "bg-slate-900 border-slate-900 text-white shadow-2xl shadow-slate-200 scale-[1.01]" 
                           : "bg-white border-slate-50 hover:border-slate-100 text-slate-900"
                       )}
                     >
-                      <div className="flex items-center gap-8">
+                      <div className="flex items-center gap-4 sm:gap-8 overflow-hidden">
                          <div className={cn(
-                           "h-20 w-20 rounded-[1.8rem] flex items-center justify-center overflow-hidden border-2",
+                           "h-14 w-14 shrink-0 sm:h-20 sm:w-20 rounded-xl sm:rounded-[1.8rem] flex items-center justify-center overflow-hidden border-2",
                            selectedExamId === exam.id ? "border-white/20 bg-white/5" : "border-slate-50 bg-slate-50"
                          )}>
                            {exam.assigned_image ? (
@@ -1492,8 +1492,8 @@ export function QuestionBankManager({
                            )}
                          </div>
                          <div className="space-y-1.5">
-                           <h4 className="text-xl font-black uppercase tracking-tight italic leading-none">{exam.title}</h4>
-                           <div className="flex items-center gap-4">
+                           <h4 className="text-base sm:text-xl font-black uppercase tracking-tight italic leading-none truncate max-w-[150px] sm:max-w-none">{exam.title}</h4>
+                           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                               <p className={cn("text-[10px] font-bold uppercase tracking-widest opacity-40", selectedExamId === exam.id ? "text-white" : "text-slate-400")}>
                                 Protocol #{exam.id.slice(0, 8)}
                               </p>
@@ -1515,8 +1515,8 @@ export function QuestionBankManager({
               </div>
             </div>
 
-            <DialogFooter className="p-10 bg-slate-50 shadow-inner flex items-center justify-between gap-6">
-              <Button variant="ghost" className="h-14 px-10 rounded-2xl font-black uppercase tracking-widest text-[10px] text-slate-400 hover:text-slate-900" onClick={() => setIsSaveWizardOpen(false)}>
+            <DialogFooter className="p-4 sm:p-10 bg-slate-50 shadow-inner flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 sm:gap-6">
+              <Button variant="ghost" className="h-12 w-full sm:w-auto sm:h-14 px-10 rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[10px] text-slate-400 hover:text-slate-900" onClick={() => setIsSaveWizardOpen(false)}>
                 Back to Editor
               </Button>
               <Button

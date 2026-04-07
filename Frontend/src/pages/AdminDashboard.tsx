@@ -109,7 +109,7 @@ function AllCoursesList({
 
   if (loading && allCourses.length === 0) {
     return (
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
           <div key={i} className="rounded-3xl overflow-hidden bg-white shadow-sm border border-slate-100 h-[320px]">
             <Skeleton className="h-48 w-full" />
@@ -159,7 +159,7 @@ function AllCoursesList({
           </p>
         </motion.div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {allCourses.map((course, index) => (
             <motion.div
               key={course.id}
@@ -564,7 +564,7 @@ export default function AdminDashboard() {
       <AdminSidebar />
       <SidebarInset className="flex flex-col h-[100dvh] w-full overflow-hidden bg-transparent">
         <AdminHeader />
-        <main className="flex-1 w-full overflow-y-auto overflow-x-hidden p-4 sm:p-6 custom-scrollbar">
+        <main className="flex-1 w-full overflow-y-auto overflow-x-hidden p-3 sm:p-6 custom-scrollbar">
           <div className="max-w-7xl mx-auto space-y-6 lg:space-y-10">
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -593,7 +593,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* Metrics Dashboard */}
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="grid gap-4 grid-cols-2 sm:grid-cols-2 lg:grid-cols-5">
               {[
                 {
                   label: "Total Users",
@@ -658,7 +658,7 @@ export default function AdminDashboard() {
                       {stat.label}
                     </p>
                     <div className="flex items-baseline gap-2">
-                      <h2 className="text-3xl font-bold text-slate-900 tracking-tight">
+                      <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
                         {dataLoading ? "..." : stat.value}
                       </h2>
                     </div>

@@ -66,14 +66,14 @@ export function LiveMonitoring() {
             {/* Header Area */}
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                    <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner">
-                        <Activity className="h-7 w-7" />
+                    <div className="h-10 w-10 sm:h-14 sm:w-14 rounded-xl sm:rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner flex-shrink-0">
+                        <Activity className="h-5 w-5 sm:h-7 sm:w-7" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2 uppercase italic">
+                        <h1 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2 uppercase italic">
                             Live <span className="not-italic text-primary">Monitoring</span>
                         </h1>
-                        <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Real-time learning ecosystem oversight</p>
+                        <p className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-widest hidden sm:block">Real-time learning ecosystem oversight</p>
                     </div>
                 </div>
 
@@ -94,7 +94,7 @@ export function LiveMonitoring() {
             </div>
 
             {/* Quick Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
                 <StatsCard title="Global Progress" value={`${avgProgress}%`} icon={<BookOpen className="h-5 w-5" />} color="blue" description="Average course completion" />
                 <StatsCard title="Active Learners" value={totalEnrollments} icon={<Users className="h-5 w-5" />} color="indigo" description="Enrolled & active students" />
                 <StatsCard title="Exam Velocity" value={results.filter(r => new Date(r.submitted_at) > new Date(Date.now() - 24*60*60*1000)).length} icon={<Trophy className="h-5 w-5" />} color="amber" description="Tests taken in 24 hours" />
@@ -102,11 +102,11 @@ export function LiveMonitoring() {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList className="bg-slate-100/50 p-1.5 rounded-2xl border border-slate-100 inline-flex">
-                    <TabsTrigger value="courses" className="rounded-xl px-8 h-10 data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary font-black uppercase text-[10px] tracking-widest">
+                <TabsList className="bg-slate-100/50 p-1.5 rounded-2xl border border-slate-100 inline-flex overflow-x-auto">
+                    <TabsTrigger value="courses" className="rounded-xl px-4 sm:px-8 h-9 sm:h-10 data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary font-black uppercase text-[10px] tracking-widest whitespace-nowrap">
                         Course Progress
                     </TabsTrigger>
-                    <TabsTrigger value="exams" className="rounded-xl px-8 h-10 data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary font-black uppercase text-[10px] tracking-widest">
+                    <TabsTrigger value="exams" className="rounded-xl px-4 sm:px-8 h-9 sm:h-10 data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary font-black uppercase text-[10px] tracking-widest whitespace-nowrap">
                         Mocktest Performance
                     </TabsTrigger>
                 </TabsList>
@@ -355,7 +355,7 @@ function StatsCard({ title, value, icon, color, description }: { title: string, 
                 </div>
                 <div className="space-y-1">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">{title}</p>
-                    <h3 className="text-3xl font-black text-slate-900 tracking-tighter italic">{value}</h3>
+                    <h3 className="text-xl sm:text-3xl font-black text-slate-900 tracking-tighter italic">{value}</h3>
                     <p className="text-[10px] font-bold text-slate-400">{description}</p>
                 </div>
             </CardContent>

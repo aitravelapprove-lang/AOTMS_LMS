@@ -182,16 +182,16 @@ export function ExamSession({ examId, examTitle, durationMinutes, onFinish, onEx
         isFullScreen ? "p-0" : "p-0"
     )}>
         {/* Header */}
-        <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-sm relative z-10">
-            <div className="flex items-center gap-4">
+        <header className="bg-white border-b border-slate-200 px-3 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between shadow-sm relative z-10 gap-3 sm:gap-0">
+            <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
                 <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/10">
                     <Layout className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                    <h1 className="text-lg font-black text-slate-900 tracking-tight leading-none">
+                    <h1 className="text-sm sm:text-lg font-black text-slate-900 tracking-tight leading-none truncate max-w-[200px] sm:max-w-none">
                         {examTitle}
                     </h1>
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="hidden sm:flex items-center gap-2 mt-1">
                         <Badge variant="outline" className="text-[10px] uppercase font-bold text-slate-400 border-slate-200 bg-slate-50">Authorized Session</Badge>
                         <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1 uppercase">
                             <Monitor className="h-3 w-3" /> Secure Connection
@@ -200,18 +200,18 @@ export function ExamSession({ examId, examTitle, durationMinutes, onFinish, onEx
                 </div>
             </div>
 
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2 sm:gap-6 w-full sm:w-auto justify-between sm:justify-end">
                 <div className={cn(
-                    "flex flex-col items-end px-6 py-2 rounded-2xl border transition-all duration-500",
+                    "flex flex-col items-end px-3 sm:px-6 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border transition-all duration-500",
                     timeLeft < 300 ? "bg-red-50 border-red-200 text-red-600" : "bg-primary/5 border-primary/10 text-primary"
                 )}>
                     <div className="flex items-center gap-2 mb-0.5">
                         <Timer className={cn("h-4 w-4", timeLeft < 300 && "animate-pulse")} />
-                        <span className="text-2xl font-black tabular-nums tracking-tighter">{formatTime(timeLeft)}</span>
+                        <span className="text-lg sm:text-2xl font-black tabular-nums tracking-tighter">{formatTime(timeLeft)}</span>
                     </div>
                     <span className="text-[9px] font-black uppercase tracking-widest opacity-70">Remaining Time</span>
                 </div>
-                <Separator orientation="vertical" className="h-10 bg-slate-200" />
+                <Separator orientation="vertical" className="h-10 bg-slate-200 hidden sm:block" />
                 <div className="flex gap-2">
                     <Button 
                         variant="ghost" 
@@ -233,10 +233,10 @@ export function ExamSession({ examId, examTitle, durationMinutes, onFinish, onEx
         </header>
 
         {/* Main Interface Content */}
-        <main className="flex-1 flex overflow-hidden lg:flex-row flex-col">
+        <main className="flex-1 flex overflow-hidden flex-col lg:flex-row">
             {/* Sidebar Navigation */}
-            <aside className="w-full lg:w-[320px] bg-white border-r border-slate-200 flex flex-col overflow-hidden">
-                <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+            <aside className="w-full lg:w-[320px] bg-white border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-col overflow-hidden max-h-[160px] lg:max-h-none">
+                <div className="p-3 sm:p-6 border-b border-slate-100 bg-slate-50/50">
                     <div className="flex justify-between items-end mb-3">
                         <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
                             Progress
@@ -246,8 +246,8 @@ export function ExamSession({ examId, examTitle, durationMinutes, onFinish, onEx
                     <Progress value={progress} className="h-2.5 bg-slate-200 [&>div]:bg-primary shadow-sm" />
                 </div>
 
-                <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
-                    <div className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-4 gap-2">
+                <div className="p-3 sm:p-6 flex-1 overflow-y-auto custom-scrollbar">
+                    <div className="flex flex-wrap gap-2 sm:gap-3">
                         {questions.map((q, idx) => {
                             const isAnswered = !!answers[q.id];
                             const isCurrent = currentIdx === idx;
@@ -258,7 +258,7 @@ export function ExamSession({ examId, examTitle, durationMinutes, onFinish, onEx
                                     key={q.id}
                                     onClick={() => setCurrentIdx(idx)}
                                     className={cn(
-                                        "h-12 rounded-xl text-xs font-black transition-all flex items-center justify-center relative group",
+                                        "h-10 w-12 sm:w-full sm:h-12 rounded-xl text-xs font-black transition-all flex items-center justify-center relative group shrink-0",
                                         isCurrent ? "bg-primary text-white shadow-lg shadow-primary/30 scale-105 z-10" : 
                                         isAnswered ? "bg-emerald-50 text-emerald-600 border border-emerald-100" :
                                         "bg-slate-50 text-slate-400 border border-slate-200 hover:border-slate-300"
@@ -276,7 +276,7 @@ export function ExamSession({ examId, examTitle, durationMinutes, onFinish, onEx
 
             {/* Question Workspace */}
             <section className="flex-1 relative bg-slate-50/30 overflow-hidden flex flex-col">
-                <ScrollArea className="flex-1 p-8">
+                <ScrollArea className="flex-1 p-4 sm:p-8">
                     <div className="max-w-5xl mx-auto py-4">
                         <AnimatePresence mode="wait">
                             <motion.div
@@ -299,11 +299,11 @@ export function ExamSession({ examId, examTitle, durationMinutes, onFinish, onEx
                                             className={cn("h-8 ml-auto rounded-lg text-[10px] font-bold uppercase", flagged[currentQuestion.id] && "bg-red-50 text-red-600 border-red-200")}
                                             onClick={() => setFlagged(prev => ({ ...prev, [currentQuestion.id]: !prev[currentQuestion.id] }))}
                                         >
-                                            <Flag className={cn("h-3.5 w-3.5 mr-1.5", flagged[currentQuestion.id] && "fill-current")} />
-                                            {flagged[currentQuestion.id] ? "Flagged" : "Flag"}
+                                            <Flag className={cn("h-3.5 w-3.5 sm:mr-1.5", flagged[currentQuestion.id] && "fill-current")} />
+                                            <span className="hidden sm:inline">{flagged[currentQuestion.id] ? "Flagged" : "Flag"}</span>
                                         </Button>
                                     </div>
-                                    <h2 className="text-xl md:text-2xl font-bold text-slate-900 leading-snug">
+                                    <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 leading-snug">
                                         {currentQuestion.question_text || currentQuestion.text}
                                     </h2>
                                 </div>
@@ -325,17 +325,17 @@ export function ExamSession({ examId, examTitle, durationMinutes, onFinish, onEx
                                                         key={oIdx}
                                                         onClick={() => handleAnswerChange(optId)}
                                                         className={cn(
-                                                            "group relative flex items-center p-4 rounded-xl border-2 text-left transition-all duration-200",
+                                                            "group relative flex items-center p-3 sm:p-4 rounded-xl border-2 text-left transition-all duration-200",
                                                             isSelected ? "bg-white border-primary shadow-lg shadow-primary/5" : "bg-white/50 border-white hover:border-slate-300"
                                                         )}
                                                     >
                                                         <div className={cn(
-                                                            "h-8 w-8 rounded-lg flex items-center justify-center font-bold text-xs mr-4 transition-colors",
+                                                            "h-8 w-8 shrink-0 rounded-lg flex items-center justify-center font-bold text-xs mr-3 sm:mr-4 transition-colors",
                                                             isSelected ? "bg-primary text-white" : "bg-slate-100 text-slate-500"
                                                         )}>
                                                             {String.fromCharCode(65 + oIdx)}
                                                         </div>
-                                                        <span className={cn("font-medium", isSelected ? "text-slate-900" : "text-slate-600")}>{optText}</span>
+                                                        <span className={cn("font-medium text-sm sm:text-base leading-snug w-full", isSelected ? "text-slate-900" : "text-slate-600")}>{optText}</span>
                                                     </button>
                                                 );
                                             })}
@@ -436,31 +436,33 @@ export function ExamSession({ examId, examTitle, durationMinutes, onFinish, onEx
                 </ScrollArea>
 
                 {/* Footer Controls */}
-                <div className="bg-white border-t border-slate-200 p-6">
-                    <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
+                <div className="bg-white border-t border-slate-200 p-3 sm:p-6">
+                    <div className="max-w-5xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
                         <div className="flex gap-2">
                             <Button
                                 variant="outline"
                                 onClick={() => setCurrentIdx(prev => Math.max(0, prev - 1))}
                                 disabled={currentIdx === 0}
-                                className="h-12 px-6 rounded-xl font-bold flex items-center gap-2"
+                                className="h-10 sm:h-12 px-3 sm:px-6 rounded-xl font-bold flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
                             >
-                                <ChevronLeft className="h-4 w-4" /> Previous
+                                <ChevronLeft className="h-4 w-4" /> <span className="hidden sm:inline">Previous</span>
                             </Button>
                             <Button
                                 variant="outline"
                                 onClick={() => setCurrentIdx(prev => Math.min(questions.length - 1, prev + 1))}
                                 disabled={currentIdx === questions.length - 1}
-                                className="h-12 px-6 rounded-xl font-bold flex items-center gap-2"
+                                className="h-10 sm:h-12 px-3 sm:px-6 rounded-xl font-bold flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
                             >
-                                Next <ChevronRight className="h-4 w-4" />
+                                <span className="hidden sm:inline">Next</span> <ChevronRight className="h-4 w-4" />
                             </Button>
                         </div>
                         <Button
                             onClick={handleComplete}
-                            className="h-12 px-8 rounded-xl bg-slate-900 text-white hover:bg-black font-black uppercase tracking-wider text-xs flex items-center gap-2 shadow-xl"
+                            className="h-10 sm:h-12 px-4 sm:px-8 rounded-xl bg-slate-900 text-white hover:bg-black font-black uppercase tracking-wider text-[10px] sm:text-xs flex items-center gap-2 shadow-xl"
                         >
-                            Finish Assessment <HelpCircle className="h-4 w-4" />
+                            <span className="hidden sm:inline">Finish Assessment</span>
+                            <span className="sm:hidden">Finish</span>
+                            <HelpCircle className="h-4 w-4 shrink-0" />
                         </Button>
                     </div>
                 </div>

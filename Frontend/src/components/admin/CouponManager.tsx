@@ -213,49 +213,48 @@ export function CouponManager() {
           </Card>
         </div>
 
-        {/* Step 2: Generation - Premium Light Panel */}
+        {/* Step 2: Generation */}
         <div className="space-y-6">
-          <Card className="border-primary/20 shadow-xl overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-white via-primary/5 to-blue-50 relative">
-            <div className="absolute top-0 right-0 w-40 h-40 bg-primary/15 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-200/20 rounded-full blur-2xl pointer-events-none" />
-            <CardHeader className="border-b border-primary/10 relative z-10">
-              <CardTitle className="text-lg flex items-center gap-2 text-slate-900">
-                <Gift className="h-5 w-5 text-primary" />
+          <Card className="border-slate-200 shadow-xl overflow-hidden rounded-3xl bg-slate-900 text-white">
+            <CardHeader className="border-b border-white/10">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Gift className="h-5 w-5 text-primary text" />
                 Reward Controls
               </CardTitle>
-              <CardDescription className="text-slate-500 font-medium">
-                Generate and assign student discount codes.
+              <CardDescription className="text-slate-400 text-[10px] font-medium tracking-tight">
+                Generate and assign student discount codes
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-4 sm:p-8 space-y-8 text-center selection:bg-primary/20 relative z-10">
+            <CardContent className="p-8 space-y-8 text-center">
               <div className="space-y-4">
-                <div className="h-24 w-24 rounded-3xl bg-gradient-to-br from-primary/20 to-blue-100 border border-primary/30 flex items-center justify-center mx-auto shadow-lg shadow-primary/10">
+                <div className="h-24 w-24 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(var(--primary-rgb),0.2)]">
                   <Ticket
                     className={`h-12 w-12 text-primary ${isGenerating ? "animate-bounce" : ""}`}
                   />
                 </div>
+
                 {selectedStudent ? (
-                  <div className="space-y-6">
+                  <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
                     <div className="space-y-2">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                      <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
                         Active Recipient
                       </p>
-                      <div className="bg-white rounded-2xl p-4 border-2 border-primary/20 shadow-sm">
-                        <p className="text-lg font-black text-slate-900">
+                      <div className="px-5 py-3 bg-white/5 rounded-xl border border-white/10 inline-block shadow-sm">
+                        <p className="text-base font-bold text-white">
                           {selectedStudent.full_name}
                         </p>
-                        <p className="text-xs text-slate-500 font-medium">
+                        <p className="text-[10px] text-slate-400 font-medium lowercase tracking-tight opacity-70">
                           {selectedStudent.email}
                         </p>
                       </div>
                     </div>
 
-                    <div className="space-y-3 text-left">
-                      <label className="text-xs font-black uppercase tracking-widest text-slate-700">
+                    <div className="space-y-2 text-left">
+                      <label className="text-[10px] font-bold text-slate-400 ml-1">
                         Reward Value (₹)
                       </label>
                       <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-bold text-lg">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#FD5A1A] font-bold text-base">
                           ₹
                         </span>
                         <Input
@@ -263,14 +262,17 @@ export function CouponManager() {
                           placeholder="Enter amount"
                           value={discountAmount}
                           onChange={(e) => setDiscountAmount(e.target.value)}
-                          className="bg-white border-2 border-slate-200 h-14 text-lg font-bold text-slate-900 placeholder:text-slate-300 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl pl-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all shadow-sm"
+                          className="bg-white/5 border-white/10 h-12 pl-10 text-base font-bold text-white placeholder:text-slate-600 focus:border-[#0075CF] focus:ring-1 focus:ring-[#0075CF]/20 rounded-xl transition-all"
                         />
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-slate-400 italic py-4 text-sm font-semibold uppercase tracking-wider">
-                    Select student to proceed
+                  <div className="py-8 flex flex-col items-center gap-3 opacity-30">
+                    <div className="h-0.5 w-8 bg-slate-700 rounded-full" />
+                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] text-center">
+                      Select student to proceed
+                    </p>
                   </div>
                 )}
               </div>
@@ -278,53 +280,53 @@ export function CouponManager() {
               <AnimatePresence mode="wait">
                 {generatedCode ? (
                   <motion.div
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
                     className="p-6 bg-[#FD5A1A]/5 border border-[#FD5A1A]/10 rounded-2xl space-y-3 relative shadow-inner"
                   >
-                     <p className="text-[9px] font-black uppercase tracking-widest text-[#FD5A1A]">Assignment Secure</p>
-                     <h2 className="text-3xl font-black text-slate-900 tracking-widest">{generatedCode}</h2>
-                     <div className="flex items-center justify-center gap-2 text-[9px] font-bold text-slate-400">
-                        <Send className="h-3 w-3 text-[#FD5A1A]" />
-                        Notified successfully
-                     </div>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-[#FD5A1A]">
+                      Assignment Secure
+                    </p>
+                    <h2 className="text-3xl font-black text-white tracking-widest">
+                      {generatedCode}
+                    </h2>
+                    <div className="flex items-center justify-center gap-2 text-[9px] font-bold text-slate-400">
+                      <Send className="h-3 w-3 text-[#FD5A1A]" />
+                      Notified successfully
+                    </div>
                   </motion.div>
                 ) : (
                   <Button
                     size="lg"
                     disabled={!selectedStudent || isGenerating}
                     onClick={generateCoupon}
-                    className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest text-sm shadow-[0_10px_20px_rgba(var(--primary-rgb),0.3)] disabled:opacity-20 transition-all border-none"
+                    className="w-full h-14 rounded-xl bg-[#0075CF] hover:bg-[#0075CF]/90 text-white font-bold tracking-tight text-sm shadow-lg disabled:opacity-30 transition-all border-0 active:scale-[0.98]"
                   >
                     {isGenerating ? (
                       <Loader2 className="h-5 w-5 animate-spin" />
                     ) : (
-                      <>
-                        <Gift className="h-5 w-5 mr-3" />
-                        Assign Reward Code
-                      </>
+                      <div className="flex items-center gap-2">
+                        <Gift className="h-4 w-4" />
+                        <span>Assign Reward Code</span>
+                      </div>
                     )}
                   </Button>
                 )}
               </AnimatePresence>
 
-              <div className="pt-4 border-t border-slate-100">
-                <p className="text-[10px] text-slate-400 font-medium leading-relaxed uppercase tracking-wider">
+              <div className="pt-6 border-t border-white/5 opacity-40">
+                <p className="text-[8px] text-slate-500 font-medium leading-relaxed uppercase tracking-wider text-center">
                   Auto-notification and persistence protocols active
                 </p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 shadow-sm rounded-3xl bg-slate-50 border-dashed">
-            <CardContent className="p-6 text-center space-y-2">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-                Generation Rule
-              </p>
-              <p className="text-sm font-medium text-slate-600">
-                Codes are prefixed with{" "}
-                <span className="font-bold text-primary">AOTMS</span> followed
-                by 5 high-entropy numeric digits for uniqueness.
+          <Card className="border-white/5 shadow-sm rounded-2xl bg-white/5 border-dashed">
+            <CardContent className="p-4 text-center">
+              <p className="text-[10px] font-medium text-slate-500">
+                Pattern: <span className="font-bold text-[#FD5A1A]">AOTMS</span>{" "}
+                + 5 Digit Entropy
               </p>
             </CardContent>
           </Card>

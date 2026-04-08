@@ -215,14 +215,14 @@ export default function CoursesPage() {
                   </Button>
                 </div>
 
-                <div className="space-y-4">
-                  <h2 className="text-3xl font-black tracking-tight leading-tight">
+                <DialogHeader className="space-y-4">
+                  <DialogTitle className="text-3xl font-black tracking-tight leading-tight">
                     Review Your <span className="text-white italic">Enrollment</span>
-                  </h2>
-                  <p className="text-slate-400 text-sm leading-relaxed">
+                  </DialogTitle>
+                  <DialogDescription className="text-slate-400 text-sm leading-relaxed">
                     You're one step away from mastering new skills. Complete the secure payment below to unlock full course access.
-                  </p>
-                </div>
+                  </DialogDescription>
+                </DialogHeader>
 
                 {paymentCourse && (
                   <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4 backdrop-blur-md">
@@ -513,12 +513,6 @@ function CourseCard({
         >
           {course.category}
         </Badge>
-
-        {/* Rating */}
-        <div className="absolute bottom-4 left-4 flex items-center gap-1.5 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg">
-          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-          <span className="text-sm font-bold text-slate-800">{course.rating}</span>
-        </div>
       </div>
 
       {/* Content - More padding */}
@@ -545,23 +539,25 @@ function CourseCard({
         </div>
 
         {/* Price */}
-        <div className="flex items-baseline gap-3 pt-2">
-          <span className="text-3xl font-bold text-primary">
-            {course.price?.toString().includes('$') 
-              ? course.price.replace('$', '₹') 
-              : `₹${course.price}`}
-          </span>
-          {course.original_price && (
-            <>
+        <div className="flex items-baseline justify-between pt-2">
+          <div className="flex items-baseline gap-3">
+            <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] to-[#FD5A1A]">
+              {course.price?.toString().includes('$') 
+                ? course.price.replace('$', '₹') 
+                : `₹${course.price}`}
+            </span>
+            {course.original_price && (
               <span className="text-base text-slate-400 line-through">
                 {course.original_price?.toString().includes('$') 
                   ? course.original_price.replace('$', '₹') 
                   : `₹${course.original_price}`}
               </span>
-              <Badge variant="destructive" className="text-xs font-semibold">
-                {Math.round((1 - parsePrice(course.price) / parsePrice(course.original_price)) * 100)}% OFF
-              </Badge>
-            </>
+            )}
+          </div>
+          {course.original_price && (
+            <Badge className="bg-orange-100 text-[#FD5A1A] border-orange-200 text-[10px] font-bold uppercase tracking-wider">
+              {Math.round((1 - parsePrice(course.price) / parsePrice(course.original_price)) * 100)}% OFF
+            </Badge>
           )}
         </div>
 
@@ -569,7 +565,7 @@ function CourseCard({
         <Button
           onClick={onEnroll}
           disabled={isEnrolling}
-          className="w-full group-hover:bg-primary/90 transition-all rounded-xl h-11 font-semibold"
+          className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-xs bg-gradient-to-r from-[#0075CF] to-[#005CAD] hover:from-[#005CAD] hover:to-[#004280] text-white shadow-lg shadow-primary/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
         >
           {isEnrolling ? (
             <Loader2 className="h-4 w-4 animate-spin mr-2" />

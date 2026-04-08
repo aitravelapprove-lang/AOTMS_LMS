@@ -4,7 +4,7 @@ import { StaggerTestimonials } from "@/components/ui/stagger-testimonials";
 
 const Testimonials = () => {
   return (
-    <section id="testimonials" className="relative py-24 lg:py-40 bg-transparent overflow-hidden">
+    <section id="testimonials" className="relative pt-12 lg:pt-16 pb-24 lg:pb-32 bg-transparent overflow-hidden">
       
       {/* Decorative Aura */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#0075CF]/5 blur-[150px] rounded-full pointer-events-none" />

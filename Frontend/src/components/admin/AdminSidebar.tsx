@@ -40,7 +40,7 @@ const mainNavItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
   { title: "My Profile", url: "/admin/profile", icon: User },
   { title: "Users Management", url: "/admin/users", icon: Users },
-  { title: "Instructor Courses", url: "/admin/instructor-courses", icon: BookOpen },
+  { title: "Instructor Access", url: "/admin/instructor-access", icon: ShieldCheck },
   { title: "All Courses", url: "/admin/all-courses", icon: GraduationCap },
   { title: "Assign Courses", url: "/admin/assign-courses", icon: ClipboardList },
   { title: "Instructors", url: "/admin/instructors", icon: Award },

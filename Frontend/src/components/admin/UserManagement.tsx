@@ -478,8 +478,8 @@ export function UserManagement({
 
       {/* Approval Confirmation Dialog */}
       <Dialog open={showApprovalDialog} onOpenChange={setShowApprovalDialog}>
-        <DialogContent aria-describedby="approval-dialog-description" className="w-[95vw] sm:max-w-lg max-h-[92vh] overflow-y-auto bg-white/95 backdrop-blur-2xl border border-slate-200/60 shadow-2xl rounded-2xl p-0 scrollbar-none">
-          <DialogHeader className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 bg-slate-50/50 sticky top-0 z-10 backdrop-blur-md">
+        <DialogContent aria-describedby="approval-dialog-description" className="w-[95vw] sm:max-w-lg max-h-[85vh] overflow-hidden bg-white/95 backdrop-blur-2xl border border-slate-200/60 shadow-2xl rounded-2xl p-0 flex flex-col">
+          <DialogHeader className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 shrink-0 relative">
             <DialogTitle className="flex items-center gap-3 text-lg font-semibold text-slate-800">
               <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shadow-inner">
                 <Users className="h-5 w-5 text-primary" />
@@ -491,7 +491,7 @@ export function UserManagement({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
+          <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5 scrollbar-thin">
             <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 space-y-4 shadow-sm">
               <div className="grid grid-cols-2 gap-4 pb-4 border-b border-slate-200/50">
                 <div className="space-y-1">
@@ -564,15 +564,15 @@ export function UserManagement({
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-amber-50/50 border border-amber-200/40 flex gap-3 items-start shadow-sm">
+            <div className="p-4 rounded-xl bg-amber-50/50 border border-amber-200/40 flex gap-3 items-start shadow-sm">
               <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
                 <AlertCircle className="h-4 w-4 text-amber-600" />
               </div>
-              <div className="space-y-1">
-                <p className="text-xs font-bold text-amber-900 uppercase tracking-tight">
+              <div className="space-y-0.5">
+                <p className="text-[10px] font-bold text-amber-900 uppercase tracking-tight">
                   Automated Workflow
                 </p>
-                <p className="text-[11px] font-medium text-amber-800/70 leading-normal">
+                <p className="text-[10px] font-medium text-amber-800/70 leading-normal">
                   Confirming approval will instantly trigger the onboarding
                   welcome sequence via our automated systems.
                 </p>
@@ -580,7 +580,7 @@ export function UserManagement({
             </div>
           </div>
 
-          <DialogFooter className="px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 bg-slate-50/50 flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 sticky bottom-0 z-10 backdrop-blur-md">
+          <DialogFooter className="px-5 py-4 border-t border-slate-100 bg-slate-50/50 flex shrink-0 sm:flex-row sm:justify-between items-center gap-3">
             <Button
               variant="ghost"
               className="w-full sm:w-auto rounded-xl font-semibold text-slate-600 hover:text-slate-700 hover:bg-slate-200/50 h-11 px-6 active:scale-95 transition-all"
@@ -589,11 +589,11 @@ export function UserManagement({
               Cancel
             </Button>
 
-            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <div className="flex gap-2 w-full sm:w-auto">
               <Button
                 variant="outline"
-                className="w-full sm:w-auto rounded-xl font-semibold border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 h-11 px-6 active:scale-95 transition-all shadow-sm"
-                disabled={processingAction !== null}
+                className="flex-1 sm:w-28 rounded-xl font-semibold border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 h-10 px-4 active:scale-95 transition-all shadow-sm"
+                disabled={processingAction !== null || selectedUser?.approval_status === "rejected" || selectedUser?.approval_status === "approved"}
                 onClick={async () => {
                   if (selectedUser) {
                     setProcessingAction("reject");
@@ -606,12 +606,12 @@ export function UserManagement({
                   }
                 }}
               >
-                {processingAction === "reject" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Reject"}
+                {processingAction === "reject" ? <Loader2 className="h-4 w-4 animate-spin" /> : (selectedUser?.approval_status === "rejected" ? "Rejected" : "Reject")}
               </Button>
 
               <Button
-                className="w-full sm:w-auto rounded-xl font-semibold bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm shadow-emerald-500/20 gap-2 h-11 px-6 active:scale-95 transition-all"
-                disabled={processingAction !== null || selectedUser?.approval_status === "approved"}
+                className="flex-1 sm:w-28 rounded-xl font-semibold bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm shadow-emerald-500/20 gap-2 h-10 px-4 active:scale-95 transition-all"
+                disabled={processingAction !== null || selectedUser?.approval_status === "approved" || selectedUser?.approval_status === "rejected"}
                 onClick={async () => {
                   if (selectedUser) {
                     setProcessingAction("approve");
@@ -630,31 +630,6 @@ export function UserManagement({
                   <>
                     <CheckCircle className="h-4 w-4" />
                     {selectedUser?.approval_status === "approved" ? "Approved" : "Approve"}
-                  </>
-                )}
-              </Button>
-
-              <Button
-                className="w-full sm:w-auto rounded-xl font-semibold bg-primary hover:bg-primary/90 text-white shadow-sm shadow-primary/20 gap-2 h-11 px-6 active:scale-95 transition-all"
-                disabled={processingAction !== null}
-                onClick={async () => {
-                  if (selectedUser) {
-                    setProcessingAction("email");
-                    try {
-                      await onSendEmail(selectedUser.id);
-                      setShowApprovalDialog(false);
-                    } finally {
-                      setProcessingAction(null);
-                    }
-                  }
-                }}
-              >
-                {processingAction === "email" ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    <Send className="h-4 w-4" />
-                    Email
                   </>
                 )}
               </Button>
@@ -824,6 +799,7 @@ export function UserManagement({
 
               <div className="flex gap-2 pt-2">
                 <Button
+                  variant="outline"
                   className="flex-1"
                   onClick={() => {
                     setNewRole(selectedUser.role || 'student');
@@ -834,6 +810,37 @@ export function UserManagement({
                   <UserCog className="h-4 w-4 mr-2" />
                   Change Role
                 </Button>
+
+                {selectedUser.status === 'suspended' ? (
+                  <Button
+                    variant="outline"
+                    className="flex-1 border-emerald-200 text-emerald-600 hover:bg-emerald-50"
+                    onClick={async () => {
+                      setIsProcessing(true);
+                      const success = await onUpdateStatus(selectedUser.id, "approved");
+                      if (success) {
+                        setShowProfileDialog(false);
+                      }
+                      setIsProcessing(false);
+                    }}
+                    disabled={isProcessing}
+                  >
+                    <Unlock className="h-4 w-4 mr-2" />
+                    Restore
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="flex-1 border-rose-200 text-rose-600 hover:bg-rose-50"
+                    onClick={() => {
+                      setShowProfileDialog(false);
+                      setShowSuspendDialog(true);
+                    }}
+                  >
+                    <Lock className="h-4 w-4 mr-2" />
+                    Suspend
+                  </Button>
+                )}
               </div>
             </div>
           )}

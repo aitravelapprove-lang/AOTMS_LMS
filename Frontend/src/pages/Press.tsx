@@ -75,7 +75,7 @@ const Press = () => {
 
                     <div className="grid lg:grid-cols-4 gap-12 mb-32">
                         {/* News Feed */}
-                        <div className="lg:col-span-3 space-y-8">
+                        <div className="lg:col-span-3 lg:col-start-1 space-y-8 max-w-5xl mx-auto">
                             <h2 className="text-2xl font-black text-slate-900 mb-8 border-b-2 border-slate-50 pb-4 inline-block">Press Releases</h2>
                             {pressReleases.map((release, idx) => (
                                 <motion.article
@@ -114,33 +114,8 @@ const Press = () => {
                             </div>
                         </div>
 
-                        {/* Media Resources */}
+                        {/* Media Resources Sidebar */}
                         <aside className="space-y-12">
-                            <div>
-                                <h2 className="text-xl font-black text-slate-900 mb-8 font-heading">Resources</h2>
-                                <div className="space-y-4">
-                                    {[
-                                        { title: "Official Logotypes", icon: ImageIcon, size: "12.4 MB" },
-                                        { title: "Campus Photos", icon: ImageIcon, size: "45.0 MB" },
-                                        { title: "Academy Video Kit", icon: Video, size: "120.2 MB" },
-                                        { title: "Brand Guidelines", icon: Newspaper, size: "5.1 MB" }
-                                    ].map((res, i) => (
-                                        <div key={i} className="group bg-white p-6 rounded-3xl border border-slate-100 hover:border-[#FD5A1A] transition-all shadow-sm shadow-slate-200/50 cursor-pointer">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 group-hover:bg-[#FD5A1A]/10 group-hover:text-[#FD5A1A] transition-all flex items-center justify-center">
-                                                    <res.icon className="w-5 h-5" />
-                                                </div>
-                                                <div className="flex-1">
-                                                    <h4 className="font-bold text-slate-800 text-xs mb-1">{res.title}</h4>
-                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{res.size}</p>
-                                                </div>
-                                                <Download className="w-4 h-4 text-slate-300 group-hover:text-[#FD5A1A]" />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
                             <div className="bg-[#0075CF] p-8 rounded-[3rem] text-white overflow-hidden relative shadow-2xl">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-16 -mt-16" />
                                 <Sparkles className="w-8 h-8 text-yellow-400 mb-6" />

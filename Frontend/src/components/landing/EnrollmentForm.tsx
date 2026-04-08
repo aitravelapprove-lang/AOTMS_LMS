@@ -52,14 +52,19 @@ const EnrollmentForm = () => {
         throw new Error('Failed to submit enrollment');
       }
 
-      toast.success("Success! Your journey with AOTMS has begun.");
+      toast({
+        title: "Success! Your journey with AOTMS has begun.",
+      });
       reset();
     } catch (error) {
       console.error("Enrollment Error:", error);
-      toast.error("Something went wrong. Please try again later.");
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again later.",
+        variant: "destructive",
+      });
     }
   };
-
   return (
     <section
       id="enroll"

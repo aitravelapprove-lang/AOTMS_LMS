@@ -533,178 +533,146 @@ export default function Auth() {
           {/* Login Form */}
           {isLogin ? (
             <motion.div
-              key="login"
+              key={loginStep === 'admin-otp' ? 'admin-otp' : 'login'}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.3 }}
             >
               {loginStep === 'admin-otp' ? (
-              /* Admin OTP Verification Step */
-              <Form {...otpForm}>
-                <form onSubmit={otpForm.handleSubmit(handleAdminOtpVerify)} className="space-y-4">
-                  <div className="text-center mb-4">
-                    <div className="w-12 h-12 bg-[#0075CF]/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <ShieldCheck className="h-6 w-6 text-[#0075CF]" />
+                /* Admin OTP Verification Step */
+                <Form {...otpForm}>
+                  <form onSubmit={otpForm.handleSubmit(handleAdminOtpVerify)} className="space-y-6">
+                    <div className="text-center mb-6">
+                      <div className="w-16 h-16 bg-[#0075CF]/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-[#0075CF]/20">
+                        <ShieldCheck className="h-8 w-8 text-[#0075CF]" />
+                      </div>
+                      <h3 className="text-xl font-black text-slate-900 tracking-tight">Admin Verification</h3>
+                      <p className="text-sm text-slate-500 font-medium mt-1">
+                        Secure access verification required
+                      </p>
                     </div>
-                    <h3 className="text-lg font-semibold">Admin Verification Required</h3>
-                    <p className="text-sm text-muted-foreground">
-                      We've sent a 6-digit OTP to<br />
-                      <span className="font-medium text-foreground">{adminLoginEmail}</span>
-                    </p>
-                  </div>
 
-                  <div className="flex justify-center gap-2">
-                    {[0, 1, 2, 3, 4, 5].map((index) => (
-                      <input
-                        key={index}
-                        ref={(el) => { otpInputRefs.current[index] = el; }}
-                        type="text"
-                        inputMode="numeric"
-                        maxLength={1}
-                        className="w-12 h-12 text-center text-lg font-semibold bg-background border-2 border-input rounded-lg focus:border-[#0075CF] focus:ring-2 focus:ring-[#0075CF]/20 outline-none transition-all"
-                        onChange={(e) => handleOtpInputChange(index, e.target.value, otpForm.setValue.bind(null, 'otp'))}
-                        onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                        value={otpForm.getValues('otp')[index] || ''}
-                      />
-                    ))}
-                  </div>
-                  <FormField
-                    control={otpForm.control}
-                    name="otp"
-                    render={({ field }) => (
-                      <FormItem className="hidden">
-                        <FormControl>
-                          <Input type="hidden" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full h-14 bg-gradient-to-r from-[#0075CF] to-[#3391D9] text-white font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-[#0075CF]/20 hover:shadow-[#0075CF]/40 transition-all duration-300 active:scale-[0.98]"
-                  >
-                    {loading ? 'Verifying...' : 'Verify & Login'}
-                  </Button>
-
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground">
-                      Didn't receive the code?{' '}
-                      <button
-                        type="button"
-                        onClick={handleAdminOtpResend}
-                        disabled={adminOtpResendTimer > 0 || loading}
-                        className="text-[#0075CF] hover:underline font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {adminOtpResendTimer > 0 ? `Resend in ${adminOtpResendTimer}s` : 'Resend OTP'}
-                      </button>
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLoginStep('credentials');
-                      otpForm.reset();
-                      setAdminLoginEmail('');
-                    }}
-                    className="w-full text-sm text-muted-foreground hover:text-foreground flex items-center justify-center gap-1"
-                  >
-                    <ArrowLeft className="h-3 w-3" />
-                    Back to login
-                  </button>
-                </form>
-              </Form>
-            ) : (
-            /* Credentials Step */
-            <Form {...loginForm}>
-              <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-6">
-                <FormField
-                  control={loginForm.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel htmlFor="login-email" className="text-sm font-medium text-foreground">Email Address</FormLabel>
-                      <FormControl>
-                        <Input
-                          id="login-email"
-                          type="email"
-                          placeholder="Enter your email"
-                          className="h-12 bg-slate-50 text-slate-900 border-slate-200 rounded-2xl focus:ring-4 focus:ring-[#0075CF]/10 focus:bg-white transition-all placeholder:text-slate-400 font-medium"
-                          autoComplete="email"
-                          {...field}
+                    <div className="flex justify-center gap-3">
+                      {[0, 1, 2, 3, 4, 5].map((index) => (
+                        <input
+                          key={index}
+                          ref={(el) => { otpInputRefs.current[index] = el; }}
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={1}
+                          className="w-12 h-14 text-center text-xl font-bold bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-[#0075CF] focus:ring-4 focus:ring-[#0075CF]/10 outline-none transition-all"
+                          onChange={(e) => handleOtpInputChange(index, e.target.value, otpForm.setValue.bind(null, 'otp'))}
+                          onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                          value={otpForm.getValues('otp')[index] || ''}
+                          onFocus={() => setIsTyping(true)}
+                          onBlur={() => setIsTyping(false)}
                         />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                      ))}
+                    </div>
 
-                {/* Phone Number */}
-                <FormField
-                  control={loginForm.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium text-foreground">Phone Number <span className="text-muted-foreground text-xs">(Optional)</span></FormLabel>
-                      <FormControl>
-                        <PhoneInput
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          countryCode={loginForm.watch('countryCode')}
-                          onCountryChange={(code) => loginForm.setValue('countryCode', code)}
-                          placeholder="9876543210"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <Button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full h-14 bg-[#0075CF] hover:bg-[#0075CF]/90 text-white font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-[#0075CF]/20 transition-all active:scale-[0.98]"
+                    >
+                      {loading ? 'Verifying...' : 'Unlock Admin Portal'}
+                    </Button>
 
-                <FormField
-                  control={loginForm.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel htmlFor="login-password" className="text-sm font-medium text-foreground">Password</FormLabel>
-                      <div className="relative">
-                        <FormControl>
-                          <Input
-                            type={showLoginPassword ? "text" : "password"}
-                            placeholder="Enter your password"
-                            className="h-12 pr-12 bg-slate-50 text-slate-900 border-slate-200 rounded-2xl focus:ring-4 focus:ring-[#0075CF]/10 focus:bg-white transition-all placeholder:text-slate-400 font-medium"
-                            autoComplete="current-password"
-                            {...field}
-                          />
-                        </FormControl>
+                    <div className="text-center">
+                      <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">
+                        No code?{' '}
                         <button
                           type="button"
-                          onClick={() => setShowLoginPassword(!showLoginPassword)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                          tabIndex={-1}
+                          onClick={handleAdminOtpResend}
+                          disabled={adminOtpResendTimer > 0 || loading}
+                          className="text-[#0075CF] hover:underline disabled:opacity-50"
                         >
-                          {showLoginPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                          {adminOtpResendTimer > 0 ? `Retry in ${adminOtpResendTimer}s` : 'Resend Code'}
                         </button>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                      </p>
+                    </div>
 
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full h-14 bg-gradient-to-r from-[#0075CF] to-[#3391D9] text-white font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-[#0075CF]/20 hover:shadow-[#0075CF]/40 transition-all duration-300 active:scale-[0.98]"
-                >
-                  {loading ? 'Signing in...' : 'Sign In'}
-                </Button>
-              </form>
-            </Form>
-          )}
-        </motion.div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLoginStep('credentials');
+                        otpForm.reset();
+                        setAdminLoginEmail('');
+                      }}
+                      className="w-full text-xs text-slate-400 hover:text-slate-600 flex items-center justify-center gap-2 font-black uppercase tracking-widest transition-colors"
+                    >
+                      <ArrowLeft className="h-3.5 w-3.5" /> Use Different Account
+                    </button>
+                  </form>
+                </Form>
+              ) : (
+                <Form {...loginForm}>
+                  <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-6">
+                    <FormField
+                      control={loginForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-bold text-slate-700 uppercase tracking-wider ml-1">Email Address</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="admin@aotms.in"
+                              className="h-14 bg-slate-50 border-slate-100 rounded-2xl focus:ring-4 focus:ring-[#0075CF]/10 transition-all font-medium text-slate-900"
+                              autoComplete="email"
+                              onFocus={() => setIsTyping(true)}
+                              onBlur={() => setIsTyping(false)}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={loginForm.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-bold text-slate-700 uppercase tracking-wider ml-1">Security Key</FormLabel>
+                          <div className="relative">
+                            <FormControl>
+                              <Input
+                                type={showLoginPassword ? "text" : "password"}
+                                placeholder="••••••••"
+                                className="h-14 pr-14 bg-slate-50 border-slate-100 rounded-2xl focus:ring-4 focus:ring-[#0075CF]/10 transition-all font-medium text-slate-900"
+                                autoComplete="current-password"
+                                onFocus={() => setIsTyping(true)}
+                                onBlur={() => setIsTyping(false)}
+                                {...field}
+                              />
+                            </FormControl>
+                            <button
+                              type="button"
+                              onClick={() => setShowLoginPassword(!showLoginPassword)}
+                              className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors"
+                              tabIndex={-1}
+                            >
+                              {showLoginPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                            </button>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <Button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full h-14 bg-[#0075CF] hover:bg-[#0075CF]/90 text-white font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-[#0075CF]/20 transition-all active:scale-[0.98]"
+                    >
+                      {loading ? "Authenticating..." : "Sign In to Portal"}
+                    </Button>
+                  </form>
+                </Form>
+              )}
+            </motion.div>
           ) : (
             <motion.div
               key="register"

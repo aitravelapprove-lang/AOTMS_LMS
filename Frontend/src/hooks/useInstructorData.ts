@@ -101,6 +101,29 @@ export interface CourseAnnouncement {
   created_at: string | null;
 }
 
+export interface CourseRating {
+  id: string;
+  course_id: string;
+  user_id: string | { full_name?: string; avatar_url?: string };
+  rating: number;
+  review: string | null;
+  created_at: string;
+  course_title?: string;
+  user_name?: string;
+  user_avatar?: string | null;
+}
+
+export interface InstructorStats {
+  totalStudents: number;
+  totalCourses: number;
+  activeCourses: number;
+  enrolledCourses: number;
+  rating: number;
+  revenue: number;
+  completionRate: number;
+  monthlyProgress: Array<{ month: string; value: number }>;
+}
+
 export interface Playlist {
   id: string;
   youtube_url: string;
@@ -163,17 +186,6 @@ export interface Submission {
   student_name?: string;
 }
 
-export interface CourseRating {
-  id: string;
-  course_id: string;
-  user_id: string;
-  rating: number;
-  review: string;
-  created_at: string;
-  course_title?: string;
-  user_name?: string;
-  user_avatar?: string;
-}
 
 
 export function useInstructorCourses() {
@@ -183,7 +195,7 @@ export function useInstructorCourses() {
     queryKey: ['instructor-courses', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      return fetchWithAuth('/instructor/courses');
+      return fetchWithAuth<Course[]>('/instructor/courses');
     },
     enabled: !!user?.id && (userRole === 'instructor' || userRole === 'admin' || userRole === 'manager'),
     staleTime: 1000 * 30, // 30 seconds to stay fresh
@@ -331,8 +343,8 @@ export function useUpdateTopic() {
         body: JSON.stringify(updates)
       });
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['course-topics', data.course_id] });
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['course-topics', (variables as { course_id: string }).course_id] });
       toast({ title: 'Topic updated successfully' });
     },
     onError: (error: Error) => {
@@ -346,12 +358,11 @@ export function useDeleteTopic() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ id, courseId }: { id: string; courseId: string }) => {
+    mutationFn: async ({ id }: { id: string; course_id: string }) => {
       await fetchWithAuth(`/topics/${id}`, { method: 'DELETE' });
-      return courseId;
     },
-    onSuccess: (courseId) => {
-      queryClient.invalidateQueries({ queryKey: ['course-topics', courseId] });
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['course-topics', variables.course_id] });
       toast({ title: 'Topic deleted successfully' });
     },
     onError: (error: Error) => {
@@ -359,6 +370,7 @@ export function useDeleteTopic() {
     },
   });
 }
+
 
 export function useCreateVideo() {
   const queryClient = useQueryClient();
@@ -708,8 +720,8 @@ export function usePlaylistAnalytics(playlistId: string | null) {
     queryFn: async () => {
       if (!playlistId) return null;
 
-      const videos = await fetchWithAuth(`/data/playlist_videos?playlist_id=${playlistId}`);
-      const enrollments = await fetchWithAuth(`/data/playlist_enrollments?playlist_id=${playlistId}`);
+      const videos = await fetchWithAuth<any[]>(`/data/playlist_videos?playlist_id=${playlistId}`);
+      const enrollments = await fetchWithAuth<any[]>(`/data/playlist_enrollments?playlist_id=${playlistId}`);
 
       const totalVideos = videos.length;
       const totalDurationMinutes = videos.reduce((acc: number, v: { duration_minutes?: number }) => acc + (v.duration_minutes || 0), 0);
@@ -759,7 +771,7 @@ export function useVideoAnalytics(videoId: string | null) {
     queryFn: async () => {
       if (!videoId) return null;
 
-      const watchData = await fetchWithAuth(`/data/video_watch_events?video_id=${videoId}`);
+      const watchData = await fetchWithAuth<any[]>(`/data/video_watch_events?video_id=${videoId}`);
 
       const totalViews = watchData.length;
       const averageWatchTimeSeconds = watchData.length > 0
@@ -1168,14 +1180,14 @@ export function useDoubts(playlistId?: string | null) {
     queryFn: async () => {
       if (!user?.id) return [];
 
-      const playlists = await fetchWithAuth(`/data/playlists?created_by=${user.id}`);
+      const playlists = await fetchWithAuth<Playlist[]>(`/data/playlists?created_by=${user.id}`);
       const playlistIds = playlists.map((p: Playlist) => p.id);
 
       if (playlistIds.length === 0) return [];
 
       const allDoubts = await Promise.all(
         playlistIds.map(async (pid: string) => {
-          const doubts = await fetchWithAuth(`/data/doubts?playlist_id=${pid}&order=created_at.desc`);
+          const doubts = await fetchWithAuth<Doubt[]>(`/data/doubts?playlist_id=${pid}&order=created_at.desc`);
           return doubts;
         })
       );
@@ -1184,7 +1196,7 @@ export function useDoubts(playlistId?: string | null) {
 
       const doubtsWithReplies = await Promise.all(
         doubts.map(async (doubt: Doubt) => {
-          const replies = await fetchWithAuth(`/data/doubt_replies?doubt_id=${doubt.id}&order=created_at.asc`);
+          const replies = await fetchWithAuth<DoubtReply[]>(`/data/doubt_replies?doubt_id=${doubt.id}&order=created_at.asc`);
           return { ...doubt, replies };
         })
       );
@@ -1293,7 +1305,7 @@ export function useGrantAccess() {
   return useMutation({
     mutationFn: async ({ courseId, studentId }: { courseId: string, studentId: string }) => {
       // First, check if the student profile exists (validation)
-      const profiles = await fetchWithAuth(`/data/profiles?id=eq.${studentId}`);
+      const profiles = await fetchWithAuth<any[]>(`/data/profiles?id=eq.${studentId}`);
       if (!profiles || profiles.length === 0) {
         throw new Error('Student UUID not found. Please verify the ID.');
       }
@@ -1333,7 +1345,7 @@ export function useStudentLookup(studentId: string) {
 
       // Fetch profile and user details via backend
       // We'll use a specific endpoint or generic data endpoint
-      const profiles = await fetchWithAuth(`/data/profiles?id=eq.${studentId}`);
+      const profiles = await fetchWithAuth<any[]>(`/data/profiles?id=eq.${studentId}`);
       if (!profiles || profiles.length === 0) {
         throw new Error('Student not found');
       }
@@ -1382,7 +1394,7 @@ export function useCreateLiveClass() {
       if (!user?.id) throw new Error('You must be logged in to schedule meetings');
 
       // 1. Create Zoom Meeting via our specific backend endpoint
-      const zoomData = await fetchWithAuth('/zoom/meetings', {
+      const zoomData = await fetchWithAuth<{ meetingId: number | string; joinUrl: string; startUrl: string; password?: string }>('/zoom/meetings', {
         method: 'POST',
         body: JSON.stringify({
           topic: payload.topic,
@@ -1451,14 +1463,14 @@ export function useInstructorRatings() {
 
   return useQuery({
     queryKey: ['instructor-ratings', user?.id],
-    queryFn: async () => {
+    queryFn: async (): Promise<CourseRating[]> => {
       if (!courses || courses.length === 0) return [];
       const courseIds = [...courses.map((c: Course) => c.id), 'GENERAL'].join(',');
       
-      const ratings = await fetchWithAuth(`/data/course_ratings?course_id=in.(${courseIds})&order=created_at.desc`) as any[];
+      const ratings = await fetchWithAuth<any[]>(`/data/course_ratings?course_id=in.(${courseIds})&order=created_at.desc`) || [];
       
-      const enriched = ratings.map((r: any) => {
-        const course = courses.find((c: Course) => c.id === r.course_id);
+      const enriched = (ratings as any[]).map((r: any) => {
+        const course = (courses as Course[]).find((c: Course) => c.id === r.course_id);
         const userData = typeof r.user_id === 'object' ? r.user_id : {};
         
         return {

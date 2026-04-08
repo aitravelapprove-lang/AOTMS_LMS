@@ -1,0 +1,469 @@
+import { useState, useEffect, useCallback } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  BookOpen,
+  Search,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Users,
+  Layers,
+  ShieldCheck,
+  Plus,
+  ArrowRight,
+  Check,
+  MoreVertical,
+  Trash2
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { fetchWithAuth } from "@/lib/api";
+import { CourseBuilder } from "@/components/instructor/courses/CourseBuilder";
+import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
+
+interface Course {
+  id: string;
+  title: string;
+  description: string | null;
+  instructor_id: string | null;
+  instructor_name: string | null;
+  instructor_email: string | null;
+  instructor_avatar?: string | null;
+  status:
+    | "pending"
+    | "approved"
+    | "rejected"
+    | "published"
+    | "draft"
+    | "disabled";
+  category: string | null;
+  thumbnail_url: string | null;
+  image?: string | null;
+  submitted_at?: string;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+  rejection_reason: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Stats {
+  total: number;
+  pending: number;
+  approved: number;
+  rejected: number;
+  draft: number;
+}
+
+export default function InstructorAccess() {
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [processing, setProcessing] = useState(false);
+  const [stats, setStats] = useState<Stats>({
+    total: 0,
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+    draft: 0,
+  });
+  const [buildingCourse, setBuildingCourse] = useState<Course | null>(null);
+
+  const fetchCourses = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await fetchWithAuth("/admin/courses-with-instructors");
+      const coursesData = (data as Course[]).map((c: Course) => ({
+        ...c,
+        image: c.image || c.thumbnail_url,
+      }));
+
+      setCourses(coursesData);
+
+      const s: Stats = {
+        total: 0,
+        pending: 0,
+        approved: 0,
+        rejected: 0,
+        draft: 0,
+      };
+      coursesData.forEach((c: Course) => {
+        s.total++;
+        const status = c.status?.toLowerCase();
+        if (status === "pending") s.pending++;
+        else if (status === "approved" || status === "published") s.approved++;
+        else if (status === "rejected") s.rejected++;
+        else s.draft++;
+      });
+      setStats(s);
+    } catch (err) {
+      console.error("Failed to fetch courses:", err);
+      toast.error("Failed to load requests");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCourses();
+  }, [fetchCourses]);
+
+  const handleApprove = async (courseId: string, title: string) => {
+    setProcessing(true);
+    try {
+      await fetchWithAuth("/admin/approve-course", {
+        method: "PUT",
+        body: JSON.stringify({ courseId, status: "approved" }),
+      });
+      toast.success(`Access granted for: ${title}`);
+      fetchCourses();
+    } catch (err) {
+      console.error("Failed to approve:", err);
+      toast.error("Failed to grant access");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleDeleteCourse = async (courseId: string, title: string) => {
+    if (!confirm(`Are you sure you want to delete "${title}"? This will remove it from the database permanently.`)) return;
+    
+    setProcessing(true);
+    try {
+      await fetchWithAuth(`/data/courses/${courseId}`, {
+        method: 'DELETE'
+      });
+      toast.success(`Node purged: ${title}`);
+      fetchCourses();
+    } catch (err) {
+      console.error("Failed to delete:", err);
+      toast.error("Failed to delete course node");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!selectedCourse || !rejectReason) return;
+    setProcessing(true);
+    try {
+      await fetchWithAuth("/admin/approve-course", {
+        method: "PUT",
+        body: JSON.stringify({
+          courseId: selectedCourse.id,
+          status: "rejected",
+          rejectionReason: rejectReason,
+        }),
+      });
+      toast.info(`Request rejected for: ${selectedCourse.title}`);
+      setShowRejectDialog(false);
+      setSelectedCourse(null);
+      setRejectReason("");
+      fetchCourses();
+    } catch (err) {
+      console.error("Failed to reject:", err);
+      toast.error("Failed to process rejection");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const filteredCourses = courses.filter((course) => {
+    const matchesSearch =
+      course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      course.instructor_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      course.instructor_email?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === "all" || course.status?.toLowerCase() === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  if (buildingCourse) {
+    return <CourseBuilder course={buildingCourse as any} onBack={() => setBuildingCourse(null)} />;
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Primary Header - Grant Access Style */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center shadow-sm">
+                <ShieldCheck className="h-6 w-6 text-primary" />
+            </div>
+            <h2 className="text-3xl font-black text-slate-900 tracking-tight">Instructor Access</h2>
+          </div>
+          <p className="text-[13px] font-medium text-slate-500 ml-13 uppercase tracking-[0.2em]">Manage curriculum publishing permissions</p>
+        </div>
+        
+        <div className="flex items-center gap-3 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="flex -space-x-3 px-2">
+                {courses.slice(0, 4).map((c, i) => (
+                    <Avatar key={i} className="h-8 w-8 border-2 border-white ring-1 ring-slate-100 italic">
+                        <AvatarImage src={c.instructor_avatar || ""} />
+                        <AvatarFallback className="bg-slate-100 text-[10px] font-bold">{c.instructor_name?.[0]}</AvatarFallback>
+                    </Avatar>
+                ))}
+            </div>
+            <div className="h-4 w-px bg-slate-200 mx-1" />
+            <Badge variant="secondary" className="px-3 py-1 bg-primary/5 text-primary border-none font-bold">
+                {stats.pending} Pending Request{stats.pending !== 1 && 's'}
+            </Badge>
+        </div>
+      </div>
+
+      {/* Grid Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[
+            { label: "Total Requests", count: stats.total, color: "bg-slate-900", icon: Layers, desc: "Platform curriculum nodes" },
+            { label: "Awaiting Sync", count: stats.pending, color: "bg-amber-500", icon: Clock, desc: "Verification required", active: stats.pending > 0 },
+            { label: "Authorized", count: stats.approved, color: "bg-emerald-600", icon: CheckCircle, desc: "Active publishers" },
+            { label: "Root Access", count: stats.total, color: "bg-rose-500", icon: ShieldCheck, desc: "System orchestrators", isHigh: true },
+          ].map((role) => (
+            <Card key={role.label} className={`border-none shadow-xl shadow-slate-200/50 rounded-[2rem] overflow-hidden group transition-all duration-500 hover:-translate-y-2 ${role.isHigh ? 'bg-primary shadow-primary/30' : 'bg-white'}`}>
+              <CardContent className="p-8">
+                <div className="flex justify-between items-start mb-8">
+                  <div className={`h-12 w-12 rounded-2xl flex items-center justify-center shadow-lg transition-transform duration-500 group-hover:rotate-12 ${role.isHigh ? 'bg-white/20' : 'bg-slate-50'}`}>
+                    <role.icon className={`h-6 w-6 ${role.isHigh ? 'text-white' : 'text-slate-600'}`} />
+                  </div>
+                  {role.active && <div className={`h-2 w-2 rounded-full animate-ping bg-amber-500/60`} />}
+                </div>
+                
+                <div className="space-y-1">
+                  <h5 className={`text-[10px] font-black uppercase tracking-[0.2em] ${role.isHigh ? 'text-white/60' : 'text-slate-400'}`}>
+                    {role.label}
+                  </h5>
+                  <div className="flex items-baseline gap-2">
+                    <span className={`text-3xl font-black tracking-tighter ${role.isHigh ? 'text-white' : 'text-slate-900'}`}>
+                      {role.count}
+                    </span>
+                    <span className={`text-[11px] font-bold ${role.isHigh ? 'text-white/40' : 'text-slate-300'}`}>Nodes</span>
+                  </div>
+                  <p className={`text-[11px] font-medium pt-3 border-t mt-4 border-white/10 ${role.isHigh ? 'text-white/60' : 'text-slate-400 border-slate-50'}`}>
+                    {role.desc}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+      </div>
+
+      {/* Main Filter & Horizontal Grid Section */}
+      <Card className="border-none shadow-2xl shadow-slate-200/40 rounded-[2.5rem] overflow-hidden bg-white/80 backdrop-blur-md">
+        <CardHeader className="bg-slate-50/50 border-b border-slate-100 p-8">
+           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="space-y-1">
+                  <h3 className="text-xl font-black text-slate-800 tracking-tight">Access Registry</h3>
+                  <p className="text-xs font-medium text-slate-500">Filter and manage instructor curriculum proposals</p>
+              </div>
+              <div className="flex flex-col sm:flex-row items-center gap-4">
+                  <div className="relative w-full sm:w-[350px]">
+                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input
+                        placeholder="Search proposals or instructors..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-11 h-12 rounded-2xl bg-white border-slate-200/60 focus:ring-2 focus:ring-primary/20 transition-all font-bold placeholder:font-medium placeholder:text-slate-400 shadow-sm"
+                      />
+                  </div>
+                  <div className="flex items-center gap-2 bg-white/50 p-1 rounded-2xl border border-slate-200/60 shadow-sm overflow-x-auto scrollbar-none">
+                      {["all", "pending", "approved", "rejected"].map((s) => (
+                          <Button
+                            key={s}
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setStatusFilter(s)}
+                            className={`capitalize rounded-xl px-5 h-9 text-[10px] font-black tracking-widest transition-all ${
+                                statusFilter === s 
+                                ? "bg-slate-900 text-white shadow-lg shadow-slate-900/20" 
+                                : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                            }`}
+                          >
+                             {s}
+                          </Button>
+                      ))}
+                  </div>
+              </div>
+           </div>
+        </CardHeader>
+        <CardContent className="p-8">
+          {loading ? (
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div key={i} className="h-24 rounded-2xl bg-slate-50 animate-pulse border border-slate-100" />
+                ))}
+             </div>
+          ) : filteredCourses.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 text-center">
+                 <div className="h-20 w-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mb-6 border border-slate-100 shadow-inner">
+                    <BookOpen className="h-10 w-10 text-slate-200" />
+                 </div>
+                 <h3 className="text-xl font-black text-slate-400 uppercase tracking-widest">No Requests Logged</h3>
+                 <p className="text-sm text-slate-300 font-medium max-w-xs mt-3 uppercase tracking-tight">The platform registry is currently clear of pending proposals.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <AnimatePresence mode="popLayout">
+                    {filteredCourses.map((course) => (
+                        <motion.div
+                            key={course.id}
+                            layout
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="group flex items-center justify-between p-4 rounded-2xl border border-slate-200 bg-white hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 relative overflow-hidden"
+                        >
+                            <div className="flex items-center gap-4 min-w-0 flex-1">
+                                <div className="relative shrink-0">
+                                    <Avatar className="h-12 w-12 border-2 border-slate-50 shadow-sm rounded-full overflow-hidden transition-transform duration-500 group-hover:scale-105">
+                                        <AvatarImage src={course.instructor_avatar || ""} />
+                                        <AvatarFallback className="bg-primary/5 text-primary text-sm font-black">{course.instructor_name?.[0]}</AvatarFallback>
+                                    </Avatar>
+                                    <div className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white flex items-center justify-center shadow-sm ${
+                                        course.status === 'pending' ? 'bg-amber-500' : 
+                                        course.status === 'approved' ? 'bg-emerald-500' : 'bg-rose-500'
+                                    }`}>
+                                        <div className="h-1 w-1 bg-white rounded-full animate-pulse" />
+                                    </div>
+                                </div>
+                                
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-0.5">
+                                        <h4 className="text-[14px] font-black text-slate-900 group-hover:text-primary transition-colors truncate tracking-tight">{course.instructor_name}</h4>
+                                        <Badge className={`text-[8px] h-4 px-1.5 rounded-md uppercase font-black tracking-tight border-none shadow-none ${
+                                            course.status === 'approved' ? 'bg-emerald-500 text-white' :
+                                            course.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                                            'bg-rose-50 text-rose-600'
+                                        }`}>
+                                            {course.status === 'pending' ? 'PENDING' : 'INSTRUCTOR'}
+                                        </Badge>
+                                    </div>
+                                    <p className="text-[11px] font-medium text-slate-500 truncate opacity-80 mb-1 leading-none">
+                                        {course.instructor_email}
+                                    </p>
+                                    <div className="flex items-center gap-1.5 pt-0.5">
+                                        <div className="px-2 py-0.5 bg-slate-50 rounded-md border border-slate-100 flex items-center gap-1 max-w-full">
+                                            <BookOpen className="h-2.5 w-2.5 text-slate-300 shrink-0" />
+                                            <span className="text-[9px] font-bold text-slate-400 truncate uppercase tracking-tighter">{course.title}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 ml-4 shrink-0">
+                                {course.status === 'pending' ? (
+                                    <Button 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleApprove(course.id, course.title);
+                                        }}
+                                        disabled={processing}
+                                        className="h-9 px-4 gap-2 bg-primary/5 text-primary hover:bg-primary hover:text-white border border-primary/10 rounded-xl transition-all font-bold text-xs group/btn"
+                                    >
+                                        <Plus className="h-3.5 w-3.5" />
+                                        <span>Access</span>
+                                        <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover/btn:translate-x-1" />
+                                    </Button>
+                                ) : (
+                                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-400 border border-slate-100 rounded-xl font-bold text-[10px] opacity-80">
+                                        <Check className="h-3.5 w-3.5 text-emerald-500" />
+                                        <span>Verified</span>
+                                    </div>
+                                )}
+                                
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-slate-400 hover:text-slate-900 transition-colors">
+                                            <MoreVertical className="h-4.5 w-4.5" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-48 rounded-xl">
+                                        <DropdownMenuItem 
+                                            className="text-rose-600 focus:text-rose-600 focus:bg-rose-50 font-bold gap-2 cursor-pointer"
+                                            onClick={() => handleDeleteCourse(course.id, course.title)}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                            Delete Proposal
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Reject Dialog */}
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent className="max-w-md bg-white border border-slate-200 shadow-2xl rounded-[2rem]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-rose-50 flex items-center justify-center">
+                    <XCircle className="h-5 w-5 text-rose-600" />
+                </div>
+                Reject Proposal
+            </DialogTitle>
+            <DialogDescription>
+              Please provide formal justification for rejecting "{selectedCourse?.title}"
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-6">
+            <Textarea
+              placeholder="Detailed reason for rejection..."
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              rows={4}
+              className="rounded-2xl border-slate-200 focus:ring-rose-500/20"
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowRejectDialog(false)}
+              className="rounded-xl"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleReject}
+              disabled={!rejectReason || processing}
+              className="rounded-xl bg-rose-600 hover:bg-rose-700 font-bold px-8 shadow-lg shadow-rose-200"
+            >
+              Confirm Rejection
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

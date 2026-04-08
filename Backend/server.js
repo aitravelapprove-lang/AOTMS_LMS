@@ -2606,6 +2606,8 @@ app.get('/api/courses/enrollments', authenticateToken, requireAdminOrManager, as
     }
 });
 
+// --- File Upload Logic (Cloudinary & S3) ---
+
 app.post('/api/upload', authenticateToken, upload.single('file'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
@@ -2621,6 +2623,42 @@ app.post('/api/upload', authenticateToken, upload.single('file'), async (req, re
         res.json({ url: result.secure_url, public_id: result.public_id });
     } catch (err) {
         handleError(res, err, 'upload-file');
+    }
+});
+
+app.post('/api/upload/course-videos', authenticateToken, upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+        const fileName = `courses/videos/${Date.now()}_${req.file.originalname.replace(/\s+/g, '_')}`;
+        const s3Key = await uploadFile(req.file.buffer, fileName, req.file.mimetype);
+        const signedUrl = await generateViewUrl(s3Key);
+        res.json({ url: signedUrl, key: s3Key });
+    } catch (err) {
+        handleError(res, err, 'upload-video');
+    }
+});
+
+app.post('/api/upload/course-resources', authenticateToken, upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+        const fileName = `courses/resources/${Date.now()}_${req.file.originalname.replace(/\s+/g, '_')}`;
+        const s3Key = await uploadFile(req.file.buffer, fileName, req.file.mimetype);
+        const signedUrl = await generateViewUrl(s3Key);
+        res.json({ url: signedUrl, key: s3Key });
+    } catch (err) {
+        handleError(res, err, 'upload-resource');
+    }
+});
+
+app.post('/api/upload/live-posters', authenticateToken, upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+        const fileName = `live-posters/${Date.now()}_${req.file.originalname.replace(/\s+/g, '_')}`;
+        const s3Key = await uploadFile(req.file.buffer, fileName, req.file.mimetype);
+        const publicProxyUrl = `${process.env.VITE_API_URL || 'http://localhost:5000/api'}/s3/public/${s3Key}`;
+        res.json({ url: publicProxyUrl, key: s3Key });
+    } catch (err) {
+        handleError(res, err, 'upload-live-poster');
     }
 });
 
@@ -4537,6 +4575,23 @@ app.delete('/api/data/:table/:id', authenticateToken, async (req, res) => {
             } else {
                 // Students or others
                 return res.status(403).json({ error: 'Unauthorized to delete' });
+            }
+        }
+
+        // Special handling for live classes: Delete from Zoom API first
+        if (table === 'live_classes') {
+            try {
+                const liveClass = await Model.findById(id);
+                if (liveClass && liveClass.meeting_id) {
+                    const accessToken = await getZoomAccessToken();
+                    await axios.delete(`https://api.zoom.us/v2/meetings/${liveClass.meeting_id}`, {
+                        headers: { Authorization: `Bearer ${accessToken}` }
+                    });
+                    console.log(`[Zoom] Deleted meeting ${liveClass.meeting_id} for live class ${id}`);
+                }
+            } catch (zoomErr) {
+                // Log but don't block DB deletion if Zoom meeting is already gone or API fails
+                console.error(`[Zoom Delete Error] Failed to delete meeting for ${id}:`, zoomErr.message);
             }
         }
 

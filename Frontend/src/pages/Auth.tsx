@@ -930,6 +930,49 @@ export default function Auth() {
                         )}
                       />
 
+                      <FormField
+                        control={detailsForm.control}
+                        name="confirmPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-semibold">
+                              Confirm Password
+                            </FormLabel>
+                            <div className="relative">
+                              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 z-10" />
+                              <FormControl>
+                                <Input
+                                  type={
+                                    showConfirmPassword ? "text" : "password"
+                                  }
+                                  placeholder="••••••••"
+                                  className="pl-10 pr-10 h-11 bg-slate-50 border-slate-200 rounded-xl focus:ring-4 focus:ring-[#0075CF]/10 transition-all font-medium"
+                                  autoComplete="new-password"
+                                  onFocus={() => setIsTyping(true)}
+                                  onBlur={() => setIsTyping(false)}
+                                  {...field}
+                                />
+                              </FormControl>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setShowConfirmPassword(!showConfirmPassword)
+                                }
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 z-10"
+                                tabIndex={-1}
+                              >
+                                {showConfirmPassword ? (
+                                  <EyeOff className="h-4 w-4" />
+                                ) : (
+                                  <Eye className="h-4 w-4" />
+                                )}
+                              </button>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
                       {watchPassword && watchPassword.length > 0 && (
                         <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 grid grid-cols-2 gap-1.5">
                           <PasswordRequirement

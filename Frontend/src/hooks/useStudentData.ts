@@ -198,6 +198,8 @@ export interface LiveClass {
     status: string;
     meeting_id?: string;
     meeting_password?: string;
+    description?: string;
+    poster_url?: string;
 }
 
 export interface StudentCourse extends Course {

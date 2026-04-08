@@ -36,6 +36,7 @@ export interface LiveClass {
   meeting_url: string | null;
   start_url: string | null;
   meeting_password?: string;
+  poster_url?: string | null;
   status: string;
 }
 
@@ -599,6 +600,28 @@ export async function uploadResource(file: File, courseId: string): Promise<stri
   return data.url;
 }
 
+export async function uploadLivePoster(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const token = localStorage.getItem('access_token');
+  const res = await fetch(`${API_URL}/upload/live-posters`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: formData
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || 'Poster upload failed');
+  }
+
+  const data = await res.json();
+  return data.url;
+}
+
 export function useInstructorStats() {
   const { data: courses } = useInstructorCourses();
   const { user } = useAuth();
@@ -606,18 +629,16 @@ export function useInstructorStats() {
   return useQuery({
     queryKey: ['instructor-stats', user?.id, courses?.length],
     queryFn: async () => {
-      if (!courses || courses.length === 0) {
+      if (!courses || (courses as any[]).length === 0) {
         return { totalStudents: 0, contentItems: 0, avgCompletion: 0 };
       }
 
-      const courseIds = courses.map((c: Course) => c.id);
+      const courseIds = (courses as any[]).map((c: Course) => c.id);
       if (courseIds.length === 0) return { totalStudents: 0, contentItems: 0, avgCompletion: 0 };
       
       const courseIdsInFormat = courseIds.join(',');
 
       // Fetch only enrollments/videos/resources for THIS instructor's courses
-      // Note: "in" query in Firestore has a limit of documents (usually 30).
-      // We chunk if needed or use separate calls, but for now we assume < 30 courses.
       const [enrollments, allVideos, allResources] = await Promise.all([
         fetchWithAuth(`/data/course_enrollments?course_id=in.(${courseIdsInFormat})`) as Promise<any[]>,
         fetchWithAuth(`/data/course_videos?course_id=in.(${courseIdsInFormat})`) as Promise<any[]>,
@@ -637,7 +658,7 @@ export function useInstructorStats() {
         avgCompletion
       };
     },
-    enabled: !!courses && courses.length > 0 && !!user?.id,
+    enabled: !!courses && (courses as any[]).length > 0 && !!user?.id,
     staleTime: 60000 * 5, // 5 minutes cache
   });
 }
@@ -697,20 +718,19 @@ export function usePlaylistAnalytics(playlistId: string | null) {
     queryFn: async () => {
       if (!playlistId) return null;
 
-      const videos = await fetchWithAuth(`/data/playlist_videos?playlist_id=${playlistId}`);
-      const enrollments = await fetchWithAuth(`/data/playlist_enrollments?playlist_id=${playlistId}`);
+      const videos = await fetchWithAuth(`/data/playlist_videos?playlist_id=${playlistId}`) as any[];
+      const enrollments = await fetchWithAuth(`/data/playlist_enrollments?playlist_id=${playlistId}`) as any[];
 
       const totalVideos = videos.length;
-      const totalDurationMinutes = videos.reduce((acc: number, v: { duration_minutes?: number }) => acc + (v.duration_minutes || 0), 0);
       const enrolledStudents = enrollments.length;
       const completionRate = enrollments.length > 0
-        ? Math.round(enrollments.reduce((acc: number, e: { progress_percentage?: number }) => acc + (e.progress_percentage || 0), 0) / enrollments.length)
+        ? Math.round(enrollments.reduce((acc: number, e: any) => acc + (e.progress_percentage || 0), 0) / enrollments.length)
         : 0;
 
       return {
         playlistId,
         totalVideos,
-        totalDurationMinutes,
+        totalDurationMinutes: 0,
         enrolledStudents,
         completionRate
       } as PlaylistAnalytics;
@@ -1355,7 +1375,8 @@ export function useInstructorLiveClasses() {
     queryKey: ['instructor-live-classes', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      return fetchWithAuth(`/data/live_classes?instructor_id=eq.${user.id}&order=scheduled_at.desc`);
+      const data = await fetchWithAuth(`/data/live_classes?instructor_id=eq.${user.id}&order=scheduled_at.desc`) as LiveClass[];
+      return data;
     },
     enabled: !!user?.id && (userRole === 'instructor' || userRole === 'admin' || userRole === 'manager'),
   });
@@ -1367,7 +1388,7 @@ export function useCreateLiveClass() {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (payload: { topic: string; startTime: string; duration: number; agenda: string; courseId?: string }) => {
+    mutationFn: async (payload: { topic: string; startTime: string; duration: number; agenda: string; courseId?: string; poster_url?: string }) => {
       if (!user?.id) throw new Error('You must be logged in to schedule meetings');
 
       // 1. Create Zoom Meeting via our specific backend endpoint
@@ -1379,7 +1400,7 @@ export function useCreateLiveClass() {
           duration: payload.duration,
           agenda: payload.agenda
         })
-      });
+      }) as { meetingId: number; joinUrl: string; startUrl: string; password?: string };
 
       // 2. Save meeting metadata to our persistent live_classes collection in Firestore via Backend
       return fetchWithAuth('/data/live_classes', {
@@ -1395,6 +1416,7 @@ export function useCreateLiveClass() {
           meeting_url: zoomData.joinUrl,
           start_url: zoomData.startUrl,
           meeting_password: zoomData.password,
+          poster_url: payload.poster_url || null,
           status: 'scheduled'
         })
       });
@@ -1441,13 +1463,13 @@ export function useInstructorRatings() {
   return useQuery({
     queryKey: ['instructor-ratings', user?.id],
     queryFn: async () => {
-      if (!courses || courses.length === 0) return [];
-      const courseIds = [...courses.map((c: Course) => c.id), 'GENERAL'].join(',');
+      if (!courses || (courses as any[]).length === 0) return [];
+      const courseIds = [...(courses as any[]).map((c: Course) => c.id), 'GENERAL'].join(',');
       
       const ratings = await fetchWithAuth(`/data/course_ratings?course_id=in.(${courseIds})&order=created_at.desc`) as any[];
       
       const enriched = ratings.map((r: any) => {
-        const course = courses.find((c: Course) => c.id === r.course_id);
+        const course = (courses as any[]).find((c: Course) => c.id === r.course_id);
         const userData = typeof r.user_id === 'object' ? r.user_id : {};
         
         return {
@@ -1461,7 +1483,7 @@ export function useInstructorRatings() {
 
       return enriched as CourseRating[];
     },
-    enabled: !!courses && courses.length > 0 && !!user?.id,
+    enabled: !!courses && (courses as any[]).length > 0 && !!user?.id,
     staleTime: 60000 * 5,
   });
 }

@@ -68,7 +68,7 @@ export function AdminSidebar() {
   return (
     <Sidebar
       collapsible="icon"
-      className="border-r border-slate-200/60 !bg-white/70 backdrop-blur-xl font-sans"
+      className="border-r-4 border-white bg-white font-sans"
     >
       <SidebarHeader className="h-20 flex items-center justify-center px-4 group-data-[collapsible=icon]:px-0 border-b border-slate-200/60">
         <Link
@@ -88,7 +88,7 @@ export function AdminSidebar() {
         </Link>
       </SidebarHeader>
 
-      <SidebarContent className="px-3 group-data-[collapsible=icon]:px-2 py-6 space-y-6 custom-scrollbar">
+      <SidebarContent className="px-3 group-data-[collapsible=icon]:px-2 py-6 space-y-6 admin-scrollbar">
         {/* Main Section */}
         <SidebarGroup>
           <SidebarGroupLabel className="px-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">

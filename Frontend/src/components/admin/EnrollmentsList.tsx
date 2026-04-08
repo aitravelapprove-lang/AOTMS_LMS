@@ -432,7 +432,7 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                  ))}
               </div>
 
-              <div className="hidden lg:block overflow-x-auto custom-scrollbar-horizontal rounded-xl border border-slate-200/60 shadow-sm">
+              <div className="hidden lg:block overflow-x-auto admin-scrollbar-horizontal rounded-xl border border-slate-200/60 shadow-sm">
                 <table className="w-full">
                   <thead className="bg-slate-50/80 border-b border-slate-200/60">
                     <tr>

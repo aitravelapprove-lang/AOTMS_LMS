@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, Upload, Github, Briefcase, Copy, CheckCircle, ExternalLink } from 'lucide-react';
+import { Loader2, Save, Upload, Github, Briefcase, Copy, CheckCircle, ExternalLink, Linkedin } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { useRef } from 'react';
 
@@ -22,6 +22,7 @@ interface ProfileData {
     skills: string[];
     role?: string;
     github_url?: string | null;
+    linkedin_url?: string | null;
     resume_url?: string | null;
 }
 
@@ -46,6 +47,7 @@ export function UserProfile() {
         location: '',
         skills: [],
         github_url: '',
+        linkedin_url: '',
         resume_url: ''
     });
 
@@ -77,6 +79,7 @@ export function UserProfile() {
                 location: data?.location || '',
                 skills: data?.skills || [],
                 github_url: data?.github_url || '',
+                linkedin_url: data?.linkedin_url || '',
                 resume_url: data?.resume_url || ''
             });
         } catch (error: unknown) {
@@ -109,6 +112,7 @@ export function UserProfile() {
                 full_name: profile.full_name,
                 avatar_url: profile.avatar_url,
                 github_url: profile.github_url,
+                linkedin_url: profile.linkedin_url,
                 resume_url: profile.resume_url,
                 // Add extra fields if schema supports them
                 // bio: profile.bio,
@@ -366,6 +370,20 @@ export function UserProfile() {
                                         disabled
                                         className="bg-muted"
                                     />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="linkedin">LinkedIn Profile URL</Label>
+                                    <div className="flex gap-2">
+                                        <div className="flex bg-slate-100 border border-slate-200 rounded-lg px-3 items-center justify-center">
+                                            <Linkedin className="h-4 w-4 text-blue-600" />
+                                        </div>
+                                        <Input
+                                            id="linkedin"
+                                            placeholder="https://linkedin.com/in/username"
+                                            value={profile.linkedin_url || ''}
+                                            onChange={(e) => setProfile({ ...profile, linkedin_url: e.target.value })}
+                                        />
+                                    </div>
                                 </div>
                                 {userRole === 'student' && (
                                     <>

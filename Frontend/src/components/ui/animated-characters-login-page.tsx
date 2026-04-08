@@ -243,7 +243,7 @@ export function AnimatedCharactersLogin({
   const [isBlackBlinking, setIsBlackBlinking] = useState(false);
   const [isOrangeBlinking, setIsOrangeBlinking] = useState(false);
   const [isYellowBlinking, setIsYellowBlinking] = useState(false);
-  const [isLookingAtEachOther, setIsLookingAtEachOther] = useState(false);
+  const [interactionStage, setInteractionStage] = useState<"idle" | "noticing" | "privacy">("idle");
   const [isPurplePeeking, setIsPurplePeeking] = useState(false);
   const purpleRef = useRef<HTMLDivElement>(null);
   const blackRef = useRef<HTMLDivElement>(null);
@@ -334,17 +334,18 @@ export function AnimatedCharactersLogin({
     return () => clearTimeout(timeout);
   }, []);
 
-  // Looking at each other animation when typing starts
+  // Privacy-aware interaction animation
   useEffect(() => {
+    let timer: NodeJS.Timeout;
     if (isTyping) {
-      setIsLookingAtEachOther(true);
-      const timer = setTimeout(() => {
-        setIsLookingAtEachOther(false);
-      }, 800); // Look at each other for 1.5 seconds, then back to tracking mouse
-      return () => clearTimeout(timer);
+      setInteractionStage("noticing");
+      timer = setTimeout(() => {
+        setInteractionStage("privacy");
+      }, 700); // Look towards the input for 700ms, then look away for privacy
     } else {
-      setIsLookingAtEachOther(false);
+      setInteractionStage("idle");
     }
+    return () => clearTimeout(timer);
   }, [isTyping]);
 
   // Purple sneaky peeking animation when typing password and it's visible
@@ -371,20 +372,25 @@ export function AnimatedCharactersLogin({
   }, [password, showPassword, isPurplePeeking]);
 
   const calculatePosition = (ref: React.RefObject<HTMLDivElement | null>) => {
-    if (!ref.current) return { faceX: 0, faceY: 0, bodyRotation: 0 };
+    if (!ref.current) return { faceX: 0, faceY: 0, bodySkew: 0 };
+
+    if (interactionStage === "noticing") {
+      return { faceX: 12, faceY: 2, bodySkew: -4 }; // Look towards the form
+    }
+    
+    if (interactionStage === "privacy") {
+      return { faceX: -15, faceY: 5, bodySkew: 5 }; // Look away for privacy
+    }
 
     const rect = ref.current.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 3; // Focus on head area
+    const centerY = rect.top + rect.height / 3;
 
     const deltaX = mouseX - centerX;
     const deltaY = mouseY - centerY;
 
-    // Face movement (limited range)
     const faceX = Math.max(-15, Math.min(15, deltaX / 20));
     const faceY = Math.max(-10, Math.min(10, deltaY / 30));
-
-    // Body lean (skew for lean while keeping bottom straight) - negative to lean towards mouse
     const bodySkew = Math.max(-6, Math.min(6, -deltaX / 120));
 
     return { faceX, faceY, bodySkew };
@@ -444,8 +450,8 @@ export function AnimatedCharactersLogin({
                 transform:
                   password.length > 0 && showPassword
                     ? `skewX(0deg)`
-                    : isTyping || (password.length > 0 && !showPassword)
-                      ? `skewX(${(purplePos.bodySkew || 0) - 12}deg) translateX(40px)`
+                    : interactionStage !== "idle"
+                      ? `skewX(${purplePos.bodySkew || 0}deg)`
                       : `skewX(${purplePos.bodySkew || 0}deg)`,
                 transformOrigin: "bottom center",
               }}
@@ -457,15 +463,11 @@ export function AnimatedCharactersLogin({
                   left:
                     password.length > 0 && showPassword
                       ? `${20}px`
-                      : isLookingAtEachOther
-                        ? `${55}px`
-                        : `${45 + purplePos.faceX}px`,
+                      : `${45 + purplePos.faceX}px`,
                   top:
                     password.length > 0 && showPassword
                       ? `${35}px`
-                      : isLookingAtEachOther
-                        ? `${65}px`
-                        : `${40 + purplePos.faceY}px`,
+                      : `${40 + purplePos.faceY}px`,
                 }}
               >
                 <EyeBall
@@ -476,22 +478,22 @@ export function AnimatedCharactersLogin({
                   pupilColor="#2D2D2D"
                   isBlinking={isPurpleBlinking}
                   forceLookX={
+                    interactionStage === "noticing" ? 4 :
+                    interactionStage === "privacy" ? -5 :
                     password.length > 0 && showPassword
                       ? isPurplePeeking
                         ? 4
                         : -4
-                      : isLookingAtEachOther
-                        ? 3
-                        : undefined
+                      : undefined
                   }
                   forceLookY={
+                    interactionStage === "noticing" ? 2 :
+                    interactionStage === "privacy" ? 3 :
                     password.length > 0 && showPassword
                       ? isPurplePeeking
                         ? 5
                         : -4
-                      : isLookingAtEachOther
-                        ? 4
-                        : undefined
+                      : undefined
                   }
                 />
                 <EyeBall
@@ -502,22 +504,22 @@ export function AnimatedCharactersLogin({
                   pupilColor="#2D2D2D"
                   isBlinking={isPurpleBlinking}
                   forceLookX={
+                    interactionStage === "noticing" ? 4 :
+                    interactionStage === "privacy" ? -5 :
                     password.length > 0 && showPassword
                       ? isPurplePeeking
                         ? 4
                         : -4
-                      : isLookingAtEachOther
-                        ? 3
-                        : undefined
+                      : undefined
                   }
                   forceLookY={
+                    interactionStage === "noticing" ? 2 :
+                    interactionStage === "privacy" ? 3 :
                     password.length > 0 && showPassword
                       ? isPurplePeeking
                         ? 5
                         : -4
-                      : isLookingAtEachOther
-                        ? 4
-                        : undefined
+                      : undefined
                   }
                 />
               </div>
@@ -552,11 +554,9 @@ export function AnimatedCharactersLogin({
                 transform:
                   password.length > 0 && showPassword
                     ? `skewX(0deg)`
-                    : isLookingAtEachOther
-                      ? `skewX(${(blackPos.bodySkew || 0) * 1.5 + 10}deg) translateX(20px)`
-                      : isTyping || (password.length > 0 && !showPassword)
-                        ? `skewX(${(blackPos.bodySkew || 0) * 1.5}deg)`
-                        : `skewX(${blackPos.bodySkew || 0}deg)`,
+                    : interactionStage !== "idle"
+                      ? `skewX(${(blackPos.bodySkew || 0) * 1.5}deg)`
+                      : `skewX(${blackPos.bodySkew || 0}deg)`,
                 transformOrigin: "bottom center",
               }}
             >
@@ -567,15 +567,11 @@ export function AnimatedCharactersLogin({
                   left:
                     password.length > 0 && showPassword
                       ? `${10}px`
-                      : isLookingAtEachOther
-                        ? `${32}px`
-                        : `${26 + blackPos.faceX}px`,
+                      : `${26 + blackPos.faceX}px`,
                   top:
                     password.length > 0 && showPassword
                       ? `${28}px`
-                      : isLookingAtEachOther
-                        ? `${12}px`
-                        : `${32 + blackPos.faceY}px`,
+                      : `${32 + blackPos.faceY}px`,
                 }}
               >
                 <EyeBall
@@ -586,18 +582,14 @@ export function AnimatedCharactersLogin({
                   pupilColor="#2D2D2D"
                   isBlinking={isBlackBlinking}
                   forceLookX={
-                    password.length > 0 && showPassword
-                      ? -4
-                      : isLookingAtEachOther
-                        ? 0
-                        : undefined
+                    interactionStage === "noticing" ? 3 :
+                    interactionStage === "privacy" ? -4 :
+                    password.length > 0 && showPassword ? -4 : undefined
                   }
                   forceLookY={
-                    password.length > 0 && showPassword
-                      ? -4
-                      : isLookingAtEachOther
-                        ? -4
-                        : undefined
+                    interactionStage === "noticing" ? 1 :
+                    interactionStage === "privacy" ? 2 :
+                    password.length > 0 && showPassword ? -4 : undefined
                   }
                 />
                 <EyeBall
@@ -608,18 +600,14 @@ export function AnimatedCharactersLogin({
                   pupilColor="#2D2D2D"
                   isBlinking={isBlackBlinking}
                   forceLookX={
-                    password.length > 0 && showPassword
-                      ? -4
-                      : isLookingAtEachOther
-                        ? 0
-                        : undefined
+                    interactionStage === "noticing" ? 3 :
+                    interactionStage === "privacy" ? -4 :
+                    password.length > 0 && showPassword ? -4 : undefined
                   }
                   forceLookY={
-                    password.length > 0 && showPassword
-                      ? -4
-                      : isLookingAtEachOther
-                        ? -4
-                        : undefined
+                    interactionStage === "noticing" ? 1 :
+                    interactionStage === "privacy" ? 2 :
+                    password.length > 0 && showPassword ? -4 : undefined
                   }
                 />
               </div>
@@ -680,9 +668,13 @@ export function AnimatedCharactersLogin({
                   pupilColor="#2D2D2D"
                   isBlinking={isOrangeBlinking}
                   forceLookX={
+                    interactionStage === "noticing" ? 3 :
+                    interactionStage === "privacy" ? -4 :
                     password.length > 0 && showPassword ? -5 : undefined
                   }
                   forceLookY={
+                    interactionStage === "noticing" ? 1 :
+                    interactionStage === "privacy" ? 2 :
                     password.length > 0 && showPassword ? -4 : undefined
                   }
                 />
@@ -694,9 +686,13 @@ export function AnimatedCharactersLogin({
                   pupilColor="#2D2D2D"
                   isBlinking={isOrangeBlinking}
                   forceLookX={
+                    interactionStage === "noticing" ? 3 :
+                    interactionStage === "privacy" ? -4 :
                     password.length > 0 && showPassword ? -5 : undefined
                   }
                   forceLookY={
+                    interactionStage === "noticing" ? 1 :
+                    interactionStage === "privacy" ? 2 :
                     password.length > 0 && showPassword ? -4 : undefined
                   }
                 />
@@ -758,9 +754,13 @@ export function AnimatedCharactersLogin({
                   pupilColor="#2D2D2D"
                   isBlinking={isYellowBlinking}
                   forceLookX={
+                    interactionStage === "noticing" ? 3 :
+                    interactionStage === "privacy" ? -4 :
                     password.length > 0 && showPassword ? -5 : undefined
                   }
                   forceLookY={
+                    interactionStage === "noticing" ? 1 :
+                    interactionStage === "privacy" ? 2 :
                     password.length > 0 && showPassword ? -4 : undefined
                   }
                 />
@@ -772,9 +772,13 @@ export function AnimatedCharactersLogin({
                   pupilColor="#2D2D2D"
                   isBlinking={isYellowBlinking}
                   forceLookX={
+                    interactionStage === "noticing" ? 3 :
+                    interactionStage === "privacy" ? -4 :
                     password.length > 0 && showPassword ? -5 : undefined
                   }
                   forceLookY={
+                    interactionStage === "noticing" ? 1 :
+                    interactionStage === "privacy" ? 2 :
                     password.length > 0 && showPassword ? -4 : undefined
                   }
                 />

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import {
   UserPlus,
@@ -11,9 +11,21 @@ import {
   Rocket
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { toast } from "@/hooks/use-toast";
+
+const formSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().min(10, "Phone number is required").max(15, "Phone number is too long"),
+  course: z.string().min(1, "Course selection is required"),
+});
+
+type FormData = z.infer<typeof formSchema>;
 
 const EnrollmentForm = () => {
-<<<<<<< HEAD
   const [isFocused, setIsFocused] = useState<string | null>(null);
 
   const {
@@ -48,8 +60,6 @@ const EnrollmentForm = () => {
     }
   };
 
-=======
->>>>>>> e81fa9c1131a4368c44cfb1b1300c8a2ee2da94f
   return (
     <section
       id="enroll"

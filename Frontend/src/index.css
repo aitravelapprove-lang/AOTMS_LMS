@@ -217,10 +217,8 @@
     background: transparent;
   }
   .admin-scrollbar::-webkit-scrollbar-thumb {
-    background-image: linear-gradient(to bottom, #ff0000, #ff0055, #c800ff, #00e5ff, #00ff55, #ffbb00, #ff0000);
-    background-size: 100% 400%;
-    animation: rog-scroll 4s linear infinite;
-    @apply rounded-full;
+    @apply bg-white rounded-full hover:bg-slate-100 transition-colors shadow-sm border border-slate-200;
+    background-clip: padding-box;
   }
 }
 
@@ -462,10 +460,8 @@
   background: transparent;
 }
 .admin-scrollbar-horizontal::-webkit-scrollbar-thumb {
-  background-image: linear-gradient(to right, #ff0000, #ff0055, #c800ff, #00e5ff, #00ff55, #ffbb00, #ff0000);
-  background-size: 400% 100%;
-  animation: rog-scroll-horizontal 4s linear infinite;
-  @apply rounded-full;
+  @apply bg-white rounded-full hover:bg-slate-100 transition-colors shadow-sm border border-slate-200;
+  background-clip: padding-box;
 }
 
 /* ── Safe area padding for notched devices ─────────────────────── */

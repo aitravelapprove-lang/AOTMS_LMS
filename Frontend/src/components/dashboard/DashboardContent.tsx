@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+import { format } from 'date-fns';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 import {
   Card,
   CardContent,
@@ -55,7 +56,8 @@ import {
   QrCode,
   Hash,
   Ticket,
-  Zap
+  Zap,
+  Key
 } from "lucide-react";
 import { UserProfile } from "./UserProfile";
 import { CourseList } from "./CourseList";
@@ -604,81 +606,85 @@ function LiveClassesTab() {
           </div>
         ) : (
           filteredClasses.map((session: LiveClass) => (
-            <Card
+             <Card
               key={session.id}
-              className="pro-card group cursor-default hover:-translate-y-1 transition-all duration-300"
+              className="group overflow-hidden border-none bg-white rounded-3xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.12)] transition-all duration-500 flex flex-col h-full border border-slate-100"
             >
-              <div className="h-32 bg-primary p-6 flex flex-col justify-end text-white relative overflow-hidden rounded-t-xl">
-                {/* Decorative Mesh */}
-                <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }} />
+              <div className="w-full aspect-video relative overflow-hidden">
+                {session.poster_url ? (
+                  <img 
+                    src={session.poster_url} 
+                    alt={session.title} 
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                  />
+                ) : (
+                  <div className="w-full h-full bg-[#0F172A] flex items-center justify-center relative overflow-hidden">
+                     {/* Decorative Mesh */}
+                    <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 0.5px, transparent 0)', backgroundSize: '12px 12px' }} />
+                    <Video className="w-12 h-12 text-white/10" />
+                  </div>
+                )}
                 
-                <div className="absolute top-4 right-4 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-white border border-white/30">
-                  {session.status}
-                </div>
-                <h3 className="font-bold text-xl line-clamp-1 relative z-10 drop-shadow-sm">
-                  {session.title}
-                </h3>
-              </div>
-              <CardContent className="p-6 space-y-6">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4 text-sm font-medium text-slate-600">
-                    <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-primary/5 transition-colors">
-                      <Calendar className="h-4.5 w-4.5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">Date</p>
-                      <p className="text-slate-900 font-semibold text-sm">
-                        {new Date(session.scheduled_at).toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4 text-sm font-medium text-slate-600">
-                    <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-accent/5 transition-colors">
-                      <Clock className="h-4.5 w-4.5 text-accent" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">Time & Duration</p>
-                      <p className="text-slate-900 font-semibold text-sm">
-                        {new Date(session.scheduled_at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
-                        <span className="text-slate-500"> • {session.duration_minutes || 60} min</span>
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {session.meeting_password && (
-                    <div className="flex items-center gap-4 text-sm font-medium text-slate-600">
-                      <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-blue-50 transition-colors">
-                        <Users className="h-4.5 w-4.5 text-blue-500" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">Meeting Passcode</p>
-                        <div className="flex items-center gap-2">
-                          <code className="bg-slate-100 px-2 py-0.5 rounded text-slate-900 font-mono font-bold text-sm tracking-widest border border-slate-200">
-                            {session.meeting_password}
-                          </code>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-6 w-6 hover:bg-slate-200" 
-                            onClick={(e) => handleCopyPassword(e, session.meeting_password)}
-                            title="Copy Passcode"
-                          >
-                            <Copy className="h-3.5 w-3.5 text-slate-500" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
+                {/* Status Badges Overlay */}
+                <div className="absolute top-3 left-3 z-20">
+                  {new Date(session.scheduled_at) <= new Date() && 
+                   new Date() <= new Date(new Date(session.scheduled_at).getTime() + (session.duration_minutes || 60) * 60000) && (
+                    <Badge className="bg-red-500 text-white border-none animate-pulse font-bold text-[10px] px-2 py-0.5 rounded-lg shadow-xl">
+                      LIVE
+                    </Badge>
                   )}
                 </div>
 
-                <Button
-                  onClick={() => session.meeting_id && navigate(`/live/${session.meeting_id}?role=0&pwd=${session.meeting_password || ''}`)}
-                  className="w-full pro-button-primary"
-                  disabled={!session.meeting_id}
-                >
-                  Join Broadcast
-                  <Video className="ml-2 h-4 w-4" />
-                </Button>
+                <div className="absolute bottom-3 left-3 right-3 z-30 flex items-center gap-2">
+                    <div className="bg-black/50 backdrop-blur-md text-white text-[9px] font-bold px-3 py-1.5 rounded-xl border border-white/10 uppercase tracking-wider">
+                        {session.duration_minutes || 60} Min
+                    </div>
+                    <div className="bg-primary text-white text-[9px] font-bold px-3 py-1.5 rounded-xl uppercase tracking-wider shadow-lg">
+                        {session.status.toUpperCase()}
+                    </div>
+                </div>
+                
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
+              </div>
+
+              <CardContent className="pt-4 pb-2 px-5 flex-grow space-y-3">
+                <h3 className="text-lg font-bold text-[#0075CF] leading-tight line-clamp-1 group-hover:text-primary transition-colors">
+                  {session.title}
+                </h3>
+                <p className="text-slate-500 text-[13px] line-clamp-2 leading-relaxed font-medium min-h-[38px]">
+                  {session.description || "Join this interactive live session to master core concepts."}
+                </p>
+
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1 pb-1">
+                    <div className="flex items-center gap-1.5 text-slate-500 text-[11px] font-bold">
+                        <Calendar className="w-3.5 h-3.5 text-primary/60" />
+                        {format(new Date(session.scheduled_at), 'MMM dd, yyyy')}
+                    </div>
+                    <div className="flex items-center gap-1.5 text-slate-500 text-[11px] font-bold">
+                        <Clock className="w-3.5 h-3.5 text-primary/60" />
+                        {format(new Date(session.scheduled_at), 'hh:mm a')}
+                    </div>
+                    {session.meeting_password && (
+                        <div className="flex items-center gap-2 text-[#0075CF] text-sm font-black bg-[#0075CF]/5 px-3 py-1.5 rounded-xl border border-[#0075CF]/10 shadow-sm">
+                            <Key className="w-4 h-4" />
+                            <span className="font-mono tracking-widest">{session.meeting_password}</span>
+                        </div>
+                    )}
+                </div>
+                
+                <div className="pt-2 border-t border-slate-50 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-emerald-600">
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Enrolled</span>
+                    </div>
+                    
+                    <button 
+                        onClick={() => session.meeting_id && navigate(`/live/${session.meeting_id}?role=0&pwd=${session.meeting_password || ''}`)}
+                        className="flex items-center gap-1 text-[#0075CF] font-bold text-xs hover:gap-2 transition-all group/btn"
+                    >
+                        Join Now <ChevronRight className="w-3 h-3 transition-transform group-hover/btn:translate-x-0.5" />
+                    </button>
+                </div>
               </CardContent>
             </Card>
           ))

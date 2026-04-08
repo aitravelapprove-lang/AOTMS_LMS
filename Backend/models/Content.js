@@ -49,6 +49,7 @@ const LiveClassSchema = new Schema({
     meeting_password: { type: String },
     scheduled_at: { type: Date, required: true },
     duration_minutes: { type: Number, default: 60 },
+    poster_url: { type: String },
     status: { type: String, default: 'scheduled' }, // scheduled, live, ended
     created_at: { type: Date, default: Date.now }
 });

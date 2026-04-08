@@ -79,6 +79,8 @@ import {
   Shuffle,
   Brain,
   BrainCircuit,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { format } from "date-fns";

@@ -36,6 +36,7 @@ export interface LiveClass {
   meeting_url: string | null;
   start_url: string | null;
   meeting_password?: string;
+  poster_url?: string | null;
   status: string;
 }
 
@@ -1337,7 +1338,7 @@ export function useCreateLiveClass() {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (payload: { topic: string; startTime: string; duration: number; agenda: string; courseId?: string }) => {
+    mutationFn: async (payload: { topic: string; startTime: string; duration: number; agenda: string; courseId?: string; poster_url?: string }) => {
       if (!user?.id) throw new Error('You must be logged in to schedule meetings');
 
       // 1. Create Zoom Meeting via our specific backend endpoint
@@ -1365,6 +1366,7 @@ export function useCreateLiveClass() {
           meeting_url: zoomData.joinUrl,
           start_url: zoomData.startUrl,
           meeting_password: zoomData.password,
+          poster_url: payload.poster_url || null,
           status: 'scheduled'
         })
       });

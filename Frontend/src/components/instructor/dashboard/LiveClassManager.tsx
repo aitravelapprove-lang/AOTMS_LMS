@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -6,19 +6,16 @@ import {
     Calendar,
     Clock,
     Plus,
-    Search,
-    MoreVertical,
-    ExternalLink,
     Play,
-    Settings,
     X,
     AlertCircle,
     VideoOff,
     Users,
-    Trash2
+    Trash2,
+    ImagePlus
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useInstructorLiveClasses, useCreateLiveClass, useDeleteLiveClass, useInstructorCourses, Course, LiveClass } from '@/hooks/useInstructorData';
@@ -40,6 +37,25 @@ export function LiveClassManager() {
         courseId: ''
     });
 
+    const [posterFile, setPosterFile] = useState<File | null>(null);
+    const [posterPreview, setPosterPreview] = useState<string | null>(null);
+    const posterInputRef = useRef<HTMLInputElement>(null);
+
+    const handlePosterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setPosterFile(file);
+        const reader = new FileReader();
+        reader.onload = (ev) => setPosterPreview(ev.target?.result as string);
+        reader.readAsDataURL(file);
+    };
+
+    const removePoster = () => {
+        setPosterFile(null);
+        setPosterPreview(null);
+        if (posterInputRef.current) posterInputRef.current.value = '';
+    };
+
     const handleDelete = async (id: string) => {
         if (window.confirm("Are you sure you want to permanently delete this scheduled class? This action cannot be undone.")) {
             try {
@@ -53,9 +69,14 @@ export function LiveClassManager() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await createMeeting.mutateAsync(formData);
+            await createMeeting.mutateAsync({
+                ...formData,
+                poster_url: posterPreview || undefined
+            });
             setIsAdding(false);
             setFormData({ topic: '', startTime: '', duration: 60, agenda: '', courseId: '' });
+            setPosterFile(null);
+            setPosterPreview(null);
         } catch (err) {
             console.error(err);
         }
@@ -112,8 +133,19 @@ export function LiveClassManager() {
                                     transition={{ delay: index * 0.05 }}
                                 >
                                     <Card className="group overflow-hidden border border-border/50 bg-card/40 backdrop-blur-xl hover:border-primary/50 transition-all hover:shadow-2xl hover:shadow-primary/5">
-                                        <div className="absolute top-0 left-0 w-1 h-full bg-primary group-hover:w-2 transition-all" />
-                                        <CardHeader className="pb-2">
+                                        <div className="absolute top-0 left-0 w-1 h-full bg-primary group-hover:w-2 transition-all z-10" />
+                                        
+                                        {session.poster_url && (
+                                            <div className="w-full h-40 overflow-hidden relative border-b border-border/50">
+                                                <img 
+                                                    src={session.poster_url} 
+                                                    alt={session.title} 
+                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                                                />
+                                            </div>
+                                        )}
+
+                                        <CardHeader className="pb-2 relative">
                                             <div className="flex justify-between items-start">
                                                 <div className="space-y-1">
                                                     <div className="flex items-center gap-2">
@@ -202,70 +234,76 @@ export function LiveClassManager() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="absolute inset-0 bg-background/80 backdrop-blur-md"
+                            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                             onClick={() => setIsAdding(false)}
                         />
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            initial={{ opacity: 0, scale: 0.95, y: 16 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="relative w-full max-w-lg bg-card border border-border/50 shadow-2xl rounded-3xl p-8 overflow-hidden"
+                            exit={{ opacity: 0, scale: 0.95, y: 16 }}
+                            className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[92vh] overflow-y-auto"
                         >
-                            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary via-accent to-blue-500" />
+                            {/* Close Button */}
+                            <button
+                                onClick={() => setIsAdding(false)}
+                                className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"
+                            >
+                                <X className="w-4 h-4 text-slate-500" />
+                            </button>
 
-                            <div className="flex justify-between items-center mb-8">
-                                <div>
-                                    <h3 className="text-2xl font-bold">Schedule Live Session</h3>
-                                    <p className="text-muted-foreground text-sm">Powered by Zoom Video SDK</p>
-                                </div>
-                                <Button variant="ghost" size="icon" onClick={() => setIsAdding(false)} className="rounded-full">
-                                    <X className="w-5 h-5" />
-                                </Button>
+                            {/* Header */}
+                            <div className="text-center px-8 pt-10 pb-6 border-b border-slate-100">
+                                <h3 className="text-2xl font-bold text-slate-900 tracking-tight">Schedule Live Session</h3>
+                                <p className="text-slate-500 text-sm mt-1">Powered by Zoom Video SDK</p>
                             </div>
 
-                            <form onSubmit={handleSubmit} className="space-y-6">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-semibold ml-1">Session Topic</label>
-                                    <Input
+                            <form onSubmit={handleSubmit} className="px-8 py-6 space-y-5">
+
+                                {/* Session Topic */}
+                                <div className="space-y-1.5">
+                                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Session Topic</label>
+                                    <input
+                                        type="text"
                                         placeholder="e.g. Masterclass on React Patterns"
-                                        className="h-12 bg-muted/50 border-transparent focus:bg-background transition-all"
                                         required
                                         value={formData.topic}
                                         onChange={e => setFormData({ ...formData, topic: e.target.value })}
+                                        className="w-full h-11 px-4 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-semibold ml-1">Start Time</label>
-                                        <Input
+                                {/* Start Time + Duration */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Start Time</label>
+                                        <input
                                             type="datetime-local"
-                                            className="h-12 bg-muted/50 border-transparent transition-all"
                                             required
                                             value={formData.startTime}
                                             onChange={e => setFormData({ ...formData, startTime: e.target.value })}
+                                            className="w-full h-11 px-4 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                                         />
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-semibold ml-1">Duration (Min)</label>
-                                        <Input
+                                    <div className="space-y-1.5">
+                                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Duration (Min)</label>
+                                        <input
                                             type="number"
-                                            className="h-12 bg-muted/50 border-transparent transition-all"
                                             required
                                             value={formData.duration}
                                             onChange={e => setFormData({ ...formData, duration: parseInt(e.target.value) })}
+                                            className="w-full h-11 px-4 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                                         />
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label htmlFor="course-select" className="text-sm font-semibold ml-1">Associated Course (Optional)</label>
+                                {/* Associated Course */}
+                                <div className="space-y-1.5">
+                                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Associated Course (Optional)</label>
                                     <select
-                                        id="course-select"
                                         title="Associated Course"
-                                        className="w-full h-12 rounded-lg bg-muted/50 border-transparent px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                                         value={formData.courseId}
                                         onChange={e => setFormData({ ...formData, courseId: e.target.value })}
+                                        className="w-full h-11 px-4 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all appearance-none"
                                     >
                                         <option value="">Standalone Meeting</option>
                                         {courses.map((course: Course) => (
@@ -274,37 +312,88 @@ export function LiveClassManager() {
                                     </select>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="text-sm font-semibold ml-1">Agenda / Description</label>
+                                {/* Agenda */}
+                                <div className="space-y-1.5">
+                                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Agenda / Description</label>
                                     <textarea
-                                        className="w-full min-h-[100px] rounded-lg bg-muted/50 border-transparent p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                                         placeholder="Tell your students what to expect..."
                                         value={formData.agenda}
                                         onChange={e => setFormData({ ...formData, agenda: e.target.value })}
+                                        rows={3}
+                                        className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all resize-none"
                                     />
                                 </div>
 
-                                <div className="pt-4 flex gap-3">
-                                    <Button
+                                {/* Session Poster */}
+                                <div className="space-y-1.5">
+                                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                        Session Poster
+                                        <span className="normal-case font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">1280 × 720 recommended</span>
+                                    </label>
+
+                                    {posterPreview ? (
+                                        <div className="relative group rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+                                            <div className="relative w-full h-[180px]">
+                                                <img
+                                                    src={posterPreview}
+                                                    alt="Poster preview"
+                                                    className="absolute inset-0 w-full h-full object-cover"
+                                                />
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-3">
+                                                    <button type="button" onClick={() => posterInputRef.current?.click()}
+                                                        className="px-4 py-2 bg-white text-slate-900 text-xs font-bold rounded-lg hover:bg-slate-100 transition-all">
+                                                        Change
+                                                    </button>
+                                                    <button type="button" onClick={removePoster}
+                                                        className="px-4 py-2 bg-red-500 text-white text-xs font-bold rounded-lg hover:bg-red-600 transition-all">
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div className="px-4 py-2 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                                                <span className="font-medium truncate max-w-[70%]">{posterFile?.name}</span>
+                                                <span className="font-bold text-primary shrink-0">1280 × 720 px</span>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={() => posterInputRef.current?.click()}
+                                            className="w-full h-[110px] rounded-xl border-2 border-dashed border-slate-200 hover:border-primary/50 bg-slate-50 hover:bg-primary/5 transition-all flex items-center justify-center gap-4 group"
+                                        >
+                                            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+                                                <ImagePlus className="w-5 h-5 text-primary" />
+                                            </div>
+                                            <div className="text-left">
+                                                <p className="text-sm font-semibold text-slate-700">Upload Session Poster</p>
+                                                <p className="text-xs text-slate-400 mt-0.5">YouTube thumbnail · 1280 × 720 px · PNG / JPG</p>
+                                            </div>
+                                        </button>
+                                    )}
+                                    <input ref={posterInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handlePosterChange} />
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="pt-2 flex gap-3">
+                                    <button
                                         type="submit"
-                                        className="flex-1 h-12 bg-primary shadow-lg shadow-primary/20"
                                         disabled={createMeeting.isPending}
+                                        className="flex-1 h-11 rounded-lg bg-primary hover:bg-primary/90 text-white text-sm font-semibold transition-all shadow-md shadow-primary/20 disabled:opacity-50"
                                     >
-                                        {createMeeting.isPending ? "Generating Zoom Link..." : "Publish Live Class"}
-                                    </Button>
-                                    <Button
+                                        {createMeeting.isPending ? 'Generating Zoom Link...' : 'Publish Live Class'}
+                                    </button>
+                                    <button
                                         type="button"
-                                        variant="ghost"
-                                        className="h-12"
                                         onClick={() => setIsAdding(false)}
+                                        className="px-5 h-11 rounded-lg border border-slate-200 bg-white text-slate-600 text-sm font-semibold hover:bg-slate-50 transition-all"
                                     >
                                         Cancel
-                                    </Button>
+                                    </button>
                                 </div>
 
                                 {createMeeting.isError && (
-                                    <div className="p-3 bg-destructive/10 text-destructive rounded-lg flex items-center gap-2 text-xs">
-                                        <AlertCircle className="w-4 h-4" />
+                                    <div className="p-3 bg-red-50 text-red-600 rounded-lg flex items-center gap-2 text-xs border border-red-100">
+                                        <AlertCircle className="w-4 h-4 shrink-0" />
                                         {createMeeting.error.message}
                                     </div>
                                 )}

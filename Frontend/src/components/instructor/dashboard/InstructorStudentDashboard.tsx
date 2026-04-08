@@ -6,7 +6,7 @@ import {
   BookOpen, Clock, CheckCircle2, AlertTriangle, PlayCircle,
   TrendingUp, TrendingDown, UserPlus, UserMinus, Activity,
   Eye, FileText, ChevronRight, RefreshCw, Bell, Loader2,
-  Phone, Play, Upload, Link as LinkIcon, Image as ImageIcon, AlertCircle
+  Phone, Play, Upload, Link as LinkIcon, Image as ImageIcon, AlertCircle, User
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -173,7 +173,7 @@ function StudentRow({ student, onSendMessage, onViewDetails }: {
       {/* 1. Student Identity (col-span-3) */}
       <div className="col-span-12 lg:col-span-3 flex items-center gap-3">
         <Avatar className="h-10 w-10 border-2 border-white shadow-sm ring-1 ring-slate-100">
-          <AvatarImage src={student.avatarUrl ? (student.avatarUrl.startsWith('http') ? student.avatarUrl : `${import.meta.env.VITE_API_URL || 'https://aotms-lms-new.onrender.com/api'}/s3/public/${student.avatarUrl}`) : `https://api.dicebear.com/9.x/avataaars/svg?seed=${student.userId}`} />
+          <AvatarImage src={student.avatarUrl ? (student.avatarUrl.startsWith('http') ? student.avatarUrl : `${import.meta.env.VITE_API_URL || '/api'}/s3/public/${student.avatarUrl}`) : `https://api.dicebear.com/9.x/avataaars/svg?seed=${student.userId}`} />
           <AvatarFallback className="bg-primary/5 text-primary text-xs font-black">
             {student.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
           </AvatarFallback>
@@ -203,12 +203,27 @@ function StudentRow({ student, onSendMessage, onViewDetails }: {
       </div>
 
       {/* 3. Enrollments (col-span-2) */}
-      <div className="hidden lg:block col-span-2 text-center space-y-0.5">
+      <div className="hidden lg:block col-span-2 text-center space-y-1">
         <div className="flex items-center justify-center gap-1.5 font-black text-slate-900 text-sm">
           <span>{student.enrolledCourses}</span>
           <BookOpen className="h-3 w-3 opacity-20" />
         </div>
-        <p className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Courses</p>
+        <div className="flex flex-wrap gap-1 mt-0.5 justify-center">
+          {student.courseEnrollments.map((enr, i) => (
+            <Badge 
+              key={i} 
+              variant="secondary" 
+              className={`text-[8px] h-4 px-1.5 border-none uppercase font-black ${
+                enr.batchType === 'morning' ? 'bg-amber-50 text-amber-600' :
+                enr.batchType === 'afternoon' ? 'bg-blue-50 text-blue-600' :
+                enr.batchType === 'evening' ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-400'
+              }`}
+              title={enr.batchName || 'No Batch'}
+            >
+              {enr.batchType ? enr.batchType.charAt(0).toUpperCase() + enr.batchType.slice(1) : 'No Batch'}
+            </Badge>
+          ))}
+        </div>
       </div>
 
       {/* 4. Learning Progress (col-span-2) */}
@@ -234,27 +249,39 @@ function StudentRow({ student, onSendMessage, onViewDetails }: {
           <span className="text-[9px] font-black uppercase text-slate-300 tracking-widest leading-none">Activity</span>
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-white hover:shadow-md transition-all border-none bg-transparent">
-              <MoreHorizontal className="w-4 h-4 text-slate-400" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48 rounded-2xl p-2 border-slate-100 shadow-2xl">
-            <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-3 py-2">Management</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="rounded-xl px-3 h-10 font-bold focus:bg-slate-900 focus:text-white transition-colors cursor-pointer" onClick={() => onViewDetails(student.userId)}>
-              <Eye className="w-4 h-4 mr-2 opacity-40 text-blue-600" /> View Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem className="rounded-xl px-3 h-10 font-bold focus:bg-slate-900 focus:text-white transition-colors cursor-pointer" onClick={() => onSendMessage(student.userId)}>
-              <Mail className="w-4 h-4 mr-2 opacity-40 text-emerald-600" /> Send Message
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="rounded-xl px-3 h-10 font-bold text-rose-600 focus:bg-slate-900 focus:text-white transition-colors cursor-pointer">
-              <UserMinus className="w-4 h-4 mr-2 opacity-40" /> Drop Student
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-1.5">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-8 px-2 rounded-lg text-primary hover:bg-primary/5 font-bold text-[10px] uppercase gap-1"
+            onClick={() => onViewDetails(student.userId)}
+          >
+            <Eye className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Profile</span>
+          </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-white hover:shadow-md transition-all border-none bg-transparent">
+                <MoreHorizontal className="w-4 h-4 text-slate-400" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 rounded-2xl p-2 border-slate-100 shadow-2xl">
+              <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-3 py-2">Management</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="rounded-xl px-3 h-10 font-bold focus:bg-slate-900 focus:text-white transition-colors cursor-pointer" onClick={() => onViewDetails(student.userId)}>
+                <User className="w-4 h-4 mr-2 opacity-40 text-blue-600" /> View Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem className="rounded-xl px-3 h-10 font-bold focus:bg-slate-900 focus:text-white transition-colors cursor-pointer" onClick={() => onSendMessage(student.userId)}>
+                <Mail className="w-4 h-4 mr-2 opacity-40 text-emerald-600" /> Send Message
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="rounded-xl px-3 h-10 font-bold text-rose-600 focus:bg-slate-900 focus:text-white transition-colors cursor-pointer">
+                <UserMinus className="w-4 h-4 mr-2 opacity-40" /> Drop Student
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </motion.div>
 
@@ -352,7 +379,21 @@ function ActivityFeed({ activities, students }: { activities: RecentActivity[]; 
   );
 }
 
-function StudentCourseDetails({ studentId, courseId, courseName, progress }: { studentId: string; courseId: string; courseName: string; progress: number }) {
+function StudentCourseDetails({ 
+    studentId, 
+    courseId, 
+    courseName, 
+    progress,
+    batchType,
+    batchName 
+}: { 
+    studentId: string; 
+    courseId: string; 
+    courseName: string; 
+    progress: number;
+    batchType?: string;
+    batchName?: string;
+}) {
   const { data: videoProgress } = useStudentVideoProgress(studentId, courseId);
   const { data: videos } = useVideos(courseId);
   const [expanded, setExpanded] = useState(false);
@@ -384,7 +425,22 @@ function StudentCourseDetails({ studentId, courseId, courseName, progress }: { s
             <Button variant="ghost" size="icon" className="h-6 w-6 p-0 hover:bg-slate-100">
                 {expanded ? <ChevronRight className="h-4 w-4 rotate-90 transition-transform" /> : <ChevronRight className="h-4 w-4 transition-transform" />}
             </Button>
-            <span className="text-sm font-bold text-slate-800 truncate pr-4">{courseName}</span>
+            <div className="flex flex-col min-w-0 pr-4">
+                <span className="text-sm font-bold text-slate-800 truncate">{courseName}</span>
+                {batchName && (
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <Badge variant="outline" className={cn(
+                        "text-[8px] h-4 px-1.5 border-none uppercase font-black",
+                        batchType === 'morning' ? 'bg-amber-50 text-amber-600' :
+                        batchType === 'afternoon' ? 'bg-blue-50 text-blue-600' :
+                        batchType === 'evening' ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-400'
+                    )}>
+                        {batchType}
+                    </Badge>
+                    <span className="text-[10px] text-slate-400 font-medium truncate italic">{batchName}</span>
+                  </div>
+                )}
+            </div>
         </div>
         <span className="text-xs font-black text-primary whitespace-nowrap">{progress}%</span>
       </div>
@@ -438,6 +494,7 @@ export function InstructorStudentDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [courseFilter, setCourseFilter] = useState<string>('all');
+  const [batchFilter, setBatchFilter] = useState<string>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activities] = useState<RecentActivity[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<InstructorStudent | null>(null);
@@ -454,9 +511,11 @@ export function InstructorStudentDashboard() {
       const matchesStatus = statusFilter === 'all' || student.status === statusFilter;
       const matchesCourse = courseFilter === 'all' || 
         student.courseEnrollments.some(e => e.courseId === courseFilter);
-      return matchesSearch && matchesStatus && matchesCourse;
+      const matchesBatch = batchFilter === 'all' ||
+        student.courseEnrollments.some(e => e.batchType === batchFilter);
+      return matchesSearch && matchesStatus && matchesCourse && matchesBatch;
     });
-  }, [students, searchQuery, statusFilter, courseFilter]);
+  }, [students, searchQuery, statusFilter, courseFilter, batchFilter]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -561,15 +620,28 @@ export function InstructorStudentDashboard() {
                     />
                   </div>
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[130px] h-9">
-                      <Filter className="w-4 h-4 mr-2" />
+                    <SelectTrigger className="w-[130px] h-9 rounded-xl">
+                      <Filter className="w-3 h-3 mr-2" />
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="rounded-2xl border-slate-100">
                       <SelectItem value="all">All Status</SelectItem>
                       <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
                       <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={batchFilter} onValueChange={setBatchFilter}>
+                    <SelectTrigger className="w-[130px] h-9 rounded-xl">
+                      <Clock className="w-3 h-3 mr-2" />
+                      <SelectValue placeholder="Batch" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-2xl border-slate-100">
+                      <SelectItem value="all">All Batches</SelectItem>
+                      <SelectItem value="morning">Morning</SelectItem>
+                      <SelectItem value="afternoon">Afternoon</SelectItem>
+                      <SelectItem value="evening">Evening</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -692,6 +764,7 @@ export function InstructorStudentDashboard() {
               <div className="bg-slate-900 h-24 relative">
                 <div className="absolute -bottom-8 left-8">
                   <Avatar className="h-20 w-20 border-4 border-white shadow-xl">
+                    <AvatarImage src={selectedStudent.avatarUrl ? (selectedStudent.avatarUrl.startsWith('http') ? selectedStudent.avatarUrl : `${import.meta.env.VITE_API_URL || '/api'}/s3/public/${selectedStudent.avatarUrl}`) : `https://api.dicebear.com/9.x/avataaars/svg?seed=${selectedStudent.userId}`} />
                     <AvatarFallback className="bg-primary/10 text-primary text-xl font-black">
                       {selectedStudent.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                     </AvatarFallback>
@@ -701,8 +774,20 @@ export function InstructorStudentDashboard() {
               <div className="pt-12 px-8 pb-8 space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-xl sm:text-2xl font-black text-slate-900">{selectedStudent.name}</h3>
-                    <p className="text-sm font-medium text-slate-400">Student ID: {selectedStudent.userId.slice(0, 8)}...</p>
+                    <h3 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight mb-1">{selectedStudent.name}</h3>
+                    <div className="flex flex-wrap gap-2 items-center">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">ID: {selectedStudent.userId.slice(-6).toUpperCase()}</p>
+                        {Array.from(new Set(selectedStudent.courseEnrollments.map(e => e.batchType).filter(Boolean))).map((bt, i) => (
+                            <Badge key={i} variant="outline" className={cn(
+                                "text-[9px] h-4.5 px-2 border-none uppercase font-black tracking-tighter",
+                                bt === 'morning' ? 'bg-amber-50 text-amber-600' :
+                                bt === 'afternoon' ? 'bg-blue-50 text-blue-600' :
+                                bt === 'evening' ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-400'
+                            )}>
+                                {bt}
+                            </Badge>
+                        ))}
+                    </div>
                   </div>
                   <Badge className={`${getStatusConfig(selectedStudent.status).bg} ${getStatusConfig(selectedStudent.status).text} h-8 px-4 rounded-full font-bold border-none`}>
                     {getStatusConfig(selectedStudent.status).label}
@@ -720,24 +805,27 @@ export function InstructorStudentDashboard() {
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                    <BookOpen className="h-3 w-3" /> Enrolled Courses
-                  </h4>
-                  <ScrollArea className="h-[200px] pr-4">
-                    <div className="space-y-3">
-                      {selectedStudent.courseEnrollments.map((course) => (
-                        <StudentCourseDetails
-                            key={course.courseId}
-                            studentId={selectedStudent.userId}
-                            courseId={course.courseId}
-                            courseName={course.courseTitle}
-                            progress={course.progress}
-                        />
-                      ))}
-                    </div>
-                  </ScrollArea>
-                </div>
+                  <div className="space-y-4 pt-2 border-t border-slate-100">
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2 mb-4">
+                      <BookOpen className="h-3 w-3 text-primary" /> Learning Pathways
+                    </h4>
+                    <ScrollArea className="h-[280px] -mx-2 px-2">
+                       <div className="space-y-4 pb-4">
+                        {selectedStudent.courseEnrollments.map((course) => (
+                          <div key={course.courseId} className="group transition-all">
+                            <StudentCourseDetails
+                                studentId={selectedStudent.userId}
+                                courseId={course.courseId}
+                                courseName={course.courseTitle}
+                                progress={course.progress}
+                                batchType={course.batchType}
+                                batchName={course.batchName}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
 
                 <div className="pt-2 flex gap-3">
                    <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold border-slate-200" onClick={() => setIsDetailOpen(false)}>Close</Button>

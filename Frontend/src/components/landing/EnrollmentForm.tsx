@@ -50,7 +50,7 @@ const EnrollmentForm = () => {
 
   const onSubmit = async (data: FormData) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/public/enroll`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001'}/api/public/enroll`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

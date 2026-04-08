@@ -40,6 +40,7 @@ import {
   ClipboardCheck,
   Video,
   GraduationCap,
+  Users
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
@@ -88,7 +89,22 @@ export function TimelineManager({ courseId }: TimelineManagerProps) {
     description: "",
     milestone_type: "module",
     scheduled_date: "",
+    allowed_batches: [] as string[]
   });
+
+  const [batches, setBatches] = useState<any[]>([]);
+  
+  useEffect(() => {
+    const loadBatches = async () => {
+      try {
+        const data = await fetchWithAuth(`/batches?course_id=${courseId}`);
+        setBatches(data || []);
+      } catch (e) {
+        console.error("Failed to load batches", e);
+      }
+    };
+    if (courseId) loadBatches();
+  }, [courseId]);
 
   const handleCreate = async () => {
     if (!newMilestone.title.trim() || !newMilestone.scheduled_date) return;
@@ -98,12 +114,14 @@ export function TimelineManager({ courseId }: TimelineManagerProps) {
       description: newMilestone.description || null,
       milestone_type: newMilestone.milestone_type,
       scheduled_date: new Date(newMilestone.scheduled_date).toISOString(),
+      allowed_batches: newMilestone.allowed_batches
     });
     setNewMilestone({
       title: "",
       description: "",
       milestone_type: "module",
       scheduled_date: "",
+      allowed_batches: []
     });
     setIsAddOpen(false);
   };
@@ -230,6 +248,37 @@ export function TimelineManager({ courseId }: TimelineManagerProps) {
                     }
                   />
                 </div>
+
+                {/* Batch Selection */}
+                {batches.length > 0 && (
+                  <div className="space-y-3">
+                    <Label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Target Batches (Optional)</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {batches.map((batch) => {
+                        const isSelected = newMilestone.allowed_batches.includes(batch.id);
+                        return (
+                          <Badge
+                            key={batch.id}
+                            variant={isSelected ? "default" : "outline"}
+                            className={`cursor-pointer h-9 px-3 rounded-lg font-bold text-[10px] uppercase transition-all ${
+                              isSelected ? 'bg-primary text-white' : 'bg-slate-50 text-slate-500 border-slate-200'
+                            }`}
+                            onClick={() => {
+                              if (isSelected) {
+                                setNewMilestone({ ...newMilestone, allowed_batches: newMilestone.allowed_batches.filter(id => id !== batch.id) });
+                              } else {
+                                setNewMilestone({ ...newMilestone, allowed_batches: [...newMilestone.allowed_batches, batch.id] });
+                              }
+                            }}
+                          >
+                            {batch.batch_name}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                    <p className="text-[10px] text-slate-400 italic">No batches selected = visible to all students.</p>
+                  </div>
+                )}
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsAddOpen(false)}>
@@ -310,6 +359,11 @@ export function TimelineManager({ courseId }: TimelineManagerProps) {
                         </div>
                         <div className="flex items-center gap-2">
                           {today && <Badge className="bg-primary">Today</Badge>}
+                          {item.allowed_batches && item.allowed_batches.length > 0 && (
+                                <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 flex items-center gap-1">
+                                    <Users className="h-3 w-3" /> {item.allowed_batches.length} Batches
+                                </Badge>
+                            )}
                           <Badge variant="outline">{info.label}</Badge>
                           <Button
                             variant="ghost"

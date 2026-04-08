@@ -6,6 +6,8 @@ const UserSchema = new mongoose.Schema({
     full_name: { type: String },
     avatar_url: { type: String },
     phone: { type: String },
+    failed_login_attempts: { type: Number, default: 0 },
+    last_login_ip: { type: String },
     created_at: { type: Date, default: Date.now }
 });
 

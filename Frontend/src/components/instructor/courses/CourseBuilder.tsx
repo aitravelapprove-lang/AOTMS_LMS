@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit, ArrowLeft, Trash2, UploadCloud, GripVertical, Loader2, CheckCircle2, XCircle, Copy, Check, AlertTriangle, Clock, CheckCircle, FileVideo, X, Layers, ChevronUp, ChevronDown } from 'lucide-react';
+import { Plus, Edit, ArrowLeft, Trash2, UploadCloud, GripVertical, Loader2, CheckCircle2, XCircle, Copy, Check, AlertTriangle, Clock, CheckCircle, FileVideo, X, Layers, ChevronUp, ChevronDown, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useCourseModules, useCreateCourseModule, useModuleVideos, useCreateCourseVideo, useS3Upload, useUpdateCourseStatus, CourseModule, S3CourseVideo, useDeleteCourseVideo, useDeleteCourseModule } from '@/hooks/useCourseBuilder';
 import { Course } from '@/hooks/useInstructorData';
 import { VideoUploader } from '../VideoUploader';
+import { BatchManager } from '../BatchManager';
+import { cn } from "@/lib/utils";
 
 interface CourseBuilderProps {
     course: Course;
@@ -217,6 +219,7 @@ export function CourseBuilder({ course, onBack }: CourseBuilderProps) {
     const [isAddModuleDialogOpen, setIsAddModuleDialogOpen] = useState(false);
     const [newModuleTitle, setNewModuleTitle] = useState('');
     const [isUploaderOpen, setIsUploaderOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState<'syllabus' | 'batches'>('syllabus');
 
     useEffect(() => {
         if (!modulesLoading && modules && modules.length === 0) {
@@ -349,87 +352,117 @@ export function CourseBuilder({ course, onBack }: CourseBuilderProps) {
                 </div>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-3">
-                <div className="md:col-span-2 space-y-6">
-                    <Collapsible open={isUploaderOpen} onOpenChange={setIsUploaderOpen} className="space-y-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div className="flex items-center gap-3">
-                                <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">Course Syllabus</h3>
-                                {modules && modules.length > 0 && (
-                                    <Badge variant="secondary" className="text-[10px] font-black uppercase tracking-tighter px-2 h-5 bg-slate-100 text-slate-400 rounded-md">
-                                        {modules.length} Modules
-                                    </Badge>
+            {/* Navigation Tabs */}
+            <div className="flex items-center gap-2 bg-slate-100/50 p-1.5 rounded-2xl w-fit">
+                <Button 
+                    variant={activeTab === 'syllabus' ? 'default' : 'ghost'} 
+                    onClick={() => setActiveTab('syllabus')}
+                    className={cn("rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest transition-all", activeTab === 'syllabus' ? 'bg-white text-primary shadow-sm' : 'text-slate-400')}
+                >
+                    <Layers className="h-4 w-4 mr-2" />
+                    Syllabus
+                </Button>
+                <Button 
+                    variant={activeTab === 'batches' ? 'default' : 'ghost'} 
+                    onClick={() => setActiveTab('batches')}
+                    className={cn("rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest transition-all", activeTab === 'batches' ? 'bg-white text-primary shadow-sm' : 'text-slate-400')}
+                >
+                    <Users className="h-4 w-4 mr-2" />
+                    Batches
+                </Button>
+            </div>
+
+            <AnimatePresence mode="wait">
+                {activeTab === 'batches' ? (
+                    <motion.div key="batches" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                        <BatchManager courseId={course.id} courseTitle={course.title} />
+                    </motion.div>
+                ) : (
+                    <motion.div key="syllabus" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                        <div className="grid gap-6 md:grid-cols-3">
+                            <div className="md:col-span-2 space-y-6">
+                                <Collapsible open={isUploaderOpen} onOpenChange={setIsUploaderOpen} className="space-y-4">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                        <div className="flex items-center gap-3">
+                                            <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">Course Syllabus</h3>
+                                            {modules && modules.length > 0 && (
+                                                <Badge variant="secondary" className="text-[10px] font-black uppercase tracking-tighter px-2 h-5 bg-slate-100 text-slate-400 rounded-md">
+                                                    {modules.length} Modules
+                                                </Badge>
+                                            )}
+                                        </div>
+                                        {modules && modules.length > 0 && (
+                                            <CollapsibleTrigger asChild>
+                                                <Button variant="ghost" size="sm" className="h-9 px-4 gap-2 text-primary font-black text-[11px] uppercase tracking-widest hover:bg-primary/5 w-fit rounded-xl">
+                                                    {isUploaderOpen ? <ChevronUp className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                                                    {isUploaderOpen ? "Hide Uploader" : "Add Content"}
+                                                </Button>
+                                            </CollapsibleTrigger>
+                                        )}
+                                    </div>
+
+                                    <CollapsibleContent>
+                                        <div className="mb-8">
+                                            <VideoUploader
+                                                courseId={course.id}
+                                                courseStatus={course.status || 'draft'}
+                                                hideVideoList={true}
+                                            />
+                                        </div>
+                                    </CollapsibleContent>
+                                </Collapsible>
+
+                                {modulesLoading ? (
+                                    <div className="space-y-4">
+                                        {[1, 2, 3].map((i) => <div key={i} className="h-32 bg-slate-100 animate-pulse rounded-[2rem]" />)}
+                                    </div>
+                                ) : isError ? (
+                                    <div className="text-center p-20 bg-red-50 rounded-[2.5rem] flex flex-col items-center">
+                                        <AlertTriangle className="h-10 w-10 text-red-400 mb-4" />
+                                        <h3 className="text-lg font-bold text-red-900">Failed to Load Modules</h3>
+                                        <Button variant="outline" className="mt-6 border-red-200 text-red-600" onClick={() => refetchModules()}>Retry</Button>
+                                    </div>
+                                ) : (!modules || modules.length === 0) ? (
+                                    <div className="bg-blue-50 border border-blue-100 rounded-[2rem] p-6 flex flex-col sm:flex-row items-center gap-6">
+                                        <div className="h-16 w-16 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600 shadow-sm"><Layers className="h-8 w-8" /></div>
+                                        <div className="flex-1 text-center sm:text-left">
+                                            <h3 className="text-lg font-bold text-slate-900">Quick Start</h3>
+                                            <p className="text-sm text-slate-500 mt-1">Add your first module or use the uploader to get started.</p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {modules.map((mod: CourseModule) => (
+                                            <ModuleItem key={mod.id} module={mod} course={course} />
+                                        ))}
+                                    </div>
                                 )}
                             </div>
-                            {modules && modules.length > 0 && (
-                                <CollapsibleTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-9 px-4 gap-2 text-primary font-black text-[11px] uppercase tracking-widest hover:bg-primary/5 w-fit rounded-xl">
-                                        {isUploaderOpen ? <ChevronUp className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                                        {isUploaderOpen ? "Hide Uploader" : "Add Content"}
-                                    </Button>
-                                </CollapsibleTrigger>
-                            )}
-                        </div>
 
-                        <CollapsibleContent>
-                            <div className="mb-8">
-                                <VideoUploader
-                                    courseId={course.id}
-                                    courseStatus={course.status || 'draft'}
-                                    hideVideoList={true}
-                                />
-                            </div>
-                        </CollapsibleContent>
-                    </Collapsible>
-
-                    {modulesLoading ? (
-                        <div className="space-y-4">
-                            {[1, 2, 3].map((i) => <div key={i} className="h-32 bg-slate-100 animate-pulse rounded-[2rem]" />)}
-                        </div>
-                    ) : isError ? (
-                        <div className="text-center p-20 bg-red-50 rounded-[2.5rem] flex flex-col items-center">
-                            <AlertTriangle className="h-10 w-10 text-red-400 mb-4" />
-                            <h3 className="text-lg font-bold text-red-900">Failed to Load Modules</h3>
-                            <Button variant="outline" className="mt-6 border-red-200 text-red-600" onClick={() => refetchModules()}>Retry</Button>
-                        </div>
-                    ) : (!modules || modules.length === 0) ? (
-                        <div className="bg-blue-50 border border-blue-100 rounded-[2rem] p-6 flex flex-col sm:flex-row items-center gap-6">
-                            <div className="h-16 w-16 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600 shadow-sm"><Layers className="h-8 w-8" /></div>
-                            <div className="flex-1 text-center sm:text-left">
-                                <h3 className="text-lg font-bold text-slate-900">Quick Start</h3>
-                                <p className="text-sm text-slate-500 mt-1">Add your first module or use the uploader to get started.</p>
+                            <div className="space-y-6">
+                                <Card>
+                                    <CardHeader><CardTitle>Course Details</CardTitle></CardHeader>
+                                    <CardContent className="space-y-4 text-sm">
+                                        {course.thumbnail_url && (
+                                            <div className="aspect-video w-full rounded-md overflow-hidden bg-muted">
+                                                <img src={course.thumbnail_url.startsWith('http') ? course.thumbnail_url : `/s3/public/${course.thumbnail_url}`} className="w-full h-full object-cover" alt="Thumbnail" />
+                                            </div>
+                                        )}
+                                        <div><span className="font-semibold">Category:</span> {course.category || 'N/A'}</div>
+                                        <div><span className="font-semibold">Level:</span> {course.level || 'N/A'}</div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-semibold">Status:</span>
+                                            <Badge variant={ (course.status === 'approved' || course.status === 'published') ? 'default' : 'outline' }>
+                                                {course.status === 'approved' || course.status === 'published' ? 'Live' : (course.status || 'Draft')}
+                                            </Badge>
+                                        </div>
+                                    </CardContent>
+                                </Card>
                             </div>
                         </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {modules.map((mod: CourseModule) => (
-                                <ModuleItem key={mod.id} module={mod} course={course} />
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                <div className="space-y-6">
-                    <Card>
-                        <CardHeader><CardTitle>Course Details</CardTitle></CardHeader>
-                        <CardContent className="space-y-4 text-sm">
-                            {course.thumbnail_url && (
-                                <div className="aspect-video w-full rounded-md overflow-hidden bg-muted">
-                                    <img src={course.thumbnail_url.startsWith('http') ? course.thumbnail_url : `/s3/public/${course.thumbnail_url}`} className="w-full h-full object-cover" alt="Thumbnail" />
-                                </div>
-                            )}
-                            <div><span className="font-semibold">Category:</span> {course.category || 'N/A'}</div>
-                            <div><span className="font-semibold">Level:</span> {course.level || 'N/A'}</div>
-                            <div className="flex items-center justify-between">
-                                <span className="font-semibold">Status:</span>
-                                <Badge variant={ (course.status === 'approved' || course.status === 'published') ? 'default' : 'outline' }>
-                                    {course.status === 'approved' || course.status === 'published' ? 'Live' : (course.status || 'Draft')}
-                                </Badge>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </motion.div>
     );
 }

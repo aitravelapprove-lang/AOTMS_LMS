@@ -67,7 +67,22 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
     description: "",
     module_id: "",
     is_published: true,
+    allowed_batches: [] as string[]
   });
+
+  const [batches, setBatches] = useState<{ id: string, batch_name: string, batch_type: string }[]>([]);
+  
+  useEffect(() => {
+    const loadBatches = async () => {
+      try {
+        const data = await fetchWithAuth(`/batches?course_id=${courseId}`);
+        setBatches(data || []);
+      } catch (e) {
+        console.error("Failed to load batches", e);
+      }
+    };
+    if (courseId) loadBatches();
+  }, [courseId]);
 
   const isCourseApproved = courseStatus === 'approved' || courseStatus === 'published' || courseStatus === 'draft' || courseStatus === 'rejected' || !courseStatus;
 
@@ -202,6 +217,7 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
         video_url: videoUrl,
         thumbnail_url: thumbnailUrl,
         order_index: videos.length,
+        allowed_batches: newVideo.allowed_batches
       });
       console.log('Step 2 complete: Database saved');
 
@@ -222,6 +238,7 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
         // Keep module ID selected (if we just created one, keep it selected for next upload)
         module_id: targetModuleId, 
         is_published: true,
+        allowed_batches: []
       }));
       
       // If we created a module, switch back to select mode with the new module selected
@@ -352,6 +369,37 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
                   )}
               </AnimatePresence>
             </div>
+
+            {/* Batch Selection */}
+            {batches.length > 0 && (
+              <div className="space-y-3">
+                <Label className="text-xs sm:text-sm font-black text-slate-700 uppercase tracking-widest ml-1">Restricted Access (Optional)</Label>
+                <div className="flex flex-wrap gap-2">
+                  {batches.map((batch) => {
+                    const isSelected = newVideo.allowed_batches.includes(batch.id);
+                    return (
+                      <Badge
+                        key={batch.id}
+                        variant={isSelected ? "default" : "outline"}
+                        className={`cursor-pointer h-10 px-4 rounded-xl font-bold uppercase text-[10px] sm:text-xs transition-all ${
+                          isSelected ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-slate-50 text-slate-500 border-slate-200'
+                        }`}
+                        onClick={() => {
+                          if (isSelected) {
+                            setNewVideo({ ...newVideo, allowed_batches: newVideo.allowed_batches.filter(id => id !== batch.id) });
+                          } else {
+                            setNewVideo({ ...newVideo, allowed_batches: [...newVideo.allowed_batches, batch.id] });
+                          }
+                        }}
+                      >
+                        {batch.batch_name}
+                      </Badge>
+                    );
+                  })}
+                </div>
+                <p className="text-[10px] text-slate-400 italic">No batches selected = visible to all students.</p>
+              </div>
+            )}
 
             <div className="flex flex-row gap-3 pt-3">
               <Button 

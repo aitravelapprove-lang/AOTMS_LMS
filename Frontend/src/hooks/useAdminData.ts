@@ -146,70 +146,76 @@ export function useAdminData(userRole?: string | null) {
     roleCounts: {},
   });
 
-  const fetchAllData = useCallback(async () => {
+  const fetchAllData = useCallback(async (isManual = false) => {
     if (!userRole || (userRole !== 'admin' && userRole !== 'manager')) {
       console.warn(`[AdminData] Fetch skipped: current role is "${userRole}"`);
       setLoading(false);
       return;
     }
 
+    if (isManual) {
+      toast({
+        title: "System Synchronization",
+        description: "Fetching latest platform telemetry...",
+      });
+    }
+
     setLoading(true);
     try {
-      // 1. Fetch Summary (Dashboard Stats)
-      fetchWithAuth('/admin/data-summary')
-        .then(summaryData => {
-          if (summaryData) {
-            const data = summaryData as SummaryData;
-            setStats({
-              totalUsers: data.users || 0,
-              activeCourses: data.activeCourses || 0,
-              pendingCourses: data.pendingCourses || 0,
-              pendingEnrollments: data.pendingEnrollments || 0,
-              securityEvents: data.securityEvents || 0,
-              highPriorityEvents: data.highPriorityEvents || 0,
-              roleCounts: data.roleCounts || {}
-            });
-          }
-        }).catch(err => console.error('Summary Fetch Error:', err));
+      // Create a promise array to track all fetches if we want a single completion toast
+      const fetchPromises = [
+        fetchWithAuth('/admin/data-summary')
+          .then(summaryData => {
+            if (summaryData) {
+              const data = summaryData as SummaryData;
+              setStats({
+                totalUsers: data.users || 0,
+                activeCourses: data.activeCourses || 0,
+                pendingCourses: data.pendingCourses || 0,
+                pendingEnrollments: data.pendingEnrollments || 0,
+                securityEvents: data.securityEvents || 0,
+                highPriorityEvents: data.highPriorityEvents || 0,
+                roleCounts: data.roleCounts || {}
+              });
+            }
+          }),
+        fetchWithAuth('/data/profiles?sort=created_at&order=desc&limit=100')
+          .then(async (profilesData) => {
+            const rolesData = await fetchWithAuth('/data/user_roles?limit=500');
+            if (profilesData && rolesData) {
+              const rolesMap = (rolesData as UserRole[]).reduce((acc, r) => {
+                acc[r.user_id] = r.role;
+                return acc;
+              }, {} as Record<string, string>);
 
-      // 2. Fetch Profiles and Roles
-      fetchWithAuth('/data/profiles?sort=created_at&order=desc&limit=100')
-        .then(async (profilesData) => {
-          const rolesData = await fetchWithAuth('/data/user_roles?limit=500');
-          if (profilesData && rolesData) {
-            const rolesMap = (rolesData as UserRole[]).reduce((acc, r) => {
-              acc[r.user_id] = r.role;
-              return acc;
-            }, {} as Record<string, string>);
+              const mergedProfiles = (profilesData as Profile[]).map(p => ({
+                ...p,
+                role: rolesMap[p.id] || 'student',
+                approval_status: p.approval_status || 'pending'
+              }));
 
-            const mergedProfiles = (profilesData as Profile[]).map(p => ({
-              ...p,
-              role: rolesMap[p.id] || 'student',
-              approval_status: p.approval_status || 'pending'
-            }));
+              setProfiles(mergedProfiles as Profile[]);
+              setUserRoles(rolesData as UserRole[]);
+            }
+          }),
+        fetchWithAuth('/data/courses?sort=created_at&order=desc&limit=200')
+          .then(data => data && setCourses(data as Course[])),
+        fetchWithAuth('/courses/enrollments')
+          .then(data => data && setEnrollments(data as CourseEnrollment[])),
+        fetchWithAuth('/data/security_events?sort=created_at&order=desc&limit=50')
+          .then(data => data && setSecurityEvents(data as SecurityEvent[])),
+        fetchWithAuth('/data/system_logs?sort=created_at&order=desc&limit=100')
+          .then(data => data && setSystemLogs(data as SystemLog[]))
+      ];
 
-            setProfiles(mergedProfiles as Profile[]);
-            setUserRoles(rolesData as UserRole[]);
-          }
-        }).catch(err => console.error('Profiles Fetch Error:', err));
+      await Promise.all(fetchPromises);
 
-      // 3. Independent Fetches
-      fetchWithAuth('/data/courses?sort=created_at&order=desc&limit=200')
-        .then(data => data && setCourses(data as Course[]))
-        .catch(err => console.error('Courses Fetch Error:', err));
-
-      fetchWithAuth('/courses/enrollments')
-        .then(data => data && setEnrollments(data as CourseEnrollment[]))
-        .catch(err => console.error('Enrollments Fetch Error:', err));
-
-      fetchWithAuth('/data/security_events?sort=created_at&order=desc&limit=50')
-        .then(data => data && setSecurityEvents(data as SecurityEvent[]))
-        .catch(err => console.error('Security Fetch Error:', err));
-
-      fetchWithAuth('/data/system_logs?sort=created_at&order=desc&limit=100')
-        .then(data => data && setSystemLogs(data as SystemLog[]))
-        .catch(err => console.error('Logs Fetch Error:', err));
-
+      if (isManual) {
+        toast({
+          title: "Success",
+          description: "All administrative nodes are synchronized.",
+        });
+      }
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.error('Error fetching admin data:', error);

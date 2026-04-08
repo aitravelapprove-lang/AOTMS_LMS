@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -43,11 +43,32 @@ interface StudentAccess {
     granted_at: string;
 }
 
+interface BatchStudentResponse {
+    student_id?: string;
+    id?: string;
+    student_name?: string;
+    student_email?: string;
+    profile?: {
+        full_name?: string;
+        email?: string;
+        avatar_url?: string;
+    };
+}
+
 interface Student {
     id: string;
     full_name: string;
     email: string;
     avatar_url?: string;
+    profile?: {
+        full_name?: string;
+        email?: string;
+        avatar_url?: string;
+    };
+    student_name?: string;
+    student_email?: string;
+    student_id?: string;
+    user_id?: string;
 }
 
 interface QuestionBankResponse {
@@ -63,9 +84,28 @@ interface Question {
     question_text: string;
     type: string;
     difficulty: string;
-    options?: any;
-    correct_answer?: any;
+    options?: unknown;
+    correct_answer?: unknown;
     topic: string;
+}
+
+interface Teacher {
+    user_id: string;
+    id?: string;
+    full_name: string;
+}
+
+interface Batch {
+    id: string;
+    _id?: string;
+    batch_name: string;
+    batch_type: string;
+    instructor_id: string;
+    instructor?: string | { _id?: string; id?: string; full_name?: string };
+    instructor_name?: string;
+    student_count: number;
+    start_time?: string;
+    end_time?: string;
 }
 
 export function QuestionBankApproval() {
@@ -98,6 +138,16 @@ export function QuestionBankApproval() {
     const [selectedStudentId, setSelectedStudentId] = useState("");
     const [isGranting, setIsGranting] = useState(false);
 
+    const [grantType, setGrantType] = useState<'student' | 'batch'>('student');
+    const [batches, setBatches] = useState<Batch[]>([]);
+    const [selectedBatchId, setSelectedBatchId] = useState("");
+    const [loadingBatches, setLoadingBatches] = useState(false);
+    const [instructors, setInstructors] = useState<Teacher[]>([]);
+    const [selectedInstructorId, setSelectedInstructorId] = useState("all");
+    const [selectedBatchTypeFilter, setSelectedBatchTypeFilter] = useState("all");
+    const [batchStudents, setBatchStudents] = useState<Student[]>([]);
+    const [loadingBatchStudents, setLoadingBatchStudents] = useState(false);
+
     const fetchPendingBanks = async (showLoading = true) => {
         try {
             if (showLoading && pendingBanks.length === 0 && approvedBanks.length === 0) setLoading(true);
@@ -126,15 +176,58 @@ export function QuestionBankApproval() {
     useEffect(() => {
         fetchPendingBanks();
         fetchStudents();
+        fetchInstructors();
         const interval = setInterval(() => fetchPendingBanks(), 15000);
         return () => clearInterval(interval);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    useEffect(() => {
+        if (selectedBatchId && grantType === 'batch') {
+            fetchBatchStudents(selectedBatchId);
+        } else {
+            setBatchStudents([]);
+        }
+    }, [selectedBatchId, grantType]);
+
+    const fetchBatchStudents = async (batchId: string) => {
+        setLoadingBatchStudents(true);
+        try {
+            const data = await fetchWithAuth(`/batches/${batchId}/students`) as BatchStudentResponse[];
+            // Map the enrollment data to Student format
+            const studentsList: Student[] = data.map(item => ({
+                id: item.student_id || item.id,
+                full_name: item.profile?.full_name || item.student_name || 'Anonymous',
+                email: item.profile?.email || item.student_email || 'No email',
+                avatar_url: item.profile?.avatar_url
+            }));
+            setBatchStudents(studentsList || []);
+        } catch (err) {
+            console.error('Failed to fetch batch students', err);
+            setBatchStudents([]);
+        } finally {
+            setLoadingBatchStudents(false);
+        }
+    };
+
+    const fetchInstructors = async () => {
+        try {
+            const data = await fetchWithAuth('/admin/instructors') as Teacher[];
+            // Ensure every instructor has a string ID for React/Radix selection
+            const sanitized = (data || []).map(inst => ({
+                ...inst,
+                id: (inst.user_id)?.toString()
+            }));
+            setInstructors(sanitized);
+        } catch (err) {
+            console.error('Failed to fetch instructors', err);
+        }
+    };
+
     const fetchStudents = async () => {
         setLoadingStudents(true);
         try {
-            const res = await fetchWithAuth('/admin/students');
+            const res = await fetchWithAuth('/admin/students') as Student[];
             setStudents(res || []);
         } catch (err) {
             console.error('Failed to fetch students', err);
@@ -151,7 +244,7 @@ export function QuestionBankApproval() {
         setViewingQuestions(topic);
         setLoadingQuestions(true);
         try {
-            const res = await fetchWithAuth(`/data/question_bank?topic=${encodeURIComponent(topic)}`);
+            const res = await fetchWithAuth(`/data/question_bank?topic=${encodeURIComponent(topic)}`) as Question[];
             setQuestionsList(Array.isArray(res) ? res : []);
         } catch (err) {
             console.error('Failed to fetch questions preview', err);
@@ -261,8 +354,49 @@ export function QuestionBankApproval() {
         }
     };
 
+    const handleGrantAccessClick = async (topic: string) => {
+        setGrantingTopic(topic);
+        setGrantType('student');
+        setSelectedStudentId("");
+        setSelectedBatchId("");
+        setSelectedInstructorId("all");
+        setSelectedBatchTypeFilter("all");
+        setShowGrantDialog(true);
+        setLoadingBatches(true);
+        try {
+            // "REMOVE CONCEPT" of course-matching: Just fetch all active batches 
+            // and let the user filter by instructor/schedule manually.
+            const batchData = await fetchWithAuth('/batches') as Batch[];
+            setBatches(batchData || []);
+        } catch (err) {
+            console.error('Failed to fetch batches:', err);
+        } finally {
+            setLoadingBatches(false);
+        }
+    };
+
+    const filteredBatches = useMemo(() => {
+        if (!batches || batches.length === 0) return [];
+        
+        const filtered = batches.filter(b => {
+            const inst = b.instructor;
+            const batchInstructorId = (b.instructor_id || (typeof inst === 'object' ? (inst?._id || inst?.id) : inst))?.toString();
+            
+            const matchesInstructor = selectedInstructorId === 'all' || batchInstructorId === selectedInstructorId;
+            const matchesType = selectedBatchTypeFilter === 'all' || b.batch_type === selectedBatchTypeFilter;
+            
+            return matchesInstructor && matchesType;
+        });
+
+        // "REMOVE CONCEPT" of empty states: If filtering returns nothing but we have batches, 
+        // fallback to just showing all batches so the user can actually select something.
+        return filtered.length > 0 ? filtered : batches;
+    }, [batches, selectedInstructorId, selectedBatchTypeFilter]);
+
     const handleGrantAccess = async () => {
-        if (!grantingTopic || !selectedStudentId) return;
+        if (!grantingTopic) return;
+        if (grantType === 'student' && !selectedStudentId) return;
+        if (grantType === 'batch' && !selectedBatchId) return;
 
         setIsGranting(true);
         try {
@@ -270,18 +404,23 @@ export function QuestionBankApproval() {
                 method: 'POST',
                 body: JSON.stringify({
                     topic: grantingTopic,
-                    userId: selectedStudentId
+                    userId: selectedStudentId,
+                    batchId: grantType === 'batch' ? selectedBatchId : undefined,
+                    type: grantType
                 })
             });
 
             toast({
-                title: 'Access Granted! 🚀',
-                description: `Student now has access to mock tests for ${grantingTopic}`
+                title: grantType === 'batch' ? 'Batch Access Granted! 🚀' : 'Access Granted! 🚀',
+                description: grantType === 'batch' 
+                    ? `All students in the selected batch now have access to ${grantingTopic}`
+                    : `Student now has access to mock tests for ${grantingTopic}`
             });
 
             setShowGrantDialog(false);
             setGrantingTopic(null);
             setSelectedStudentId("");
+            setSelectedBatchId("");
             fetchPendingBanks(false);
         } catch (err) {
             toast({
@@ -488,10 +627,7 @@ export function QuestionBankApproval() {
 
                                             <div className="p-4 sm:p-6 lg:bg-slate-50/50 flex flex-row lg:flex-col justify-center gap-2 sm:gap-3 border-t lg:border-t-0 lg:border-l border-slate-100 min-w-0 lg:min-w-[200px]">
                                                 <Button
-                                                    onClick={() => {
-                                                        setGrantingTopic(bank.topic);
-                                                        setShowGrantDialog(true);
-                                                    }}
+                                                    onClick={() => handleGrantAccessClick(bank.topic)}
                                                     className="w-full h-11 rounded-xl pro-button-primary shadow-lg shadow-primary/20 font-bold"
                                                 >
                                                    <Users className="h-4 w-4 mr-2" />
@@ -814,44 +950,221 @@ export function QuestionBankApproval() {
                 <DialogContent className="sm:max-w-md border-none shadow-2xl rounded-[2rem] bg-white p-0 overflow-hidden">
                     <div className="bg-primary p-8 text-white relative">
                         <div className="h-16 w-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 border border-white/30 shadow-xl relative z-10">
-                            <Users className="h-8 w-8 text-white" />
+                            <ShieldCheck className="h-8 w-8 text-white" />
                         </div>
-                        <DialogTitle className="text-2xl font-black tracking-tight relative z-10">Grant Mock Access</DialogTitle>
-                        <DialogDescription className="text-white/80 mt-2 font-medium relative z-10">Select a student to unlock {grantingTopic}</DialogDescription>
+                        <DialogTitle className="text-2xl font-black tracking-tight relative z-10">Grant Repository Access</DialogTitle>
+                        <DialogDescription className="text-white/80 mt-2 font-medium relative z-10">Deploy {grantingTopic} to students or batches</DialogDescription>
                     </div>
                     
                     <div className="p-8 space-y-6 bg-white">
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <Label className="text-xs font-black uppercase text-slate-500 tracking-widest pl-1">Target Student</Label>
-                                <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
-                                    <SelectTrigger className="h-14 rounded-2xl border-slate-200 bg-slate-50 focus:ring-primary/20 font-bold text-slate-700">
-                                        <SelectValue placeholder="Pick a student..." />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-slate-200 shadow-xl max-h-[300px]">
-                                        {students.map((student) => (
-                                            <SelectItem 
-                                                key={student.id} 
-                                                value={student.id}
-                                                className="font-bold py-3 hover:bg-slate-50 rounded-xl"
-                                            >
-                                                <div className="flex items-center gap-2">
-                                                    <Avatar className="h-6 w-6">
-                                                        <AvatarImage src={student.avatar_url} />
-                                                        <AvatarFallback>{student.full_name.charAt(0)}</AvatarFallback>
-                                                    </Avatar>
-                                                    <span>{student.full_name}</span>
-                                                </div>
-                                            </SelectItem>
-                                        ))}
-                                        {students.length === 0 && (
-                                            <div className="p-4 text-center text-sm text-slate-400">No students available</div>
+                        <Tabs value={grantType} onValueChange={(v) => setGrantType(v as 'student' | 'batch')} className="w-full">
+                            <TabsList className="grid grid-cols-2 mb-6 bg-slate-100 p-1 rounded-xl">
+                                <TabsTrigger value="student" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold text-xs uppercase tracking-widest">Individual</TabsTrigger>
+                                <TabsTrigger value="batch" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold text-xs uppercase tracking-widest">Logic Batch</TabsTrigger>
+                            </TabsList>
+                            
+                            <TabsContent value="student" className="space-y-4 mt-0">
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Target Student</Label>
+                                    <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
+                                        <SelectTrigger className="h-14 rounded-2xl border-slate-200 bg-slate-50 focus:ring-primary/20 font-bold text-slate-700 transition-all hover:bg-white">
+                                            <SelectValue placeholder="Pick a student..." />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-2xl border-slate-200 shadow-xl max-h-[300px]">
+                                            {students.map((student) => (
+                                                <SelectItem 
+                                                    key={student.id} 
+                                                    value={student.id}
+                                                    className="font-bold py-3 hover:bg-slate-50 rounded-xl"
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <Avatar className="h-6 w-6">
+                                                            <AvatarImage src={student.avatar_url} />
+                                                            <AvatarFallback>{student.full_name.charAt(0)}</AvatarFallback>
+                                                        </Avatar>
+                                                        <span>{student.full_name}</span>
+                                                    </div>
+                                                </SelectItem>
+                                            ))}
+                                            {students.length === 0 && (
+                                                <div className="p-4 text-center text-sm text-slate-400">No students available</div>
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </TabsContent>
+
+                            <TabsContent value="batch" className="space-y-4 mt-0">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Instructor</Label>
+                                        <Select value={selectedInstructorId} onValueChange={setSelectedInstructorId}>
+                                            <SelectTrigger className="h-12 rounded-xl border-slate-200 bg-slate-50 focus:ring-primary/20 font-bold text-slate-700">
+                                                <SelectValue placeholder="All Instructors" />
+                                            </SelectTrigger>
+                                            <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                                                <SelectItem value="all">All Instructors</SelectItem>
+                                                {instructors.map((inst) => (
+                                                    <SelectItem key={inst.id} value={inst.id?.toString()} className="font-bold py-2">{inst.full_name}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Batch Schedule</Label>
+                                        <Select value={selectedBatchTypeFilter} onValueChange={setSelectedBatchTypeFilter}>
+                                            <SelectTrigger className="h-12 rounded-xl border-slate-200 bg-slate-50 focus:ring-primary/20 font-bold text-slate-700">
+                                                <SelectValue placeholder="Any Schedule" />
+                                            </SelectTrigger>
+                                            <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                                                <SelectItem value="all">All Times</SelectItem>
+                                                <SelectItem value="morning">Morning</SelectItem>
+                                                <SelectItem value="afternoon">Afternoon</SelectItem>
+                                                <SelectItem value="evening">Evening</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                {(selectedInstructorId !== "all" || selectedBatchTypeFilter !== "all" || instructors.length > 0) && (
+                                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Target Curriculum Batch</Label>
+                                        {loadingBatches ? (
+                                            <div className="h-14 rounded-2xl border border-dashed border-slate-200 flex items-center justify-center gap-2 text-slate-300">
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                <span className="text-[10px] font-black uppercase tracking-[0.2em]">Syncing Batches...</span>
+                                            </div>
+                                        ) : (
+                                            <Select value={selectedBatchId} onValueChange={setSelectedBatchId}>
+                                                <SelectTrigger className="h-14 rounded-2xl border-slate-200 bg-slate-50 focus:ring-primary/20 font-bold text-slate-700 transition-all hover:bg-white overflow-hidden">
+                                                    <SelectValue placeholder={filteredBatches.length > 0 ? "Select from filtered batches..." : "No matching batches"} />
+                                                </SelectTrigger>
+                                                <SelectContent className="rounded-2xl border-slate-200 shadow-xl max-h-[300px]">
+                                                    {filteredBatches.length === 0 ? (
+                                                        <div className="p-4 text-center text-sm text-slate-400 italic">No batches found for these filters</div>
+                                                    ) : (
+                                                        filteredBatches.map((batch) => {
+                                                            const bId = (batch.id || batch._id)?.toString();
+                                                            return (
+                                                                <SelectItem 
+                                                                    key={bId} 
+                                                                    value={bId}
+                                                                    className="font-bold py-3 hover:bg-slate-50 rounded-xl"
+                                                                >
+                                                                    <div className="flex flex-col items-start gap-1">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-slate-900">{batch.batch_name}</span>
+                                                                            {batch.student_count !== undefined && (
+                                                                                <Badge variant="secondary" className="h-4 px-1.5 text-[8px] bg-emerald-50 text-emerald-600 border-none font-black">
+                                                                                    {batch.student_count} Students
+                                                                                </Badge>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <Badge variant="outline" className="text-[8px] h-3.5 px-1 uppercase font-black tracking-tight">
+                                                                                {batch.batch_type}
+                                                                            </Badge>
+                                                                            <span className="text-[9px] text-slate-400 font-medium italic">{batch.start_time} - {batch.end_time}</span>
+                                                                            {batch.instructor_name && <span className="text-[9px] text-primary font-black ml-1">• {batch.instructor_name}</span>}
+                                                                        </div>
+                                                                    </div>
+                                                                </SelectItem>
+                                                            );
+                                                        })
+                                                    )}
+                                                </SelectContent>
+                                            </Select>
                                         )}
-                                    </SelectContent>
-                                </Select>
+                                    </div>
+                                )}
+
+                                {selectedBatchId && grantType === 'batch' && (
+                                    <div className="space-y-3 pt-6 border-t border-slate-100 animate-in fade-in slide-in-from-bottom-2 duration-500 mt-6 relative">
+                                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white px-4 py-1 rounded-full border border-slate-100 shadow-sm">
+                                            <span className="text-[9px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                                                <Users className="h-3 w-3" />
+                                                Cohort Registry
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-center justify-between px-1">
+                                            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Enrolled Students ({batchStudents.length})</Label>
+                                            <div className="flex -space-x-2">
+                                                {batchStudents.slice(0, 3).map((s, i) => (
+                                                    <Avatar key={i} className="h-5 w-5 border-2 border-white ring-1 ring-slate-100">
+                                                        <AvatarImage src={s.profile?.avatar_url} />
+                                                        <AvatarFallback className="text-[6px] font-black">{(s.profile?.full_name || 'S').charAt(0)}</AvatarFallback>
+                                                    </Avatar>
+                                                ))}
+                                                {batchStudents.length > 3 && (
+                                                    <div className="h-5 w-5 rounded-full bg-slate-100 border-2 border-white ring-1 ring-slate-100 flex items-center justify-center text-[6px] font-black text-slate-400">
+                                                        +{batchStudents.length - 3}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        
+                                        <ScrollArea className="h-[140px] rounded-2xl border border-slate-100 bg-slate-50/30 p-2">
+                                            {loadingBatchStudents ? (
+                                                <div className="flex flex-col items-center justify-center p-8 space-y-3">
+                                                    <div className="relative">
+                                                        <div className="h-8 w-8 rounded-full border-2 border-primary/10 border-t-primary animate-spin" />
+                                                        <div className="absolute inset-0 flex items-center justify-center">
+                                                            <Users className="h-3 w-3 text-primary/40" />
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 animate-pulse">Syncing Roster...</span>
+                                                </div>
+                                            ) : batchStudents.length === 0 ? (
+                                                <div className="flex flex-col items-center justify-center p-8 text-center bg-white/50 rounded-xl border border-dashed border-slate-200">
+                                                    <div className="h-10 w-10 rounded-full bg-slate-50 flex items-center justify-center mb-3">
+                                                        <Users className="h-5 w-5 text-slate-300" />
+                                                    </div>
+                                                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-tight">Zero members discovered</p>
+                                                    <p className="text-[9px] text-slate-300 font-medium italic mt-1">This cohort is currently vacant</p>
+                                                </div>
+                                            ) : (
+                                                <div className="grid grid-cols-1 gap-1.5">
+                                                    {batchStudents.map((s, idx) => (
+                                                        <div 
+                                                            key={s.id} 
+                                                            className="flex items-center gap-3 p-2 rounded-xl bg-white border border-slate-100 hover:border-primary/20 hover:shadow-sm transition-all group animate-in fade-in slide-in-from-left duration-500"
+                                                            style={{ animationDelay: `${idx * 40}ms` }}
+                                                        >
+                                                            <div className="relative">
+                                                                <Avatar className="h-7 w-7 border border-slate-100 group-hover:scale-105 transition-transform duration-300">
+                                                                    <AvatarImage src={s.avatar_url || s.profile?.avatar_url} />
+                                                                    <AvatarFallback className="text-[9px] font-black bg-primary/5 text-primary">{(s.full_name || s.profile?.full_name || 'S').charAt(0).toUpperCase()}</AvatarFallback>
+                                                                </Avatar>
+                                                                <div className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 border-2 border-white shadow-sm" />
+                                                            </div>
+                                                            <div className="flex flex-col min-w-0">
+                                                                <span className="text-[10px] font-black text-slate-700 truncate leading-none mb-1 group-hover:text-primary transition-colors">{s.full_name || s.profile?.full_name || s.student_name || `Student #${(s.id || s.student_id)?.toString().slice(-4)}`}</span>
+                                                                <div className="flex items-center gap-1.5 overflow-hidden">
+                                                                    <span className="text-[8px] text-slate-400 font-bold truncate tracking-tight">{s.profile?.email || s.student_email || 'No record'}</span>
+                                                                    <span className="h-1 w-1 rounded-full bg-slate-200 flex-shrink-0" />
+                                                                    <span className="text-[7px] font-black uppercase text-slate-300 tracking-tighter shrink-0">Active ID: {(s.student_id || s.user_id)?.toString().slice(-4)}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </ScrollArea>
+                                    </div>
+                                )}
+                            </TabsContent>
+                        </Tabs>
+
+                        <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 space-y-2">
+                            <div className="flex items-center gap-2">
+                                <Badge className="bg-emerald-100 text-emerald-700 border-none font-black text-[9px] uppercase tracking-tighter">Automatic Deployment</Badge>
+                                <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest italic">Encrypted Pipeline</span>
                             </div>
-                            <p className="text-xs text-slate-500 font-medium leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100">
-                                This will automatically assign this Question Bank topic to the student. They will see a notification and can immediately take mock tests.
+                            <p className="text-[10px] text-slate-500 font-bold leading-relaxed uppercase tracking-tight opacity-70">
+                                {grantType === 'batch' 
+                                    ? "This will grant access to EVERY student currently assigned to the selected batch. Students will be notified instantly."
+                                    : "Individual student will receive immediate access and a push notification for this logic repository."}
                             </p>
                         </div>
 
@@ -865,11 +1178,11 @@ export function QuestionBankApproval() {
                             </Button>
                             <Button
                                 onClick={handleGrantAccess}
-                                disabled={!selectedStudentId || isGranting}
+                                disabled={(grantType === 'student' && !selectedStudentId) || (grantType === 'batch' && !selectedBatchId) || isGranting}
                                 className="flex-[2] h-12 rounded-xl pro-button-primary shadow-xl shadow-primary/30 font-bold"
                             >
                                 {isGranting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ShieldCheck className="h-4 w-4 mr-2" />}
-                                Grant Access
+                                {grantType === 'batch' ? 'Authorize Batch' : 'Grant Access'}
                             </Button>
                         </div>
                     </div>

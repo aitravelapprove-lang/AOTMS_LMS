@@ -384,3 +384,54 @@ export interface StudentDashboardData {
 }
 
 
+
+export function useStudentBatch(courseId: string | null) {
+    const { user } = useAuth();
+    return useQuery({
+        queryKey: ['student-course-batch', courseId, user?.id],
+        queryFn: async () => {
+            if (!courseId || !user?.id) return null;
+            return await fetchWithAuth(`/batches/my-batch/${courseId}`) as { 
+                id: string; 
+                batch_name: string; 
+                batch_type: 'morning' | 'afternoon' | 'evening'; 
+                start_time: string; 
+                end_time: string;
+            } | null;
+        },
+        enabled: !!courseId && !!user?.id,
+    });
+}
+
+export function useAvailableBatches(courseId: string | null) {
+    return useQuery({
+        queryKey: ['available-batches', courseId],
+        queryFn: async () => {
+            if (!courseId) return [];
+            return await fetchWithAuth(`/batches/course/${courseId}`) as {
+                id: string;
+                batch_name: string;
+                batch_type: 'morning' | 'afternoon' | 'evening';
+                start_time: string;
+                end_time: string;
+            }[];
+        },
+        enabled: !!courseId,
+    });
+}
+
+export function useRequestBatchAssignment() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ courseId, batchId }: { courseId: string, batchId: string }) => {
+            return fetchWithAuth('/batches/student-request', {
+                method: 'POST',
+                body: JSON.stringify({ courseId, batchId })
+            });
+        },
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['student-course-batch', variables.courseId] });
+            queryClient.invalidateQueries({ queryKey: ['enrolled-courses-details'] });
+        }
+    });
+}

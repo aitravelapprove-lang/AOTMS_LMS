@@ -1,8 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Play, BookOpen, Clock, Sparkles, ChevronRight, LayoutGrid, CreditCard } from "lucide-react";
-import { useEnrolledCourses, useAvailableCourses, StudentCourse } from "@/hooks/useStudentData";
+import { Play, BookOpen, Clock, Sparkles, ChevronRight, LayoutGrid, CreditCard, Layers } from "lucide-react";
+import { useEnrolledCourses, useAvailableCourses, StudentCourse, useStudentBatch } from "@/hooks/useStudentData";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
@@ -10,6 +10,22 @@ import { motion } from "framer-motion";
 interface CourseListProps {
     type?: 'enrolled' | 'available';
     onSelectCourse?: (course: StudentCourse) => void;
+}
+
+function CourseBatchBadge({ courseId }: { courseId: string }) {
+    const { data: batch, isLoading } = useStudentBatch(courseId);
+
+    if (isLoading || !batch) return null;
+
+    return (
+        <div className="flex items-center gap-2 mt-2 px-3 py-1.5 bg-primary/5 border border-primary/10 rounded-xl animate-in fade-in slide-in-from-left-2">
+            <Layers className="h-3 w-3 text-primary" />
+            <div className="flex flex-col">
+                <span className="text-[9px] font-black uppercase tracking-widest text-primary leading-tight">Assigned: {batch.batch_name}</span>
+                <span className="text-[8px] font-bold text-slate-400 leading-tight uppercase">{batch.batch_type} • {batch.start_time}-{batch.end_time}</span>
+            </div>
+        </div>
+    );
 }
 
 // Remove getYouTubeId as courses now use direct S3 image uploads
@@ -182,6 +198,8 @@ export function CourseList({ type = 'enrolled', onSelectCourse }: CourseListProp
                                                     <span className="text-primary">{course.progress || 0}%</span>
                                                 </div>
                                                 <Progress value={course.progress || 0} className="h-2.5 bg-muted-foreground/20 [&>div]:bg-primary" />
+                                                
+                                                <CourseBatchBadge courseId={course.id} />
                                             </>
                                         )}
                                     </div>
@@ -196,7 +214,7 @@ export function CourseList({ type = 'enrolled', onSelectCourse }: CourseListProp
                                                     className="mt-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 font-bold"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        onSelectCourse && onSelectCourse(course);
+                                                        onSelectCourse?.(course);
                                                     }}
                                                 >
                                                     View Content <ChevronRight className="h-3 w-3 ml-1" />
@@ -232,7 +250,7 @@ export function CourseList({ type = 'enrolled', onSelectCourse }: CourseListProp
                                                     className="w-full group/btn pro-button-primary"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        if (onSelectCourse) onSelectCourse(course);
+                                                        onSelectCourse?.(course);
                                                     }}
                                                 >
                                                     Purchase Course

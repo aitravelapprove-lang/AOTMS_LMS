@@ -1,6 +1,7 @@
 import Header from "@/components/landing/Header";
 import HeroSection from "@/components/landing/HeroSection";
 import WhyAOTMS from "@/components/landing/WhyAOTMS";
+import CompanyCarousel from "@/components/landing/CompanyCarousel";
 import KeyFeatures from "@/components/landing/KeyFeatures";
 import FeaturedCourses from "@/components/landing/FeaturedCourses";
 import CareerRoadmap from "@/components/landing/CareerRoadmap";
@@ -21,6 +22,7 @@ const Home = () => {
             <HeroSection />
           </div>
           <WhyAOTMS />
+          <CompanyCarousel />
           <FeaturedCourses />
           <CareerRoadmap />
           <KeyFeatures />

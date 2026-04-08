@@ -14,6 +14,10 @@ import { ExamRulesManager } from "@/components/manager/ExamRulesManager";
 import { ManagerCourses } from "@/components/manager/ManagerCourses";
 import { EnrollmentsList } from "@/components/admin/EnrollmentsList";
 import { CourseAssignment } from "@/components/admin/CourseAssignment";
+import { CouponManager } from "@/components/admin/CouponManager";
+import { GrantStudentAccess } from "@/components/admin/GrantStudentAccess";
+import { ResumeScanHistory } from "@/components/admin/ResumeScanHistory";
+import { ExamApproval } from "@/components/admin/ExamApproval";
 import { InstructorManagement } from "@/components/manager/InstructorManagement";
 import { ManagerVideoLibrary } from "@/components/manager/ManagerVideoLibrary";
 import { useAdminData } from "@/hooks/useAdminData";
@@ -401,6 +405,14 @@ export default function ManagerDashboard() {
         return <InstructorManagement />;
       case "video-library":
         return <ManagerVideoLibrary />;
+      case "coupons":
+        return <CouponManager />;
+      case "grant-access":
+        return <GrantStudentAccess />;
+      case "resume-scans":
+        return <ResumeScanHistory />;
+      case "exam-approvals":
+        return <ExamApproval />;
       case "profile":
         return <UserProfile />;
       default:

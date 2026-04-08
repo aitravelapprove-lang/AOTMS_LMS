@@ -81,7 +81,10 @@ export default function Auth() {
   const [registrationStep, setRegistrationStep] = useState<RegistrationStep>('email');
   const [tempUserData, setTempUserData] = useState<{ fullName: string; email: string } | null>(null);
   const [otpResendTimer, setOtpResendTimer] = useState(0);
-  const { signIn, signUp, user, loading: authLoading } = useAuth();
+  const [loginStep, setLoginStep] = useState<'credentials' | 'admin-otp'>('credentials');
+  const [adminLoginEmail, setAdminLoginEmail] = useState('');
+  const [adminOtpResendTimer, setAdminOtpResendTimer] = useState(0);
+  const { signIn, signUp, user, loading: authLoading, verifyAdminOtp } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -125,7 +128,14 @@ export default function Auth() {
     }
   }, [otpResendTimer]);
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  useEffect(() => {
+    if (adminOtpResendTimer > 0) {
+      const timer = setTimeout(() => setAdminOtpResendTimer(adminOtpResendTimer - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [adminOtpResendTimer]);
+
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
   const handleSendOtp = async (data: EmailVerifyFormData) => {
     setLoading(true);
@@ -288,17 +298,26 @@ export default function Auth() {
 
   const handleLogin = async (data: LoginFormData) => {
     setLoading(true);
-    const { error } = await signIn(data.email, data.password);
+    const result = await signIn(data.email, data.password);
 
-    if (error) {
+    if (result.error) {
       setLoading(false);
       toast({
         title: 'Login Failed',
-        description: error.message,
+        description: result.error.message,
         variant: 'destructive',
       });
+    } else if (result.requiresAdminOtp) {
+      setLoading(false);
+      setAdminLoginEmail(data.email);
+      setLoginStep('admin-otp');
+      setAdminOtpResendTimer(120);
+      otpForm.reset();
+      toast({
+        title: 'OTP Required',
+        description: 'A verification code has been sent to your admin email.',
+      });
     } else {
-      // Data is already updated in useAuth and localStorage
       setLoading(false);
       toast({ title: 'Welcome back!' });
 
@@ -314,6 +333,47 @@ export default function Auth() {
     }
   };
 
+  const handleAdminOtpVerify = async (data: OtpFormData) => {
+    setLoading(true);
+    const { error } = await verifyAdminOtp(adminLoginEmail, data.otp);
+
+    if (error) {
+      setLoading(false);
+      toast({
+        title: 'Verification Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      setLoading(false);
+      toast({ title: 'Admin Login Verified', description: 'Welcome to the admin panel.' });
+      navigate('/');
+    }
+  };
+
+  const handleAdminOtpResend = async () => {
+    if (adminOtpResendTimer > 0) return;
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/auth/admin-resend-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: adminLoginEmail }),
+      });
+      if (response.ok) {
+        setAdminOtpResendTimer(120);
+        toast({ title: 'OTP Resent', description: 'A new OTP has been sent to your email.' });
+      } else {
+        const result = await response.json();
+        toast({ title: 'Error', description: result.error || 'Failed to resend OTP.', variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'Error', description: 'Failed to resend OTP.', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const toggleMode = () => {
     const newMode = !isLogin;
     setIsLogin(newMode);
@@ -324,6 +384,8 @@ export default function Auth() {
     detailsForm.reset();
     setRegistrationStep('email');
     setTempUserData(null);
+    setLoginStep('credentials');
+    setAdminLoginEmail('');
   };
 
   const PasswordRequirement = ({ met, text }: { met: boolean; text: string }) => (
@@ -378,11 +440,15 @@ export default function Auth() {
           {/* Header */}
           <div className="text-center mb-8">
             <h2 className="text-3xl font-black text-slate-950 mb-2 tracking-tight">
-              {isLogin ? 'Welcome back' : registrationStep === 'email' ? 'Create account' : registrationStep === 'otp' ? 'Verify' : 'Complete'}
+              {isLogin
+                ? loginStep === 'admin-otp' ? 'Admin Verification' : 'Welcome back'
+                : registrationStep === 'email' ? 'Create account' : registrationStep === 'otp' ? 'Verify' : 'Complete'}
             </h2>
             <p className="text-muted-foreground text-sm">
               {isLogin
-                ? 'Sign in to continue your learning journey.'
+                ? loginStep === 'admin-otp'
+                  ? `Enter the OTP sent to ${adminLoginEmail}`
+                  : 'Sign in to continue your learning journey.'
                 : registrationStep === 'email'
                 ? 'Enter your details to get started'
                 : registrationStep === 'otp'
@@ -393,6 +459,87 @@ export default function Auth() {
 
           {/* Login Form */}
           {isLogin ? (
+            loginStep === 'admin-otp' ? (
+              /* Admin OTP Verification Step */
+              <Form {...otpForm}>
+                <form onSubmit={otpForm.handleSubmit(handleAdminOtpVerify)} className="space-y-4">
+                  <div className="text-center mb-4">
+                    <div className="w-12 h-12 bg-[#0075CF]/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <ShieldCheck className="h-6 w-6 text-[#0075CF]" />
+                    </div>
+                    <h3 className="text-lg font-semibold">Admin Verification Required</h3>
+                    <p className="text-sm text-muted-foreground">
+                      We've sent a 6-digit OTP to<br />
+                      <span className="font-medium text-foreground">{adminLoginEmail}</span>
+                    </p>
+                  </div>
+
+                  <div className="flex justify-center gap-2">
+                    {[0, 1, 2, 3, 4, 5].map((index) => (
+                      <input
+                        key={index}
+                        ref={(el) => { otpInputRefs.current[index] = el; }}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        className="w-12 h-12 text-center text-lg font-semibold bg-background border-2 border-input rounded-lg focus:border-[#0075CF] focus:ring-2 focus:ring-[#0075CF]/20 outline-none transition-all"
+                        onChange={(e) => handleOtpInputChange(index, e.target.value, otpForm.setValue.bind(null, 'otp'))}
+                        onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                        value={otpForm.getValues('otp')[index] || ''}
+                      />
+                    ))}
+                  </div>
+                  <FormField
+                    control={otpForm.control}
+                    name="otp"
+                    render={({ field }) => (
+                      <FormItem className="hidden">
+                        <FormControl>
+                          <Input type="hidden" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full h-14 bg-gradient-to-r from-[#0075CF] to-[#3391D9] text-white font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-[#0075CF]/20 hover:shadow-[#0075CF]/40 transition-all duration-300 active:scale-[0.98]"
+                  >
+                    {loading ? 'Verifying...' : 'Verify & Login'}
+                  </Button>
+
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground">
+                      Didn't receive the code?{' '}
+                      <button
+                        type="button"
+                        onClick={handleAdminOtpResend}
+                        disabled={adminOtpResendTimer > 0 || loading}
+                        className="text-[#0075CF] hover:underline font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {adminOtpResendTimer > 0 ? `Resend in ${adminOtpResendTimer}s` : 'Resend OTP'}
+                      </button>
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLoginStep('credentials');
+                      otpForm.reset();
+                      setAdminLoginEmail('');
+                    }}
+                    className="w-full text-sm text-muted-foreground hover:text-foreground flex items-center justify-center gap-1"
+                  >
+                    <ArrowLeft className="h-3 w-3" />
+                    Back to login
+                  </button>
+                </form>
+              </Form>
+            ) : (
+            /* Credentials Step */
             <Form {...loginForm}>
               <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-6">
                 <FormField
@@ -477,6 +624,7 @@ export default function Auth() {
                 </Button>
               </form>
             </Form>
+            )
           ) : (
             /* Multi-Step Registration Form */
             <div className="space-y-4">

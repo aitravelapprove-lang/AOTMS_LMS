@@ -45,8 +45,25 @@ import {
   Briefcase,
   GraduationCap,
   Award,
-  Presentation
+  Presentation,
+  Shield,
+  Mail,
+  Fingerprint,
+  Calendar,
+  Activity,
+  MoreVertical,
+  ArrowRight
 } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { Profile } from "@/hooks/useAdminData";
 
 interface UserManagementProps {
@@ -195,245 +212,202 @@ export function UserManagement({
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-3">
-      <Card className="xl:col-span-2 overflow-hidden">
-        <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className="h-10 w-10 shrink-0 rounded-xl bg-primary/10 flex items-center justify-center mt-0.5">
+    <div className="space-y-6 animate-in fade-in duration-700">
+      {/* Main Student Registry - Realigned with Grant Access Style */}
+      <Card className="border-slate-200 shadow-sm rounded-2xl overflow-hidden bg-white">
+        <CardHeader className="pb-6 border-b border-slate-50">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <div className="space-y-1">
+              <CardTitle className="text-xl font-bold flex items-center gap-2 text-slate-900">
                 <Users className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <CardTitle className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
-                  User Management
-                </CardTitle>
-                <CardDescription className="text-sm text-slate-500 mt-0.5">
-                  Manage all platform users ({users.length} total)
-                </CardDescription>
-              </div>
+                User Management
+              </CardTitle>
+              <CardDescription className="text-sm font-medium text-slate-500 max-w-md">
+                Manage across {users.length} authenticated nodes and platform entities.
+              </CardDescription>
             </div>
-            <div className="flex flex-col sm:flex-row flex-wrap gap-2 w-full sm:w-auto">
-              <div className="relative flex-1 sm:flex-none">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <div className="relative group w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
                 <Input
-                  placeholder="Search users..."
-                  className="pl-10 w-full sm:w-48"
+                  placeholder="Search user registry..."
+                  className="pl-9 h-10 rounded-xl bg-slate-50 border-slate-200 focus:bg-white transition-all text-sm font-medium"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-                <div className="flex gap-2">
-                  <Select value={roleFilter} onValueChange={setRoleFilter}>
-                    <SelectTrigger className="w-[120px] sm:w-32">
-                      <SelectValue placeholder="Filter role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Roles</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="manager">Manager</SelectItem>
-                      <SelectItem value="instructor">Instructor</SelectItem>
-                      <SelectItem value="student">Student</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+              <Select value={roleFilter} onValueChange={setRoleFilter}>
+                <SelectTrigger className="h-10 w-full sm:w-40 rounded-xl bg-slate-50 border-slate-200 text-slate-600 font-bold text-xs uppercase tracking-tight">
+                  <SelectValue placeholder="All Roles" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-slate-200">
+                  <SelectItem value="all" className="text-xs font-bold py-2">ALL ENTITIES</SelectItem>
+                  <SelectItem value="admin" className="text-xs font-bold py-2">ADMINS</SelectItem>
+                  <SelectItem value="manager" className="text-xs font-bold py-2">MANAGERS</SelectItem>
+                  <SelectItem value="instructor" className="text-xs font-bold py-2">INSTRUCTORS</SelectItem>
+                  <SelectItem value="student" className="text-xs font-bold py-2">STUDENTS</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </CardHeader>
-        <CardContent className="space-y-4 px-2 sm:px-6">
+          </div>
+        </CardHeader>
+        
+        <CardContent className="p-4 sm:p-6">
           {filteredUsers.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <AlertCircle className="h-12 w-12 mb-4" />
-              <p>No users found</p>
+            <div className="flex flex-col items-center justify-center py-16 text-slate-400 bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-100">
+               <Users className="h-10 w-10 opacity-20 mb-4" />
+               <p className="font-bold text-slate-800">No users found</p>
+               <p className="text-xs">Adjust your filters to see more results</p>
             </div>
           ) : (
-            filteredUsers.map((user) => (
-              <div
-                key={user.id}
-                className="flex flex-col xl:flex-row gap-3 p-3 sm:p-4 rounded-xl bg-muted/40 hover:bg-muted/80 transition-all border border-slate-200/50"
-              >
-                <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
-                  <div className="h-10 w-10 shrink-0 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Users className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <h4 className="font-semibold text-sm sm:text-base text-slate-900 truncate max-w-full">
-                        {user.full_name || "Unknown"}
-                      </h4>
-                      <Badge
-                        variant={getRoleBadgeVariant(user.role)}
-                        className="h-5 px-1.5 py-0 text-[10px]"
-                      >
-                        {user.role || "student"}
-                      </Badge>
-                      {user.status === "suspended" ||
-                      user.approval_status === "suspended" ? (
-                        <div className="flex flex-col gap-1">
-                            <Badge
-                                variant="destructive"
-                                className="h-5 px-1.5 py-0 text-[10px] w-fit bg-red-600 text-white animate-pulse font-black"
-                            >
-                                Suspended
-                            </Badge>
-                            {user.suspended_until && (
-                                <span className="text-[9px] font-black text-red-600 uppercase tracking-tighter">
-                                    Ends {new Date(user.suspended_until).toLocaleDateString()}
-                                </span>
-                            )}
-                        </div>
-                      ) : user.approval_status === "pending" ? (
-                        <Badge
-                          variant="secondary"
-                          className="h-5 px-1.5 py-0 text-[10px] animate-pulse bg-yellow-100 text-yellow-800 border-yellow-200"
-                        >
-                          Pending Approval
-                        </Badge>
-                      ) : user.approval_status === "rejected" ? (
-                        <Badge
-                          variant="destructive"
-                          className="h-5 px-1.5 py-0 text-[10px]"
-                        >
-                          Rejected
-                        </Badge>
-                      ) : (
-                        <Badge
-                          variant="secondary"
-                          className="h-5 px-1.5 py-0 text-[10px] bg-green-100 text-green-800 border-green-200"
-                        >
-                          Approved
-                        </Badge>
-                      )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {filteredUsers.map((user, idx) => (
+                <div
+                  key={user.id}
+                  className="group flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl border border-slate-200 bg-white hover:border-primary/30 hover:shadow-md transition-all relative overflow-hidden"
+                  style={{ animationDelay: `${idx * 40}ms` }}
+                >
+                  <div className="flex items-center gap-4 w-full sm:w-auto overflow-hidden">
+                    <div className="relative shrink-0">
+                      <Avatar className="h-12 w-12 border-2 border-slate-50 shadow-none">
+                        <AvatarImage src={user.avatar_url} />
+                        <AvatarFallback className="bg-primary/5 text-primary font-bold">
+                          {(user.full_name || user.email || "U").charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white shadow-sm ${
+                        user.status === 'suspended' ? 'bg-rose-500' : 'bg-emerald-500'
+                      }`} />
                     </div>
-                    <p className="text-xs sm:text-sm text-slate-600 truncate max-w-full">
-                      {user.email}
-                    </p>
-                  </div>
-                </div>
 
-                <div className="flex items-center justify-between xl:justify-end gap-2 sm:gap-4 w-full xl:w-auto mt-2 xl:mt-0 pt-3 xl:pt-0 border-t xl:border-t-0 border-border/50">
-                  <div className="text-xs text-muted-foreground whitespace-nowrap flex items-center shrink-0">
-                    <Clock className="h-3 w-3 inline mr-1" />
-                    {formatLastActive(user.last_active_at)}
+                    <div className="flex-1 overflow-hidden">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="text-sm font-black text-slate-900 leading-none truncate">{user.full_name || "Nexus User"}</p>
+                        <Badge 
+                            variant="outline" 
+                            className={`text-[9px] h-4 px-1.5 rounded-md uppercase font-black tracking-tighter border-none shadow-none ${
+                                user.role === 'admin' ? 'bg-rose-50 text-rose-600' :
+                                user.role === 'manager' ? 'bg-amber-50 text-amber-600' :
+                                user.role === 'instructor' ? 'bg-blue-50 text-blue-600' :
+                                'bg-slate-100 text-slate-600'
+                            }`}
+                        >
+                            {user.role || "student"}
+                        </Badge>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground truncate leading-none mb-2">{user.email}</p>
+                      <div className="flex items-center gap-1.5 overflow-hidden opacity-100">
+                         <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">{formatLastActive(user.last_active_at)}</span>
+                         {user.status === 'suspended' && (
+                           <span className="text-[8px] font-black text-rose-500 uppercase px-1 bg-rose-50 rounded">Suspended</span>
+                         )}
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    {user.approval_status === "pending" && (
+
+                  <div className="w-full sm:w-auto sm:ml-auto shrink-0 flex items-center gap-2">
+                    {user.approval_status === "pending" ? (
                       <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200"
                         onClick={() => {
                           setSelectedUser(user);
                           setShowApprovalDialog(true);
                         }}
+                        className="w-full sm:w-auto h-9 px-4 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all font-bold text-xs"
                       >
-                        Review
-                      </Button>
-                    )}
-
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 hover:bg-primary/10"
-                      title="View Profile"
-                      onClick={() => handleViewProfile(user)}
-                    >
-                      <Eye className="h-4 w-4 text-primary" />
-                    </Button>
-
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 hover:bg-slate-200"
-                      title="Change Role"
-                      onClick={() => {
-                        setSelectedUser(user);
-                        setNewRole(user.role || "student");
-                        setShowRoleDialog(true);
-                      }}
-                    >
-                      <UserCog className="h-4 w-4 text-slate-600" />
-                    </Button>
-
-                    {user.approval_status === "suspended" ||
-                    user.status === "suspended" ? (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 hover:bg-green-100"
-                        title="Activate"
-                        onClick={() => onUpdateStatus(user.id, "approved")}
-                      >
-                        <Unlock className="h-4 w-4 text-green-600" />
+                        Review Node
                       </Button>
                     ) : (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 hover:bg-red-100"
-                        title="Suspend"
-                        onClick={() => {
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button 
+                            className="w-full sm:w-auto h-9 px-4 rounded-xl bg-primary/5 text-primary hover:bg-primary hover:text-white transition-all font-bold text-xs flex items-center justify-center gap-1 group/btn shadow-none border-none"
+                          >
+                            + Access
+                            <ArrowRight className="h-3.5 w-3.5 ml-0.5 transition-transform group-hover/btn:translate-x-1" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56 rounded-2xl p-2 border-slate-200 shadow-2xl animate-in zoom-in-95 duration-200">
+                          <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 p-2 border-b mb-1">Node Operations</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => handleViewProfile(user)} className="rounded-xl font-bold text-[13px] py-2.5 cursor-pointer hover:bg-slate-50">
+                            <Eye className="mr-3 h-4 w-4 text-primary" /> View Intelligence
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
                             setSelectedUser(user);
-                            setShowSuspendDialog(true);
-                        }}
-                      >
-                        <Lock className="h-4 w-4 text-destructive" />
-                      </Button>
+                            setNewRole(user.role || "student");
+                            setShowRoleDialog(true);
+                          }} className="rounded-xl font-bold text-[13px] py-2.5 cursor-pointer hover:bg-slate-50">
+                            <UserCog className="mr-3 h-4 w-4 text-emerald-500" /> Reassign Role
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator className="my-1.5 bg-slate-100" />
+                          {user.status === 'suspended' ? (
+                            <DropdownMenuItem onClick={() => onUpdateStatus(user.id, "approved")} className="rounded-xl font-bold text-[13px] py-2.5 text-emerald-600 bg-emerald-50/50 cursor-pointer">
+                              <Unlock className="mr-3 h-4 w-4" /> Restore Access
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem onClick={() => {
+                              setSelectedUser(user);
+                              setShowSuspendDialog(true);
+                            }} className="rounded-xl font-bold text-[13px] py-2.5 text-rose-600 bg-rose-50/50 cursor-pointer">
+                              <Lock className="mr-3 h-4 w-4" /> Suspend Access
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     )}
                   </div>
                 </div>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Role Management Sidebar */}
-      <Card className="overflow-hidden">
-        <CardHeader>
-          <div className="flex items-start gap-3">
-            <div className="h-10 w-10 shrink-0 rounded-xl bg-accent/10 flex items-center justify-center mt-0.5">
-              <UserCog className="h-5 w-5 text-accent" />
-            </div>
-            <div>
-              <CardTitle className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
-                Role Management
-              </CardTitle>
-              <CardDescription className="text-sm text-slate-500 mt-0.5">
-                User role distribution
-              </CardDescription>
-            </div>
+      {/* Role Authorities Header - Separate Full Width */}
+      <div className="flex flex-col gap-6">
+        <div className="px-4">
+          <div className="flex items-center gap-4 mb-2">
+            <Shield className="h-7 w-7 text-primary" />
+            <h3 className="text-2xl font-black text-slate-900 tracking-tight">System Permission Hierarchy</h3>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="p-4 rounded-lg bg-muted/50">
-            <div className="flex justify-between items-center">
-              <span className="font-medium">Students</span>
-              <Badge>{roleCounts.student || 0}</Badge>
-            </div>
-          </div>
-          <div className="p-4 rounded-lg bg-muted/50">
-            <div className="flex justify-between items-center">
-              <span className="font-medium">Instructors</span>
-              <Badge>{roleCounts.instructor || 0}</Badge>
-            </div>
-          </div>
-          <div className="p-4 rounded-lg bg-muted/50">
-            <div className="flex justify-between items-center">
-              <span className="font-medium">Managers</span>
-              <Badge>{roleCounts.manager || 0}</Badge>
-            </div>
-          </div>
-          <div className="p-4 rounded-lg bg-primary/10">
-            <div className="flex justify-between items-center">
-              <span className="font-medium text-primary">Admins</span>
-              <Badge variant="default">{roleCounts.admin || 0}</Badge>
-            </div>
-          </div>
-          <Button variant="outline" className="w-full">
-            Manage Permissions
-          </Button>
-        </CardContent>
-      </Card>
+          <p className="text-[13px] font-medium text-slate-500 ml-11 uppercase tracking-[0.2em]">Node distribution across authority levels</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[
+            { label: "Public Students", count: roleCounts.student || 0, color: "bg-slate-900", icon: Users, desc: "Restricted knowledge nodes" },
+            { label: "Academic Instructors", count: roleCounts.instructor || 0, color: "bg-blue-600", icon: Presentation, desc: "Curriculum publishers" },
+            { label: "Operations Managers", count: roleCounts.manager || 0, color: "bg-amber-500", icon: UserCog, desc: "System orchestrators" },
+            { label: "Core Administrators", count: roleCounts.admin || 0, color: "bg-rose-500", icon: Shield, desc: "Root authority cluster", isHigh: true },
+          ].map((role) => (
+            <Card key={role.label} className={`border-none shadow-xl shadow-slate-200/50 rounded-[2rem] overflow-hidden group transition-all duration-500 hover:-translate-y-2 ${role.isHigh ? 'bg-primary shadow-primary/30' : 'bg-white'}`}>
+              <CardContent className="p-8">
+                <div className="flex justify-between items-start mb-8">
+                  <div className={`h-12 w-12 rounded-2xl flex items-center justify-center shadow-lg transition-transform duration-500 group-hover:rotate-12 ${role.isHigh ? 'bg-white/20' : 'bg-slate-50'}`}>
+                    <role.icon className={`h-6 w-6 ${role.isHigh ? 'text-white' : 'text-slate-600'}`} />
+                  </div>
+                  <div className={`h-2 w-2 rounded-full animate-ping ${role.isHigh ? 'bg-white/40' : 'bg-emerald-500/40'}`} />
+                </div>
+                
+                <div className="space-y-1">
+                  <h5 className={`text-[10px] font-black uppercase tracking-[0.2em] ${role.isHigh ? 'text-white/60' : 'text-slate-400'}`}>
+                    {role.label}
+                  </h5>
+                  <div className="flex items-baseline gap-2">
+                    <span className={`text-3xl font-black tracking-tighter ${role.isHigh ? 'text-white' : 'text-slate-900'}`}>
+                      {role.count}
+                    </span>
+                    <span className={`text-[11px] font-bold ${role.isHigh ? 'text-white/40' : 'text-slate-300'}`}>Nodes</span>
+                  </div>
+                  <p className={`text-[11px] font-medium pt-3 border-t mt-4 border-white/10 ${role.isHigh ? 'text-white/60' : 'text-slate-400 border-slate-50'}`}>
+                    {role.desc}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
 
       {/* Role Change Dialog */}
       <Dialog open={showRoleDialog} onOpenChange={setShowRoleDialog}>
@@ -794,7 +768,7 @@ export function UserManagement({
                                 <a 
                                   href={performanceData.resume_url.startsWith('http') 
                                     ? performanceData.resume_url 
-                                    : `${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api$/, '')}${performanceData.resume_url.startsWith('/') ? '' : '/'}${performanceData.resume_url}`
+                                    : `${(import.meta.env.VITE_API_URL || 'http://localhost:5001/api').replace(/\/api$/, '')}${performanceData.resume_url.startsWith('/') ? '' : '/'}${performanceData.resume_url}`
                                   } 
                                   target="_blank" 
                                   rel="noreferrer" 

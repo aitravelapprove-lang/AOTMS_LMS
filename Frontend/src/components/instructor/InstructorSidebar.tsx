@@ -31,6 +31,7 @@ import {
   RefreshCw,
   User,
   MessageSquare,
+  Bell,
 } from "lucide-react";
 
 import logo from "@/assets/logo.png";
@@ -45,6 +46,7 @@ const mainNavItems = [
   { title: "My Profile", url: "/instructor/profile", icon: User },
   { title: "My Courses", url: "/instructor/my-courses", icon: BookOpen },
   { title: "Student Roster", url: "/instructor/students", icon: Users, isLive: true },
+  { title: "Notifications", url: "/instructor/notifications", icon: Bell },
   { title: "Messages", url: "/instructor/chat", icon: MessageSquare },
   { title: "Live Broadcast", url: "/instructor/live-classes", icon: Radio },
 ];
@@ -55,6 +57,7 @@ const contentNavItems = [
   { title: "Assessment Protocols", url: "/instructor/exams", icon: ShieldCheck },
   { title: "Question Bank", url: "/instructor/question-bank", icon: FolderOpen },
   { title: "Course Resources", url: "/instructor/resources", icon: FolderOpen },
+  { title: "Resume Scan Logs", url: "/instructor/resume-scans", icon: FileText },
 ];
 
 const analyticNavItems = [

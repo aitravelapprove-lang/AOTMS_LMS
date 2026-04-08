@@ -185,11 +185,7 @@ export default function Auth() {
     }
   }, [adminOtpResendTimer]);
 
-<<<<<<< HEAD
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-=======
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
->>>>>>> 81be011800c12182ea52d6b312ac65a42bde3149
 
   const handleSendOtp = async (data: EmailVerifyFormData) => {
     setLoading(true);

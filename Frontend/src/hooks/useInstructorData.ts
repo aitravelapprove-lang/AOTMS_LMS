@@ -741,13 +741,8 @@ export function usePlaylistAnalytics(playlistId: string | null) {
     queryFn: async () => {
       if (!playlistId) return null;
 
-<<<<<<< HEAD
       const videos = await fetchWithAuth<any[]>(`/data/playlist_videos?playlist_id=${playlistId}`);
       const enrollments = await fetchWithAuth<any[]>(`/data/playlist_enrollments?playlist_id=${playlistId}`);
-=======
-      const videos = await fetchWithAuth(`/data/playlist_videos?playlist_id=${playlistId}`) as any[];
-      const enrollments = await fetchWithAuth(`/data/playlist_enrollments?playlist_id=${playlistId}`) as any[];
->>>>>>> 81be011800c12182ea52d6b312ac65a42bde3149
 
       const totalVideos = videos.length;
       const enrolledStudents = enrollments.length;
@@ -1490,25 +1485,14 @@ export function useInstructorRatings() {
 
   return useQuery({
     queryKey: ['instructor-ratings', user?.id],
-<<<<<<< HEAD
     queryFn: async (): Promise<CourseRating[]> => {
       if (!courses || courses.length === 0) return [];
       const courseIds = [...courses.map((c: Course) => c.id), 'GENERAL'].join(',');
-=======
-    queryFn: async () => {
-      if (!courses || (courses as any[]).length === 0) return [];
-      const courseIds = [...(courses as any[]).map((c: Course) => c.id), 'GENERAL'].join(',');
->>>>>>> 81be011800c12182ea52d6b312ac65a42bde3149
       
       const ratings = await fetchWithAuth<any[]>(`/data/course_ratings?course_id=in.(${courseIds})&order=created_at.desc`) || [];
       
-<<<<<<< HEAD
       const enriched = (ratings as any[]).map((r: any) => {
         const course = (courses as Course[]).find((c: Course) => c.id === r.course_id);
-=======
-      const enriched = ratings.map((r: any) => {
-        const course = (courses as any[]).find((c: Course) => c.id === r.course_id);
->>>>>>> 81be011800c12182ea52d6b312ac65a42bde3149
         const userData = typeof r.user_id === 'object' ? r.user_id : {};
         
         return {

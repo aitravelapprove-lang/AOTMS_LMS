@@ -1,8 +1,6 @@
-'use client';
 import { cn } from '@/lib/utils';
 import { useMotionValue, animate, motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
-import useMeasure from 'react-use-measure';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 type InfiniteSliderProps = {
   children: React.ReactNode;
@@ -16,6 +14,28 @@ type InfiniteSliderProps = {
   speedOnHover?: number;
 };
 
+/** Lightweight replacement for react-use-measure — avoids duplicate-React issues */
+function useElementSize() {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [size, setSize] = useState({ width: 0, height: 0 });
+
+  const measuredRef = useCallback((node: HTMLDivElement | null) => {
+    if (!node) return;
+    ref.current = node;
+    const ro = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      setSize({ width, height });
+    });
+    ro.observe(node);
+    // Initial measurement
+    const rect = node.getBoundingClientRect();
+    setSize({ width: rect.width, height: rect.height });
+    return () => ro.disconnect();
+  }, []);
+
+  return [measuredRef, size] as const;
+}
+
 export function InfiniteSlider({
   children,
   gap = 16,
@@ -27,12 +47,11 @@ export function InfiniteSlider({
   speed,
   speedOnHover,
 }: InfiniteSliderProps) {
-  // speed prop maps to duration (lower speed number = longer duration for slower scroll)
   const effectiveDuration = speed ? speed : duration;
   const effectiveHoverDuration = speedOnHover ? speedOnHover : durationOnHover;
 
   const [currentDuration, setCurrentDuration] = useState(effectiveDuration);
-  const [ref, { width, height }] = useMeasure();
+  const [ref, { width, height }] = useElementSize();
   const translation = useMotionValue(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [key, setKey] = useState(0);
@@ -114,3 +133,4 @@ export function InfiniteSlider({
     </div>
   );
 }
+

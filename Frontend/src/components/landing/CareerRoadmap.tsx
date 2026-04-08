@@ -206,8 +206,8 @@ export default function CareerRoadmap() {
                  </div>
                  <div className="h-6 sm:h-8 w-px bg-slate-200" />
                  <div className="text-center">
-                    <p className="text-base sm:text-xl font-black text-[#FD5A1A] leading-none">100+</p>
-                    <p className="text-[7px] sm:text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Partners</p>
+                    <p className="text-base sm:text-xl font-black text-[#FD5A1A] leading-none">98%</p>
+                    <p className="text-[7px] sm:text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Success Rate</p>
                  </div>
               </div>
 

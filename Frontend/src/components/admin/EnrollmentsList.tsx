@@ -344,14 +344,14 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                                 <Fingerprint className="h-3 w-3" /> Student UUID
                              </span>
                              <Button
-                               variant="ghost"
-                               size="sm"
-                               className={`h-7 px-2.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
-                                 copiedId === enrollment.id + '-mobile'
-                                   ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100'
-                                   : 'bg-white text-slate-500 hover:text-primary hover:bg-primary/5 border border-slate-200'
-                               }`}
-                               onClick={() => copyToClipboard(enrollment.user_id || '', enrollment.id + '-mobile')}
+                                variant="ghost"
+                                size="sm"
+                                className={`h-7 px-2.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
+                                  copiedId === enrollment.id + '-mobile'
+                                    ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100'
+                                    : 'bg-white text-slate-500 hover:text-primary hover:bg-primary/5 border border-slate-200'
+                                }`}
+                                onClick={() => copyToClipboard(enrollment.user_id || '', enrollment.id + '-mobile')}
                              >
                                {copiedId === enrollment.id + '-mobile' ? (
                                  <><Check className="h-3 w-3 mr-1" /> Copied!</>
@@ -373,24 +373,40 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                              </Badge>
                           </div>
                           
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex flex-col gap-1">
-                               <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Term</span>
-                               <div className="flex items-center gap-1.5">
-                                  {enrollment.payment_term === 'term1' ? (
-                                      <Badge className="text-[9px] h-4 px-1.5 font-black uppercase bg-blue-100 text-blue-700">1st Term</Badge>
-                                  ) : enrollment.payment_term === 'term2' ? (
-                                      <Badge className="text-[9px] h-4 px-1.5 font-black uppercase bg-purple-100 text-purple-700">2nd Term</Badge>
-                                  ) : (
-                                      <Badge className="text-[9px] h-4 px-1.5 font-black uppercase bg-emerald-100 text-emerald-700">Full</Badge>
-                                  )}
-                               </div>
-                            </div>
-                            <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex flex-col gap-1">
-                               <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Price</span>
-                               <span className="font-bold text-green-700 text-sm">₹{(enrollment.final_price ?? enrollment.price)?.toLocaleString('en-IN')}</span>
-                            </div>
-                          </div>
+                           <div className="grid grid-cols-1 gap-2">
+                             <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col gap-2">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Full Fee</span>
+                                  <span className="text-xs font-bold text-slate-400">₹{parseInt(enrollment.price || '0').toLocaleString('en-IN')}</span>
+                                </div>
+                                <div className="flex justify-between items-center py-2 border-y border-slate-200/50">
+                                   <div className="flex flex-col">
+                                      <span className="text-[9px] text-slate-400 font-bold uppercase">Paid Amount</span>
+                                      <span className="font-black text-emerald-600 text-lg">₹{enrollment.final_price?.toLocaleString('en-IN') || enrollment.price}</span>
+                                   </div>
+                                   <div className="text-right">
+                                      {enrollment.payment_term === 'term1' ? (
+                                          <Badge className="text-[9px] h-5 px-2 font-black uppercase bg-blue-100 text-blue-700 border-blue-200">1st Term</Badge>
+                                      ) : enrollment.payment_term === 'term2' ? (
+                                          <Badge className="text-[9px] h-5 px-2 font-black uppercase bg-purple-100 text-purple-700 border-purple-200">2nd Term</Badge>
+                                      ) : (
+                                          <Badge className="text-[9px] h-5 px-2 font-black uppercase bg-emerald-100 text-emerald-700 border-emerald-200">Paid Full</Badge>
+                                      )}
+                                   </div>
+                                </div>
+                                {enrollment.remaining_balance ? (
+                                  <div className="flex justify-between items-center bg-amber-50 p-2 rounded-xl border border-amber-100 mt-1">
+                                    <span className="text-[10px] text-amber-700 font-black uppercase">Balance Money</span>
+                                    <span className="text-lg font-black text-amber-600">₹{enrollment.remaining_balance?.toLocaleString('en-IN')}</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex justify-between items-center opacity-40">
+                                    <span className="text-[10px] text-slate-400 font-bold uppercase">Balance Money</span>
+                                    <span className="text-xs font-bold text-slate-400">₹0</span>
+                                  </div>
+                                )}
+                             </div>
+                           </div>
 
                           <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex flex-col gap-1">
                              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">UTR Reference</span>
@@ -499,22 +515,33 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                           </div>
                         </td>
                         <td className="px-6 py-5">
-                          <div className="flex flex-col gap-2">
-                            <div className="flex items-center gap-2.5">
-                               <span className="text-base font-black text-emerald-600">₹{(enrollment.final_price ?? enrollment.price)?.toLocaleString('en-IN')}</span>
+                          <div className="flex flex-col gap-1.5 min-w-[180px]">
+                            <div className="flex items-center justify-between gap-3">
+                               <div className="flex flex-col">
+                                  <span className="text-[10px] font-black text-emerald-600 uppercase tracking-tighter">Paid Amount</span>
+                                  <span className="text-lg font-black text-slate-900 leading-none">₹{enrollment.final_price?.toLocaleString('en-IN') || enrollment.price}</span>
+                               </div>
                                {enrollment.payment_term === 'full' ? (
-                                 <Badge className="text-[9px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-700 h-5 px-2 border-emerald-200 border shadow-sm">Paid Full</Badge>
+                                 <Badge className="text-[9px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-700 h-5 px-2 border-emerald-200 border shadow-sm shrink-0">Paid Full</Badge>
                                ) : (
-                                 <Badge className="text-[9px] font-black uppercase tracking-widest bg-indigo-50 text-indigo-700 h-5 px-2 border-indigo-200 border shadow-sm">Installment</Badge>
+                                 <Badge className="text-[9px] font-black uppercase tracking-widest bg-indigo-50 text-indigo-700 h-5 px-2 border-indigo-200 border shadow-sm shrink-0">
+                                   {enrollment.payment_term === 'term1' ? '1st Term' : '2nd Term'}
+                                 </Badge>
                                )}
                             </div>
-                            {enrollment.remaining_balance ? (
-                              <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest bg-amber-50/50 px-2 py-0.5 rounded border border-amber-200 w-fit">
-                                Due: ₹{enrollment.remaining_balance?.toLocaleString('en-IN')}
-                              </p>
-                            ) : (
-                              <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">N/A</p>
-                            )}
+                            
+                            <div className="space-y-1.5 pt-1 border-t border-slate-200/50">
+                               {enrollment.remaining_balance ? (
+                                 <div className="flex justify-between items-center bg-amber-50/50 px-2.5 py-1.5 rounded-lg border border-amber-100">
+                                   <span className="text-[10px] font-black text-amber-700 uppercase tracking-tighter">Balance Money:</span>
+                                   <span className="text-base font-black text-amber-600">₹{enrollment.remaining_balance?.toLocaleString('en-IN')}</span>
+                                 </div>
+                               ) : null}
+                               <div className="flex justify-between items-center text-[10px] text-slate-400">
+                                 <span className="font-bold uppercase tracking-tighter">Full Fee:</span>
+                                 <span className="font-bold">₹{parseInt(enrollment.price || '0').toLocaleString('en-IN')}</span>
+                               </div>
+                            </div>
                           </div>
                         </td>
                         <td className="px-6 py-5">

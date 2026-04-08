@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
   Ticket,
-  UserPlus,
   Search,
   Gift,
   RefreshCw,
@@ -178,12 +177,12 @@ export function CouponManager() {
                     </p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-slate-50">
+                  <div className="divide-y divide-slate-50 selection:bg-primary/20 selection:text-slate-900">
                     {filteredStudents.map((student) => (
                       <div
                         key={student.id}
                         onClick={() => setSelectedStudent(student)}
-                        className={`p-4 flex items-center justify-between cursor-pointer transition-all hover:bg-primary/5 ${selectedStudent?.id === student.id ? "bg-primary/10 border-l-4 border-primary" : "bg-white"}`}
+                        className={`p-4 flex items-center justify-between cursor-pointer transition-all hover:bg-primary/5 ${selectedStudent?.id === student.id ? "bg-primary/10 border-l-4 border-primary" : "bg-white hover:border-l-4 hover:border-primary/30"}`}
                       >
                         <div className="flex items-center gap-3">
                           <div
@@ -193,11 +192,11 @@ export function CouponManager() {
                           </div>
                           <div>
                             <p
-                              className={`text-sm font-bold ${selectedStudent?.id === student.id ? "text-primary" : "text-slate-900"}`}
+                              className={`text-sm font-bold ${selectedStudent?.id === student.id ? "text-primary" : "text-slate-800"}`}
                             >
                               {student.full_name}
                             </p>
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-400 font-medium">
                               {student.email}
                             </p>
                           </div>
@@ -216,19 +215,19 @@ export function CouponManager() {
 
         {/* Step 2: Generation */}
         <div className="space-y-6">
-          <Card className="border-slate-200 shadow-xl overflow-hidden rounded-3xl bg-slate-900 text-white">
-            <CardHeader className="border-b border-white/10">
+          <Card className="border-slate-200 shadow-xl overflow-hidden rounded-3xl bg-white text-slate-900">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50">
               <CardTitle className="text-lg flex items-center gap-2">
-                <Gift className="h-5 w-5 text-primary text" />
+                <Gift className="h-5 w-5 text-primary" />
                 Reward Controls
               </CardTitle>
-              <CardDescription className="text-slate-400 text-[10px] font-medium tracking-tight">
+              <CardDescription className="text-slate-500 text-[10px] font-medium tracking-tight">
                 Generate and assign student discount codes
               </CardDescription>
             </CardHeader>
             <CardContent className="p-8 space-y-8 text-center">
               <div className="space-y-4">
-                <div className="h-24 w-24 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(var(--primary-rgb),0.2)]">
+                <div className="h-24 w-24 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(0,117,207,0.1)]">
                   <Ticket
                     className={`h-12 w-12 text-primary ${isGenerating ? "animate-bounce" : ""}`}
                   />
@@ -237,25 +236,25 @@ export function CouponManager() {
                 {selectedStudent ? (
                   <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
                     <div className="space-y-2">
-                      <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
                         Active Recipient
                       </p>
-                      <div className="px-5 py-3 bg-white/5 rounded-xl border border-white/10 inline-block shadow-sm">
-                        <p className="text-base font-bold text-white">
+                      <div className="px-5 py-3 bg-primary/5 rounded-xl border border-primary/10 inline-block shadow-sm">
+                        <p className="text-base font-bold text-primary">
                           {selectedStudent.full_name}
                         </p>
-                        <p className="text-[10px] text-slate-400 font-medium lowercase tracking-tight opacity-70">
+                        <p className="text-[10px] text-slate-500 font-medium lowercase tracking-tight">
                           {selectedStudent.email}
                         </p>
                       </div>
                     </div>
 
                     <div className="space-y-2 text-left">
-                      <label className="text-[10px] font-bold text-slate-400 ml-1">
+                      <label className="text-[10px] font-bold text-slate-500 ml-1">
                         Reward Value (₹)
                       </label>
                       <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#FD5A1A] font-bold text-base">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-bold text-base">
                           ₹
                         </span>
                         <Input
@@ -263,15 +262,15 @@ export function CouponManager() {
                           placeholder="Enter amount"
                           value={discountAmount}
                           onChange={(e) => setDiscountAmount(e.target.value)}
-                          className="bg-white/5 border-white/10 h-12 pl-10 text-base font-bold text-white placeholder:text-slate-600 focus:border-[#0075CF] focus:ring-1 focus:ring-[#0075CF]/20 rounded-xl transition-all"
+                          className="bg-slate-50 border-slate-200 h-12 pl-10 text-base font-bold text-slate-900 placeholder:text-slate-400 focus:border-primary focus:ring-1 focus:ring-primary/20 rounded-xl transition-all"
                         />
                       </div>
                     </div>
                   </div>
                 ) : (
                   <div className="py-8 flex flex-col items-center gap-3 opacity-30">
-                    <div className="h-0.5 w-8 bg-slate-700 rounded-full" />
-                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] text-center">
+                    <div className="h-0.5 w-8 bg-slate-200 rounded-full" />
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] text-center">
                       Select student to proceed
                     </p>
                   </div>
@@ -283,16 +282,16 @@ export function CouponManager() {
                   <motion.div
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    className="p-6 bg-[#FD5A1A]/5 border border-[#FD5A1A]/10 rounded-2xl space-y-3 relative shadow-inner"
+                    className="p-6 bg-primary/5 border-2 border-primary/20 rounded-2xl space-y-3 relative shadow-sm"
                   >
-                    <p className="text-[9px] font-black uppercase tracking-widest text-[#FD5A1A]">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-primary">
                       Assignment Secure
                     </p>
-                    <h2 className="text-3xl font-black text-white tracking-widest">
+                    <h2 className="text-3xl font-black text-primary tracking-widest">
                       {generatedCode}
                     </h2>
                     <div className="flex items-center justify-center gap-2 text-[9px] font-bold text-slate-400">
-                      <Send className="h-3 w-3 text-[#FD5A1A]" />
+                      <Send className="h-3 w-3 text-primary" />
                       Notified successfully
                     </div>
                   </motion.div>
@@ -301,7 +300,7 @@ export function CouponManager() {
                     size="lg"
                     disabled={!selectedStudent || isGenerating}
                     onClick={generateCoupon}
-                    className="w-full h-14 rounded-xl bg-[#0075CF] hover:bg-[#0075CF]/90 text-white font-bold tracking-tight text-sm shadow-lg disabled:opacity-30 transition-all border-0 active:scale-[0.98]"
+                    className="w-full h-14 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold tracking-tight text-sm shadow-lg disabled:opacity-30 transition-all border-0 active:scale-[0.98]"
                   >
                     {isGenerating ? (
                       <Loader2 className="h-5 w-5 animate-spin" />
@@ -315,18 +314,18 @@ export function CouponManager() {
                 )}
               </AnimatePresence>
 
-              <div className="pt-6 border-t border-white/5 opacity-40">
-                <p className="text-[8px] text-slate-500 font-medium leading-relaxed uppercase tracking-wider text-center">
+              <div className="pt-6 border-t border-slate-100">
+                <p className="text-[8px] text-slate-400 font-medium leading-relaxed uppercase tracking-wider text-center">
                   Auto-notification and persistence protocols active
                 </p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-white/5 shadow-sm rounded-2xl bg-white/5 border-dashed">
+          <Card className="border-slate-100 shadow-sm rounded-2xl bg-slate-50/50 border-dashed">
             <CardContent className="p-4 text-center">
-              <p className="text-[10px] font-medium text-slate-500">
-                Pattern: <span className="font-bold text-[#FD5A1A]">AOTMS</span>{" "}
+              <p className="text-[10px] font-medium text-slate-400">
+                Pattern: <span className="font-bold text-primary">AOTMS</span>{" "}
                 + 5 Digit Entropy
               </p>
             </CardContent>

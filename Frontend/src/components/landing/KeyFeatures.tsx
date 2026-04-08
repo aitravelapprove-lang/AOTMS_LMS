@@ -58,7 +58,7 @@ const features = [
 ];
 
 const KeyFeatures = () => (
-  <section id="features" className="relative py-16 md:py-24 overflow-hidden bg-white">
+  <section id="features" className="relative pt-12 md:pt-16 pb-16 md:pb-24 overflow-hidden bg-white">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
       <motion.div
         initial={{ opacity: 0, y: 30 }}

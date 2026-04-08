@@ -205,7 +205,9 @@
     background: transparent;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-slate-200 rounded-full hover:bg-slate-300;
+    @apply bg-slate-300 rounded-full hover:bg-primary/50 transition-colors;
+    border: 1.5px solid transparent;
+    background-clip: padding-box;
   }
 
   .admin-scrollbar::-webkit-scrollbar {
@@ -448,7 +450,9 @@
   background: transparent;
 }
 .custom-scrollbar-horizontal::-webkit-scrollbar-thumb {
-  @apply bg-slate-200 rounded-full hover:bg-slate-300;
+  @apply bg-slate-300 rounded-full hover:bg-primary/50 transition-colors;
+  border: 1px solid transparent;
+  background-clip: padding-box;
 }
 
 .admin-scrollbar-horizontal::-webkit-scrollbar {

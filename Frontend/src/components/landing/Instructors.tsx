@@ -53,7 +53,7 @@ const Instructors = () => {
   return (
     <section
       id="trainers"
-      className="relative py-24 lg:py-40 overflow-hidden bg-white"
+      className="relative pt-24 lg:pt-32 pb-12 lg:pb-16 overflow-hidden bg-white"
     >
       {/* Background Glows */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#0075CF]/10 blur-[120px] rounded-full pointer-events-none" />

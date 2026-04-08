@@ -83,6 +83,8 @@ const VideoSchema = new Schema({
     duration_minutes: { type: Number },
     order_index: { type: Number, default: 0 },
     is_published: { type: Boolean, default: true },
+    // Batch access control: empty = visible to all enrolled students
+    allowed_batches: [{ type: Schema.Types.ObjectId, ref: 'Batch' }],
     created_at: { type: Date, default: Date.now }
 });
 VideoSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
@@ -92,6 +94,8 @@ const AnnouncementSchema = new Schema({
     title: { type: String, required: true },
     content: { type: String, required: true },
     is_pinned: { type: Boolean, default: false },
+    // Batch access control: empty = visible to all enrolled students
+    allowed_batches: [{ type: Schema.Types.ObjectId, ref: 'Batch' }],
     created_at: { type: Date, default: Date.now },
     updated_at: { type: Date }
 });
@@ -103,6 +107,8 @@ const TimelineSchema = new Schema({
     description: { type: String },
     scheduled_date: { type: Date, required: true },
     type: { type: String, default: 'lecture' }, // lecture, assignment, quiz, exam
+    // Batch access control: empty = visible to all enrolled students
+    allowed_batches: [{ type: Schema.Types.ObjectId, ref: 'Batch' }],
     created_at: { type: Date, default: Date.now }
 });
 TimelineSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
@@ -111,11 +117,13 @@ const ResourceSchema = new Schema({
     course_id: { type: Schema.Types.ObjectId, ref: 'Course', required: true },
     asset_title: { type: String, required: true },
     file_url: { type: String, required: true },
-    resource_type: { type: String, default: 'Study Material' }, 
+    resource_type: { type: String, default: 'Study Material' },
     upload_format: { type: String },
     instructor_name: { type: String },
     instructor_avatar_url: { type: String },
     short_description: { type: String },
+    // Batch access control: empty = visible to all enrolled students
+    allowed_batches: [{ type: Schema.Types.ObjectId, ref: 'Batch' }],
     created_at: { type: Date, default: Date.now }
 });
 ResourceSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });

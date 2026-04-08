@@ -27,6 +27,7 @@ const { Assignment, Submission, Playlist, LiveClass } = require('./models/Conten
 const { SystemLog, SecurityEvent, LeaderboardStat, Notification, Coupon, Lead } = require('./models/System');
 const { Conversation, Message } = require('./models/Chat');
 const { Doubt, DoubtReply } = require('./models/Doubt');
+const { Batch, StudentBatch, BatchRequest } = require('./models/Batch');
 
 // Map table names to Models for generic routes
 const MODEL_MAP = {
@@ -71,7 +72,9 @@ const MODEL_MAP = {
     'notifications': Notification,
     'users': User,
     'resume_scans': ResumeScan,
-    'leads': Lead
+    'leads': Lead,
+    'batches': Batch,
+    'student_batches': StudentBatch
 };
 
 const ALLOWED_TABLES = Object.keys(MODEL_MAP);
@@ -900,32 +903,115 @@ app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
     try {
         const user = await User.findOne({ email });
-        if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+        const loginIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+        if (!user) {
+            // Log generic failed attempt for unknown user
+            await SecurityEvent.create({
+                event_type: 'login_failed_unknown',
+                ip_address: loginIp,
+                details: { email, timestamp: new Date() }
+            });
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
 
         const isMatch = await bcrypt.compare(password, user.password_hash);
-        if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
+        
+        if (!isMatch) {
+            // Brute force protection
+            user.failed_login_attempts = (user.failed_login_attempts || 0) + 1;
+            await user.save();
 
+            let errorMessage = 'Invalid credentials';
+            
+            if (user.failed_login_attempts >= 3) {
+                await Profile.findOneAndUpdate({ user_id: user._id }, { approval_status: 'suspended' });
+                await SecurityEvent.create({
+                    event_type: 'account_auto_suspended',
+                    ip_address: loginIp,
+                    user_id: user._id,
+                    details: { reason: 'Too many failed login attempts', attempts: user.failed_login_attempts }
+                });
+                errorMessage = 'Account suspended due to too many failed attempts. Contact Administrator.';
+            }
+
+            return res.status(401).json({ error: errorMessage });
+        }
+
+        // Check if suspended
         const [profile, roleDoc] = await Promise.all([
             Profile.findOne({ user_id: user._id }),
             UserRole.findOne({ user_id: user._id })
         ]);
 
-        // Auto-Unsuspend check
-        if (profile?.approval_status === 'suspended' && profile?.suspended_until && new Date() > new Date(profile.suspended_until)) {
-            profile.approval_status = 'approved';
-            profile.suspended_until = null;
-            await profile.save();
+        if (profile?.approval_status === 'suspended') {
+            // Check if auto-unsuspend is applicable
+            if (profile?.suspended_until && new Date() > new Date(profile.suspended_until)) {
+                profile.approval_status = 'approved';
+                profile.suspended_until = null;
+                await profile.save();
+            } else {
+                return res.status(403).json({ error: 'Your account is suspended. Please contact the administrator.' });
+            }
         }
+
+        // Login Success Housekeeping
+        user.failed_login_attempts = 0;
+        user.last_login_ip = loginIp;
+        await user.save();
+
+        const userRole = roleDoc ? roleDoc.role : 'student';
+        const loginTime = new Date().toISOString();
+
+        console.log(`[Auth] Login Successful: ${email} | Role: ${userRole}`);
+
+        // --- ADMIN OTP GATE ---
+        // Admin must verify via OTP before receiving an access token
+        if (userRole === 'admin') {
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+
+            await OTP.findOneAndUpdate(
+                { email },
+                { otp, full_name: user.full_name, expires_at: expiresAt },
+                { upsert: true, new: true }
+            );
+
+            // Log the OTP dispatch as a security event
+            await SecurityEvent.create({
+                event_type: 'admin_login_otp_sent',
+                user_id: user._id,
+                ip_address: loginIp,
+                details: { email, timestamp: loginTime }
+            });
+
+            // Call n8n webhook to deliver OTP to admin email
+            axios.post('https://aotms.app.n8n.cloud/webhook/Email', {
+                event: 'admin_login_otp',
+                email,
+                otp,
+                full_name: user.full_name,
+                ip: loginIp,
+                time: loginTime,
+                message: 'Your Admin Login OTP'
+            })
+            .then(() => console.log(`[Security] Admin OTP webhook SUCCESS for ${email}`))
+            .catch(e => console.error(`[Security] Admin OTP webhook ERROR:`, e.message));
+
+            console.log(`[Security] Admin OTP sent to ${email}: ${otp}`);
+            return res.json({ requiresOtp: true, message: 'OTP sent to your admin email' });
+        }
+        // ----------------------
 
         const token = generateToken(user);
 
         res.json({
             user: {
-                id: user._id, // Use Mongoose ObjectId
+                id: user._id,
                 email,
                 full_name: user.full_name,
                 avatar_url: user.avatar_url || (profile ? profile.avatar_url : null),
-                role: roleDoc ? roleDoc.role : 'student',
+                role: userRole,
                 approval_status: profile ? profile.approval_status : 'pending',
                 suspended_until: profile ? profile.suspended_until : null
             },
@@ -937,6 +1023,106 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
+
+// Admin OTP Verification — completes admin login by verifying the OTP sent via n8n
+app.post('/api/auth/admin-verify-otp', async (req, res) => {
+    const { email, otp } = req.body;
+    if (!email || !otp) return res.status(400).json({ error: 'Email and OTP are required' });
+
+    try {
+        const otpRecord = await OTP.findOne({ email });
+        if (!otpRecord) return res.status(400).json({ error: 'OTP not found. Please log in again.' });
+        if (otpRecord.otp !== otp) return res.status(400).json({ error: 'Invalid OTP. Please try again.' });
+        if (new Date() > new Date(otpRecord.expires_at)) return res.status(400).json({ error: 'OTP has expired. Please log in again.' });
+
+        // Consume the OTP
+        await OTP.deleteOne({ email });
+
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ error: 'User not found.' });
+
+        const [profile, roleDoc] = await Promise.all([
+            Profile.findOne({ user_id: user._id }),
+            UserRole.findOne({ user_id: user._id })
+        ]);
+
+        const userRole = roleDoc ? roleDoc.role : 'student';
+        if (userRole !== 'admin') return res.status(403).json({ error: 'Admin access only.' });
+
+        const token = generateToken(user);
+        const loginTime = new Date().toISOString();
+        const loginIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+        // Persistent notification for the admin
+        await Notification.create({
+            user_id: user._id,
+            type: 'system',
+            title: '🔐 Admin Login Verified',
+            message: `OTP verified. Admin session started from IP: ${loginIp} at ${new Date().toLocaleString()}.`,
+            data: { ip: loginIp, time: loginTime },
+            created_at: new Date()
+        });
+
+        // Broadcast to other active admins
+        io.emit('admin_login_alert', { email, time: loginTime, ip: loginIp });
+
+        console.log(`[Security] Admin OTP verified — login complete for ${email}`);
+
+        res.json({
+            user: {
+                id: user._id,
+                email,
+                full_name: user.full_name,
+                avatar_url: user.avatar_url || (profile ? profile.avatar_url : null),
+                role: userRole,
+                approval_status: profile ? profile.approval_status : 'approved',
+                suspended_until: profile ? profile.suspended_until : null
+            },
+            session: { access_token: token, expires_in: 604800 }
+        });
+    } catch (err) {
+        handleError(res, err, 'admin-verify-otp');
+    }
+});
+
+// Admin OTP Resend
+app.post('/api/auth/admin-resend-otp', async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+
+    try {
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ error: 'User not found.' });
+
+        const roleDoc = await UserRole.findOne({ user_id: user._id });
+        if (!roleDoc || roleDoc.role !== 'admin') return res.status(403).json({ error: 'Admin access only.' });
+
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+        await OTP.findOneAndUpdate(
+            { email },
+            { otp, full_name: user.full_name, expires_at: expiresAt },
+            { upsert: true, new: true }
+        );
+
+        axios.post('https://aotms.app.n8n.cloud/webhook/Email', {
+            event: 'admin_login_otp',
+            email,
+            otp,
+            full_name: user.full_name,
+            time: new Date().toISOString(),
+            message: 'Your Admin Login OTP (Resent)'
+        })
+        .then(() => console.log(`[Security] Admin OTP resend webhook SUCCESS for ${email}`))
+        .catch(e => console.error(`[Security] Admin OTP resend webhook ERROR:`, e.message));
+
+        console.log(`[Security] Admin OTP resent to ${email}: ${otp}`);
+        res.json({ message: 'OTP resent successfully' });
+    } catch (err) {
+        handleError(res, err, 'admin-resend-otp');
+    }
+});
 
 // Self-Upgrade endpoint (for dev/setup phase)
 app.post('/api/auth/self-upgrade', authenticateToken, async (req, res) => {
@@ -1200,49 +1386,6 @@ app.get('/api/admin/question-bank/:topic/access-list', authenticateToken, requir
     }
 });
 
-app.post('/api/admin/question-bank/grant-access', authenticateToken, requireAdminOrManager, async (req, res) => {
-    const { topic, userId } = req.body;
-    if (!topic || !userId) return res.status(400).json({ error: 'Missing topic or userId' });
-
-    try {
-        await StudentExamAccess.findOneAndUpdate(
-            { 
-                student_id: userId, 
-                question_bank_topic: topic, 
-                access_type: 'question_bank' 
-            },
-            { 
-                assigned_by: req.user.id,
-                granted_at: new Date()
-            },
-            { upsert: true, new: true }
-        );
-
-        const student = await User.findById(userId);
-        if (student) {
-             const notification = new Notification({
-                user_id: userId,
-                type: 'mock_access',
-                title: `Mock Test Unlocked: ${topic} 🧠`,
-                message: `Admin has granted you special access to the ${topic} practice repository. You can now take mock tests for this topic!`,
-                data: { topic },
-                created_at: new Date()
-            });
-            await notification.save();
-
-            sendNotification(userId, {
-                type: 'mock_access',
-                title: 'Mock Test Unlocked! 🧠',
-                message: `You now have access to ${topic} mock tests.`,
-                topic
-            });
-        }
-
-        res.json({ success: true });
-    } catch (err) {
-        handleError(res, err, 'grant-qb-access');
-    }
-});
 
 app.get('/api/admin/courses-with-instructors', authenticateToken, requireAdminOrManager, async (req, res) => {
     try {
@@ -2978,10 +3121,32 @@ app.get('/api/student/all-resources', authenticateToken, async (req, res) => {
 
         if (courseIds.length === 0) return res.json([]);
 
-        // Fetch resources for these courses
-        const resources = await Resource.find({ 
-            course_id: { $in: courseIds } 
-        }).sort({ created_at: -1 }).limit(20).lean();
+        // Get batch assignments for this student across all enrolled courses
+        const batchAssignments = await StudentBatch.find({
+            student_id: req.user.id,
+            course_id: { $in: courseIds }
+        }).lean();
+        const batchMap = batchAssignments.reduce((acc, sb) => {
+            acc[sb.course_id.toString()] = sb.batch_id;
+            return acc;
+        }, {});
+
+        // Fetch resources course by course with batch filtering
+        const resourcePromises = courseIds.map(async (courseId) => {
+            const cidStr = courseId.toString();
+            const batchFilter = { course_id: courseId };
+            if (batchMap[cidStr]) {
+                batchFilter.$or = [
+                    { allowed_batches: { $exists: false } },
+                    { allowed_batches: null },
+                    { allowed_batches: { $size: 0 } },
+                    { allowed_batches: batchMap[cidStr] }
+                ];
+            }
+            return Resource.find(batchFilter).sort({ created_at: -1 }).limit(10).lean();
+        });
+        const grouped = await Promise.all(resourcePromises);
+        const resources = grouped.flat().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 20);
 
         // Transform S3 keys into signed URLs
         const processedResources = await Promise.all(resources.map(async (item) => {
@@ -3447,6 +3612,64 @@ app.get('/api/admin/question-bank/:topic/access-list', authenticateToken, requir
     }
 });
 
+app.post('/api/admin/question-bank/grant-access', authenticateToken, requireAdminOrManager, async (req, res) => {
+    const { userId, topic, batchId, type } = req.body;
+    if (!topic) return res.status(400).json({ error: 'Topic required' });
+
+    try {
+        let studentIds = [];
+        if (type === 'batch' && batchId) {
+            const assignments = await StudentBatch.find({ batch_id: batchId }).select('student_id').lean();
+            studentIds = assignments.map(a => a.student_id);
+            if (studentIds.length === 0) {
+                return res.status(400).json({ error: 'No students found in the selected batch.' });
+            }
+        } else if (userId) {
+            studentIds = [userId];
+        } else {
+            return res.status(400).json({ error: 'Student ID or Batch ID required' });
+        }
+
+        const grants = studentIds.map(studentId => ({
+            student_id: studentId,
+            question_bank_topic: topic,
+            access_type: 'question_bank',
+            assigned_by: req.user.id,
+            granted_at: new Date()
+        }));
+
+        // Use bulkWrite for efficiency
+        const operations = grants.map(grant => ({
+            updateOne: {
+                filter: { student_id: grant.student_id, question_bank_topic: grant.question_bank_topic },
+                update: { $set: grant },
+                upsert: true
+            }
+        }));
+
+        await StudentExamAccess.bulkWrite(operations);
+
+        // Send notifications
+        for (const studentId of studentIds) {
+            sendNotification(studentId.toString(), {
+                title: "New Mock Repository Available",
+                message: `You have been granted access to the "${topic}" question bank. You can start mock tests now.`,
+                type: "mock_test",
+                data: { topic }
+            });
+        }
+
+        res.json({ 
+            success: true, 
+            message: type === 'batch' 
+                ? `Access granted to ${studentIds.length} students in the batch.` 
+                : `Access granted to student.` 
+        });
+    } catch (err) {
+        handleError(res, err, 'grant-qb-access-unified');
+    }
+});
+
 app.post('/api/manager/grant-question-bank-access', authenticateToken, requireInstructor, async (req, res) => {
     const { studentId, topic } = req.body;
     if (!studentId || !topic) return res.status(400).json({ error: 'Student ID and Topic required' });
@@ -3461,9 +3684,17 @@ app.post('/api/manager/grant-question-bank-access', authenticateToken, requireIn
             },
             { upsert: true, new: true }
         );
+        
+        sendNotification(studentId.toString(), {
+            title: "Mock Repository Access",
+            message: `You have been granted access to "${topic}".`,
+            type: "mock_test",
+            data: { topic }
+        });
+
         res.json({ message: `Access granted for topic: ${topic}` });
     } catch (err) {
-        handleError(res, err, 'grant-qb-access');
+        handleError(res, err, 'grant-qb-access-manager');
     }
 });
 
@@ -3691,7 +3922,46 @@ const createCourseResourceRoutes = (resourceName, Model) => {
     app.get(`/api/courses/:courseId/${resourceName}`, async (req, res) => {
         try {
             const filter = { course_id: req.params.courseId };
-            
+
+            // Optional auth: identify student for batch filtering
+            let userId = null;
+            let userRole = null;
+            const authHeader = req.headers['authorization'];
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                try {
+                    const token = authHeader.split(' ')[1];
+                    const decoded = jwt.verify(token, JWT_SECRET);
+                    userId = decoded.id;
+                    userRole = await getUserRole(userId);
+                } catch (_) { /* unauthenticated — proceed without filtering */ }
+            }
+
+            // Batch access control: students only see content assigned to their batch
+            // (or content with no batch restriction — empty allowed_batches = global)
+            if (userId && userRole === 'student' && ['videos', 'resources', 'announcements', 'timeline'].includes(resourceName)) {
+                const studentBatch = await StudentBatch.findOne({
+                    student_id: userId,
+                    course_id: req.params.courseId
+                }).lean();
+
+                const globalFilter = [
+                    { allowed_batches: { $exists: false } },
+                    { allowed_batches: null },
+                    { allowed_batches: { $size: 0 } }
+                ];
+
+                if (studentBatch) {
+                    filter.$or = [
+                        ...globalFilter,
+                        { allowed_batches: studentBatch.batch_id }
+                    ];
+                } else {
+                    // Student has no batch assignment — only show global items
+                    filter.$or = globalFilter;
+                }
+                console.log(`[ACL] Resource ${resourceName} scoped for student. Batch: ${studentBatch?.batch_id || 'Global Only'}`);
+            }
+
             // Support basic filtering (e.g., ?module_id=eq.123)
             Object.keys(req.query).forEach(key => {
                 if (req.query[key].startsWith('eq.')) {
@@ -3786,16 +4056,22 @@ app.get('/api/courses/:courseId/roster', authenticateToken, requireInstructor, a
         // For now, let's just get the basic user info and use the Profile model if mobile_number is there.
         const userIds = enrollments.map(e => e.user_id?._id).filter(id => id);
         
-        const [profiles, allProgress] = await Promise.all([
+        const [profiles, allProgress, batchAssignments] = await Promise.all([
             Profile.find({ user_id: { $in: userIds } }).lean(),
             VideoProgress.find({ 
                 course_id: req.params.courseId,
                 user_id: { $in: userIds }
-            }).lean()
+            }).lean(),
+            StudentBatch.find({ course_id: req.params.courseId, student_id: { $in: userIds } }).populate('batch_id').lean()
         ]);
 
         const profileMap = profiles.reduce((acc, p) => {
             acc[p.user_id.toString()] = p;
+            return acc;
+        }, {});
+
+        const batchMap = batchAssignments.reduce((acc, sb) => {
+            acc[sb.student_id.toString()] = sb.batch_id;
             return acc;
         }, {});
 
@@ -3818,6 +4094,7 @@ app.get('/api/courses/:courseId/roster', authenticateToken, requireInstructor, a
                 mobile_number: profile?.mobile_number || e.user_id?.phone || '',
                 avatar_url: e.user_id?.avatar_url || profile?.avatar_url || null,
                 role: 'student',
+                batch: batchMap[userIdStr] || null,
                 status: e.status,
                 enrolled_at: e.enrolled_at,
                 progress: e.progress_percentage || 0,
@@ -3918,24 +4195,30 @@ app.get('/api/notifications', authenticateToken, async (req, res) => {
     }
 });
 
-app.post('/api/notifications/mark-read', authenticateToken, async (req, res) => {
+app.post('/api/notifications/:id/read', authenticateToken, async (req, res) => {
+    try {
+        await Notification.findOneAndUpdate({ _id: req.params.id, user_id: req.user.id }, { is_read: true });
+        res.json({ success: true });
+    } catch (err) {
+        handleError(res, err, 'mark-individual-notification-read');
+    }
+});
+
+app.post('/api/notifications/mark-all-read', authenticateToken, async (req, res) => {
     try {
         await Notification.updateMany({ user_id: req.user.id, is_read: false }, { is_read: true });
         res.json({ success: true });
     } catch (err) {
-        handleError(res, err, 'mark-notifications-read');
+        handleError(res, err, 'mark-all-read');
     }
 });
 
-app.post('/api/notifications/:id/mark-read', authenticateToken, async (req, res) => {
+app.delete('/api/notifications/:id', authenticateToken, async (req, res) => {
     try {
-        await Notification.findOneAndUpdate(
-            { _id: req.params.id, user_id: req.user.id }, 
-            { is_read: true }
-        );
-        res.json({ success: true });
+        await Notification.deleteOne({ _id: req.params.id, user_id: req.user.id });
+        res.json({ success: true, message: 'Notification removed permanently' });
     } catch (err) {
-        handleError(res, err, 'mark-individual-notification-read');
+        handleError(res, err, 'delete-notification');
     }
 });
 
@@ -4023,6 +4306,29 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
                 query[scopeField] = req.user.id;
                 console.log(`[ACL] Student scoping ${table} to ${scopeField}=${req.user.id}`);
             }
+
+            // Batch-wise scoping for content
+            if (['course_videos', 'course_resources'].includes(table)) {
+                // Find all batches the student is part of
+                const studentBatches = await StudentBatch.find({ student_id: req.user.id }).lean();
+                const studentBatchIds = studentBatches.map(sb => sb.batch_id.toString());
+                
+                const batchFilter = {
+                    $or: [
+                        { allowed_batches: { $exists: false } }, // No field at all
+                        { allowed_batches: { $size: 0 } },      // Empty array (visible to all)
+                        { allowed_batches: { $in: studentBatchIds } } // Specifically allowed for student's batches
+                    ]
+                };
+
+                // Apply filter
+                if (Object.keys(query).length > 0) {
+                    query = { $and: [query, batchFilter] };
+                } else {
+                    query = batchFilter;
+                }
+                console.log(`[ACL] Student batch-scoping applied for ${table}. Batches: ${studentBatchIds.join(', ') || 'None'}`);
+            }
             
             if (table === 'courses') {
                 query['is_active'] = { $ne: false };
@@ -4059,7 +4365,10 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
         } else if (table === 'course_enrollments') {
             data = await Model.find(query).sort(sort).limit(limit).skip(skip)
                 .populate('user_id', 'full_name email avatar_url phone')
-                .populate('course_id', 'title category image');
+                .populate('course_id', 'title category thumbnail_url');
+        } else if (table === 'course_ratings') {
+            data = await Model.find(query).sort(sort).limit(limit).skip(skip)
+                .populate('user_id', 'full_name avatar_url');
         } else {
             data = await Model.find(query).sort(sort).limit(limit).skip(skip);
         }
@@ -4291,6 +4600,650 @@ app.delete('/api/data/:table/:id', authenticateToken, async (req, res) => {
         res.json({ success: true });
     } catch (err) {
         handleError(res, err, `data-delete-${table}`);
+    }
+});
+
+// ============================================================
+// --- Batch Management Routes ---
+// ============================================================
+
+// Create a batch (admin / manager / instructor)
+app.post('/api/batches', authenticateToken, requireInstructor, async (req, res) => {
+    try {
+        const batch = await Batch.create({ ...req.body });
+        res.json(batch);
+    } catch (err) {
+        handleError(res, err, 'create-batch');
+    }
+});
+
+// List batches for a course
+app.get('/api/batches/student-assignments', authenticateToken, requireInstructor, async (req, res) => {
+    try {
+        let query = {};
+        const courseQuery = req.query.course_id;
+        
+        if (courseQuery && courseQuery.startsWith('in.(')) {
+            const ids = courseQuery.slice(4, -1).split(',').map(id => id.trim());
+            query.course_id = { $in: ids };
+        } else if (courseQuery) {
+            query.course_id = courseQuery;
+        }
+
+        const assignments = await StudentBatch.find(query)
+            .populate('batch_id')
+            .lean();
+            
+        res.json(assignments);
+    } catch (err) {
+        handleError(res, err, 'get-student-assignments');
+    }
+});
+
+app.get('/api/batches', authenticateToken, async (req, res) => {
+    try {
+        const filter = {};
+        if (req.query.course_id) filter.course_id = req.query.course_id;
+        if (req.query.is_active !== undefined) filter.is_active = req.query.is_active === 'true';
+        const batches = await Batch.find(filter).sort({ batch_type: 1, batch_name: 1 }).lean();
+        const batchesWithCount = await Promise.all(batches.map(async (b) => {
+            const count = await StudentBatch.countDocuments({ batch_id: b._id });
+            return { ...b, id: b._id.toString(), student_count: count };
+        }));
+        res.json(batchesWithCount);
+    } catch (err) {
+        handleError(res, err, 'list-batches');
+    }
+});
+
+// Get single batch
+app.get('/api/batches/:id', authenticateToken, async (req, res) => {
+    try {
+        const batch = await Batch.findById(req.params.id).lean();
+        if (!batch) return res.status(404).json({ error: 'Batch not found' });
+        const count = await StudentBatch.countDocuments({ batch_id: batch._id });
+        res.json({ ...batch, id: batch._id.toString(), student_count: count });
+    } catch (err) {
+        handleError(res, err, 'get-batch');
+    }
+});
+
+// Update batch
+app.put('/api/batches/:id', authenticateToken, requireInstructor, async (req, res) => {
+    try {
+        const batch = await Batch.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        res.json(batch);
+    } catch (err) {
+        handleError(res, err, 'update-batch');
+    }
+});
+
+// Delete batch (also removes all student assignments)
+app.delete('/api/batches/:id', authenticateToken, requireInstructor, async (req, res) => {
+    try {
+        await StudentBatch.deleteMany({ batch_id: req.params.id });
+        await Batch.findByIdAndDelete(req.params.id);
+        res.json({ success: true });
+    } catch (err) {
+        handleError(res, err, 'delete-batch');
+    }
+});
+// Get current student's batch for a specific course
+app.get('/api/batches/my-batch/:courseId', authenticateToken, async (req, res) => {
+    try {
+        const assignment = await StudentBatch.findOne({ 
+            student_id: req.user.id, 
+            course_id: req.params.courseId 
+        }).populate('batch_id').lean();
+        
+        if (!assignment) return res.json(null);
+        res.json({
+            ...assignment.batch_id,
+            id: assignment.batch_id._id.toString(),
+            assigned_at: assignment.assigned_at
+        });
+    } catch (err) {
+        handleError(res, err, 'my-batch');
+    }
+});
+
+// Get full course roster for instructors, grouped by batch type
+app.get('/api/batches/course-roster/:courseId', authenticateToken, requireInstructor, async (req, res) => {
+    try {
+        // Get all course enrollments (students)
+        const enrollments = await Enrollment.find({ 
+            course_id: req.params.courseId,
+            status: { $in: ['active', 'completed'] }
+        }).lean();
+        
+        const studentIds = enrollments.map(e => e.user_id);
+        
+        // Get all batch assignments for these students
+        const assignments = await StudentBatch.find({ 
+            course_id: req.params.courseId,
+            student_id: { $in: studentIds }
+        }).populate('batch_id').lean();
+        
+        // Get profiles and roles
+        const profiles = await Profile.find({ user_id: { $in: studentIds } }).lean();
+        const profileMap = profiles.reduce((acc, p) => { acc[p.user_id?.toString()] = p; return acc; }, {});
+        
+        const roles = await UserRole.find({ user_id: { $in: studentIds } }).lean();
+        const roleMap = roles.reduce((acc, r) => { acc[r.user_id?.toString()] = r.role; return acc; }, {});
+        
+        const assignmentMap = assignments.reduce((acc, a) => {
+            acc[a.student_id?.toString()] = a.batch_id;
+            return acc;
+        }, {});
+        
+        const rosterData = enrollments.map(e => {
+            const uid = e.user_id?.toString();
+            return {
+                student_id: uid,
+                full_name: profileMap[uid]?.full_name || 'Student',
+                email: profileMap[uid]?.email || profileMap[uid]?.email,
+                avatar_url: profileMap[uid]?.avatar_url,
+                role: roleMap[uid] || 'student',
+                batch: assignmentMap[uid] ? {
+                    id: assignmentMap[uid]._id.toString(),
+                    name: assignmentMap[uid].batch_name,
+                    type: assignmentMap[uid].batch_type
+                } : null
+            };
+        }).filter(s => s.role === 'student'); // Exclude instructors/admins
+        
+        // Group by batch type
+        const grouped = {
+            morning: rosterData.filter(s => s.batch?.type === 'morning'),
+            afternoon: rosterData.filter(s => s.batch?.type === 'afternoon'),
+            evening: rosterData.filter(s => s.batch?.type === 'evening'),
+            unassigned: rosterData.filter(s => !s.batch)
+        };
+        
+        res.json(grouped);
+    } catch (err) {
+        handleError(res, err, 'course-roster');
+    }
+});
+
+
+// List students in a batch (with profile info)
+app.get('/api/batches/:batchId/students', authenticateToken, requireInstructor, async (req, res) => {
+    try {
+        const assignments = await StudentBatch.find({ batch_id: req.params.batchId }).lean();
+        const studentIds = assignments.map(a => a.student_id);
+        const profiles = await Profile.find({ user_id: { $in: studentIds } }).lean();
+        const profileMap = profiles.reduce((acc, p) => { acc[p.user_id?.toString()] = p; return acc; }, {});
+        const result = assignments.map(a => ({
+            ...a,
+            id: a._id.toString(),
+            profile: profileMap[a.student_id?.toString()] || null
+        }));
+        res.json(result);
+    } catch (err) {
+        handleError(res, err, 'batch-students');
+    }
+});
+
+// Assign student to a batch
+app.post('/api/batches/:batchId/students', authenticateToken, requireInstructor, async (req, res) => {
+    try {
+        const { student_id, course_id } = req.body;
+        const batch = await Batch.findById(req.params.batchId).lean();
+        if (!batch) return res.status(404).json({ error: 'Batch not found' });
+
+        // Check capacity
+        const currentCount = await StudentBatch.countDocuments({ batch_id: req.params.batchId });
+        if (currentCount >= batch.max_students) {
+            return res.status(400).json({ error: `Batch is full (max ${batch.max_students} students)` });
+        }
+
+        const assignment = await StudentBatch.findOneAndUpdate(
+            { student_id, course_id },
+            {
+                batch_id: req.params.batchId,
+                assigned_by: req.user.id,
+                assigned_at: new Date(),
+                updated_at: new Date()
+            },
+            { upsert: true, new: true }
+        );
+        res.json(assignment);
+    } catch (err) {
+        handleError(res, err, 'assign-student-batch');
+    }
+});
+
+// Remove student from batch
+app.delete('/api/batches/:batchId/students/:studentId', authenticateToken, requireInstructor, async (req, res) => {
+    try {
+        await StudentBatch.findOneAndDelete({
+            batch_id: req.params.batchId,
+            student_id: req.params.studentId
+        });
+        res.json({ success: true });
+    } catch (err) {
+        handleError(res, err, 'remove-student-batch');
+    }
+});
+
+// Reassign student to a different batch
+app.put('/api/batches/students/reassign', authenticateToken, requireInstructor, async (req, res) => {
+    try {
+        const { student_id, course_id, new_batch_id } = req.body;
+        const newBatch = await Batch.findById(new_batch_id).lean();
+        if (!newBatch) return res.status(404).json({ error: 'Target batch not found' });
+
+        const currentCount = await StudentBatch.countDocuments({ batch_id: new_batch_id });
+        if (currentCount >= newBatch.max_students) {
+            return res.status(400).json({ error: `Target batch is full (max ${newBatch.max_students} students)` });
+        }
+
+        const existing = await StudentBatch.findOne({ student_id, course_id }).lean();
+        const assignment = await StudentBatch.findOneAndUpdate(
+            { student_id, course_id },
+            {
+                batch_id: new_batch_id,
+                previous_batch_id: existing ? existing.batch_id : null,
+                assigned_by: req.user.id,
+                updated_at: new Date()
+            },
+            { upsert: true, new: true }
+        );
+        res.json(assignment);
+    } catch (err) {
+        handleError(res, err, 'reassign-student-batch');
+    }
+});
+
+// Get batch assignments for multiple courses
+
+// Get available batches for a course (student view)
+app.get('/api/batches/course/:courseId', authenticateToken, async (req, res) => {
+    try {
+        const batches = await Batch.find({ course_id: req.params.courseId, is_active: true }).lean();
+        res.json(batches.map(b => ({ ...b, id: b._id.toString() })));
+    } catch (err) {
+        handleError(res, err, 'get-course-batches');
+    }
+});
+
+// Bulk Assign Mock Test or Exam to a Batch
+app.post('/api/exams/bulk-assign', authenticateToken, async (req, res) => {
+    try {
+        const { batch_id, mock_paper_id, exam_id } = req.body;
+        if (!batch_id) return res.status(400).json({ error: 'Batch ID is required' });
+        if (!mock_paper_id && !exam_id) return res.status(400).json({ error: 'Mock paper or Exam ID required' });
+
+        // 1. Get all students in the batch
+        const studentAssignments = await StudentBatch.find({ batch_id }).lean();
+        if (!studentAssignments || studentAssignments.length === 0) {
+            return res.status(404).json({ error: 'No students found in this batch' });
+        }
+
+        const studentIds = studentAssignments.map(a => a.student_id);
+
+        // 2. Prepare access records
+        const accessType = mock_paper_id ? 'mock' : 'exam';
+        const accessRecords = studentIds.map(sid => ({
+            student_id: sid,
+            exam_id: exam_id || null,
+            mock_paper_id: mock_paper_id || null,
+            access_type: accessType,
+            assigned_by: req.user.id,
+            granted_at: new Date()
+        }));
+
+        // 3. Insert Many
+        await StudentExamAccess.insertMany(accessRecords, { ordered: false });
+
+        res.json({ 
+            success: true, 
+            count: studentIds.length, 
+            message: `Mock Test assigned to ${studentIds.length} students` 
+        });
+    } catch (err) {
+        handleError(res, err, 'bulk-assign-mock');
+    }
+});
+
+// Student request to join or change batch
+app.post('/api/batches/student-request', authenticateToken, async (req, res) => {
+    try {
+        const { courseId, batchId } = req.body;
+        const userId = req.user.id;
+
+        const batch = await Batch.findById(batchId).populate('course_id').lean();
+        if (!batch) return res.status(404).json({ error: 'Batch not found' });
+
+        const course = await Course.findById(courseId).lean();
+        if (!course) return res.status(404).json({ error: 'Course not found' });
+
+        // Check if student is enrolled
+        const enrollmentValue = await Enrollment.findOne({ user_id: userId, course_id: courseId }).lean();
+        if (!enrollmentValue) return res.status(403).json({ error: 'You are not enrolled in this course' });
+
+        // Check if student already has a batch
+        const existingAssignment = await StudentBatch.findOne({ student_id: userId, course_id: courseId }).populate('batch_id').lean();
+
+        if (!existingAssignment) {
+            // Initial Assignment - Auto Approve but Notify Instructor
+            const assignment = await StudentBatch.create({
+                student_id: userId,
+                course_id: courseId,
+                batch_id: batchId,
+                assigned_at: new Date(),
+                assigned_by: userId // Self assigned for initial
+            });
+
+            // Notify Instructor
+            const student = await Profile.findOne({ user_id: userId }).lean();
+            const notification = new Notification({
+                user_id: course.instructor_id,
+                title: "New Batch Assignment",
+                message: `${student?.full_name || 'A student'} joined ${batch.batch_name} for ${course.title}`,
+                type: "batch_assignment",
+                data: { 
+                    student_id: userId, 
+                    course_id: courseId, 
+                    batch_id: batchId,
+                    actor_avatar: student?.avatar_url,
+                    actor_name: student?.full_name
+                },
+                created_at: new Date()
+            });
+            await notification.save();
+
+            sendNotification(course.instructor_id?.toString(), {
+                title: "New Batch Assignment",
+                message: `${student?.full_name || 'A student'} joined ${batch.batch_name} for ${course.title}`,
+                type: "batch_assignment",
+                data: { 
+                    student_id: userId, 
+                    course_id: courseId, 
+                    batch_id: batchId,
+                    actor_avatar: student?.avatar_url,
+                    actor_name: student?.full_name
+                }
+            });
+
+            res.json({ message: 'Batch assigned successfully', assignment });
+        } else {
+            // Change Request - Needs Permission
+            if (existingAssignment.batch_id._id.toString() === batchId) {
+                return res.status(400).json({ error: 'You are already in this batch' });
+            }
+
+            // Create or update pending request
+            const request = await BatchRequest.findOneAndUpdate(
+                { student_id: userId, course_id: courseId, status: 'pending' },
+                {
+                    batch_id: batchId,
+                    type: 'change',
+                    requested_at: new Date()
+                },
+                { upsert: true, new: true }
+            );
+
+            // Notify Instructor for Permission
+            const student = await Profile.findOne({ user_id: userId }).lean();
+            const notification = new Notification({
+                user_id: course.instructor_id,
+                title: "Batch Change Request",
+                message: `${student?.full_name || 'A student'} requested to move from ${existingAssignment.batch_id.batch_name} to ${batch.batch_name}`,
+                type: "batch_request",
+                data: { 
+                    request_id: request._id, 
+                    student_id: userId, 
+                    course_id: courseId,
+                    actor_avatar: student?.avatar_url,
+                    actor_name: student?.full_name
+                },
+                created_at: new Date()
+            });
+            await notification.save();
+
+            sendNotification(course.instructor_id?.toString(), {
+                title: "Batch Change Request",
+                message: `${student?.full_name || 'A student'} requested to move from ${existingAssignment.batch_id.batch_name} to ${batch.batch_name}`,
+                type: "batch_request",
+                data: { 
+                    request_id: request._id, 
+                    student_id: userId, 
+                    course_id: courseId,
+                    actor_avatar: student?.avatar_url,
+                    actor_name: student?.full_name
+                }
+            });
+
+            res.json({ message: 'Change request submitted for instructor permission', request });
+        }
+    } catch (err) {
+        handleError(res, err, 'student-batch-request');
+    }
+});
+
+// Instructor see pending requests
+app.get('/api/batches/requests/pending', authenticateToken, requireInstructor, async (req, res) => {
+    try {
+        const requests = await BatchRequest.find({ status: 'pending' })
+            .populate('student_id', 'full_name email')
+            .populate('course_id', 'title')
+            .populate('batch_id', 'batch_name batch_type')
+            .lean();
+        
+        // Filter by instructor's courses
+        const instructorCourses = await Course.find({ instructor_id: req.user.id }).select('_id').lean();
+        const courseIds = instructorCourses.map(c => c._id.toString());
+        
+        const filtered = requests.filter(r => courseIds.includes(r.course_id._id.toString()));
+        res.json(filtered.map(r => ({ ...r, id: r._id.toString() })));
+    } catch (err) {
+        handleError(res, err, 'get-pending-requests');
+    }
+});
+
+// Instructor Approve/Reject
+app.post('/api/batches/requests/:requestId/approve', authenticateToken, requireInstructor, async (req, res) => {
+    try {
+        const request = await BatchRequest.findById(req.params.requestId);
+        if (!request) return res.status(404).json({ error: 'Request not found' });
+
+        // Update Assignment
+        const previous = await StudentBatch.findOne({ student_id: request.student_id, course_id: request.course_id }).lean();
+        
+        await StudentBatch.findOneAndUpdate(
+            { student_id: request.student_id, course_id: request.course_id },
+            {
+                batch_id: request.batch_id,
+                previous_batch_id: previous ? previous.batch_id : null,
+                assigned_by: req.user.id,
+                updated_at: new Date()
+            },
+            { upsert: true }
+        );
+
+        request.status = 'approved';
+        request.processed_at = new Date();
+        request.processed_by = req.user.id;
+        await request.save();
+
+        // Notify Student
+        await Notification.create({
+            user_id: request.student_id,
+            title: "Batch Request Approved",
+            message: `Your request to join the new batch was approved.`,
+            type: "batch_approved",
+            data: { course_id: request.course_id }
+        });
+
+        sendNotification(request.student_id.toString(), {
+            title: "Batch Request Approved",
+            message: `Your request to join the new batch has been approved.`,
+            type: "batch_approved",
+            data: { course_id: request.course_id }
+        });
+
+        res.json({ success: true });
+    } catch (err) {
+        handleError(res, err, 'approve-request');
+    }
+});
+
+app.post('/api/batches/requests/:requestId/reject', authenticateToken, requireInstructor, async (req, res) => {
+    try {
+        const request = await BatchRequest.findById(req.params.requestId);
+        if (!request) return res.status(404).json({ error: 'Request not found' });
+
+        request.status = 'rejected';
+        request.processed_at = new Date();
+        request.processed_by = req.user.id;
+        await request.save();
+
+        // Notify Student
+        await Notification.create({
+            user_id: request.student_id,
+            title: "Batch Request Rejected",
+            message: `Your request to change batches was not approved at this time.`,
+            type: "batch_rejected",
+            data: { course_id: request.course_id }
+        });
+
+        sendNotification(request.student_id.toString(), {
+            title: "Batch Request Rejected",
+            message: `Your request to change batches was not approved at this time.`,
+            type: "batch_rejected",
+            data: { course_id: request.course_id }
+        });
+
+        res.json({ success: true });
+    } catch (err) {
+        handleError(res, err, 'reject-request');
+    }
+});
+
+// Auto-split enrolled students into batches for a course
+app.post('/api/batches/auto-split/:courseId', authenticateToken, requireInstructor, async (req, res) => {
+    try {
+        const { courseId } = req.params;
+
+        // Get active batches for this course
+        const batches = await Batch.find({ course_id: courseId, is_active: true }).sort({ batch_type: 1 }).lean();
+        if (batches.length === 0) {
+            return res.status(400).json({ error: 'No active batches exist for this course. Create batches first.' });
+        }
+
+        // Get enrolled students not yet assigned to any batch
+        const enrollments = await Enrollment.find({ course_id: courseId, status: 'active' }).lean();
+        const existingAssignments = await StudentBatch.find({ course_id: courseId }).lean();
+        const assignedStudentIds = new Set(existingAssignments.map(a => a.student_id.toString()));
+
+        const unassigned = enrollments.filter(e => !assignedStudentIds.has(e.user_id.toString()));
+
+        if (unassigned.length === 0) {
+            return res.json({ message: 'All enrolled students are already assigned to batches', assigned: 0 });
+        }
+
+        // Count current students per batch
+        const batchCounts = await Promise.all(batches.map(async b => ({
+            batch: b,
+            count: await StudentBatch.countDocuments({ batch_id: b._id })
+        })));
+
+        let assignedCount = 0;
+        const assignments = [];
+
+        // Helper to find or create a batch of a specific type with capacity
+        const findOrCreateBatchWithCapacity = async (type) => {
+            // Find existing active batches of this type with room
+            const typeBatches = batchCounts
+                .filter(bc => bc.batch.batch_type === type && bc.count < bc.batch.max_students)
+                .sort((a, b) => a.count - b.count);
+
+            if (typeBatches.length > 0) {
+                const target = typeBatches[0];
+                target.count++;
+                return target.batch._id;
+            }
+
+            // No room in existing batches of this type — auto-create new "Batch N"
+            const batchTypeCount = await Batch.countDocuments({ course_id: courseId, batch_type: type });
+            const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
+            
+            // Get timing defaults from earlier batches of same type if they exist
+            const template = batches.find(b => b.batch_type === type) || { start_time: "09:00", end_time: "11:00", max_students: 30 };
+
+            const newBatch = await Batch.create({
+                course_id: courseId,
+                batch_type: type,
+                batch_name: `${typeLabel} Batch ${batchTypeCount + 1}`,
+                start_time: template.start_time,
+                end_time: template.end_time,
+                max_students: template.max_students,
+                instructor_id: req.user.id
+            });
+
+            console.log(`[Batch Scaling] Created new batch: ${newBatch.batch_name}`);
+            
+            // Add new batch to our local tracking to avoid immediate re-creation
+            batchCounts.push({ batch: newBatch, count: 1 });
+            return newBatch._id;
+        };
+
+        for (const enrollment of unassigned) {
+            // Determine preferred type — default to morning if unspecified, or spread evenly
+            // For auto-split, we'll try to fill existing partially-filled batches first
+            const available = batchCounts
+                .filter(bc => bc.count < bc.batch.max_students)
+                .sort((a, b) => a.count - b.count);
+
+            let targetId;
+            if (available.length > 0) {
+                const target = available[0];
+                target.count++;
+                targetId = target.batch._id;
+            } else {
+                // All current batches are full — auto-create based on morning by default
+                targetId = await findOrCreateBatchWithCapacity('morning');
+            }
+
+            assignments.push({
+                student_id: enrollment.user_id,
+                course_id: courseId,
+                batch_id: targetId,
+                assigned_by: req.user.id,
+                assigned_at: new Date(),
+                updated_at: new Date()
+            });
+            assignedCount++;
+        }
+
+        if (assignments.length > 0) {
+            await StudentBatch.insertMany(assignments, { ordered: false });
+        }
+
+        res.json({
+            message: `Auto-split & scaling complete. Assigned ${assignedCount} student(s). Created new batches as needed.`,
+            assigned: assignedCount,
+            skipped: unassigned.length - assignedCount
+        });
+    } catch (err) {
+        handleError(res, err, 'auto-split-batches');
+    }
+});
+
+// Get student's batch assignment for a specific course
+app.get('/api/student/my-batch/:courseId', authenticateToken, async (req, res) => {
+    try {
+        const assignment = await StudentBatch.findOne({
+            student_id: req.user.id,
+            course_id: req.params.courseId
+        }).populate('batch_id').lean();
+
+        if (!assignment) return res.json(null);
+        res.json({ ...assignment, id: assignment._id.toString() });
+    } catch (err) {
+        handleError(res, err, 'student-my-batch');
     }
 });
 

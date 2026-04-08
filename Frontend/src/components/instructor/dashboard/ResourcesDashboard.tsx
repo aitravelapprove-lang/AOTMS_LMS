@@ -15,7 +15,8 @@ import {
   AlertCircle,
   Loader2,
   Presentation,
-  BookOpen
+  BookOpen,
+  Users
 } from 'lucide-react';
 import { 
   Card, 
@@ -102,7 +103,23 @@ export function ResourcesDashboard() {
     title: '',
     description: '',
     resource_type: 'Study Material' as CourseResource['resource_type'],
+    allowed_batches: [] as string[]
   });
+
+  const [batches, setBatches] = useState<any[]>([]);
+
+  React.useEffect(() => {
+    const loadBatches = async () => {
+      if (!selectedCourse) return;
+      try {
+        const data = (await fetchWithAuth(`/batches?course_id=${selectedCourse.id}`)) as any[];
+        setBatches(data || []);
+      } catch (e) {
+        console.error("Failed to load batches", e);
+      }
+    };
+    loadBatches();
+  }, [selectedCourse]);
 
   const { data: resources = [], isLoading: loadingResources, refetch } = useResources(selectedCourse?.id || null);
   const createResource = useCreateResource();
@@ -179,7 +196,8 @@ export function ResourcesDashboard() {
         setResourceFormData({
             title: file.name,
             description: `Resource for course ${selectedCourse.title}`,
-            resource_type: getResourceType(file.type || '', file.name) as CourseResource['resource_type']
+            resource_type: getResourceType(file.type || '', file.name) as CourseResource['resource_type'],
+            allowed_batches: []
         });
         setMetadataDialogOpen(true);
 
@@ -209,7 +227,8 @@ export function ResourcesDashboard() {
             upload_format: pendingResource.file.name.split('.').pop() || 'unknown',
             instructor_avatar_url: (user as { photoURL?: string }).photoURL || '',
             instructor_name: (user as { displayName?: string, email?: string }).displayName || user.email || 'Instructor',
-            short_description: resourceFormData.description
+            short_description: resourceFormData.description,
+            allowed_batches: resourceFormData.allowed_batches
         });
 
         toast({
@@ -518,6 +537,11 @@ export function ResourcesDashboard() {
                                         <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black opacity-30 mt-2">
                                           Published {new Date(resource.created_at || '').toLocaleDateString()}
                                         </p>
+                                        {(resource as any).allowed_batches?.length > 0 && (
+                                            <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 flex items-center gap-1 w-fit mt-2 text-[10px]">
+                                                <Users className="h-3 w-3" /> {(resource as any).allowed_batches.length} Batches
+                                            </Badge>
+                                        )}
                                       </div>
                                     </div>
                                     
@@ -562,6 +586,7 @@ export function ResourcesDashboard() {
         setFormData={setResourceFormData}
         onSave={handleSaveMetadata}
         fileName={pendingResource?.file.name}
+        batches={batches}
       />
     </div>
   );
@@ -574,7 +599,8 @@ function MetadataDialog({
     formData, 
     setFormData, 
     onSave,
-    fileName
+    fileName,
+    batches
 }: { 
     open: boolean; 
     onOpenChange: (open: boolean) => void;
@@ -639,6 +665,37 @@ function MetadataDialog({
                             onChange={(e) => setFormData({...formData, description: e.target.value})}
                         />
                     </div>
+
+                    {/* Batch Selection */}
+                    {batches && batches.length > 0 && (
+                        <div className="space-y-3">
+                            <Label className="text-xs uppercase font-black tracking-widest text-muted-foreground ml-1">Restricted Access (Optional)</Label>
+                            <div className="flex flex-wrap gap-2">
+                                {batches.map((batch) => {
+                                    const isSelected = formData.allowed_batches.includes(batch.id);
+                                    return (
+                                        <Badge
+                                            key={batch.id}
+                                            variant={isSelected ? "default" : "outline"}
+                                            className={`cursor-pointer h-10 px-4 rounded-xl font-bold uppercase text-[10px] transition-all ${
+                                                isSelected ? 'bg-primary text-white' : 'bg-slate-50 text-slate-500 border-slate-200'
+                                            }`}
+                                            onClick={() => {
+                                                if (isSelected) {
+                                                    setFormData({ ...formData, allowed_batches: formData.allowed_batches.filter(id => id !== batch.id) });
+                                                } else {
+                                                    setFormData({ ...formData, allowed_batches: [...formData.allowed_batches, batch.id] });
+                                                }
+                                            }}
+                                        >
+                                            {batch.batch_name}
+                                        </Badge>
+                                    );
+                                })}
+                            </div>
+                            <p className="text-[10px] text-slate-400 italic">No batches selected = visible to all students.</p>
+                        </div>
+                    )}
                 </div>
 
                 <DialogFooter className="p-8 pt-0 bg-muted/5">

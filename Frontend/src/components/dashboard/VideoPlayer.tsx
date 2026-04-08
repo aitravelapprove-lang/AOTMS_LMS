@@ -100,7 +100,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, videoId, courseId
         lastWatchedTime: timeRef.current,
         completed: progressRef.current >= 95
       });
-      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
       const token = localStorage.getItem('access_token');
       if (token) {
           fetch(`${API_BASE}/progress/save`, { method: 'POST', body, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, keepalive: true });

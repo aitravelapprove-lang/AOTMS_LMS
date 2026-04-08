@@ -115,12 +115,10 @@ const WhyAOTMS = () => (
             transition={{ duration: 0.5, delay: i * 0.1 }}
             className="group"
           >
-            <div className="relative h-full border border-slate-200 rounded-[2rem] p-8 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-500">
-              {/* Animated Accent Bar */}
+            <div className="relative h-full border border-slate-200 rounded-[2rem] p-8 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-500 bg-white">
               <div
                 className={`absolute top-0 left-0 w-16 h-1.5 bg-gradient-to-r ${f.color} rounded-full transition-all duration-500 group-hover:w-full`}
               />
-
               <div className="pt-2">
                 <div className="flex items-start justify-between mb-8">
                   <div
@@ -129,14 +127,12 @@ const WhyAOTMS = () => (
                     <f.icon className="w-7 h-7 text-white" />
                   </div>
                 </div>
-
                 <h3 className="text-2xl font-black text-slate-900 mb-4 tracking-tighter group-hover:text-[#0075CF] transition-colors">
                   {f.title}
                 </h3>
                 <p className="text-slate-500 text-base leading-relaxed font-medium mb-6">
                   {f.description}
                 </p>
-
                 <div className="h-px w-12 bg-slate-200 group-hover:w-20 group-hover:bg-[#0075CF] transition-all duration-500" />
               </div>
             </div>

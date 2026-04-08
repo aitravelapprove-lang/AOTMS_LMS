@@ -1,3 +1,4 @@
+import React from "react";
 import Header from "@/components/landing/Header";
 import Footer from "@/components/landing/Footer";
 import LowPolyBackground from "@/components/landing/LowPolyBackground";
@@ -283,36 +284,29 @@ const About = () => {
         </section>
 
         {/* 6. Local Presence & Reach (H2) */}
-        <section className="container-width section-padding bg-black text-white rounded-3xl overflow-hidden relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent"></div>
-          <div className="relative z-10 grid md:grid-cols-2 gap-12 items-center p-8 md:p-12">
+        <section className="container-width py-12 bg-slate-900 text-white rounded-[3rem] overflow-hidden relative shadow-2xl">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-transparent"></div>
+          <div className="relative z-10 grid md:grid-cols-2 gap-8 items-center p-8 md:p-12">
             <div>
-              <div className="flex items-center gap-2 mb-4 text-primary-foreground/80">
+              <div className="flex items-center gap-2 mb-4 text-blue-400">
                 <MapPin className="w-5 h-5" />
-                <span className="uppercase tracking-wider text-sm font-semibold">
+                <span className="uppercase tracking-widest text-[10px] font-black">
                   Local Roots, Global Purpose
                 </span>
               </div>
-              <h2 className="font-heading text-3xl md:text-4xl font-bold mb-6">
-                Based in Vijayawada
+              <h2 className="font-heading text-3xl md:text-5xl font-black mb-6 leading-tight">
+                Based in <span className="text-blue-400">Vijayawada</span>
               </h2>
-              <p className="text-lg text-white/80 leading-relaxed max-w-xl">
-                While we operate as a digital-first global learning platform,
-                our heart and development base are in{" "}
-                <strong className="text-white">Vijayawada</strong>. We are proud
-                to contribute to the city's growing status as an educational
-                hub, serving learners across Vijayawada, Andhra Pradesh, and
-                beyond.
+              <p className="text-lg text-white/70 leading-relaxed max-w-xl font-medium">
+                While we operate as a digital-first global learning platform, our development base is in <strong className="text-white">Vijayawada</strong>. We are proud to contribute to the city's status as an educational hub.
               </p>
             </div>
             <div className="flex justify-center md:justify-end">
-              <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20 max-w-sm">
-                <h4 className="font-bold text-xl mb-2">Visit Us</h4>
-                <p className="text-white/70">
-                  2nd Floor, Pothuri Towers
-                  <br />
-                  MG Rd, Vijayawada, AP
-                  <br />
+              <div className="bg-white/10 backdrop-blur-md p-8 rounded-[2.5rem] border border-white/20 max-w-sm shadow-xl">
+                <h4 className="font-black text-xl mb-4 text-white">Institutional Base</h4>
+                <p className="text-white/60 text-sm leading-relaxed font-medium">
+                  2nd Floor, Pothuri Towers<br />
+                  MG Rd, Vijayawada, AP<br />
                   India - 520010
                 </p>
               </div>
@@ -320,17 +314,66 @@ const About = () => {
           </div>
         </section>
 
-        {/* 7. Future Vision (H2) */}
+        {/* New 7. Our Global Network: Partner Marquee */}
+        <section className="py-24 overflow-hidden">
+          <div className="container-width mb-12 text-center">
+             <span className="inline-block px-4 py-1.5 rounded-full bg-[#0075CF]/10 text-blue-600 font-black text-[10px] uppercase tracking-widest mb-4">
+                Global Network
+             </span>
+             <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter leading-tight">
+                AOTMS Talent Leading <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] to-[#FD5A1A]">Global Innovation</span>
+             </h2>
+          </div>
+
+          <div className="relative flex whitespace-nowrap bg-white py-12 border-y border-slate-100 overflow-hidden">
+            <motion.div 
+              animate={{ x: ["0%", "-50%"] }}
+              transition={{ 
+                duration: 40, 
+                repeat: Infinity, 
+                ease: "linear",
+                repeatType: "loop"
+              }}
+              style={{ willChange: "transform" }}
+              className="flex items-center gap-16 md:gap-32 pr-16 md:pr-32 py-4"
+            >
+              {[
+                "MICROSOFT", "GOOGLE", "AMAZON", "TCS", "INFOSYS", "WIPRO", "ACCENTURE", "IBM", "CAPGEMINI", "TECH MAHINDRA", "SAP", "HCL"
+              ].map((company, i) => (
+                <React.Fragment key={i}>
+                  <h4 className={`text-4xl md:text-7xl font-black text-slate-900 transition-colors cursor-default tracking-tighter ${
+                    i % 2 === 0 ? "hover:text-[#0075CF]" : "hover:text-[#FD5A1A]"
+                  }`}>
+                    {company}
+                  </h4>
+                  <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#0075CF] to-[#FD5A1A] shadow-sm" />
+                </React.Fragment>
+              ))}
+              {/* Duplicate Set */}
+              {[
+                "MICROSOFT", "GOOGLE", "AMAZON", "TCS", "INFOSYS", "WIPRO", "ACCENTURE", "IBM", "CAPGEMINI", "TECH MAHINDRA", "SAP", "HCL"
+              ].map((company, i) => (
+                <React.Fragment key={`dup-${i}`}>
+                   <h4 className={`text-4xl md:text-7xl font-black text-slate-900 transition-colors cursor-default tracking-tighter ${
+                    i % 2 === 0 ? "hover:text-[#0075CF]" : "hover:text-[#FD5A1A]"
+                  }`}>
+                    {company}
+                  </h4>
+                  <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#0075CF] to-[#FD5A1A] shadow-sm" />
+                </React.Fragment>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+
+        {/* 8. Future Vision (H2) */}
         <section className="container-width section-padding text-center">
           <div className="max-w-3xl mx-auto">
-            <h2 className="font-heading text-3xl md:text-4xl font-bold mb-6">
+            <h2 className="font-heading text-3xl md:text-5xl font-black mb-6 text-slate-900 tracking-tight">
               Our Future Vision
             </h2>
-            <p className="text-lg text-muted-foreground leading-relaxed mb-8">
-              We are constantly evolving. Our roadmap includes enhanced mobile
-              learning experiences, advanced AI-driven performance analytics,
-              and deeper industry partnerships to ensure AOTMS LMS remains at
-              the forefront of ed-tech innovation.
+            <p className="text-lg text-muted-foreground leading-relaxed font-medium">
+              We are constantly evolving. Our roadmap includes enhanced mobile learning experiences, advanced AI-driven performance analytics, and deeper industry partnerships to ensure AOTMS LMS remains at the forefront of ed-tech innovation.
             </p>
           </div>
         </section>
@@ -342,3 +385,4 @@ const About = () => {
 };
 
 export default About;
+

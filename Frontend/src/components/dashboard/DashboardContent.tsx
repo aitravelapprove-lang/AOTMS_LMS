@@ -1,6 +1,10 @@
 import { useLocation, useNavigate } from "react-router-dom";
+<<<<<<< HEAD
 import { format } from 'date-fns';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+=======
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+>>>>>>> 2b50dd9f8b0552e58548d5ed5188690aeaf7ccec
 import {
   Card,
   CardContent,
@@ -69,6 +73,7 @@ import { ExamModule } from "./ExamModule";
 import { Notifications } from "./Notifications";
 import { StudentSettings } from "./StudentSettings";
 import { StudentResumeScan } from "./StudentResumeScan";
+import { StudentBatchSelector } from "./StudentBatchSelector";
 import { ChatInterface } from "../chat/ChatInterface";
 import {
   StudentCourse,
@@ -1091,17 +1096,20 @@ export function DashboardContent() {
             
             <div className="md:ml-auto flex items-center gap-3 w-full md:w-auto">
               {currentPath === "/student-dashboard/courses" && (
-                <Button 
-                  variant="outline"
-                  onClick={() => {
-                    setSelectedCourseForRating({ id: 'GENERAL', title: 'AOTMS Pro Academy' });
-                    setRatingModalOpen(true);
-                  }}
-                  className="bg-white border-2 border-slate-100 text-slate-900 font-black rounded-xl px-4 sm:px-6 h-10 sm:h-12 shadow-sm hover:border-yellow-400 hover:text-yellow-600 transition-all gap-2 text-[10px] sm:text-xs uppercase w-full sm:w-auto"
-                >
-                  <Star className="h-4 w-4 fill-current" />
-                  Pulse Your Rating
-                </Button>
+                <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
+                    <StudentBatchSelector />
+                    <Button 
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedCourseForRating({ id: 'GENERAL', title: 'AOTMS Pro Academy' });
+                        setRatingModalOpen(true);
+                      }}
+                      className="bg-white border-2 border-slate-100 text-slate-900 font-black rounded-xl px-4 sm:px-6 h-10 sm:h-12 shadow-sm hover:border-yellow-400 hover:text-yellow-600 transition-all gap-2 text-[10px] sm:text-xs uppercase w-full sm:w-auto"
+                    >
+                      <Star className="h-4 w-4 fill-current" />
+                      Pulse Your Rating
+                    </Button>
+                </div>
               )}
               {currentPath === "/student-dashboard/notifications" && (
                 <Button 

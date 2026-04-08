@@ -157,7 +157,7 @@ export function useCreateCourseVideo() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ moduleId, courseId, ...video }: { moduleId: string, courseId?: string, title: string, video_type: string, video_url: string, thumbnail_url?: string, order_index: number }) => {
+        mutationFn: async ({ moduleId, courseId, ...video }: { moduleId: string, courseId?: string, title: string, video_type: string, video_url: string, thumbnail_url?: string, order_index: number, allowed_batches?: string[] }) => {
             // Prefer the course sub-resource endpoint if courseId is provided
             if (courseId) {
                 return fetchWithAuth(`/courses/${courseId}/videos`, {

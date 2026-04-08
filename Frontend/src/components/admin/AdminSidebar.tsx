@@ -91,7 +91,7 @@ export function AdminSidebar() {
       <SidebarContent className="px-3 group-data-[collapsible=icon]:px-2 py-6 space-y-6 admin-scrollbar">
         {/* Main Section */}
         <SidebarGroup>
-          <SidebarGroupLabel className="px-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">
+          <SidebarGroupLabel className="px-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 group-data-[collapsible=icon]:hidden">
             Management
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -101,11 +101,11 @@ export function AdminSidebar() {
                   <SidebarMenuButton
                     asChild
                     isActive={isActive(item.url)}
-                    className="h-11 px-4 rounded-lg transition-all duration-200 group relative data-[active=true]:bg-primary/10 data-[active=true]:text-primary"
+                    className="h-11 px-4 rounded-lg transition-all duration-200 group relative data-[active=true]:bg-primary/10 data-[active=true]:text-primary group-data-[collapsible=icon]:!px-0 group-data-[collapsible=icon]:!justify-center"
                   >
-                    <Link to={item.url} className="flex items-center gap-3">
+                    <Link to={item.url} className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0">
                       <item.icon
-                        className={`h-5 w-5 transition-colors ${isActive(item.url) ? "text-primary" : "text-slate-500 group-hover:text-slate-700"}`}
+                        className={`h-5 w-5 transition-colors shrink-0 ${isActive(item.url) ? "text-primary" : "text-slate-500 group-hover:text-slate-700"}`}
                       />
                       {!collapsed && <span className="text-[11px] font-black uppercase tracking-[0.05em]">{item.title}</span>}
                       {isActive(item.url) && !collapsed && (

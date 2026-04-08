@@ -62,6 +62,7 @@ export interface CourseVideo {
   duration_seconds: number;
   order_index: number;
   is_published: boolean;
+  allowed_batches: string[];
 }
 
 export interface CourseResource {
@@ -74,6 +75,7 @@ export interface CourseResource {
   instructor_avatar_url: string | null;
   instructor_name: string | null;
   file_url: string;
+  allowed_batches: string[];
   created_at?: string;
 }
 
@@ -86,6 +88,7 @@ export interface CourseTimeline {
   scheduled_date: string;
   is_completed: boolean;
   completed_at: string | null;
+  allowed_batches: string[];
 }
 
 export interface CourseAnnouncement {
@@ -95,6 +98,7 @@ export interface CourseAnnouncement {
   title: string;
   content: string;
   is_pinned: boolean;
+  allowed_batches: string[];
   created_at: string | null;
 }
 
@@ -913,6 +917,8 @@ export interface InstructorStudent {
     courseTitle: string;
     progress: number;
     lastWatchedAt: string;
+    batchType?: string;
+    batchName?: string;
   }[];
 }
 
@@ -953,21 +959,33 @@ export function useInstructorAllStudents() {
       if (!user?.id) return [];
 
       // 1. Fetch instructor's courses
-      const courses = await fetchWithAuth<Course[]>(`/data/courses?instructor_id=eq.${user.id}`);
-      const courseIds = courses.map(c => c.id || c._id).filter(Boolean);
+      const courses = await fetchWithAuth<Course[]>(`/data/courses?instructor_id=eq.${user.id}`) || [];
+      const courseIds = courses.map(c => c.id || (c as any)._id).filter(Boolean);
 
       if (courseIds.length === 0) return [];
 
-      // 2. Fetch enrollments for these courses
-      const allEnrollments = await fetchWithAuth<any[]>(`/data/course_enrollments?course_id=in.(${courseIds.join(',')})`);
+      // 2. Fetch enrollments and batch assignments for these courses
+      const [allEnrollments, allBatchAssignments] = await Promise.all([
+        fetchWithAuth<any[]>(`/data/course_enrollments?course_id=in.(${courseIds.join(',')})`).catch(e => {
+            console.error("[useInstructorAllStudents] Enrollments fetch failed:", e);
+            return [] as any[];
+        }),
+        fetchWithAuth<any[]>(`/batches/student-assignments?course_id=in.(${courseIds.join(',')})`).catch(e => {
+            console.error("[useInstructorAllStudents] Batch assignments fetch failed:", e);
+            return [] as any[];
+        })
+      ]);
       
       const studentMap = new Map<string, InstructorStudent>();
 
       allEnrollments.forEach((enrollment) => {
         const u = enrollment.user_id;
-        const userId = typeof u === 'string' ? u : u?._id?.toString() || u?.id;
+        const userId = typeof u === 'string' ? u : (u?.id || u?._id?.toString());
         
-        if (!userId) return;
+        if (!userId) {
+            console.warn("[useInstructorAllStudents] Missing user_id for enrollment", enrollment._id || enrollment.id);
+            return;
+        }
 
         // Skip if the student is the instructor themselves
         if (userId === user.id?.toString()) return;
@@ -997,11 +1015,17 @@ export function useInstructorAllStudents() {
             existing.lastActiveAt = lastWatched.toISOString();
           }
 
+          const batchAssignment = allBatchAssignments?.find(
+            ba => ba.student_id === userId && ba.course_id === courseId
+          );
+
           existing.courseEnrollments.push({
             courseId: courseId,
             courseTitle: courseTitle,
             progress: progress,
-            lastWatchedAt: enrollment.last_accessed_at || enrollment.enrolled_at
+            lastWatchedAt: enrollment.last_accessed_at || enrollment.enrolled_at,
+            batchType: batchAssignment?.batch_id?.batch_type,
+            batchName: batchAssignment?.batch_id?.batch_name
           });
         } else {
           const progress = enrollment.progress_percentage || 0;
@@ -1011,12 +1035,16 @@ export function useInstructorAllStudents() {
               ? 'active'
               : 'inactive';
 
+          const batchAssignment = allBatchAssignments?.find(
+            ba => ba.student_id === userId && ba.course_id === courseId
+          );
+
           studentMap.set(userId, {
-            id: enrollment.id,
+            id: enrollment.id || enrollment._id || userId,
             userId: userId,
-            name: (typeof u === 'object' && u?.full_name) ? u.full_name : 'Student', 
-            email: (typeof u === 'object' && u?.email) ? u.email : '',
-            avatarUrl: (typeof u === 'object' && u?.avatar_url) ? u.avatar_url : undefined,
+            name: (typeof u === 'object' && u?.full_name) ? u.full_name : (enrollment.user_full_name || 'Student'), 
+            email: (typeof u === 'object' && u?.email) ? u.email : (enrollment.user_email || ''),
+            avatarUrl: (typeof u === 'object' && u?.avatar_url) ? u.avatar_url : enrollment.user_avatar,
             mobileNumber: (typeof u === 'object' && u?.phone) ? u.phone : undefined,
             enrolledCourses: 1,
             completedCourses: progress === 100 ? 1 : 0,
@@ -1031,7 +1059,9 @@ export function useInstructorAllStudents() {
               courseId: courseId,
               courseTitle: courseTitle,
               progress: progress,
-              lastWatchedAt: enrollment.last_accessed_at || enrollment.enrolled_at
+              lastWatchedAt: enrollment.last_accessed_at || enrollment.enrolled_at,
+              batchType: batchAssignment?.batch_id?.batch_type,
+              batchName: batchAssignment?.batch_id?.batch_name
             }]
           });
         }
@@ -1438,18 +1468,25 @@ export function useInstructorRatings() {
       
       const ratings = await fetchWithAuth(`/data/course_ratings?course_id=in.(${courseIds})&order=created_at.desc`) as any[];
       
+<<<<<<< HEAD
       const enriched = await Promise.all(ratings.map(async (r: any) => {
         const course = (courses as any[]).find((c: Course) => c.id === r.course_id);
         const userDataResult = await fetchWithAuth(`/data/profiles?user_id=${r.user_id}`) as any[];
         const userData = userDataResult[0] || {};
+=======
+      const enriched = ratings.map((r: any) => {
+        const course = courses.find((c: Course) => c.id === r.course_id);
+        const userData = typeof r.user_id === 'object' ? r.user_id : {};
+>>>>>>> 2b50dd9f8b0552e58548d5ed5188690aeaf7ccec
         
         return {
           ...r,
+          id: r._id || r.id,
           course_title: course?.title || (r.course_id === 'GENERAL' ? 'Academy Pulse' : 'Course'),
           user_name: userData.full_name || 'Scholar',
           user_avatar: userData.avatar_url
         };
-      }));
+      });
 
       return enriched as CourseRating[];
     },

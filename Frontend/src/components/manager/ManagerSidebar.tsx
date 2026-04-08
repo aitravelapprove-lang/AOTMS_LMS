@@ -30,6 +30,9 @@ import {
   GraduationCap,
   BookOpen,
   User,
+  Ticket,
+  FileText,
+  ShieldCheck,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useAuth } from "@/hooks/useAuth";
@@ -44,11 +47,16 @@ const examManagementItems = [
   { id: "profile", title: "My Profile", icon: User },
   { id: "exams", title: "Exam Scheduling", icon: Calendar },
   { id: "questions", title: "Question Bank", icon: FileQuestion },
+  { id: "approvals", title: "QB Approvals", icon: ShieldCheck },
+  { id: "exam-approvals", title: "Exam Approvals", icon: ClipboardList },
 ];
 
 const managementItems = [
   { id: "leaderboard", title: "Leaderboard", icon: Trophy },
   { id: "instructors", title: "Instructors", icon: UserPlus },
+  { id: "coupons", title: "Rewards & Coupons", icon: Ticket },
+  { id: "grant-access", title: "Grant Access", icon: KeyRound },
+  { id: "resume-scans", title: "Resume Scan Logs", icon: FileText },
 ];
 
 const monitoringItems = [

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -25,7 +25,8 @@ import {
   useDeleteAnnouncement,
 } from "@/hooks/useInstructorData";
 import { useAuth } from "@/hooks/useAuth";
-import { Plus, Bell, Trash2, Pin, Megaphone } from "lucide-react";
+import { Plus, Bell, Trash2, Pin, Megaphone, Users } from "lucide-react";
+import { fetchWithAuth } from "@/lib/api";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { formatDistanceToNow } from "date-fns";
@@ -45,7 +46,22 @@ export function AnnouncementManager({ courseId }: AnnouncementManagerProps) {
     title: "",
     content: "",
     is_pinned: false,
+    allowed_batches: [] as string[]
   });
+
+  const [batches, setBatches] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadBatches = async () => {
+      try {
+        const data = (await fetchWithAuth(`/batches?course_id=${courseId}`)) as any[];
+        setBatches(data || []);
+      } catch (e) {
+        console.error("Failed to load batches", e);
+      }
+    };
+    if (courseId) loadBatches();
+  }, [courseId]);
 
   const handleCreate = async () => {
     if (
@@ -60,8 +76,9 @@ export function AnnouncementManager({ courseId }: AnnouncementManagerProps) {
       title: newAnnouncement.title,
       content: newAnnouncement.content,
       is_pinned: newAnnouncement.is_pinned,
+      allowed_batches: newAnnouncement.allowed_batches
     });
-    setNewAnnouncement({ title: "", content: "", is_pinned: false });
+    setNewAnnouncement({ title: "", content: "", is_pinned: false, allowed_batches: [] });
     setIsAddOpen(false);
   };
 
@@ -70,7 +87,7 @@ export function AnnouncementManager({ courseId }: AnnouncementManagerProps) {
   };
 
   // Sort announcements: pinned first, then by date
-  const sortedAnnouncements = [...announcements].sort((a, b) => {
+  const sortedAnnouncements = ([...announcements] as any[]).sort((a, b) => {
     if (a.is_pinned && !b.is_pinned) return -1;
     if (!a.is_pinned && b.is_pinned) return 1;
     return (
@@ -160,6 +177,37 @@ export function AnnouncementManager({ courseId }: AnnouncementManagerProps) {
                     }
                   />
                 </div>
+
+                {/* Batch Selection */}
+                {batches.length > 0 && (
+                  <div className="space-y-3 pt-2">
+                    <Label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Target Batches (Optional)</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {batches.map((batch) => {
+                        const isSelected = newAnnouncement.allowed_batches.includes(batch.id);
+                        return (
+                          <Badge
+                            key={batch.id}
+                            variant={isSelected ? "default" : "outline"}
+                            className={`cursor-pointer h-9 px-3 rounded-lg font-bold text-[10px] uppercase transition-all ${
+                              isSelected ? 'bg-primary text-white' : 'bg-slate-50 text-slate-500 border-slate-200'
+                            }`}
+                            onClick={() => {
+                              if (isSelected) {
+                                setNewAnnouncement({ ...newAnnouncement, allowed_batches: newAnnouncement.allowed_batches.filter(id => id !== batch.id) });
+                              } else {
+                                setNewAnnouncement({ ...newAnnouncement, allowed_batches: [...newAnnouncement.allowed_batches, batch.id] });
+                              }
+                            }}
+                          >
+                            {batch.batch_name}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                    <p className="text-[10px] text-slate-400 italic">No batches selected = visible to all students.</p>
+                  </div>
+                )}
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsAddOpen(false)}>
@@ -211,6 +259,14 @@ export function AnnouncementManager({ courseId }: AnnouncementManagerProps) {
                           className="text-accent border-accent"
                         >
                           Pinned
+                        </Badge>
+                      )}
+                      {(announcement as any).allowed_batches?.length > 0 && (
+                        <Badge
+                          variant="secondary"
+                          className="bg-blue-50 text-blue-600 border-blue-100 flex items-center gap-1"
+                        >
+                          <Users className="h-3 w-3" /> {(announcement as any).allowed_batches.length} Batches
                         </Badge>
                       )}
                     </div>

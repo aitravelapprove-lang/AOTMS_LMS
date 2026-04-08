@@ -17,12 +17,13 @@ import { InstructorStats } from "@/components/instructor/dashboard/InstructorSta
 import { InstructorCourses } from "@/components/instructor/courses/InstructorCourses";
 import { InstructorStudentDashboard } from "@/components/instructor/dashboard/InstructorStudentDashboard";
 import { ChatInterface } from "@/components/chat/ChatInterface";
-import { ResourcesDashboard } from "@/components/instructor/dashboard/ResourcesDashboard";
 import { QuestionBankManager } from "@/components/manager/QuestionBankManager";
 import { ExamScheduler } from "@/components/manager/ExamScheduler";
 import { InstructorVideoLibrary } from "@/components/instructor/dashboard/InstructorVideoLibrary";
 import { LiveClassManager } from "@/components/instructor/dashboard/LiveClassManager";
 import { UserProfile } from "@/components/dashboard/UserProfile";
+import { ResumeScanHistory } from "@/components/admin/ResumeScanHistory";
+import { InstructorNotifications } from "@/components/instructor/dashboard/InstructorNotifications";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -340,13 +341,14 @@ export default function InstructorDashboard() {
   const isMyCourses = path === "/instructor/my-courses";
   const isCourses = path.startsWith("/instructor/courses");
   const isStudents = path === "/instructor/students";
-  const isResources = path === "/instructor/resources";
   const isVideos = path === "/instructor/videos";
   const isLiveClasses = path === "/instructor/live-classes";
   const isChat = path === "/instructor/chat";
   const isQuestionBank = path === "/instructor/question-bank";
   const isExams = path === "/instructor/exams";
   const isProfile = path === "/instructor/profile";
+  const isResumeScans = path === "/instructor/resume-scans";
+  const isNotifications = path === "/instructor/notifications";
 
   return (
     <SidebarProvider className="h-screen w-full overflow-hidden mesh-bg font-sans">
@@ -460,15 +462,6 @@ export default function InstructorDashboard() {
                   <InstructorStudentDashboard />
                 </motion.div>
               )}
-              {isResources && (
-                <motion.div
-                  key="resources"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                >
-                  <ResourcesDashboard />
-                </motion.div>
-              )}
               {isVideos && (
                 <motion.div
                   key="videos"
@@ -521,6 +514,24 @@ export default function InstructorDashboard() {
                   animate={{ opacity: 1 }}
                 >
                   <UserProfile />
+                </motion.div>
+              )}
+              {isResumeScans && (
+                <motion.div
+                  key="resume-scans"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <ResumeScanHistory />
+                </motion.div>
+              )}
+              {isNotifications && (
+                <motion.div
+                  key="notifications"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <InstructorNotifications />
                 </motion.div>
               )}
             </AnimatePresence>

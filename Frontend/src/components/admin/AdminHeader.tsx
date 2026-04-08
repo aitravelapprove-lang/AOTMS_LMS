@@ -11,17 +11,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Bell,
-  Search,
   User,
   Settings,
   LogOut,
   ChevronDown,
   ShieldCheck,
+  BellRing,
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useNavigate } from "react-router-dom";
+import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
 
 export function AdminHeader() {
   const { user, signOut, userRole } = useAuth();
@@ -48,15 +49,6 @@ export function AdminHeader() {
     <header className="sticky top-0 z-50 flex h-14 sm:h-16 md:h-20 items-center justify-between bg-white/80 backdrop-blur-xl border-b border-slate-200/60 px-3 sm:px-4 md:px-6 lg:px-10 transition-all duration-300">
       <div className="flex items-center gap-2 sm:gap-4 lg:gap-6">
         <SidebarTrigger className="h-10 w-10 text-slate-600 hover:text-slate-700 hover:bg-slate-100/80 rounded-xl transition-all" />
-
-        {/* Search */}
-        <div className="relative hidden md:block group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors duration-300" />
-          <Input
-            placeholder="Search dashboard..."
-            className="pl-12 w-[320px] lg:w-[400px] h-11 bg-slate-100/50 border-slate-200/60 focus-visible:ring-primary/20 focus-visible:bg-white focus-visible:border-primary/30 text-sm font-medium transition-all rounded-xl"
-          />
-        </div>
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3 lg:gap-5">
@@ -68,10 +60,10 @@ export function AdminHeader() {
             onClick={() => navigate("/admin/notifications")}
             className="h-11 w-11 rounded-full bg-slate-100/50 border border-slate-200/60 hover:bg-slate-100 hover:border-slate-300 transition-all active:scale-95 group overflow-hidden text-slate-600 hover:text-slate-700"
           >
-            <Bell className="h-5 w-5 transition-transform group-hover:rotate-12" />
+            <Bell className={`h-5 w-5 transition-transform group-hover:rotate-12 ${unreadCount > 0 ? "text-primary animate-pulse" : ""}`} />
           </Button>
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary border-2 border-white text-[10px] font-bold text-white flex items-center justify-center shadow-sm animate-in zoom-in duration-300">
+            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary border-2 border-white text-[10px] font-bold text-white flex items-center justify-center shadow-sm animate-in zoom-in duration-300 ring-2 ring-primary/20">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
@@ -138,14 +130,38 @@ export function AdminHeader() {
               <User className="h-4 w-4 text-slate-500" />
               My Profile
             </DropdownMenuItem>
-            <DropdownMenuItem className="h-11 rounded-xl px-3 text-sm font-medium gap-3 hover:bg-slate-100 transition-colors cursor-pointer text-slate-700 focus:bg-slate-100 focus:text-slate-900 mx-1">
+            <DropdownMenuItem 
+              onClick={() => navigate("/admin/settings")}
+              className="h-11 rounded-xl px-3 text-sm font-medium gap-3 hover:bg-slate-100 transition-colors cursor-pointer text-slate-700 focus:bg-slate-100 focus:text-slate-900 mx-1"
+            >
               <Settings className="h-4 w-4 text-slate-500" />
               Settings
             </DropdownMenuItem>
-            <DropdownMenuItem className="h-11 rounded-xl px-3 text-sm font-medium gap-3 hover:bg-slate-100 transition-colors cursor-pointer text-slate-700 focus:bg-slate-100 focus:text-slate-900 mx-1">
+            <DropdownMenuItem 
+              onClick={() => navigate("/admin/security")}
+              className="h-11 rounded-xl px-3 text-sm font-medium gap-3 hover:bg-slate-100 transition-colors cursor-pointer text-slate-700 focus:bg-slate-100 focus:text-slate-900 mx-1"
+            >
               <ShieldCheck className="h-4 w-4 text-slate-500" />
               Security
             </DropdownMenuItem>
+            
+            <DropdownMenuSeparator className="bg-slate-100 mx-2" />
+            
+            <div className="px-3 py-2">
+              <div className="flex items-center justify-between px-1 py-1">
+                <div className="flex items-center gap-2">
+                  <BellRing className="h-4 w-4 text-slate-500" />
+                  <span className="text-xs font-semibold text-slate-700">Notifications</span>
+                </div>
+                <Switch 
+                  className="scale-75 data-[state=checked]:bg-primary" 
+                  defaultChecked 
+                  onCheckedChange={(checked) => {
+                    toast.success(checked ? "Desktop notifications enabled" : "Desktop notifications disabled");
+                  }}
+                />
+              </div>
+            </div>
             <DropdownMenuSeparator className="bg-slate-100 mx-2" />
             <DropdownMenuItem
               onClick={signOut}

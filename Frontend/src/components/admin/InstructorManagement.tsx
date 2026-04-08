@@ -17,6 +17,7 @@ import {
   Loader2,
   Award,
   Eye,
+  ArrowRight,
 } from "lucide-react";
 import { fetchWithAuth } from "@/lib/api";
 import { toast } from "sonner";
@@ -60,6 +61,29 @@ interface Course {
   instructor_id: string | null;
 }
 
+interface MockPaper {
+  id: string;
+  title: string;
+}
+
+interface Batch {
+  id: string;
+  batch_name: string;
+  batch_type: string;
+  course_id: string;
+  instructor_id?: string;
+  studentCount?: number;
+  start_time?: string;
+  end_time?: string;
+}
+
+interface StudentBatch {
+  id: string;
+  student_id: string;
+  batch_id: string;
+  course_id: string;
+}
+
 export function InstructorManagement() {
   const [instructors, setInstructors] = useState<Instructor[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -76,13 +100,22 @@ export function InstructorManagement() {
   const [assigning, setAssigning] = useState(false);
   const [showAllCourses, setShowAllCourses] = useState(false);
 
+  // Bulk Mock Assign State
+  const [mockModalOpen, setMockModalOpen] = useState(false);
+  const [mockPapers, setMockPapers] = useState<MockPaper[]>([]);
+  const [instructorBatches, setInstructorBatches] = useState<Batch[]>([]);
+  const [selectedBatchId, setSelectedBatchId] = useState("");
+  const [selectedMockId, setSelectedMockId] = useState("");
+  const [assigningMock, setAssigningMock] = useState(false);
+  const [loadingMockData, setLoadingMockData] = useState(false);
+
   const loadData = async () => {
     setLoading(true);
     try {
-      const [instructorsData, coursesData] = await Promise.all([
+      const [instructorsData, coursesData] = (await Promise.all([
         fetchWithAuth('/admin/instructors'),
         fetchWithAuth('/data/courses?select=id,title,instructor_id')
-      ]);
+      ])) as [Instructor[], Course[]];
       setInstructors(instructorsData || []);
       setCourses(coursesData || []);
     } catch (err) {
@@ -104,14 +137,99 @@ export function InstructorManagement() {
     setAssignModalOpen(true);
   };
 
-  const handleOpenProfileModal = (instructor: Instructor) => {
+  const handleOpenProfileModal = async (instructor: Instructor) => {
     setSelectedInstructor(instructor);
     setProfileModalOpen(true);
+    setLoadingMockData(true); // Reusing loader state
+    setInstructorBatches([]);
+
+    try {
+      const assignedCourseIds = courses
+        .filter(c => c.instructor_id === instructor.user_id)
+        .map(c => c.id);
+      
+      if (assignedCourseIds.length > 0) {
+        const batches = (await fetchWithAuth(`/data/batches?course_id=in.(${assignedCourseIds.join(',')})`)) as Batch[];
+        
+        // Get student counts for each batch
+        if (batches && batches.length > 0) {
+            const batchIds = batches.map(b => b.id);
+            const studentBatches = (await fetchWithAuth(`/data/student_batches?batch_id=in.(${batchIds.join(',')})`)) as StudentBatch[];
+            
+            const batchesWithCounts = batches.map(b => ({
+                ...b,
+                studentCount: studentBatches.filter(sb => sb.batch_id === b.id).length
+            }));
+            
+            setInstructorBatches(batchesWithCounts);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load profile batch data:', err);
+    } finally {
+      setLoadingMockData(false);
+    }
   };
 
   const handleOpenManageAssignments = (instructor: Instructor) => {
     setSelectedInstructor(instructor);
     setManageAssignmentsOpen(true);
+  };
+
+  const handleOpenMockModal = async (instructor: Instructor) => {
+    setSelectedInstructor(instructor);
+    setMockModalOpen(true);
+    setLoadingMockData(true);
+    setSelectedBatchId("");
+    setSelectedMockId("");
+    
+    try {
+      // 1. Get assigned course IDs
+      const assignedCourseIds = courses
+        .filter(c => c.instructor_id === instructor.user_id)
+        .map(c => c.id);
+      
+      let batchesQuery = `/data/batches?instructor_id=eq.${instructor.user_id}`;
+      // Fallback: If no direct instructor link, use course IDs
+      if (assignedCourseIds.length > 0) {
+        batchesQuery = `/data/batches?course_id=in.(${assignedCourseIds.join(',')})`;
+      }
+
+      const [batchesRes, mockPapersRes] = (await Promise.all([
+        fetchWithAuth(batchesQuery),
+        fetchWithAuth('/data/mock_papers?select=id,title')
+      ])) as [Batch[], MockPaper[]];
+      setInstructorBatches(batchesRes || []);
+      setMockPapers(mockPapersRes || []);
+    } catch (err) {
+      console.error('Failed to load batch/mock data:', err);
+      toast.error('Failed to load batches or mock tests');
+    } finally {
+      setLoadingMockData(false);
+    }
+  };
+
+  const handleBulkAssignMock = async () => {
+    if (!selectedBatchId || !selectedMockId) return;
+    
+    setAssigningMock(true);
+    try {
+      const res = (await fetchWithAuth('/exams/bulk-assign', {
+        method: 'POST',
+        body: JSON.stringify({
+          batch_id: selectedBatchId,
+          mock_paper_id: selectedMockId
+        })
+      })) as { message?: string };
+      
+      toast.success(res.message || 'Mock test assigned successfully');
+      setMockModalOpen(false);
+    } catch (err) {
+      console.error('Bulk assign failed:', err);
+      toast.error('Failed to assign mock test to batch');
+    } finally {
+      setAssigningMock(false);
+    }
   };
 
   const handleAssignCourse = async () => {
@@ -355,6 +473,9 @@ export function InstructorManagement() {
                                 <BookOpen className="h-4 w-4 mr-2" /> Manage Assignments
                              </DropdownMenuItem>
                            )}
+                           <DropdownMenuItem onClick={() => handleOpenMockModal(instructor)}>
+                              <Award className="h-4 w-4 mr-2 text-amber-500" /> Assign Mock Test to Batch
+                           </DropdownMenuItem>
                            <DropdownMenuItem 
                               className="text-destructive focus:text-destructive" 
                               onClick={() => handleDeleteInstructor(instructor.user_id, instructor.full_name)}
@@ -428,6 +549,42 @@ export function InstructorManagement() {
                   <p className="text-sm font-medium text-slate-900">
                     {selectedInstructor.created_at ? new Date(selectedInstructor.created_at).toLocaleDateString() : 'N/A'}
                   </p>
+                </div>
+
+                {/* Batches & Students Section */}
+                <div className="space-y-3 pt-4 border-t border-slate-100">
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
+                    <Users className="h-3 w-3" />
+                    Logic Batches & Students
+                  </h4>
+                  
+                  {loadingMockData ? (
+                    <div className="flex items-center gap-2 py-2 text-slate-400">
+                       <Loader2 className="h-3 w-3 animate-spin" />
+                       <span className="text-[10px] uppercase font-bold tracking-widest">Syncing Data...</span>
+                    </div>
+                  ) : instructorBatches.length === 0 ? (
+                    <div className="p-4 rounded-xl border border-dashed border-slate-200 text-center">
+                       <p className="text-[10px] uppercase font-bold text-slate-300">No active batches synced</p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-2">
+                      {instructorBatches.map((batch: Batch) => (
+                        <div key={batch.id} className="flex items-center justify-between p-3 rounded-xl bg-white border border-slate-100 shadow-sm">
+                           <div className="space-y-0.5">
+                              <p className="text-xs font-bold text-slate-900">{batch.batch_name}</p>
+                              <Badge variant="outline" className="text-[8px] h-4 px-1 uppercase font-black tracking-tighter">
+                                {batch.batch_type}
+                              </Badge>
+                           </div>
+                           <div className="text-right">
+                              <p className="text-sm font-black text-primary">{batch.studentCount}</p>
+                              <p className="text-[8px] uppercase font-bold text-slate-400 tracking-widest">Students</p>
+                           </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -566,6 +723,107 @@ export function InstructorManagement() {
                 </>
               ) : (
                 'Assign Course'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Assign Mock Modal */}
+      <Dialog open={mockModalOpen} onOpenChange={setMockModalOpen}>
+        <DialogContent className="max-w-md bg-white border-slate-200 shadow-2xl rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl font-bold">
+              <Award className="h-6 w-6 text-amber-500" />
+              Bulk Mock Assignment
+            </DialogTitle>
+            <DialogDescription>
+              Assign a mock paper to all students in <b>{selectedInstructor?.full_name}'s</b> batch.
+            </DialogDescription>
+          </DialogHeader>
+
+          {loadingMockData ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground font-mono">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-[10px] font-black uppercase tracking-[0.3em]">Synching Repositories</p>
+            </div>
+          ) : (
+            <div className="space-y-6 py-4">
+               <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Target Instructor Batch</Label>
+                  <Select value={selectedBatchId} onValueChange={setSelectedBatchId}>
+                    <SelectTrigger className="rounded-xl h-14 border-slate-100 bg-slate-50/50 hover:bg-white transition-all">
+                      <SelectValue placeholder="Select active batch..." />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-2xl border-slate-100">
+                      {instructorBatches.length === 0 ? (
+                        <div className="py-8 text-center text-slate-400 italic text-sm">No active batches assigned</div>
+                      ) : (
+                        instructorBatches.map(batch => (
+                          <SelectItem key={batch.id} value={batch.id} className="py-3 rounded-xl">
+                            <div className="flex flex-col items-start gap-0.5">
+                              <span className="font-bold text-slate-900">{batch.batch_name}</span>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-[8px] h-4 px-1 uppercase font-black tracking-tighter">
+                                  {batch.batch_type}
+                                </Badge>
+                                <span className="text-[10px] text-slate-400 font-medium italic">{batch.start_time} - {batch.end_time}</span>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+               </div>
+
+               <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Mock Test Implementation</Label>
+                  <Select value={selectedMockId} onValueChange={setSelectedMockId}>
+                    <SelectTrigger className="rounded-xl h-14 border-slate-100 bg-slate-50/50 hover:bg-white transition-all">
+                      <SelectValue placeholder="Choose logic paper..." />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-2xl border-slate-100">
+                      {mockPapers.length === 0 ? (
+                        <div className="py-8 text-center text-slate-400 italic text-sm">Static repository empty</div>
+                      ) : (
+                        mockPapers.map(paper => (
+                          <SelectItem key={paper.id} value={paper.id} className="py-3 rounded-xl">
+                            <div className="flex items-center gap-3">
+                               <div className="h-2 w-2 rounded-full bg-amber-400" />
+                               <span className="font-bold text-slate-900">{paper.title}</span>
+                            </div>
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+               </div>
+            </div>
+          )}
+
+          <DialogFooter className="pt-6 border-t mt-4 flex flex-col sm:flex-row gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setMockModalOpen(false)} 
+              className="rounded-xl h-12 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 border-slate-100 transition-all sm:flex-1"
+            >
+              Terminate
+            </Button>
+            <Button 
+              onClick={handleBulkAssignMock} 
+              disabled={!selectedBatchId || !selectedMockId || assigningMock || loadingMockData}
+              className="rounded-xl h-12 bg-slate-900 hover:bg-black text-white text-[10px] font-black uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-95 shadow-xl shadow-slate-100 sm:flex-[2]"
+            >
+              {assigningMock ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Processing Deployment
+                </>
+              ) : (
+                <div className="flex items-center">
+                  Execute Assignment <ArrowRight className="h-4 w-4 ml-2" />
+                </div>
               )}
             </Button>
           </DialogFooter>

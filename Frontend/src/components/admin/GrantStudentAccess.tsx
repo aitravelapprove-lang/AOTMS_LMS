@@ -43,7 +43,7 @@ interface GrantStudentAccessProps {
     enrollments?: CourseEnrollment[];
 }
 
-export function GrantStudentAccess({ profiles = [], enrollments = [] }: GrantStudentAccessProps) {
+export function GrantStudentAccess({ profiles: propProfiles = [], enrollments: propEnrollments = [] }: GrantStudentAccessProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [studentUuid, setStudentUuid] = useState('');
@@ -53,11 +53,41 @@ export function GrantStudentAccess({ profiles = [], enrollments = [] }: GrantStu
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  // Self-fetch profiles (with roles merged) when not provided by parent
+  const { data: fetchedProfiles = [] } = useQuery({
+    queryKey: ['grant-access-profiles'],
+    queryFn: async () => {
+      const [profilesData, rolesData] = await Promise.all([
+        fetchWithAuth('/data/profiles?sort=created_at&order=desc&limit=500') as Promise<Profile[]>,
+        fetchWithAuth('/data/user_roles?limit=500') as Promise<{ user_id: string; role: string }[]>
+      ]);
+      const rolesMap = rolesData.reduce((acc, r) => {
+        acc[r.user_id] = r.role;
+        return acc;
+      }, {} as Record<string, string>);
+      return profilesData.map(p => ({ ...p, role: rolesMap[p.id] || 'student' })) as Profile[];
+    },
+    enabled: propProfiles.length === 0,
+  });
+
+  // Self-fetch enrollments when not provided by parent
+  const { data: fetchedEnrollments = [] } = useQuery({
+    queryKey: ['grant-access-enrollments'],
+    queryFn: async () => {
+      const data = await fetchWithAuth('/courses/enrollments');
+      return data as CourseEnrollment[];
+    },
+    enabled: propEnrollments.length === 0,
+  });
+
+  // Use props if parent provided them, otherwise use self-fetched data
+  const profiles = propProfiles.length > 0 ? propProfiles : fetchedProfiles;
+  const enrollments = propEnrollments.length > 0 ? propEnrollments : fetchedEnrollments;
+
   // Fetch approved courses
   const { data: courses = [], isLoading: coursesLoading } = useQuery({
     queryKey: ['approved-courses'],
     queryFn: async () => {
-      // Fetch published, approved, or active courses for enrollment
       const data = await fetchWithAuth('/data/courses?status=in.(published,approved,active)&select=id,title,status');
       return data as Course[];
     }

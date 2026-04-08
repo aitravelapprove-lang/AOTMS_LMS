@@ -29,14 +29,15 @@ interface AuthContextType {
   userRole: UserRole | null;
   loading: boolean;
   signUp: (email: string, password: string, fullName: string, phone?: string) => Promise<{ error: Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null; requiresAdminOtp?: boolean }>;
+  verifyAdminOtp: (email: string, otp: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   checkSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   // Initialize state from localStorage for instant persistence on refresh
@@ -239,15 +240,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: new Error(data.error || 'Login failed') };
       }
 
+      // Admin requires OTP verification — don't issue token yet
+      if (data.requiresOtp) {
+        setLoading(false);
+        return { error: null, requiresAdminOtp: true };
+      }
+
       if (data.session) {
         localStorage.setItem('access_token', data.session.access_token);
         if (data.session.refresh_token) {
           localStorage.setItem('access_token_refresh', data.session.refresh_token);
         }
-        
+
         const userData = data.user;
         const role = userData.role || 'student';
-        
+
         if (userData) {
           localStorage.setItem('user', JSON.stringify(userData));
         }
@@ -267,8 +274,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const verifyAdminOtp = useCallback(async (email: string, otp: string) => {
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_URL}/auth/admin-verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setLoading(false);
+        return { error: new Error(data.error || 'OTP verification failed') };
+      }
+
+      if (data.session) {
+        localStorage.setItem('access_token', data.session.access_token);
+        if (data.session.refresh_token) {
+          localStorage.setItem('access_token_refresh', data.session.refresh_token);
+        }
+        const userData = data.user;
+        const role = userData.role || 'admin';
+        if (userData) {
+          localStorage.setItem('user', JSON.stringify(userData));
+        }
+        localStorage.setItem('user_role', role);
+        setUser(userData);
+        setSession(data.session);
+        setUserRole(role as UserRole);
+      }
+
+      setLoading(false);
+      return { error: null };
+    } catch (error: unknown) {
+      setLoading(false);
+      if (error instanceof Error) return { error };
+      return { error: new Error('Unknown error during OTP verification') };
+    }
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, session, userRole, loading, signUp, signIn, signOut, checkSession }}>
+    <AuthContext.Provider value={{ user, session, userRole, loading, signUp, signIn, signOut, checkSession, verifyAdminOtp }}>
       {children}
     </AuthContext.Provider>
   );

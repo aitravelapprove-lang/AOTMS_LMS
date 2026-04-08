@@ -24,6 +24,13 @@ const ProfileSchema = new mongoose.Schema({
     mobile_number: { type: String },
     github_url: { type: String },
     linkedin_url: { type: String },
+    title: { type: String },
+    description: { type: String },
+    social_handles: { type: String },
+    global_experience: { type: String },
+    impact: { type: String },
+    core_expertise: { type: String },
+    bio: { type: String },
     resume_url: { type: String },
     ats_credits: { type: Number, default: 3 }, // Added for resume scans
     approval_status: { type: String, default: 'pending' }, // pending, approved, suspended

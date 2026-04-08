@@ -23,6 +23,12 @@ interface ProfileData {
     role?: string;
     github_url?: string | null;
     linkedin_url?: string | null;
+    title?: string | null;
+    description?: string | null;
+    social_handles?: string | null;
+    global_experience?: string | null;
+    impact?: string | null;
+    core_expertise?: string | null;
     resume_url?: string | null;
 }
 
@@ -48,6 +54,12 @@ export function UserProfile() {
         skills: [],
         github_url: '',
         linkedin_url: '',
+        title: '',
+        description: '',
+        social_handles: '',
+        global_experience: '',
+        impact: '',
+        core_expertise: '',
         resume_url: ''
     });
 
@@ -80,6 +92,12 @@ export function UserProfile() {
                 skills: data?.skills || [],
                 github_url: data?.github_url || '',
                 linkedin_url: data?.linkedin_url || '',
+                title: data?.title || '',
+                description: data?.description || '',
+                social_handles: data?.social_handles || '',
+                global_experience: data?.global_experience || '',
+                impact: data?.impact || '',
+                core_expertise: data?.core_expertise || '',
                 resume_url: data?.resume_url || ''
             });
         } catch (error: unknown) {
@@ -113,9 +131,15 @@ export function UserProfile() {
                 avatar_url: profile.avatar_url,
                 github_url: profile.github_url,
                 linkedin_url: profile.linkedin_url,
+                title: profile.title,
+                description: profile.description,
+                social_handles: profile.social_handles,
+                global_experience: profile.global_experience,
+                impact: profile.impact,
+                core_expertise: profile.core_expertise,
                 resume_url: profile.resume_url,
+                bio: profile.bio,
                 // Add extra fields if schema supports them
-                // bio: profile.bio,
                 // mobile_number: profile.phone,
             };
 
@@ -385,6 +409,62 @@ export function UserProfile() {
                                         />
                                     </div>
                                 </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="title">Professional Title</Label>
+                                    <Input
+                                        id="title"
+                                        placeholder="e.g. Senior Software Engineer"
+                                        value={profile.title || ''}
+                                        onChange={(e) => setProfile({ ...profile, title: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="social_handles">All Social Media Handles</Label>
+                                    <Input
+                                        id="social_handles"
+                                        placeholder="Twitter: @user, Insta: @user"
+                                        value={profile.social_handles || ''}
+                                        onChange={(e) => setProfile({ ...profile, social_handles: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="global_experience">Global Experience</Label>
+                                    <Input
+                                        id="global_experience"
+                                        placeholder="e.g. 5+ Years across NA & APAC"
+                                        value={profile.global_experience || ''}
+                                        onChange={(e) => setProfile({ ...profile, global_experience: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="core_expertise">Core Expertise</Label>
+                                    <Input
+                                        id="core_expertise"
+                                        placeholder="e.g. React, Node.js, AI Integration"
+                                        value={profile.core_expertise || ''}
+                                        onChange={(e) => setProfile({ ...profile, core_expertise: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2 md:col-span-2">
+                                    <Label htmlFor="description">Description (Bio)</Label>
+                                    <Textarea
+                                        id="description"
+                                        placeholder="Tell us about yourself..."
+                                        value={profile.description || ''}
+                                        onChange={(e) => setProfile({ ...profile, description: e.target.value })}
+                                        className="min-h-[100px]"
+                                    />
+                                </div>
+                                <div className="space-y-2 md:col-span-2">
+                                    <Label htmlFor="impact">Impact</Label>
+                                    <Textarea
+                                        id="impact"
+                                        placeholder="Share your major achievements and impact..."
+                                        value={profile.impact || ''}
+                                        onChange={(e) => setProfile({ ...profile, impact: e.target.value })}
+                                        className="min-h-[100px]"
+                                    />
+                                </div>
                                 {userRole === 'student' && (
                                     <>
                                         <div className="space-y-2">
@@ -455,13 +535,12 @@ export function UserProfile() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="bio">Bio (Coming Soon)</Label>
+                                <Label htmlFor="bio">Bio</Label>
                                 <Textarea
                                     id="bio"
                                     placeholder="Tell us about yourself..."
                                     value={profile.bio || ''}
                                     onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                                    disabled // Disabled until schema update
                                 />
                             </div>
 

@@ -13,43 +13,6 @@ import {
 import { Link } from "react-router-dom";
 
 const EnrollmentForm = () => {
-<<<<<<< HEAD
-  const [isFocused, setIsFocused] = useState<string | null>(null);
-
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-  });
-
-  const onSubmit = async (data: FormData) => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001'}/api/public/enroll`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to submit enrollment');
-      }
-
-      toast.success("Success! Your journey with AOTMS has begun.");
-      reset();
-    } catch (error) {
-      console.error("Enrollment Error:", error);
-      toast.error("Something went wrong. Please try again later.");
-    }
-  };
-
-=======
->>>>>>> e81fa9c1131a4368c44cfb1b1300c8a2ee2da94f
   return (
     <section
       id="enroll"

@@ -17,7 +17,6 @@ import { InstructorStats } from "@/components/instructor/dashboard/InstructorSta
 import { InstructorCourses } from "@/components/instructor/courses/InstructorCourses";
 import { InstructorStudentDashboard } from "@/components/instructor/dashboard/InstructorStudentDashboard";
 import { ChatInterface } from "@/components/chat/ChatInterface";
-import { ResourcesDashboard } from "@/components/instructor/dashboard/ResourcesDashboard";
 import { QuestionBankManager } from "@/components/manager/QuestionBankManager";
 import { ExamScheduler } from "@/components/manager/ExamScheduler";
 import { InstructorVideoLibrary } from "@/components/instructor/dashboard/InstructorVideoLibrary";
@@ -342,7 +341,6 @@ export default function InstructorDashboard() {
   const isMyCourses = path === "/instructor/my-courses";
   const isCourses = path.startsWith("/instructor/courses");
   const isStudents = path === "/instructor/students";
-  const isResources = path === "/instructor/resources";
   const isVideos = path === "/instructor/videos";
   const isLiveClasses = path === "/instructor/live-classes";
   const isChat = path === "/instructor/chat";
@@ -462,15 +460,6 @@ export default function InstructorDashboard() {
                   animate={{ opacity: 1 }}
                 >
                   <InstructorStudentDashboard />
-                </motion.div>
-              )}
-              {isResources && (
-                <motion.div
-                  key="resources"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                >
-                  <ResourcesDashboard />
                 </motion.div>
               )}
               {isVideos && (

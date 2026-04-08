@@ -209,7 +209,33 @@
     border: 1.5px solid transparent;
     background-clip: padding-box;
   }
+
+  .admin-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .admin-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .admin-scrollbar::-webkit-scrollbar-thumb {
+    background-image: linear-gradient(to bottom, #ff0000, #ff0055, #c800ff, #00e5ff, #00ff55, #ffbb00, #ff0000);
+    background-size: 100% 400%;
+    animation: rog-scroll 4s linear infinite;
+    @apply rounded-full;
+  }
 }
+
+@keyframes rog-scroll {
+  0% { background-position: 0% 0%; }
+  50% { background-position: 0% 100%; }
+  100% { background-position: 0% 0%; }
+}
+
+@keyframes rog-scroll-horizontal {
+  0% { background-position: 0% 0%; }
+  50% { background-position: 100% 0%; }
+  100% { background-position: 0% 0%; }
+}
+
 
 /* ZOOM MEETING SDK STYLES */
 #zmmtg-root {
@@ -427,6 +453,19 @@
   @apply bg-slate-300 rounded-full hover:bg-primary/50 transition-colors;
   border: 1px solid transparent;
   background-clip: padding-box;
+}
+
+.admin-scrollbar-horizontal::-webkit-scrollbar {
+  height: 3px;
+}
+.admin-scrollbar-horizontal::-webkit-scrollbar-track {
+  background: transparent;
+}
+.admin-scrollbar-horizontal::-webkit-scrollbar-thumb {
+  background-image: linear-gradient(to right, #ff0000, #ff0055, #c800ff, #00e5ff, #00ff55, #ffbb00, #ff0000);
+  background-size: 400% 100%;
+  animation: rog-scroll-horizontal 4s linear infinite;
+  @apply rounded-full;
 }
 
 /* ── Safe area padding for notched devices ─────────────────────── */

@@ -123,7 +123,7 @@ const PageLoader = ({ isVisible }: PageLoaderProps) => {
                     transition={{ duration: 2, repeat: Infinity }}
                     className="text-[10px] font-black tracking-[0.2em] text-primary uppercase"
                   >
-                    Preparing Portal
+                    Loading...
                   </motion.span>
                 </div>
             </motion.div>

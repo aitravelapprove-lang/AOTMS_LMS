@@ -352,6 +352,7 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                  ))}
               </div>
 
+<<<<<<< HEAD
               {/* Desktop Professional Flexible Layout */}
               <div className="hidden lg:block overflow-x-auto bg-white rounded-none border-2 border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.04)]">
                 <table className="w-full text-left border-collapse">
@@ -363,6 +364,19 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                       <th className="px-8 py-6 text-[10px] font-black text-[#a855f7] uppercase tracking-[0.2em] text-center bg-violet-50/10 min-w-[150px]">Phase II Payment</th>
                       <th className="px-8 py-6 text-[10px] font-black text-[#6b21a8] uppercase tracking-[0.2em] min-w-[220px] bg-purple-50/20">Accounting Flow</th>
                       <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-right min-w-[150px]">Verification</th>
+=======
+              <div className="hidden lg:block overflow-x-auto admin-scrollbar-horizontal rounded-xl border border-slate-200/60 shadow-sm">
+                <table className="w-full">
+                  <thead className="bg-slate-50/80 border-b border-slate-200/60">
+                    <tr>
+                      <th className="text-left px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest min-w-[320px]">Student / UUID</th>
+                      <th className="text-left px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Course</th>
+                      <th className="text-left px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Billing & Term</th>
+                      <th className="text-left px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Payment Proof</th>
+                      <th className="text-left px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Fulfillment</th>
+                      <th className="text-left px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Timeline</th>
+                      <th className="text-right px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Actions</th>
+>>>>>>> 7c5c5c1328ab9196fa5dcf916d417a1d19c0e69a
                     </tr>
                   </thead>
                   <tbody className="divide-y-2 divide-slate-50">

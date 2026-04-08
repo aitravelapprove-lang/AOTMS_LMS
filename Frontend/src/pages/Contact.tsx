@@ -142,21 +142,33 @@ const Contact = () => {
                 <div className="mb-12 relative z-10">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="h-1 w-10 bg-[#0075CF] rounded-full" />
-                    <span className="text-[10px] font-black text-[#0075CF] uppercase tracking-[0.3em]">Direct Channel</span>
+                    <span className="text-[10px] font-black text-[#0075CF] uppercase tracking-[0.3em]">
+                      Direct Channel
+                    </span>
                   </div>
                   <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tighter leading-none">
-                    Start a <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] to-[#FD5A1A]">Conversation</span>.
+                    Start a{" "}
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] to-[#FD5A1A]">
+                      Conversation
+                    </span>
+                    .
                   </h2>
                   <p className="text-slate-500 font-medium leading-relaxed max-w-sm">
-                    Have a vision or a question? Our team translates your goals into a learning roadmap.
+                    Have a vision or a question? Our team translates your goals
+                    into a learning roadmap.
                   </p>
                 </div>
 
-                <form className="space-y-8 relative z-10" onSubmit={(e) => e.preventDefault()}>
+                <form
+                  className="space-y-8 relative z-10"
+                  onSubmit={(e) => e.preventDefault()}
+                >
                   <div className="grid md:grid-cols-2 gap-8">
                     {/* Name field */}
                     <div className="space-y-3">
-                      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Your Name</label>
+                      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">
+                        Your Name
+                      </label>
                       <div className="relative group/field transition-all">
                         <User className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 group-focus-within/field:text-[#0075CF] group-focus-within/field:scale-110 transition-all duration-300" />
                         <input
@@ -169,12 +181,14 @@ const Contact = () => {
 
                     {/* Email field */}
                     <div className="space-y-3">
-                      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Email Identity</label>
+                      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">
+                        Email Identity
+                      </label>
                       <div className="relative group/field transition-all">
                         <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 group-focus-within/field:text-[#0075CF] group-focus-within/field:scale-110 transition-all duration-300" />
                         <input
                           type="email"
-                          placeholder="john@example.com"
+                          placeholder="your@example.com"
                           className="w-full h-16 pl-14 pr-6 rounded-2xl bg-slate-50/50 border-2 border-slate-100 focus:border-[#0075CF] focus:bg-white focus:shadow-[0_0_20px_rgba(0,117,207,0.05)] focus:outline-none transition-all duration-300 font-bold text-slate-900 placeholder:text-slate-300"
                         />
                       </div>
@@ -183,7 +197,9 @@ const Contact = () => {
 
                   {/* Subject Selection */}
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Enquiry Category</label>
+                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">
+                      Enquiry Category
+                    </label>
                     <div className="relative group/field transition-all">
                       <BookOpen className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 group-focus-within/field:text-[#0075CF] group-focus-within/field:scale-110 transition-all duration-300 z-10" />
                       <select className="w-full h-16 pl-14 pr-10 rounded-2xl bg-slate-50/50 border-2 border-slate-100 focus:border-[#0075CF] focus:bg-white focus:shadow-[0_0_20px_rgba(0,117,207,0.05)] focus:outline-none transition-all duration-300 font-bold text-slate-900 appearance-none">
@@ -201,7 +217,9 @@ const Contact = () => {
 
                   {/* Message Textarea */}
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Your Thoughts</label>
+                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">
+                      Your Thoughts
+                    </label>
                     <div className="relative group/field transition-all">
                       <MessageSquare className="absolute left-5 top-6 w-5 h-5 text-slate-300 group-focus-within/field:text-[#FD5A1A] group-focus-within/field:scale-110 transition-all duration-300" />
                       <textarea

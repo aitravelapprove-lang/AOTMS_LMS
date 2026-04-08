@@ -161,7 +161,7 @@ export function CouponManager() {
                 </div>
               </div>
 
-              <div className="max-h-[500px] overflow-y-auto custom-scrollbar">
+              <div className="max-h-[500px] overflow-y-auto admin-scrollbar">
                 {loading ? (
                   <div className="py-20 text-center space-y-4">
                     <Loader2 className="h-8 w-8 text-primary animate-spin mx-auto" />

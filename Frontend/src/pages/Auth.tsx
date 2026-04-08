@@ -119,10 +119,10 @@ export default function Auth() {
     email: string;
   } | null>(null);
   const [otpResendTimer, setOtpResendTimer] = useState(0);
-  const [isTyping, setIsTyping] = useState(false);
   const [loginStep, setLoginStep] = useState<'credentials' | 'admin-otp'>('credentials');
   const [adminLoginEmail, setAdminLoginEmail] = useState('');
   const [adminOtpResendTimer, setAdminOtpResendTimer] = useState(0);
+  const [isTyping, setIsTyping] = useState(false);
   const { signIn, signUp, user, loading: authLoading, verifyAdminOtp } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -185,7 +185,7 @@ export default function Auth() {
     }
   }, [adminOtpResendTimer]);
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
   const handleSendOtp = async (data: EmailVerifyFormData) => {
     setLoading(true);
@@ -372,9 +372,9 @@ export default function Auth() {
     if (result.error) {
       setLoading(false);
       toast({
-        title: 'Login Failed',
+        title: "Login Failed",
         description: result.error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     } else if (result.requiresAdminOtp) {
       setLoading(false);
@@ -510,18 +510,22 @@ export default function Auth() {
           <h2 className="text-3xl font-black text-slate-950 mb-2 tracking-tight">
             {isLogin
               ? loginStep === 'admin-otp' ? 'Admin Verification' : 'Welcome back'
-              : registrationStep === 'email' ? 'Create account' : registrationStep === 'otp' ? 'Verify' : 'Complete'}
+              : registrationStep === "email"
+                ? "Create account"
+                : registrationStep === "otp"
+                  ? "Verify"
+                  : "Complete"}
           </h2>
           <p className="text-muted-foreground text-sm font-medium">
             {isLogin
               ? loginStep === 'admin-otp'
                 ? `Enter the OTP sent to ${adminLoginEmail}`
-                : 'Sign in to continue your learning journey.'
-              : registrationStep === 'email'
-                ? 'Enter your details to get started'
-                : registrationStep === 'otp'
-                  ? 'Enter the OTP sent to your email'
-                  : 'Fill in your account details'}
+                : "Sign in to continue your learning journey."
+              : registrationStep === "email"
+                ? "Enter your details to get started"
+                : registrationStep === "otp"
+                  ? "Enter the OTP sent to your email"
+                  : "Fill in your account details"}
           </p>
         </div>
 
@@ -534,7 +538,6 @@ export default function Auth() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.3 }}
-              className="w-full"
             >
               {loginStep === 'admin-otp' ? (
                 /* Admin OTP Verification Step */

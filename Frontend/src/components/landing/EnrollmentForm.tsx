@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import {
   UserPlus,
@@ -11,8 +11,60 @@ import {
   Rocket
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { toast } from "@/hooks/use-toast";
+
+const formSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().min(10, "Phone number is required").max(15, "Phone number is too long"),
+  course: z.string().min(1, "Course selection is required"),
+});
+
+type FormData = z.infer<typeof formSchema>;
 
 const EnrollmentForm = () => {
+  const [isFocused, setIsFocused] = useState<string | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+  });
+
+  const onSubmit = async (data: FormData) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001'}/api/public/enroll`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit enrollment');
+      }
+
+      toast({
+        title: "Success! Your journey with AOTMS has begun.",
+      });
+      reset();
+    } catch (error) {
+      console.error("Enrollment Error:", error);
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again later.",
+        variant: "destructive",
+      });
+    }
+  };
   return (
     <section
       id="enroll"

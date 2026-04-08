@@ -1493,7 +1493,9 @@ app.get('/api/admin/instructors', authenticateToken, requireAdminOrManager, asyn
                 mobile_number: p?.mobile_number || u.phone,
                 role: roleDoc?.role || 'instructor', // Default to instructor if teaching but has other role
                 created_at: u.created_at || p?.created_at,
-                avatar_url: u.avatar_url || p?.avatar_url
+                avatar_url: u.avatar_url || p?.avatar_url,
+                approval_status: p?.approval_status || 'approved',
+                status: p?.approval_status === 'suspended' ? 'suspended' : 'active'
             };
         });
 
@@ -4226,7 +4228,7 @@ app.get('/api/admin/students', authenticateToken, requireAdminOrManager, async (
     try {
         const studentRoles = await UserRole.find({ role: 'student' }).select('user_id');
         const studentIds = studentRoles.map(r => r.user_id);
-        const students = await User.find({ _id: { $in: studentIds } }).select('full_name email phone');
+        const students = await User.find({ _id: { $in: studentIds } }).select('full_name email phone avatar_url');
         res.json(students);
     } catch (err) {
         handleError(res, err, 'get-admin-students');

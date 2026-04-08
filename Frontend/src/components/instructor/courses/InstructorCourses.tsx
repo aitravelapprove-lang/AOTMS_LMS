@@ -54,8 +54,8 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
     const { data: allCourses, isLoading, refetch } = useInstructorS3Courses(viewTab === 'catalog');
     
     const courses = (limit && Array.isArray(allCourses)) 
-        ? (allCourses as any[]).slice(0, limit) 
-        : (Array.isArray(allCourses) ? allCourses : []) as any[];
+        ? (allCourses as Course[]).slice(0, limit) 
+        : (Array.isArray(allCourses) ? allCourses : []) as Course[];
     const [viewingCourse, setViewingCourse] = useState<Course | null>(null);
     const [selectedProfile, setSelectedProfile] = useState<Course | null>(null);
     const [showProfile, setShowProfile] = useState(false);
@@ -189,8 +189,8 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
                 <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     <AnimatePresence>
                         {courses?.map((course: Course, index: number) => {
-                            const instructor = course.instructor_id as any;
-                            const instructorId = instructor?._id || (typeof instructor === 'string' ? instructor : instructor?.id);
+                            const instructor = course.instructor_id as InstructorProfile | undefined;
+                            const instructorId = instructor?._id || instructor?.id || (typeof instructor === 'string' ? instructor : undefined);
                             const isInstructorOwner = instructorId === user?.id;
                             const isAssignedToOther = instructorId && !isInstructorOwner;
                             

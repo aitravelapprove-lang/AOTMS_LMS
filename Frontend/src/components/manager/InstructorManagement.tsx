@@ -79,10 +79,10 @@ export function InstructorManagement() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [instructorsData, coursesData] = await Promise.all([
+      const [instructorsData, coursesData] = (await Promise.all([
         fetchWithAuth('/admin/instructors'),
         fetchWithAuth('/data/courses?select=id,title,instructor_id')
-      ]);
+      ])) as [Instructor[], Course[]];
       setInstructors(instructorsData || []);
       setCourses(coursesData || []);
     } catch (err) {

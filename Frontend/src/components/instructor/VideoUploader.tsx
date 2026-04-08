@@ -75,7 +75,7 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
   useEffect(() => {
     const loadBatches = async () => {
       try {
-        const data = await fetchWithAuth(`/batches?course_id=${courseId}`);
+        const data = (await fetchWithAuth(`/batches?course_id=${courseId}`)) as { id: string, batch_name: string, batch_type: string }[];
         setBatches(data || []);
       } catch (e) {
         console.error("Failed to load batches", e);
@@ -406,7 +406,7 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
                 variant="ghost" 
                 onClick={() => {
                   clearFile();
-                  setNewVideo({ title: "", description: "", module_id: "", is_published: true });
+                  setNewVideo({ title: "", description: "", module_id: "", is_published: true, allowed_batches: [] });
                   setNewModuleName("");
                 }} 
                 disabled={uploading}

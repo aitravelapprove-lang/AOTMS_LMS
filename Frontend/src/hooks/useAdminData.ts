@@ -188,11 +188,16 @@ export function useAdminData(userRole?: string | null) {
                 return acc;
               }, {} as Record<string, string>);
 
-              const mergedProfiles = (profilesData as Profile[]).map(p => ({
-                ...p,
-                role: rolesMap[p.id] || 'student',
-                approval_status: p.approval_status || 'pending'
-              }));
+              const mergedProfiles = (profilesData as Profile[]).map(p => {
+                const approval_status = p.approval_status || 'pending';
+                return {
+                  ...p,
+                  role: rolesMap[p.id] || 'student',
+                  approval_status,
+                  // Sync status for UI components that rely on status field
+                  status: approval_status === 'suspended' ? 'suspended' : 'active'
+                };
+              });
 
               setProfiles(mergedProfiles as Profile[]);
               setUserRoles(rolesData as UserRole[]);
@@ -284,30 +289,61 @@ export function useAdminData(userRole?: string | null) {
   };
 
   const updateUserStatus = async (userId: string, status: string, suspensionDays?: string) => {
+    // Store previous state for rollback
+    const previousProfiles = [...profiles];
+    
+    // Determine the precise status values
+    // In our system, 'active' status typically maps to 'approved' approval_status
+    // and 'suspended' maps to 'suspended'
+    const newApprovalStatus = status === 'active' ? 'approved' : status;
+    const newStatus = status === 'suspended' ? 'suspended' : 'active';
+
+    // Optimistically update the UI
+    setProfiles(prev => prev.map(p => 
+      p.id === userId 
+        ? { 
+            ...p, 
+            approval_status: newApprovalStatus as Profile['approval_status'], 
+            status: newStatus as Profile['status'],
+            suspended_until: status === 'active' ? null : p.suspended_until // Clear if unsuspending
+          } 
+        : p
+    ));
+
     try {
       await fetchWithAuth('/admin/update-user-status', {
         method: 'PUT',
-        body: JSON.stringify({ userId, status: status === 'active' ? 'approved' : status, suspensionDays })
+        body: JSON.stringify({ userId, status: newApprovalStatus, suspensionDays })
       });
-      toast({ title: 'Success', description: `User status updated` });
+      toast({ title: 'Success', description: `User status updated to ${status}` });
+      // Refresh to get precise server-calculated fields (like suspended_until)
       fetchAllData();
       return true;
     } catch (error) {
+      setProfiles(previousProfiles);
       toast({ title: 'Error', description: 'Failed status update', variant: 'destructive' });
       return false;
     }
   };
 
   const updateUserRole = async (userId: string, newRole: string) => {
+    const previousProfiles = [...profiles];
+    
+    // Optimistically update
+    setProfiles(prev => prev.map(p => 
+      p.id === userId ? { ...p, role: newRole } : p
+    ));
+
     try {
       await fetchWithAuth('/admin/update-user-role', {
         method: 'PUT',
         body: JSON.stringify({ userId, role: newRole })
       });
-      toast({ title: 'Success', description: `User role updated` });
+      toast({ title: 'Success', description: `User role updated to ${newRole}` });
       fetchAllData();
       return true;
     } catch (error) {
+      setProfiles(previousProfiles);
       toast({ title: 'Error', description: 'Failed role update', variant: 'destructive' });
       return false;
     }
@@ -374,7 +410,7 @@ export function useAdminData(userRole?: string | null) {
 
   const resolveSecurityEvent = async (eventId: string) => {
     try {
-      const resp = await fetchWithAuth('/user/profile') as any;
+      const resp = await fetchWithAuth('/user/profile') as { id: string, user?: { id: string } };
       await fetchWithAuth(`/data/security_events/${eventId}`, {
         method: 'PUT',
         body: JSON.stringify({ resolved: true, resolved_at: new Date().toISOString(), resolved_by: resp.user?.id || resp.id })
@@ -448,7 +484,7 @@ export function useLiveMonitoring() {
   const fetchData = useCallback(async () => {
     try {
       const resp = await fetchWithAuth('/admin/live-monitoring');
-      setData(resp as any);
+      setData(resp as { enrollments: MonitoringEnrollment[], results: MonitoringResult[] });
     } catch (err) {
       console.error('Failed to fetch monitoring data', err);
     } finally {

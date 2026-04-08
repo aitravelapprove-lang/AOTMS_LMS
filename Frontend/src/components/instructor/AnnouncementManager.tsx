@@ -31,13 +31,27 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { formatDistanceToNow } from "date-fns";
 
+interface Batch {
+  id: string;
+  batch_name: string;
+}
+
+interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  is_pinned: boolean;
+  created_at: string;
+  allowed_batches?: string[];
+}
+
 interface AnnouncementManagerProps {
   courseId: string;
 }
 
 export function AnnouncementManager({ courseId }: AnnouncementManagerProps) {
   const { user } = useAuth();
-  const { data: announcements = [], isLoading } = useAnnouncements(courseId);
+  const { data: announcements = [], isLoading } = useAnnouncements(courseId) as { data: Announcement[], isLoading: boolean };
   const createAnnouncement = useCreateAnnouncement();
   const deleteAnnouncement = useDeleteAnnouncement();
 
@@ -49,12 +63,12 @@ export function AnnouncementManager({ courseId }: AnnouncementManagerProps) {
     allowed_batches: [] as string[]
   });
 
-  const [batches, setBatches] = useState<any[]>([]);
+  const [batches, setBatches] = useState<Batch[]>([]);
 
   useEffect(() => {
     const loadBatches = async () => {
       try {
-        const data = (await fetchWithAuth(`/batches?course_id=${courseId}`)) as any[];
+        const data = (await fetchWithAuth(`/batches?course_id=${courseId}`)) as Batch[];
         setBatches(data || []);
       } catch (e) {
         console.error("Failed to load batches", e);
@@ -87,7 +101,7 @@ export function AnnouncementManager({ courseId }: AnnouncementManagerProps) {
   };
 
   // Sort announcements: pinned first, then by date
-  const sortedAnnouncements = ([...announcements] as any[]).sort((a, b) => {
+  const sortedAnnouncements = [...announcements].sort((a, b) => {
     if (a.is_pinned && !b.is_pinned) return -1;
     if (!a.is_pinned && b.is_pinned) return 1;
     return (
@@ -261,12 +275,12 @@ export function AnnouncementManager({ courseId }: AnnouncementManagerProps) {
                           Pinned
                         </Badge>
                       )}
-                      {(announcement as any).allowed_batches?.length > 0 && (
+                      {announcement.allowed_batches && announcement.allowed_batches.length > 0 && (
                         <Badge
                           variant="secondary"
                           className="bg-blue-50 text-blue-600 border-blue-100 flex items-center gap-1"
                         >
-                          <Users className="h-3 w-3" /> {(announcement as any).allowed_batches.length} Batches
+                          <Users className="h-3 w-3" /> {announcement.allowed_batches.length} Batches
                         </Badge>
                       )}
                     </div>

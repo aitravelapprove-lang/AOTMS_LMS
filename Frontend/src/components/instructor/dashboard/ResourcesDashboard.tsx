@@ -81,6 +81,11 @@ const ALLOWED_TYPES = [
   'image/gif'
 ];
 
+interface Batch {
+  id: string;
+  batch_name: string;
+}
+
 export function ResourcesDashboard() {
   const { user } = useAuth();
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -106,13 +111,13 @@ export function ResourcesDashboard() {
     allowed_batches: [] as string[]
   });
 
-  const [batches, setBatches] = useState<any[]>([]);
+  const [batches, setBatches] = useState<Batch[]>([]);
 
   React.useEffect(() => {
     const loadBatches = async () => {
       if (!selectedCourse) return;
       try {
-        const data = (await fetchWithAuth(`/batches?course_id=${selectedCourse.id}`)) as any[];
+        const data = (await fetchWithAuth(`/batches?course_id=${selectedCourse.id}`)) as Batch[];
         setBatches(data || []);
       } catch (e) {
         console.error("Failed to load batches", e);
@@ -537,9 +542,9 @@ export function ResourcesDashboard() {
                                         <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black opacity-30 mt-2">
                                           Published {new Date(resource.created_at || '').toLocaleDateString()}
                                         </p>
-                                        {(resource as any).allowed_batches?.length > 0 && (
+                                        {resource.allowed_batches && resource.allowed_batches.length > 0 && (
                                             <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 flex items-center gap-1 w-fit mt-2 text-[10px]">
-                                                <Users className="h-3 w-3" /> {(resource as any).allowed_batches.length} Batches
+                                                <Users className="h-3 w-3" /> {resource.allowed_batches.length} Batches
                                             </Badge>
                                         )}
                                       </div>
@@ -604,10 +609,11 @@ function MetadataDialog({
 }: { 
     open: boolean; 
     onOpenChange: (open: boolean) => void;
-    formData: { title: string; description: string; resource_type: string };
-    setFormData: React.Dispatch<React.SetStateAction<{ title: string; description: string; resource_type: CourseResource['resource_type'] }>>;
+    formData: { title: string; description: string; resource_type: CourseResource['resource_type']; allowed_batches: string[] };
+    setFormData: React.Dispatch<React.SetStateAction<{ title: string; description: string; resource_type: CourseResource['resource_type']; allowed_batches: string[] }>>;
     onSave: () => void;
     fileName?: string;
+    batches: Batch[];
 }) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>

@@ -18,7 +18,7 @@ import { EnrollmentsList } from "@/components/admin/EnrollmentsList";
 import { GrantStudentAccess } from "@/components/admin/GrantStudentAccess";
 import { ResumeScanHistory } from "@/components/admin/ResumeScanHistory";
 import { LiveMonitoring } from "@/components/admin/LiveMonitoring";
-import InstructorCoursesAdmin from "@/pages/InstructorCourses";
+import InstructorAccessAdmin from "@/pages/InstructorAccess";
 import { ExamScheduler } from "@/components/manager/ExamScheduler";
 import { QuestionBankManager } from "@/components/manager/QuestionBankManager";
 import { LeaderboardManager } from "@/components/manager/LeaderboardManager";
@@ -611,7 +611,7 @@ export default function AdminDashboard() {
         "/admin/users": "users",
         "/admin/enrollments": "enrollments",
         "/admin/all-courses": "all-courses",
-        "/admin/instructor-courses": "instructor-courses",
+        "/admin/instructor-access": "instructor-access",
         "/admin/questions": "questions",
         "/admin/courses": "courses",
         "/admin/exams": "exams",
@@ -835,7 +835,7 @@ export default function AdminDashboard() {
                       { id: "coupons", label: "Rewards & Coupons", icon: Ticket, key: "tab-coupons" },
                       { id: "grant-access", label: "Grant Access", icon: UserCheck, key: "tab-grant-access" },
                       { id: "resume-scans", label: "Resume Scans", icon: ClipboardList, key: "tab-resume-scans" },
-                      { id: "instructor-courses", label: "Instructor Courses", icon: BookOpen, key: "tab-instructor-courses" },
+                      { id: "instructor-access", label: "Instructor Access", icon: ShieldCheck, key: "tab-instructor-access" },
                       { id: "all-courses", label: "All Courses", icon: LayoutGrid, key: "tab-all-courses" },
                       {
                         id: "questions",
@@ -939,13 +939,13 @@ export default function AdminDashboard() {
                   </motion.div>
                 </TabsContent>
 
-                <TabsContent key="tab-instructor-courses" value="instructor-courses" className="mt-0 outline-none">
+                <TabsContent key="tab-instructor-access" value="instructor-access" className="mt-0 outline-none">
                   <motion.div
-                    key="motion-instructor-courses"
+                    key="motion-instructor-access"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                   >
-                    <InstructorCoursesAdmin />
+                    <InstructorAccessAdmin />
                   </motion.div>
                 </TabsContent>
 

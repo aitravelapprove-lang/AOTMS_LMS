@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { fetchWithAuth } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { Course } from "@/hooks/useInstructorData";
 import {
     AlertTriangle, Clock, Calendar, TrendingDown, UserX,
     CheckCircle2, Bell, ExternalLink, RefreshCw, MessageSquare
@@ -57,13 +58,13 @@ export function SmartAlerts() {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const fetchRealData = async () => {
+    const fetchRealData = useCallback(async () => {
         if (!user) return;
         setLoading(true);
         try {
             // 1. Fetch Rejected/Pending Courses
             const coursesData = await fetchWithAuth(`/data/courses?instructor_id=eq.${user.id}`);
-            const courseAlerts = (coursesData as any[])
+            const courseAlerts: Alert[] = (coursesData as Course[])
                 .filter(c => c.status === 'rejected' || c.status === 'pending')
                 .map(c => ({
                     id: `c-${c.id}`,
@@ -75,10 +76,9 @@ export function SmartAlerts() {
                     url: "/instructor/my-courses"
                 }));
 
-            // 2. Fetch Doubts (Simulated as no direct query for 'unreplied' yet without complex query)
-            // For now, take latest doubts
+            // 2. Fetch Doubts
             const doubtsData = await fetchWithAuth(`/data/doubts?limit=5&sort=created_at&order=desc`);
-            const doubtAlerts = (doubtsData as any[]).map(d => ({
+            const doubtAlerts: Alert[] = (doubtsData as { id: string, question: string }[]).map(d => ({
                 id: `d-${d.id}`,
                 type: 'doubt' as const,
                 title: "New Student Doubt",
@@ -88,10 +88,10 @@ export function SmartAlerts() {
                 url: "/instructor/chat"
             }));
 
-            // 3. Pending Tasks (derive from course content count or static)
+            // 3. Pending Tasks
             const pendingTasks: Task[] = [];
             
-            const draftCourses = (coursesData as any[]).filter(c => c.status === 'draft');
+            const draftCourses = (coursesData as Course[]).filter(c => c.status === 'draft');
             if (draftCourses.length > 0) {
                 pendingTasks.push({
                     id: 't-draft',
@@ -123,11 +123,11 @@ export function SmartAlerts() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [user]);
 
     useEffect(() => {
         fetchRealData();
-    }, [user?.id]);
+    }, [fetchRealData]);
 
     return (
         <div className="space-y-6">

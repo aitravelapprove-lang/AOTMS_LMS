@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -16,8 +17,12 @@ import {
   Trash2,
   Loader2,
   Award,
+  Shield,
   Eye,
   ArrowRight,
+  Phone,
+  Lock as LockIcon,
+  Unlock as UnlockIcon,
 } from "lucide-react";
 import { fetchWithAuth } from "@/lib/api";
 import { toast } from "sonner";
@@ -25,6 +30,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -51,6 +58,8 @@ interface Instructor {
   email: string;
   mobile_number?: string;
   phone?: string;
+  avatar_url?: string;
+  status: 'active' | 'suspended';
   role: string;
   created_at?: string;
 }
@@ -58,7 +67,7 @@ interface Instructor {
 interface Course {
   id: string;
   title: string;
-  instructor_id: string | null;
+  instructor_id: string | { _id: string; full_name?: string } | null;
 }
 
 interface MockPaper {
@@ -84,6 +93,14 @@ interface StudentBatch {
   course_id: string;
 }
 
+interface Profile {
+  user_id: string;
+  full_name: string;
+  email: string;
+  avatar_url?: string;
+  role?: string;
+}
+
 export function InstructorManagement() {
   const [instructors, setInstructors] = useState<Instructor[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -99,14 +116,10 @@ export function InstructorManagement() {
   const [selectedCourseId, setSelectedCourseId] = useState<string>("");
   const [assigning, setAssigning] = useState(false);
   const [showAllCourses, setShowAllCourses] = useState(false);
+  const [batchTypeFilter, setBatchTypeFilter] = useState("all");
 
-  // Bulk Mock Assign State
-  const [mockModalOpen, setMockModalOpen] = useState(false);
-  const [mockPapers, setMockPapers] = useState<MockPaper[]>([]);
   const [instructorBatches, setInstructorBatches] = useState<Batch[]>([]);
-  const [selectedBatchId, setSelectedBatchId] = useState("");
-  const [selectedMockId, setSelectedMockId] = useState("");
-  const [assigningMock, setAssigningMock] = useState(false);
+  const [batchStudents, setBatchStudents] = useState<Record<string, Profile[]>>({});
   const [loadingMockData, setLoadingMockData] = useState(false);
 
   const loadData = async () => {
@@ -114,7 +127,7 @@ export function InstructorManagement() {
     try {
       const [instructorsData, coursesData] = (await Promise.all([
         fetchWithAuth('/admin/instructors'),
-        fetchWithAuth('/data/courses?select=id,title,instructor_id')
+        fetchWithAuth('/admin/courses-with-instructors')
       ])) as [Instructor[], Course[]];
       setInstructors(instructorsData || []);
       setCourses(coursesData || []);
@@ -140,22 +153,40 @@ export function InstructorManagement() {
   const handleOpenProfileModal = async (instructor: Instructor) => {
     setSelectedInstructor(instructor);
     setProfileModalOpen(true);
-    setLoadingMockData(true); // Reusing loader state
+    setLoadingMockData(true);
     setInstructorBatches([]);
-
+    setBatchStudents({});
+    
     try {
       const assignedCourseIds = courses
-        .filter(c => c.instructor_id === instructor.user_id)
+        .filter(c => {
+          const c_instructor_id = typeof c.instructor_id === 'object' && c.instructor_id !== null 
+            ? c.instructor_id._id 
+            : c.instructor_id;
+          return String(c_instructor_id) === String(instructor.user_id);
+        })
         .map(c => c.id);
       
       if (assignedCourseIds.length > 0) {
         const batches = (await fetchWithAuth(`/data/batches?course_id=in.(${assignedCourseIds.join(',')})`)) as Batch[];
         
-        // Get student counts for each batch
         if (batches && batches.length > 0) {
             const batchIds = batches.map(b => b.id);
             const studentBatches = (await fetchWithAuth(`/data/student_batches?batch_id=in.(${batchIds.join(',')})`)) as StudentBatch[];
             
+            // Fetch real student profiles
+            const studentIds = [...new Set(studentBatches.map(sb => sb.student_id))];
+            if (studentIds.length > 0) {
+              const profiles = (await fetchWithAuth(`/data/profiles?user_id=in.(${studentIds.join(',')})`)) as Profile[];
+              const studentsByBatch: Record<string, Profile[]> = {};
+              
+              batches.forEach(b => {
+                const bStudentIds = studentBatches.filter(sb => sb.batch_id === b.id).map(sb => sb.student_id);
+                studentsByBatch[b.id] = profiles.filter(p => bStudentIds.includes(p.user_id));
+              });
+              setBatchStudents(studentsByBatch);
+            }
+
             const batchesWithCounts = batches.map(b => ({
                 ...b,
                 studentCount: studentBatches.filter(sb => sb.batch_id === b.id).length
@@ -174,62 +205,6 @@ export function InstructorManagement() {
   const handleOpenManageAssignments = (instructor: Instructor) => {
     setSelectedInstructor(instructor);
     setManageAssignmentsOpen(true);
-  };
-
-  const handleOpenMockModal = async (instructor: Instructor) => {
-    setSelectedInstructor(instructor);
-    setMockModalOpen(true);
-    setLoadingMockData(true);
-    setSelectedBatchId("");
-    setSelectedMockId("");
-    
-    try {
-      // 1. Get assigned course IDs
-      const assignedCourseIds = courses
-        .filter(c => c.instructor_id === instructor.user_id)
-        .map(c => c.id);
-      
-      let batchesQuery = `/data/batches?instructor_id=eq.${instructor.user_id}`;
-      // Fallback: If no direct instructor link, use course IDs
-      if (assignedCourseIds.length > 0) {
-        batchesQuery = `/data/batches?course_id=in.(${assignedCourseIds.join(',')})`;
-      }
-
-      const [batchesRes, mockPapersRes] = (await Promise.all([
-        fetchWithAuth(batchesQuery),
-        fetchWithAuth('/data/mock_papers?select=id,title')
-      ])) as [Batch[], MockPaper[]];
-      setInstructorBatches(batchesRes || []);
-      setMockPapers(mockPapersRes || []);
-    } catch (err) {
-      console.error('Failed to load batch/mock data:', err);
-      toast.error('Failed to load batches or mock tests');
-    } finally {
-      setLoadingMockData(false);
-    }
-  };
-
-  const handleBulkAssignMock = async () => {
-    if (!selectedBatchId || !selectedMockId) return;
-    
-    setAssigningMock(true);
-    try {
-      const res = (await fetchWithAuth('/exams/bulk-assign', {
-        method: 'POST',
-        body: JSON.stringify({
-          batch_id: selectedBatchId,
-          mock_paper_id: selectedMockId
-        })
-      })) as { message?: string };
-      
-      toast.success(res.message || 'Mock test assigned successfully');
-      setMockModalOpen(false);
-    } catch (err) {
-      console.error('Bulk assign failed:', err);
-      toast.error('Failed to assign mock test to batch');
-    } finally {
-      setAssigningMock(false);
-    }
   };
 
   const handleAssignCourse = async () => {
@@ -412,88 +387,151 @@ export function InstructorManagement() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {filteredInstructors.map((instructor) => {
-            // Find courses assigned to this instructor
-            const assignedCourses = courses.filter(c => c.instructor_id === instructor.user_id);
-
+            const assignedCourses = courses.filter(c => {
+              const c_instructor_id = typeof c.instructor_id === 'object' && c.instructor_id !== null 
+                ? c.instructor_id._id 
+                : c.instructor_id;
+              return String(c_instructor_id) === String(instructor.user_id);
+            });
+            const isSuspended = instructor.status === 'suspended';
             return (
-              <Card key={instructor.user_id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                        {instructor.full_name ? (
-                          <span className="text-lg font-bold text-primary">
-                            {instructor.full_name.charAt(0).toUpperCase()}
-                          </span>
-                        ) : (
-                          <User className="h-6 w-6 text-primary" />
-                        )}
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-lg text-foreground">
-                          {instructor.full_name || 'Unknown'}
-                        </h3>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Mail className="h-3.5 w-3.5" />
-                          <span>{instructor.email || 'No email'}</span>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 mt-1">
-                          <Badge variant="outline" className="text-xs">
-                            <User className="h-3 w-3 mr-1" />
-                            Instructor
-                          </Badge>
-                          {assignedCourses.length > 0 && (
-                            <Badge variant="secondary" className="text-xs">
-                              <BookOpen className="h-3 w-3 mr-1" />
-                              {assignedCourses.length} Courses Assigned
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
+              <div
+                key={instructor.user_id}
+                className={`group flex items-center justify-between p-4 rounded-2xl border border-slate-200 bg-white hover:border-primary/30 hover:shadow-md transition-all relative overflow-hidden ${
+                  isSuspended ? 'opacity-80 grayscale-[0.3]' : ''
+                }`}
+              >
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                  <div className="relative shrink-0">
+                    <Avatar className={`h-12 w-12 border-2 border-slate-50 shadow-none rounded-full`}>
+                      <AvatarImage src={instructor.avatar_url} />
+                      <AvatarFallback className="bg-primary/5 text-primary font-bold">
+                        {instructor.full_name?.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white shadow-sm ${
+                      isSuspended ? 'bg-rose-500' : 'bg-emerald-500'
+                    }`} />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <p className="text-sm font-black text-slate-900 leading-none truncate overflow-hidden">{instructor.full_name}</p>
+                      <Badge 
+                          variant="outline" 
+                          className={`text-[9px] h-4 px-1.5 rounded-md uppercase font-black tracking-tighter border-none shadow-none bg-blue-50 text-blue-600`}
+                      >
+                          INSTRUCTOR
+                      </Badge>
                     </div>
+                    <p className="text-[11px] text-muted-foreground truncate leading-none mb-2">{instructor.email}</p>
                     
-                    <div className="flex items-center gap-2 self-end md:self-auto">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                           <DropdownMenuItem onClick={() => handleOpenProfileModal(instructor)}>
-                              <Eye className="h-4 w-4 mr-2" /> View Profile
-                           </DropdownMenuItem>
-                           <DropdownMenuItem onClick={() => handleOpenAssignModal(instructor)}>
-                              <Plus className="h-4 w-4 mr-2" /> Assign New Course
-                           </DropdownMenuItem>
-                           {assignedCourses.length > 0 && (
-                             <DropdownMenuItem onClick={() => handleOpenManageAssignments(instructor)}>
-                                <BookOpen className="h-4 w-4 mr-2" /> Manage Assignments
-                             </DropdownMenuItem>
-                           )}
-                           <DropdownMenuItem onClick={() => handleOpenMockModal(instructor)}>
-                              <Award className="h-4 w-4 mr-2 text-amber-500" /> Assign Mock Test to Batch
-                           </DropdownMenuItem>
-                           <DropdownMenuItem 
-                              className="text-destructive focus:text-destructive" 
-                              onClick={() => handleDeleteInstructor(instructor.user_id, instructor.full_name)}
-                              disabled={processingId === instructor.user_id}
-                           >
-                              {processingId === instructor.user_id ? (
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-4 w-4 mr-2" />
-                              )}
-                              Delete Permanently
-                           </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                    <div className="flex items-center gap-3">
+                       <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-primary/5 border border-primary/10 shadow-sm shadow-primary/5">
+                          <BookOpen className="h-3 w-3 text-primary animate-pulse" />
+                          <span className="text-[10px] font-black text-primary uppercase tracking-tight">Teaching {assignedCourses.length}</span>
+                       </div>
+                       <div className="flex items-center gap-1">
+                          <Users className="h-3 w-3 text-slate-300" />
+                          <span className="text-[10px] font-bold text-slate-500 whitespace-nowrap">
+                             {instructor.created_at ? new Date(instructor.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : 'Joined ---'}
+                          </span>
+                       </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0 ml-4">
+                  <Button 
+                    variant="secondary" 
+                    size="sm"
+                    className="h-9 px-3 rounded-xl bg-slate-50 hover:bg-primary hover:text-white text-primary transition-all group/btn font-bold text-xs"
+                    onClick={() => handleOpenProfileModal(instructor)}
+                  >
+                    Management
+                    <ArrowRight className="h-3 w-3 ml-2 transition-transform group-hover/btn:translate-x-1" />
+                  </Button>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-slate-100 text-slate-400">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56 p-1 rounded-xl shadow-xl border-slate-200/60">
+                       <DropdownMenuLabel className="px-2 py-1.5 text-[10px] font-black uppercase text-slate-400 tracking-widest">Instructor Node</DropdownMenuLabel>
+                       <DropdownMenuSeparator className="bg-slate-100" />
+                       
+                       <DropdownMenuItem onClick={() => handleOpenAssignModal(instructor)}>
+                         <Plus className="h-4 w-4 mr-2" /> Assign New Course
+                       </DropdownMenuItem>
+
+                       <DropdownMenuItem onClick={() => handleOpenManageAssignments(instructor)}>
+                         <Award className="h-4 w-4 mr-2" /> Global Assignments
+                       </DropdownMenuItem>
+                       
+                       <DropdownMenuSeparator className="bg-slate-100" />
+                       
+                       <DropdownMenuItem 
+                         className="text-rose-600 focus:text-rose-600 focus:bg-rose-50 font-bold"
+                         onClick={() => handleDeleteInstructor(instructor.user_id, instructor.full_name)}
+                       >
+                         <Trash2 className="h-4 w-4 mr-2" /> Delete Account
+                       </DropdownMenuItem>
+                       
+                       <DropdownMenuSeparator className="bg-slate-100" />
+                       
+                       {isSuspended ? (
+                         <DropdownMenuItem 
+                           className="text-emerald-600 focus:text-emerald-600 font-bold"
+                           onClick={async () => {
+                             try {
+                               await fetchWithAuth('/admin/update-user-status', {
+                                 method: 'PUT',
+                                 body: JSON.stringify({ userId: instructor.user_id, status: 'approved' })
+                               });
+                               toast.success('Instructor node active');
+                               loadData();
+                             } catch (err) {
+                               toast.error('Failed to sync state');
+                             }
+                           }}
+                         >
+                           <UnlockIcon className="h-4 w-4 mr-2" /> Unsuspend Node
+                         </DropdownMenuItem>
+                       ) : (
+                         <DropdownMenuItem 
+                           className="text-amber-600 focus:text-amber-600 font-bold"
+                           onClick={async () => {
+                             if (!confirm(`Suspend ${instructor.full_name}?`)) return;
+                             try {
+                               await fetchWithAuth('/admin/update-user-status', {
+                                 method: 'PUT',
+                                 body: JSON.stringify({ userId: instructor.user_id, status: 'suspended', suspensionDays: '30' })
+                               });
+                               toast.success('Instructor suspended');
+                               loadData();
+                             } catch (err) {
+                               toast.error('Sync failed');
+                             }
+                           }}
+                         >
+                           <LockIcon className="h-4 w-4 mr-2" /> Suspend Access
+                         </DropdownMenuItem>
+                       )}
+                       
+                       <DropdownMenuItem 
+                          className="text-rose-600 focus:text-rose-600 font-bold" 
+                          onClick={() => handleDeleteInstructor(instructor.user_id, instructor.full_name)}
+                       >
+                          <Trash2 className="h-4 w-4 mr-2" /> Purge Entity
+                       </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
             );
           })}
         </div>
@@ -513,18 +551,25 @@ export function InstructorManagement() {
           </DialogHeader>
           
           {selectedInstructor && (
+            <>
             <div className="space-y-6 pt-6">
-              <div className="flex items-center gap-4">
-                <div className="h-20 w-20 rounded-full border-4 border-white shadow-lg bg-primary/10 flex items-center justify-center overflow-hidden">
-                    <span className="text-3xl font-bold text-primary">
+              <div className="flex flex-col sm:flex-row items-center gap-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                <Avatar className="h-20 w-20 rounded-2xl border-4 border-white shadow-lg shrink-0">
+                    <AvatarImage src={selectedInstructor.avatar_url} className="object-cover" />
+                    <AvatarFallback className="text-3xl font-bold text-primary bg-primary/10">
                         {selectedInstructor.full_name?.[0]?.toUpperCase()}
-                    </span>
-                </div>
-                <div>
+                    </AvatarFallback>
+                </Avatar>
+                <div className="text-center sm:text-left">
                   <h3 className="text-xl font-bold text-slate-900">{selectedInstructor.full_name}</h3>
-                  <Badge className="mt-1 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
-                    Lead Instructor
-                  </Badge>
+                  <div className="flex items-center gap-2 mt-1 justify-center sm:justify-start">
+                    <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
+                      Primary Instructor
+                    </Badge>
+                    <Badge variant={selectedInstructor.status === 'suspended' ? 'destructive' : 'secondary'} className="capitalize">
+                      {selectedInstructor.status || 'Active'}
+                    </Badge>
+                  </div>
                 </div>
               </div>
 
@@ -545,56 +590,73 @@ export function InstructorManagement() {
                 </div>
 
                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Status</p>
+                  <Badge 
+                    variant={selectedInstructor.status === 'suspended' ? 'destructive' : 'default'}
+                    className="capitalize"
+                  >
+                    {selectedInstructor.status || 'active'}
+                  </Badge>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
                   <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Member Since</p>
                   <p className="text-sm font-medium text-slate-900">
                     {selectedInstructor.created_at ? new Date(selectedInstructor.created_at).toLocaleDateString() : 'N/A'}
                   </p>
                 </div>
 
-                {/* Batches & Students Section */}
-                <div className="space-y-3 pt-4 border-t border-slate-100">
-                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
-                    <Users className="h-3 w-3" />
-                    Logic Batches & Students
-                  </h4>
-                  
-                  {loadingMockData ? (
-                    <div className="flex items-center gap-2 py-2 text-slate-400">
-                       <Loader2 className="h-3 w-3 animate-spin" />
-                       <span className="text-[10px] uppercase font-bold tracking-widest">Syncing Data...</span>
-                    </div>
-                  ) : instructorBatches.length === 0 ? (
-                    <div className="p-4 rounded-xl border border-dashed border-slate-200 text-center">
-                       <p className="text-[10px] uppercase font-bold text-slate-300">No active batches synced</p>
-                    </div>
-                  ) : (
-                    <div className="grid gap-2">
-                      {instructorBatches.map((batch: Batch) => (
-                        <div key={batch.id} className="flex items-center justify-between p-3 rounded-xl bg-white border border-slate-100 shadow-sm">
-                           <div className="space-y-0.5">
-                              <p className="text-xs font-bold text-slate-900">{batch.batch_name}</p>
-                              <Badge variant="outline" className="text-[8px] h-4 px-1 uppercase font-black tracking-tighter">
-                                {batch.batch_type}
-                              </Badge>
-                           </div>
-                           <div className="text-right">
-                              <p className="text-sm font-black text-primary">{batch.studentCount}</p>
-                              <p className="text-[8px] uppercase font-bold text-slate-400 tracking-widest">Students</p>
-                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
               </div>
             </div>
+
+            <DialogFooter className="pt-6 border-t flex gap-2">
+              <Button variant="outline" className="rounded-xl flex-1" onClick={() => setProfileModalOpen(false)}>
+                Close
+              </Button>
+              {selectedInstructor.status === 'suspended' ? (
+                <Button 
+                  className="rounded-xl flex-1 bg-emerald-600 hover:bg-emerald-700" 
+                  onClick={async () => {
+                    try {
+                      await fetchWithAuth('/admin/update-user-status', {
+                        method: 'PUT',
+                        body: JSON.stringify({ userId: selectedInstructor.user_id, status: 'approved' })
+                      });
+                      toast.success('Access restored');
+                      setProfileModalOpen(false);
+                      loadData();
+                    } catch (err) {
+                      toast.error('Failed to restore');
+                    }
+                  }}
+                >
+                  Restore Access
+                </Button>
+              ) : (
+                <Button 
+                  variant="destructive"
+                  className="rounded-xl flex-1" 
+                  onClick={async () => {
+                    if (!confirm(`Suspend ${selectedInstructor.full_name}?`)) return;
+                    try {
+                      await fetchWithAuth('/admin/update-user-status', {
+                        method: 'PUT',
+                        body: JSON.stringify({ userId: selectedInstructor.user_id, status: 'suspended', suspensionDays: '30' })
+                      });
+                      toast.success('Instructor suspended');
+                      setProfileModalOpen(false);
+                      loadData();
+                    } catch (err) {
+                      toast.error('Failed to suspend');
+                    }
+                  }}
+                >
+                  Suspend Access
+                </Button>
+              )}
+            </DialogFooter>
+            </>
           )}
-          
-          <DialogFooter className="pt-6 border-t">
-            <Button className="rounded-xl w-full" onClick={() => setProfileModalOpen(false)}>
-              Close
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -728,107 +790,7 @@ export function InstructorManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Bulk Assign Mock Modal */}
-      <Dialog open={mockModalOpen} onOpenChange={setMockModalOpen}>
-        <DialogContent className="max-w-md bg-white border-slate-200 shadow-2xl rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl font-bold">
-              <Award className="h-6 w-6 text-amber-500" />
-              Bulk Mock Assignment
-            </DialogTitle>
-            <DialogDescription>
-              Assign a mock paper to all students in <b>{selectedInstructor?.full_name}'s</b> batch.
-            </DialogDescription>
-          </DialogHeader>
-
-          {loadingMockData ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground font-mono">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-[10px] font-black uppercase tracking-[0.3em]">Synching Repositories</p>
-            </div>
-          ) : (
-            <div className="space-y-6 py-4">
-               <div className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Target Instructor Batch</Label>
-                  <Select value={selectedBatchId} onValueChange={setSelectedBatchId}>
-                    <SelectTrigger className="rounded-xl h-14 border-slate-100 bg-slate-50/50 hover:bg-white transition-all">
-                      <SelectValue placeholder="Select active batch..." />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl border-slate-100">
-                      {instructorBatches.length === 0 ? (
-                        <div className="py-8 text-center text-slate-400 italic text-sm">No active batches assigned</div>
-                      ) : (
-                        instructorBatches.map(batch => (
-                          <SelectItem key={batch.id} value={batch.id} className="py-3 rounded-xl">
-                            <div className="flex flex-col items-start gap-0.5">
-                              <span className="font-bold text-slate-900">{batch.batch_name}</span>
-                              <div className="flex items-center gap-2">
-                                <Badge variant="outline" className="text-[8px] h-4 px-1 uppercase font-black tracking-tighter">
-                                  {batch.batch_type}
-                                </Badge>
-                                <span className="text-[10px] text-slate-400 font-medium italic">{batch.start_time} - {batch.end_time}</span>
-                              </div>
-                            </div>
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-               </div>
-
-               <div className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Mock Test Implementation</Label>
-                  <Select value={selectedMockId} onValueChange={setSelectedMockId}>
-                    <SelectTrigger className="rounded-xl h-14 border-slate-100 bg-slate-50/50 hover:bg-white transition-all">
-                      <SelectValue placeholder="Choose logic paper..." />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl border-slate-100">
-                      {mockPapers.length === 0 ? (
-                        <div className="py-8 text-center text-slate-400 italic text-sm">Static repository empty</div>
-                      ) : (
-                        mockPapers.map(paper => (
-                          <SelectItem key={paper.id} value={paper.id} className="py-3 rounded-xl">
-                            <div className="flex items-center gap-3">
-                               <div className="h-2 w-2 rounded-full bg-amber-400" />
-                               <span className="font-bold text-slate-900">{paper.title}</span>
-                            </div>
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-               </div>
-            </div>
-          )}
-
-          <DialogFooter className="pt-6 border-t mt-4 flex flex-col sm:flex-row gap-2">
-            <Button 
-              variant="outline" 
-              onClick={() => setMockModalOpen(false)} 
-              className="rounded-xl h-12 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 border-slate-100 transition-all sm:flex-1"
-            >
-              Terminate
-            </Button>
-            <Button 
-              onClick={handleBulkAssignMock} 
-              disabled={!selectedBatchId || !selectedMockId || assigningMock || loadingMockData}
-              className="rounded-xl h-12 bg-slate-900 hover:bg-black text-white text-[10px] font-black uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-95 shadow-xl shadow-slate-100 sm:flex-[2]"
-            >
-              {assigningMock ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Processing Deployment
-                </>
-              ) : (
-                <div className="flex items-center">
-                  Execute Assignment <ArrowRight className="h-4 w-4 ml-2" />
-                </div>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
+

@@ -189,15 +189,15 @@ export default function CareerRoadmap() {
             </div>
 
             <div className="p-6 sm:p-8 space-y-5 sm:space-y-6 text-center pt-6 sm:pt-7 pb-8 sm:pb-10">
-              <div className="space-y-1.5 sm:space-y-2">
-                <h2 className="text-xl sm:text-2xl font-black text-slate-950 tracking-tight leading-tight uppercase italic">
+              <DialogHeader className="space-y-1.5 sm:space-y-2">
+                <DialogTitle className="text-xl sm:text-2xl font-black text-slate-950 tracking-tight leading-tight uppercase italic">
                   Ready for the <br/>
                   <span className="text-[#0075CF]">Next Evolution?</span>
-                </h2>
-                <p className="text-slate-500 text-[10px] sm:text-xs font-medium leading-relaxed max-w-[280px] mx-auto">
+                </DialogTitle>
+                <DialogDescription className="text-slate-500 text-[10px] sm:text-xs font-medium leading-relaxed max-w-[280px] mx-auto">
                   Join our elite LMS platform today and unlock the tools and network to dominate the industry.
-                </p>
-              </div>
+                </DialogDescription>
+              </DialogHeader>
 
               <div className="bg-slate-50 rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border border-slate-100 flex items-center justify-around">
                  <div className="text-center">

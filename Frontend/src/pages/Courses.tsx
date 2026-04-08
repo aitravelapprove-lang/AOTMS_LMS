@@ -215,14 +215,14 @@ export default function CoursesPage() {
                   </Button>
                 </div>
 
-                <div className="space-y-4">
-                  <h2 className="text-3xl font-black tracking-tight leading-tight">
+                <DialogHeader className="space-y-4">
+                  <DialogTitle className="text-3xl font-black tracking-tight leading-tight">
                     Review Your <span className="text-white italic">Enrollment</span>
-                  </h2>
-                  <p className="text-slate-400 text-sm leading-relaxed">
+                  </DialogTitle>
+                  <DialogDescription className="text-slate-400 text-sm leading-relaxed">
                     You're one step away from mastering new skills. Complete the secure payment below to unlock full course access.
-                  </p>
-                </div>
+                  </DialogDescription>
+                </DialogHeader>
 
                 {paymentCourse && (
                   <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4 backdrop-blur-md">

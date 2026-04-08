@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { VideoUploader } from "../VideoUploader";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { useInstructorCourses } from "@/hooks/useInstructorData";
+import { useInstructorCourses, Course } from "@/hooks/useInstructorData";
 import { useDeleteCourseVideo } from "@/hooks/useCourseBuilder";
 import { useToast } from "@/hooks/use-toast";
 
@@ -30,7 +30,7 @@ interface Video {
 export function InstructorVideoLibrary() {
   const [videos, setVideos] = useState<Video[]>([]);
   const { data, isLoading: coursesLoading } = useInstructorCourses();
-  const courses = (data as any[]) || [];
+  const courses = useMemo(() => (data as Course[]) || [], [data]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCourse, setFilterCourse] = useState("all");
@@ -41,7 +41,7 @@ export function InstructorVideoLibrary() {
   const deleteVideo = useDeleteCourseVideo();
   const { toast } = useToast();
 
-  const loadVideos = async () => {
+  const loadVideos = useCallback(async () => {
     if (courses.length === 0) {
       setVideos([]);
       setLoading(false);
@@ -59,13 +59,13 @@ export function InstructorVideoLibrary() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [courses]);
 
   useEffect(() => {
     if (!coursesLoading) {
         loadVideos();
     }
-  }, [courses, coursesLoading]);
+  }, [coursesLoading, loadVideos]);
 
   const filteredVideos = videos.filter(v => {
     const matchesSearch = v.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||

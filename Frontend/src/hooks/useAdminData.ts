@@ -374,7 +374,7 @@ export function useAdminData(userRole?: string | null) {
 
   const resolveSecurityEvent = async (eventId: string) => {
     try {
-      const resp = await fetchWithAuth('/user/profile') as any;
+      const resp = await fetchWithAuth('/user/profile') as { id: string, user?: { id: string } };
       await fetchWithAuth(`/data/security_events/${eventId}`, {
         method: 'PUT',
         body: JSON.stringify({ resolved: true, resolved_at: new Date().toISOString(), resolved_by: resp.user?.id || resp.id })
@@ -448,7 +448,7 @@ export function useLiveMonitoring() {
   const fetchData = useCallback(async () => {
     try {
       const resp = await fetchWithAuth('/admin/live-monitoring');
-      setData(resp as any);
+      setData(resp as { enrollments: MonitoringEnrollment[], results: MonitoringResult[] });
     } catch (err) {
       console.error('Failed to fetch monitoring data', err);
     } finally {

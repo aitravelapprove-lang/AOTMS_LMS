@@ -119,15 +119,11 @@ export default function Auth() {
     email: string;
   } | null>(null);
   const [otpResendTimer, setOtpResendTimer] = useState(0);
-<<<<<<< HEAD
   const [loginStep, setLoginStep] = useState<'credentials' | 'admin-otp'>('credentials');
   const [adminLoginEmail, setAdminLoginEmail] = useState('');
   const [adminOtpResendTimer, setAdminOtpResendTimer] = useState(0);
-  const { signIn, signUp, user, loading: authLoading, verifyAdminOtp } = useAuth();
-=======
   const [isTyping, setIsTyping] = useState(false);
-  const { signIn, signUp, user, loading: authLoading } = useAuth();
->>>>>>> e81fa9c1131a4368c44cfb1b1300c8a2ee2da94f
+  const { signIn, signUp, user, loading: authLoading, verifyAdminOtp } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -182,7 +178,6 @@ export default function Auth() {
     }
   }, [otpResendTimer]);
 
-<<<<<<< HEAD
   useEffect(() => {
     if (adminOtpResendTimer > 0) {
       const timer = setTimeout(() => setAdminOtpResendTimer(adminOtpResendTimer - 1), 1000);
@@ -190,10 +185,7 @@ export default function Auth() {
     }
   }, [adminOtpResendTimer]);
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-=======
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
->>>>>>> e81fa9c1131a4368c44cfb1b1300c8a2ee2da94f
 
   const handleSendOtp = async (data: EmailVerifyFormData) => {
     setLoading(true);
@@ -380,15 +372,9 @@ export default function Auth() {
     if (result.error) {
       setLoading(false);
       toast({
-<<<<<<< HEAD
-        title: 'Login Failed',
-        description: result.error.message,
-        variant: 'destructive',
-=======
         title: "Login Failed",
-        description: error.message,
+        description: result.error.message,
         variant: "destructive",
->>>>>>> e81fa9c1131a4368c44cfb1b1300c8a2ee2da94f
       });
     } else if (result.requiresAdminOtp) {
       setLoading(false);
@@ -520,33 +506,10 @@ export default function Auth() {
                 className="h-12 md:h-14 lg:h-16 w-auto object-contain"
               />
             </div>
-<<<<<<< HEAD
-          </div>
-
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-black text-slate-950 mb-2 tracking-tight">
-              {isLogin
-                ? loginStep === 'admin-otp' ? 'Admin Verification' : 'Welcome back'
-                : registrationStep === 'email' ? 'Create account' : registrationStep === 'otp' ? 'Verify' : 'Complete'}
-            </h2>
-            <p className="text-muted-foreground text-sm">
-              {isLogin
-                ? loginStep === 'admin-otp'
-                  ? `Enter the OTP sent to ${adminLoginEmail}`
-                  : 'Sign in to continue your learning journey.'
-                : registrationStep === 'email'
-                ? 'Enter your details to get started'
-                : registrationStep === 'otp'
-                ? 'Enter the OTP sent to your email'
-                : 'Fill in your account details'}
-            </p>
-          </div>
-=======
           )}
           <h2 className="text-3xl font-black text-slate-950 mb-2 tracking-tight">
             {isLogin
-              ? "Welcome back"
+              ? loginStep === 'admin-otp' ? 'Admin Verification' : 'Welcome back'
               : registrationStep === "email"
                 ? "Create account"
                 : registrationStep === "otp"
@@ -555,7 +518,9 @@ export default function Auth() {
           </h2>
           <p className="text-muted-foreground text-sm font-medium">
             {isLogin
-              ? "Sign in to continue your learning journey."
+              ? loginStep === 'admin-otp'
+                ? `Enter the OTP sent to ${adminLoginEmail}`
+                : "Sign in to continue your learning journey."
               : registrationStep === "email"
                 ? "Enter your details to get started"
                 : registrationStep === "otp"
@@ -563,13 +528,18 @@ export default function Auth() {
                   : "Fill in your account details"}
           </p>
         </div>
->>>>>>> e81fa9c1131a4368c44cfb1b1300c8a2ee2da94f
 
         <AnimatePresence mode="wait">
           {/* Login Form */}
           {isLogin ? (
-<<<<<<< HEAD
-            loginStep === 'admin-otp' ? (
+            <motion.div
+              key="login"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.3 }}
+            >
+              {loginStep === 'admin-otp' ? (
               /* Admin OTP Verification Step */
               <Form {...otpForm}>
                 <form onSubmit={otpForm.handleSubmit(handleAdminOtpVerify)} className="space-y-4">
@@ -701,44 +671,29 @@ export default function Auth() {
                     <FormItem>
                       <FormLabel htmlFor="login-password" className="text-sm font-medium text-foreground">Password</FormLabel>
                       <div className="relative">
-=======
-            <motion.div
-              key="login"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Form {...loginForm}>
-                <form
-                  onSubmit={loginForm.handleSubmit(handleLogin)}
-                  className="space-y-5"
-                >
-                  <FormField
-                    control={loginForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-semibold text-slate-900">
-                          Email Address
-                        </FormLabel>
->>>>>>> e81fa9c1131a4368c44cfb1b1300c8a2ee2da94f
                         <FormControl>
                           <Input
-                            placeholder="Enter your email"
-                            className="h-12 bg-slate-50 border-slate-200 rounded-xl focus:ring-4 focus:ring-[#0075CF]/10 transition-all font-medium"
-                            autoComplete="email"
-                            onFocus={() => setIsTyping(true)}
-                            onBlur={() => setIsTyping(false)}
+                            type={showLoginPassword ? "text" : "password"}
+                            placeholder="Enter your password"
+                            className="h-12 pr-12 bg-slate-50 text-slate-900 border-slate-200 rounded-2xl focus:ring-4 focus:ring-[#0075CF]/10 focus:bg-white transition-all placeholder:text-slate-400 font-medium"
+                            autoComplete="current-password"
                             {...field}
                           />
                         </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                        <button
+                          type="button"
+                          onClick={() => setShowLoginPassword(!showLoginPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                          tabIndex={-1}
+                        >
+                          {showLoginPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        </button>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-<<<<<<< HEAD
                 <Button
                   type="submit"
                   disabled={loading}
@@ -748,59 +703,8 @@ export default function Auth() {
                 </Button>
               </form>
             </Form>
-            )
-=======
-                  <FormField
-                    control={loginForm.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-semibold text-slate-900">
-                          Password
-                        </FormLabel>
-                        <div className="relative">
-                          <FormControl>
-                            <Input
-                              type={showLoginPassword ? "text" : "password"}
-                              placeholder="Enter your password"
-                              className="h-12 pr-12 bg-slate-50 border-slate-200 rounded-xl focus:ring-4 focus:ring-[#0075CF]/10 transition-all font-medium"
-                              autoComplete="current-password"
-                              onFocus={() => setIsTyping(true)}
-                              onBlur={() => setIsTyping(false)}
-                              {...field}
-                            />
-                          </FormControl>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setShowLoginPassword(!showLoginPassword)
-                            }
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                            tabIndex={-1}
-                          >
-                            {showLoginPassword ? (
-                              <EyeOff className="h-5 w-5" />
-                            ) : (
-                              <Eye className="h-5 w-5" />
-                            )}
-                          </button>
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full h-12 bg-[#0075CF] hover:bg-[#0075CF]/90 text-white font-black uppercase tracking-widest rounded-xl shadow-lg shadow-[#0075CF]/20 transition-all active:scale-[0.98]"
-                  >
-                    {loading ? "Processing..." : "Sign In"}
-                  </Button>
-                </form>
-              </Form>
-            </motion.div>
->>>>>>> e81fa9c1131a4368c44cfb1b1300c8a2ee2da94f
+          )}
+        </motion.div>
           ) : (
             <motion.div
               key="register"

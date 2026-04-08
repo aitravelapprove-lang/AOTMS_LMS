@@ -50,8 +50,8 @@ export default function StudentVideoLibrary() {
         }
     }, [enrolledCourses, selectedCourseId]);
 
-    const { data: videos, isLoading: isLoadingVideos } = useStudentVideos(selectedCourseId);
-    const { data: progressData } = useStudentVideoProgress(selectedCourseId);
+    const { data: videos, isLoading: isLoadingVideos } = useStudentVideos(selectedCourseId) as { data: S3CourseVideo[] | undefined, isLoading: boolean };
+    const { data: progressData } = useStudentVideoProgress(selectedCourseId) as { data: VideoProgress[] | undefined };
     const updateProgressMutation = useUpdateVideoProgress();
 
     const filteredVideos = videos?.filter((video: S3CourseVideo) => 
@@ -61,7 +61,7 @@ export default function StudentVideoLibrary() {
     // Map progress data for easy lookup
     const progressMap = new Map<string, VideoProgress>();
     if (progressData) {
-        progressData.forEach((p: any) => progressMap.set(p.video_id, p));
+        progressData.forEach((p: VideoProgress) => progressMap.set(p.video_id, p));
     }
 
     const getVideoSrc = (url: string) => {
@@ -130,6 +130,7 @@ export default function StudentVideoLibrary() {
 
     // Clean up interval on unmount or video close
     useEffect(() => {
+        const intervalId = progressUpdateInterval.current;
         const handleBeforeUnload = () => {
             if (videoRef.current && playingVideo && selectedCourseId) {
                 // Prepare data
@@ -147,8 +148,8 @@ export default function StudentVideoLibrary() {
         window.addEventListener('beforeunload', handleBeforeUnload);
 
         return () => {
-            if (progressUpdateInterval.current) {
-                clearInterval(progressUpdateInterval.current);
+            if (intervalId) {
+                clearInterval(intervalId);
             }
             window.removeEventListener('beforeunload', handleBeforeUnload);
         };

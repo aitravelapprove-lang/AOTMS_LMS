@@ -10,7 +10,8 @@ import {
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
-import { useCourseRoster } from '@/hooks/useInstructorData';
+import { useCourseRoster, StudentRosterEntry } from '@/hooks/useInstructorData';
+import { Profile } from '@/hooks/useManagerData';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -29,7 +30,7 @@ export function CourseMonitoring() {
     // Helper: get instructor name from profiles
     const getInstructorName = (instructorId: string | null | undefined) => {
         if (!instructorId) return 'Unknown Instructor';
-        const profile = profiles.find((p: { user_id: string; full_name: string }) => p.user_id === instructorId);
+        const profile = profiles.find((p: Profile) => p.user_id === instructorId);
         return profile?.full_name || `Instructor #${String(instructorId).slice(0, 6)}`;
     };
 
@@ -425,7 +426,7 @@ function CourseRosterDialog({ courseId, open, onOpenChange, courseTitle }: {
                         </div>
                     ) : (
                         <div className="grid gap-4">
-                            {roster.map((student: any) => (
+                            {roster.map((student: StudentRosterEntry) => (
                                 <div key={student.id} className="group p-4 rounded-2xl bg-white border border-slate-100 hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-4">
                                     <div className="flex items-center gap-4">
                                         <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center shrink-0 border-2 border-white shadow-sm overflow-hidden">

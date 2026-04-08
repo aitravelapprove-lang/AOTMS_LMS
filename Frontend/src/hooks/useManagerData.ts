@@ -38,7 +38,7 @@ export interface Question {
   question_text: string;
   type: string;
   difficulty: string;
-  options: any[] | null;
+  options: string[] | null;
   correct_answer: string;
   explanation: string | null;
   marks: number | null;
@@ -138,6 +138,12 @@ export interface LeaderboardAuditEntry {
   reason: string | null;
   performed_by: string;
   created_at: string;
+}
+
+export interface Profile {
+  user_id: string;
+  full_name: string;
+  avatar_url: string | null;
 }
 
 export interface ExamResult {
@@ -495,7 +501,7 @@ export function useCourseTopics(courseId?: string) {
 }
 
 export function useProfiles() {
-  return useQuery({
+  return useQuery<Profile[]>({
     queryKey: ['manager-profiles'],
     queryFn: () => fetchWithAuth('/data/profiles?sort=created_at&order=desc'),
   });

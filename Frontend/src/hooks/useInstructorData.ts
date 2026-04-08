@@ -220,7 +220,7 @@ export function useTopics(courseId: string | null) {
     queryKey: ['course-topics', courseId],
     queryFn: async () => {
       if (!courseId) return [];
-      return fetchWithAuth(`/courses/${courseId}/topics`);
+      return fetchWithAuth<CourseTopic[]>(`/courses/${courseId}/topics`);
     },
     enabled: !!courseId,
   });
@@ -231,7 +231,7 @@ export function useVideos(courseId: string | null) {
     queryKey: ['course-videos', courseId],
     queryFn: async () => {
       if (!courseId) return [];
-      return fetchWithAuth(`/courses/${courseId}/videos`);
+      return fetchWithAuth<CourseVideo[]>(`/courses/${courseId}/videos`);
     },
     enabled: !!courseId,
   });
@@ -248,7 +248,7 @@ export function useResources(courseId: string | null) {
     queryKey: ['course-resources', courseId],
     queryFn: async () => {
       if (!courseId) return [];
-      return fetchWithAuth(`/courses/${courseId}/resources`);
+      return fetchWithAuth<CourseResource[]>(`/courses/${courseId}/resources`);
     },
     enabled: !!courseId,
   });
@@ -259,7 +259,7 @@ export function useTimeline(courseId: string | null) {
     queryKey: ['course-timeline', courseId],
     queryFn: async () => {
       if (!courseId) return [];
-      return fetchWithAuth(`/courses/${courseId}/timeline`);
+      return fetchWithAuth<CourseTimeline[]>(`/courses/${courseId}/timeline`);
     },
     enabled: !!courseId,
   });
@@ -270,14 +270,25 @@ export function useAnnouncements(courseId: string | null) {
     queryKey: ['course-announcements', courseId],
     queryFn: async () => {
       if (!courseId) return [];
-      return fetchWithAuth(`/courses/${courseId}/announcements`);
+      return fetchWithAuth<CourseAnnouncement[]>(`/courses/${courseId}/announcements`);
     },
     enabled: !!courseId,
   });
 }
 
+export interface StudentRosterEntry {
+  id: string;
+  user_id: string;
+  full_name: string;
+  email: string;
+  avatar_url: string | null;
+  mobile_number: string | null;
+  progress: number;
+  enrolled_at: string;
+}
+
 export function useCourseRoster(courseId: string | null) {
-    return useQuery({
+    return useQuery<StudentRosterEntry[]>({
         queryKey: ['course-roster', courseId],
         queryFn: async () => {
             if (!courseId) return [];
@@ -619,9 +630,9 @@ export function useInstructorStats() {
       // Note: "in" query in Firestore has a limit of documents (usually 30).
       // We chunk if needed or use separate calls, but for now we assume < 30 courses.
       const [enrollments, allVideos, allResources] = await Promise.all([
-        fetchWithAuth(`/data/course_enrollments?course_id=in.(${courseIdsInFormat})`) as Promise<any[]>,
-        fetchWithAuth(`/data/course_videos?course_id=in.(${courseIdsInFormat})`) as Promise<any[]>,
-        fetchWithAuth(`/data/course_resources?course_id=in.(${courseIdsInFormat})`) as Promise<any[]>
+        fetchWithAuth(`/data/course_enrollments?course_id=in.(${courseIdsInFormat})`) as Promise<Record<string, any>[]>,
+        fetchWithAuth(`/data/course_videos?course_id=in.(${courseIdsInFormat})`) as Promise<Record<string, any>[]>,
+        fetchWithAuth(`/data/course_resources?course_id=in.(${courseIdsInFormat})`) as Promise<Record<string, any>[]>
       ]);
 
       const totalStudents = enrollments.length;
@@ -940,19 +951,19 @@ export function useInstructorAllStudents() {
 
       // 1. Fetch instructor's courses
       const courses = await fetchWithAuth<Course[]>(`/data/courses?instructor_id=eq.${user.id}`) || [];
-      const courseIds = courses.map(c => c.id || (c as any)._id).filter(Boolean);
+      const courseIds = courses.map(c => c.id || (c as Record<string, any>)._id).filter(Boolean);
 
       if (courseIds.length === 0) return [];
 
       // 2. Fetch enrollments and batch assignments for these courses
       const [allEnrollments, allBatchAssignments] = await Promise.all([
-        fetchWithAuth<any[]>(`/data/course_enrollments?course_id=in.(${courseIds.join(',')})`).catch(e => {
+        fetchWithAuth<Record<string, any>[]>(`/data/course_enrollments?course_id=in.(${courseIds.join(',')})`).catch(e => {
             console.error("[useInstructorAllStudents] Enrollments fetch failed:", e);
-            return [] as any[];
+            return [] as Record<string, any>[];
         }),
-        fetchWithAuth<any[]>(`/batches/student-assignments?course_id=in.(${courseIds.join(',')})`).catch(e => {
+        fetchWithAuth<Record<string, any>[]>(`/batches/student-assignments?course_id=in.(${courseIds.join(',')})`).catch(e => {
             console.error("[useInstructorAllStudents] Batch assignments fetch failed:", e);
-            return [] as any[];
+            return [] as Record<string, any>[];
         })
       ]);
       

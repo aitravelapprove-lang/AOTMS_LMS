@@ -75,7 +75,7 @@ export default function FeaturedCourses() {
               className="w-[300px] sm:w-[360px] flex-shrink-0 group/card"
             >
               <Card
-                className="pro-card h-[520px] overflow-hidden border border-slate-200 shadow-lg hover:shadow-2xl hover:border-primary/20 transition-all duration-500 cursor-pointer bg-white group-hover/card:-translate-y-2"
+                className="pro-card h-[520px] overflow-hidden border border-slate-200 shadow-lg hover:shadow-[0_30px_60px_-12px_rgba(0,117,207,0.25)] hover:border-primary/30 transition-all duration-500 cursor-pointer bg-white group-hover/card:-translate-y-3"
                 onClick={() =>
                   (window.location.href = "https://www.aotms.in/#/courses")
                 }
@@ -95,13 +95,7 @@ export default function FeaturedCourses() {
                     {course.category}
                   </Badge>
 
-                  <div className="absolute bottom-4 left-4 flex items-center gap-1.5 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-full shadow-lg">
-                    <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-                    <span className="text-xs font-black text-slate-800">
-                      {course.rating}
-                    </span>
                   </div>
-                </div>
 
                 <CardContent className="p-8 space-y-6 flex flex-col justify-between h-[calc(100%-14rem)]">
                   <div>
@@ -123,10 +117,10 @@ export default function FeaturedCourses() {
                   <div className="space-y-6 pt-4 border-t border-slate-50">
                     <div className="flex items-center justify-between text-xs font-black text-slate-600 uppercase tracking-widest">
                       <span className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-primary" />{" "}
+                        <Clock className="h-4 w-4 text-[#0075CF]" />{" "}
                         {course.duration}
                       </span>
-                      <span className="text-primary text-sm">
+                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] to-[#FD5A1A] text-base md:text-lg font-black tracking-tight">
                         {course.price?.toString().includes("$")
                           ? course.price.replace("$", "₹")
                           : `₹${course.price}`}
@@ -135,10 +129,12 @@ export default function FeaturedCourses() {
 
                     <Button
                       variant="ghost"
-                      className="w-full justify-between px-0 hover:bg-transparent text-[#0075CF] font-black group/btn text-xs uppercase tracking-widest"
+                      className="w-full justify-between px-0 hover:bg-transparent font-black group/btn text-xs uppercase tracking-widest relative"
                     >
-                      Enroll Progress
-                      <ArrowRight className="h-4 w-4 group-hover/btn:translate-x-2 transition-transform" />
+                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] to-[#FD5A1A]">
+                        Enroll Progress
+                      </span>
+                      <ArrowRight className="h-4 w-4 text-[#0075CF] group-hover/btn:translate-x-2 transition-transform" />
                     </Button>
                   </div>
                 </CardContent>

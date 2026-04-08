@@ -1,10 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
-<<<<<<< HEAD
 import { format } from 'date-fns';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-=======
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
->>>>>>> 2b50dd9f8b0552e58548d5ed5188690aeaf7ccec
 import {
   Card,
   CardContent,

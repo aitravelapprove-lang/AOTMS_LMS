@@ -14,7 +14,6 @@ import {
     Trash2,
     ImagePlus,
     CheckCircle2,
-    Eye,
     ChevronRight,
     Search,
     Key
@@ -259,9 +258,6 @@ export function LiveClassManager() {
                                                     <CheckCircle2 className="w-3.5 h-3.5" />
                                                     <span className="text-[10px] font-bold uppercase tracking-wider">My Session</span>
                                                 </div>
-                                                <button className="text-slate-300 hover:text-primary transition-colors">
-                                                    <Eye className="w-4 h-4" />
-                                                </button>
                                             </div>
 
                                             <div className="flex items-center gap-3">

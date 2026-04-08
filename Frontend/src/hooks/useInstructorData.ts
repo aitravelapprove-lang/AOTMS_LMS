@@ -1468,16 +1468,9 @@ export function useInstructorRatings() {
       
       const ratings = await fetchWithAuth(`/data/course_ratings?course_id=in.(${courseIds})&order=created_at.desc`) as any[];
       
-<<<<<<< HEAD
-      const enriched = await Promise.all(ratings.map(async (r: any) => {
-        const course = (courses as any[]).find((c: Course) => c.id === r.course_id);
-        const userDataResult = await fetchWithAuth(`/data/profiles?user_id=${r.user_id}`) as any[];
-        const userData = userDataResult[0] || {};
-=======
       const enriched = ratings.map((r: any) => {
-        const course = courses.find((c: Course) => c.id === r.course_id);
+        const course = (courses as any[]).find((c: Course) => c.id === r.course_id);
         const userData = typeof r.user_id === 'object' ? r.user_id : {};
->>>>>>> 2b50dd9f8b0552e58548d5ed5188690aeaf7ccec
         
         return {
           ...r,

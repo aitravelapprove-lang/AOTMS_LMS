@@ -78,7 +78,7 @@ const features = [
 const WhyAOTMS = () => (
   <section
     id="about"
-    className="relative py-24 md:py-32 overflow-hidden bg-white"
+    className="relative pt-24 md:pt-32 pb-12 md:pb-16 overflow-hidden bg-white"
   >
     <WhyBg />
 
@@ -105,7 +105,7 @@ const WhyAOTMS = () => (
         </p>
       </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-x-12 md:gap-y-16 mb-24">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-x-12 md:gap-y-16 mb-16">
         {features.map((f, i) => (
           <motion.div
             key={f.title}

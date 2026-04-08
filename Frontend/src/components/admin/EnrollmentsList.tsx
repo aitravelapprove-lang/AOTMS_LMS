@@ -25,7 +25,10 @@ import {
   GraduationCap,
   MoreVertical,
   Copy,
-  Check
+  Check,
+  ShieldCheck,
+  Zap,
+  DollarSign
 } from "lucide-react";
 import { CourseEnrollment } from "@/hooks/useCourses";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -59,6 +62,34 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [selectedEnrollment, setSelectedEnrollment] = useState<CourseEnrollment | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const EnrollmentAvatar = ({ enrollment }: { enrollment: CourseEnrollment }) => {
+    // Priority: Real Profile Pic > Initials
+    const hasProfilePic = !!enrollment.user_avatar;
+
+    if (hasProfilePic) {
+      return (
+        <div className="h-12 w-12 rounded-xl overflow-hidden border border-slate-200/50 shadow-sm shrink-0 bg-slate-100">
+          <img 
+            src={enrollment.user_avatar} 
+            alt={enrollment.user_name} 
+            className="h-full w-full object-cover"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div className={`h-12 w-12 rounded-xl flex items-center justify-center font-black text-lg shrink-0 shadow-sm border border-slate-200/50 ${
+         ['bg-blue-100 text-blue-600', 'bg-purple-100 text-purple-600', 'bg-emerald-100 text-emerald-600', 'bg-pink-100 text-pink-600'][enrollment.user_name?.length % 4]
+      }`}>
+         {enrollment.user_name?.charAt(0) || 'U'}
+      </div>
+    );
+  };
 
   const copyToClipboard = async (text: string, enrollmentId: string) => {
     try {
@@ -130,16 +161,6 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
       default:
         return <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-200 border-amber-200 gap-1"><Clock className="h-3 w-3" /> Pending</Badge>;
     }
-  };
-
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
   };
 
   if (loading) {
@@ -220,12 +241,12 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
       {/* Search and Filter */}
       <div className="flex flex-col lg:flex-row gap-4">
         <div className="relative flex-1 group">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-[#6b21a8] transition-colors" />
           <Input
-            placeholder="Search by name, email, course or UUID..."
+            placeholder="Search identities..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 h-11 bg-background/50 border-slate-200 focus:border-primary/50 focus:ring-primary/20 transition-all rounded-xl"
+            className="pl-12 h-14 w-full md:w-80 bg-white border-2 border-slate-100 rounded-none focus:border-[#6b21a8] focus:ring-0 font-bold text-slate-900 transition-all shadow-sm"
           />
         </div>
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3">
@@ -247,23 +268,6 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
           </div>
 
           <div className="w-full sm:w-40">
-            <Select value={filterTerm} onValueChange={setFilterTerm}>
-              <SelectTrigger className="h-11 rounded-xl bg-background border-slate-200">
-                 <div className="flex items-center gap-2">
-                    <CreditCard className="h-4 w-4 text-muted-foreground" />
-                    <SelectValue placeholder="All Terms" />
-                 </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Terms</SelectItem>
-                <SelectItem value="full">Full Term</SelectItem>
-                <SelectItem value="term1">Term 1</SelectItem>
-                <SelectItem value="term2">Term 2</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="w-full sm:w-40">
             <Select value={filterStatus} onValueChange={setFilterStatus}>
               <SelectTrigger className="h-11 rounded-xl bg-background border-slate-200">
                  <div className="flex items-center gap-2">
@@ -279,350 +283,210 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
               </SelectContent>
             </Select>
           </div>
-
-          <div className="w-full sm:w-40">
-            <Select value={timeFilter} onValueChange={setTimeFilter}>
-              <SelectTrigger className="h-11 rounded-xl bg-background border-slate-200">
-                 <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <SelectValue placeholder="All Time" />
-                 </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Time</SelectItem>
-                <SelectItem value="day">Today</SelectItem>
-                <SelectItem value="weekly">This Week</SelectItem>
-                <SelectItem value="monthly">This Month</SelectItem>
-                <SelectItem value="yearly">This Year</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </div>
       </div>
 
       {/* Enrollments Table */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-primary" />
+      <Card className="border-none shadow-none bg-transparent">
+        <CardHeader className="px-0 pb-6">
+          <CardTitle className="text-2xl font-black flex items-center gap-3">
+            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20">
+               <BookOpen className="h-5 w-5 text-primary" />
+            </div>
             Student Enrollments
           </CardTitle>
-          <CardDescription>
-            {filteredEnrollments.length} of {enrollments.length} enrollments
+          <CardDescription className="font-bold text-slate-400">
+            Unified assessment and verification gateway: {filteredEnrollments.length} records detected
           </CardDescription>
-        </CardHeader>        <CardContent className="p-0 sm:p-6">
+        </CardHeader>
+        <CardContent className="p-0">
           {filteredEnrollments.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No enrollments found</p>
+            <div className="text-center py-20 bg-white rounded-none border-2 border-dashed border-slate-200">
+              <BookOpen className="h-16 w-16 mx-auto mb-4 opacity-20 text-primary" />
+              <p className="font-black text-slate-400 uppercase tracking-widest text-sm">No verification records found</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {/* Mobile Card View (shown only on mobile/tablet) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-4 p-4">
+            <div className="space-y-6">
+              {/* Mobile/Tablet Card View */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-6">
                  {filteredEnrollments.map((enrollment) => (
-                    <div key={enrollment.id} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-5 relative group hover:shadow-md transition-all">
-                       {/* Floating Status Badge */}
-                       <div className="absolute top-4 right-4 h-fit">
+                    <div key={enrollment.id} className="bg-white rounded-none p-6 border-2 border-slate-100 shadow-sm space-y-6 relative group hover:border-[#6b21a8]/20 transition-all duration-300">
+                       <div className="absolute top-6 right-6">
                           {getStatusBadge(enrollment.status || 'pending')}
                        </div>
 
-                       <div className="flex gap-3 pr-16">
-                          <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
-                             <span className="text-lg font-bold text-primary">{enrollment.user_name?.charAt(0) || 'U'}</span>
-                          </div>
+                       <div className="flex gap-4">
+                          <EnrollmentAvatar enrollment={enrollment} />
                           <div className="overflow-hidden">
-                             <h4 className="font-bold text-slate-900 text-base leading-tight truncate">{enrollment.user_name}</h4>
-                             <p className="text-xs text-muted-foreground truncate">{enrollment.user_email}</p>
+                             <h4 className="font-black text-slate-900 text-base leading-tight truncate">{enrollment.user_name}</h4>
+                             <p className="text-[11px] font-bold text-slate-400 truncate mt-1">{enrollment.user_email}</p>
                           </div>
                        </div>
 
-                       {/* UUID Display with Copy - Mobile */}
-                       <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1.5">
-                          <div className="flex items-center justify-between">
-                             <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                                <Fingerprint className="h-3 w-3" /> Student UUID
-                             </span>
-                             <Button
-                               variant="ghost"
-                               size="sm"
-                               className={`h-7 px-2.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
-                                 copiedId === enrollment.id + '-mobile'
-                                   ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100'
-                                   : 'bg-white text-slate-500 hover:text-primary hover:bg-primary/5 border border-slate-200'
-                               }`}
-                               onClick={() => copyToClipboard(enrollment.user_id || '', enrollment.id + '-mobile')}
-                             >
-                               {copiedId === enrollment.id + '-mobile' ? (
-                                 <><Check className="h-3 w-3 mr-1" /> Copied!</>
-                               ) : (
-                                 <><Copy className="h-3 w-3 mr-1" /> Copy</>
-                               )}
-                             </Button>
-                          </div>
-                          <p className="font-mono font-bold text-sm text-slate-700 break-all leading-relaxed select-all">
-                             {enrollment.user_id || 'N/A'}
-                          </p>
+                       <div className="bg-slate-50 p-4 rounded-none border border-slate-100 space-y-3">
+                           <div className="flex items-center justify-between">
+                              <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-2">
+                                 <Fingerprint className="h-3 w-3" /> Student UUID
+                              </span>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 px-3 rounded-none bg-white border border-slate-200 text-[10px] font-black uppercase tracking-widest hover:bg-[#6b21a8] hover:text-white transition-all shadow-sm"
+                                onClick={() => copyToClipboard(enrollment.user_id || '', enrollment.id + '-mobile')}
+                              >
+                                {copiedId === enrollment.id + '-mobile' ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
+                                {copiedId === enrollment.id + '-mobile' ? 'Copied' : 'Copy'}
+                              </Button>
+                           </div>
+                           <p className="font-mono font-black text-[12px] text-slate-600 break-all bg-white p-3 rounded-none border border-slate-100/50">
+                              {enrollment.user_id || 'N/A'}
+                           </p>
                        </div>
 
-                       <div className="space-y-2.5 pt-2">
-                          <div className="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                             <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Course</span>
-                             <Badge variant="outline" className="font-bold border-primary/20 bg-primary/5 text-primary text-[10px]">
-                                {enrollment.course_name}
-                             </Badge>
-                          </div>
-                          
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex flex-col gap-1">
-                               <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Term</span>
-                               <div className="flex items-center gap-1.5">
-                                  {enrollment.payment_term === 'term1' ? (
-                                      <Badge className="text-[9px] h-4 px-1.5 font-black uppercase bg-blue-100 text-blue-700">1st Term</Badge>
-                                  ) : enrollment.payment_term === 'term2' ? (
-                                      <Badge className="text-[9px] h-4 px-1.5 font-black uppercase bg-purple-100 text-purple-700">2nd Term</Badge>
-                                  ) : (
-                                      <Badge className="text-[9px] h-4 px-1.5 font-black uppercase bg-emerald-100 text-emerald-700">Full</Badge>
-                                  )}
-                               </div>
-                            </div>
-                            <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex flex-col gap-1">
-                               <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Price</span>
-                               <span className="font-bold text-green-700 text-sm">₹{(enrollment.final_price ?? enrollment.price)?.toLocaleString('en-IN')}</span>
-                            </div>
-                          </div>
-
-                          <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex flex-col gap-1">
-                             <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">UTR Reference</span>
-                             <div className="flex items-center justify-between">
-                                <span className="font-mono font-bold text-slate-600 text-xs truncate max-w-[150px]">{enrollment.utr_number || "PENDING"}</span>
-                                <div className="text-[9px] font-bold text-slate-400">{formatDate(enrollment.enrollment_date).split(',')[0]}</div>
-                             </div>
-                          </div>
-                       </div>
-
-                       <div className="pt-2 flex flex-col gap-2">
-                          <Button
-                            variant="secondary"
-                            className="w-full h-10 rounded-xl text-sm font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border-none group/btn"
-                            onClick={() => setSelectedEnrollment(enrollment)}
-                          >
-                            <Eye className="h-4 w-4 mr-2 group-hover/btn:text-primary transition-colors" /> View Payment Proof
+                       <div className="pt-2">
+                          <Button variant="secondary" className="w-full h-12 rounded-none text-[11px] font-black uppercase tracking-widest bg-slate-900 text-white hover:bg-[#6b21a8] transition-all shadow-lg" onClick={() => setSelectedEnrollment(enrollment)}>
+                            <Eye className="h-4 w-4 mr-2" /> Verify Enrollment
                           </Button>
-                          
-                          {(enrollment.status === 'pending' || !enrollment.status) && onUpdateStatus && (
-                            <div className="grid grid-cols-2 gap-2">
-                              <Button 
-                                className="h-10 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm shadow-sm shadow-emerald-500/20"
-                                onClick={() => handleUpdateStatus(enrollment.id, 'active')}
-                              >
-                                Approve
-                              </Button>
-                              <Button 
-                                variant="outline"
-                                className="h-10 rounded-xl text-rose-600 border-rose-100 hover:bg-rose-50 hover:text-rose-700 font-bold text-sm"
-                                onClick={() => handleUpdateStatus(enrollment.id, 'rejected')}
-                              >
-                                Reject
-                              </Button>
-                            </div>
-                          )}
                        </div>
                     </div>
                  ))}
               </div>
 
-              <div className="hidden lg:block overflow-x-auto custom-scrollbar-horizontal rounded-xl border border-slate-200/60 shadow-sm">
-                <table className="w-full">
-                  <thead className="bg-slate-50/80 border-b border-slate-200/60">
-                    <tr>
-                      <th className="text-left px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest min-w-[320px]">Student / UUID</th>
-                      <th className="text-left px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Course</th>
-                      <th className="text-left px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Billing & Term</th>
-                      <th className="text-left px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Payment Proof</th>
-                      <th className="text-left px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Fulfillment</th>
-                      <th className="text-left px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Timeline</th>
-                      <th className="text-right px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Actions</th>
+              {/* Desktop Professional Flexible Layout */}
+              <div className="hidden lg:block overflow-x-auto bg-white rounded-none border-2 border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.04)]">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50/80 border-b border-slate-200">
+                      <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] min-w-[320px]">Student / Identity</th>
+                      <th className="px-8 py-6 text-[10px] font-black symbols text-[#6b21a8] uppercase tracking-[0.2em] min-w-[200px] bg-purple-50/30">Strategic Course</th>
+                      <th className="px-8 py-6 text-[10px] font-black text-[#6b21a8] uppercase tracking-[0.2em] text-center bg-purple-50/[0.05] min-w-[150px]">Phase I Payment</th>
+                      <th className="px-8 py-6 text-[10px] font-black text-[#a855f7] uppercase tracking-[0.2em] text-center bg-violet-50/10 min-w-[150px]">Phase II Payment</th>
+                      <th className="px-8 py-6 text-[10px] font-black text-[#6b21a8] uppercase tracking-[0.2em] min-w-[220px] bg-purple-50/20">Accounting Flow</th>
+                      <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-right min-w-[150px]">Verification</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {filteredEnrollments.map((enrollment) => (
-                      <tr key={enrollment.id} className="hover:bg-primary/[0.02] transition-colors group border-b border-slate-100 last:border-0 italic-none">
-                        <td className="px-6 py-5">
-                          <div className="flex items-center gap-4">
-                            <div className="h-12 w-12 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-200 group-hover:border-primary/40 group-hover:bg-white shadow-sm transition-all font-black text-lg text-primary shrink-0">
-                               {enrollment.user_name?.charAt(0) || 'U'}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-base font-black text-slate-900 truncate">
-                                {enrollment.user_name || 'Unknown'}
-                              </p>
-                              <p className="text-[11px] font-bold text-slate-500 group-hover:text-slate-600 transition-colors tracking-tight truncate">
-                                {enrollment.user_email}
-                              </p>
-                              {/* UUID with Copy Button */}
-                              <div className="flex items-center gap-2 mt-1.5 bg-slate-50 rounded-lg px-2.5 py-1.5 border border-slate-100 group-hover:border-primary/20 transition-all w-fit max-w-full">
-                                <Fingerprint className="h-3.5 w-3.5 text-primary/60 shrink-0" />
-                                <span className="font-mono text-[13px] font-bold text-slate-700 tracking-wide select-all truncate" title={enrollment.user_id}>
-                                  {enrollment.user_id || 'N/A'}
-                                </span>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className={`h-6 w-6 p-0 rounded-md shrink-0 transition-all ${
-                                    copiedId === enrollment.id
-                                      ? 'bg-emerald-100 text-emerald-600 hover:bg-emerald-100'
-                                      : 'text-slate-400 hover:text-primary hover:bg-primary/10'
-                                  }`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    copyToClipboard(enrollment.user_id || '', enrollment.id);
-                                  }}
-                                  title="Copy UUID"
-                                >
-                                  {copiedId === enrollment.id ? (
-                                    <Check className="h-3.5 w-3.5" />
-                                  ) : (
-                                    <Copy className="h-3.5 w-3.5" />
-                                  )}
-                                </Button>
+                  <tbody className="divide-y-2 divide-slate-50">
+                    {filteredEnrollments.map((enrollment) => {
+                       const fullFee = parseInt(enrollment.price || '0');
+                       const halfFee = fullFee / 2;
+                       const isPaidFull = enrollment.payment_term === 'full';
+                       const isTerm1 = enrollment.payment_term === 'term1';
+                       const isTerm2 = enrollment.payment_term === 'term2';
+                       
+                       return (
+                        <tr key={enrollment.id} className="hover:bg-primary/[0.01] transition-all group duration-300">
+                          <td className="px-8 py-5 align-middle">
+                            <div className="flex items-center gap-4">
+                              <EnrollmentAvatar enrollment={enrollment} />
+                              <div className="min-w-0">
+                                <h3 className="text-sm font-black text-slate-900 tracking-tight leading-none mb-1.5">{enrollment.user_name}</h3>
+                                <div className="flex items-center gap-2 p-1.5 bg-slate-50 border border-slate-100 rounded-none w-fit transition-all hover:bg-white hover:border-primary/30">
+                                   <Fingerprint className="h-3 w-3 text-slate-400" />
+                                   <span className="text-[9px] font-mono font-bold text-slate-500 uppercase">{enrollment.user_id?.slice(0, 10)}...</span>
+                                   <div className="h-3 w-px bg-slate-200 mx-1" />
+                                   <button 
+                                      className="text-[9px] font-black uppercase text-primary hover:text-primary/70 flex items-center gap-1"
+                                      onClick={() => copyToClipboard(enrollment.user_id || '', enrollment.id + '-desktop')}
+                                   >
+                                      <Copy className="h-2.5 w-2.5" />
+                                      {copiedId === enrollment.id + '-desktop' ? 'Saved' : 'Copy'}
+                                   </button>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-5">
-                          <div className="space-y-1.5 w-[200px]">
-                            <p className="text-sm font-bold text-slate-800 line-clamp-2 leading-tight">{enrollment.course_name || "Unknown Program"}</p>
-                            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
-                              <div className="h-full bg-primary" style={{ width: '40%' }} />
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-5">
-                          <div className="flex flex-col gap-2">
-                            <div className="flex items-center gap-2.5">
-                               <span className="text-base font-black text-emerald-600">₹{(enrollment.final_price ?? enrollment.price)?.toLocaleString('en-IN')}</span>
-                               {enrollment.payment_term === 'full' ? (
-                                 <Badge className="text-[9px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-700 h-5 px-2 border-emerald-200 border shadow-sm">Paid Full</Badge>
-                               ) : (
-                                 <Badge className="text-[9px] font-black uppercase tracking-widest bg-indigo-50 text-indigo-700 h-5 px-2 border-indigo-200 border shadow-sm">Installment</Badge>
-                               )}
-                            </div>
-                            {enrollment.remaining_balance ? (
-                              <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest bg-amber-50/50 px-2 py-0.5 rounded border border-amber-200 w-fit">
-                                Due: ₹{enrollment.remaining_balance?.toLocaleString('en-IN')}
-                              </p>
-                            ) : (
-                              <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">N/A</p>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-5">
-                          <div className="flex items-center gap-3">
-                             <div className="flex flex-col gap-1">
-                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Ref: {enrollment.utr_number || "---"}</span>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-7 text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary hover:bg-primary/5 p-0 justify-start"
-                                  onClick={() => setSelectedEnrollment(enrollment)}
-                                >
-                                  Open Receipt
-                                </Button>
+                          </td>
+                           <td className="px-8 py-5 align-middle border-x border-slate-50">
+                             <div className="max-w-[180px]">
+                                <p className="text-[12px] font-black text-slate-800 leading-tight mb-1 uppercase tracking-tight">{enrollment.course_name}</p>
+                                <div className="flex items-center gap-1.5 grayscale opacity-50">
+                                   <Globe className="h-3 w-3" />
+                                   <span className="text-[8px] font-black uppercase tracking-[0.2em]">Strategic Asset</span>
+                                </div>
                              </div>
-                             {enrollment.payment_proof_url && (
-                                <div 
-                                   className="h-10 w-10 rounded-lg overflow-hidden border border-slate-200 shadow-sm cursor-pointer hover:border-primary transition-all shrink-0"
-                                   onClick={() => setSelectedEnrollment(enrollment)}
-                                >
-                                   <img src={enrollment.payment_proof_url} alt="Proof" className="w-full h-full object-cover" />
-                                </div>
-                             )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-5">
-                           <div className="flex flex-col items-center gap-2">
-                              {getStatusBadge(enrollment.status || 'pending')}
-                              <div className="flex items-center gap-1.5">
-                                <div className="h-1 w-12 bg-slate-100 rounded-full overflow-hidden">
-                                   <div 
-                                     className={`h-full ${enrollment.progress_percentage && enrollment.progress_percentage >= 95 ? 'bg-green-500' : 'bg-primary'} transition-all`} 
-                                     style={{ width: `${enrollment.progress_percentage || 0}%` }}
-                                   />
-                                </div>
-                                <span className="text-[9px] font-black text-slate-400">
-                                  {enrollment.progress_percentage || 0}%
-                                </span>
+                           </td>
+                           <td className="px-8 py-5 text-center bg-purple-50/[0.02] border-r border-slate-50 align-middle">
+                              {(isTerm1 || isTerm2 || isPaidFull) ? (
+                                 <div className="space-y-1">
+                                    <span className="text-sm font-black text-[#6b21a8] block tracking-tighter">₹{halfFee.toLocaleString('en-IN')}</span>
+                                    <Badge className="bg-purple-50 text-[#6b21a8] border border-purple-100 text-[7px] font-black h-4 px-2 uppercase tracking-widest rounded-none">P1 Cleared</Badge>
+                                 </div>
+                              ) : (
+                                 <div className="space-y-1 group-hover:scale-105 transition-transform">
+                                    <span className="text-sm font-black text-[#a855f7] block tracking-tighter animate-pulse">₹{halfFee.toLocaleString('en-IN')}</span>
+                                    <Badge className="bg-violet-50 text-[#a855f7] border border-violet-100 text-[7px] font-black h-4 px-2 uppercase tracking-widest rounded-none">P1 Pending</Badge>
+                                 </div>
+                              )}
+                           </td>
+                           <td className="px-8 py-5 text-center bg-purple-50/[0.01] border-r border-slate-50 align-middle">
+                              {(isTerm2 || isPaidFull) ? (
+                                 <div className="space-y-1">
+                                    <span className="text-sm font-black text-[#a855f7] block tracking-tighter">₹{halfFee.toLocaleString('en-IN')}</span>
+                                    <Badge className="bg-violet-50 text-[#a855f7] border border-violet-100 text-[7px] font-black h-4 px-2 uppercase tracking-widest rounded-none">P2 Cleared</Badge>
+                                 </div>
+                              ) : isTerm1 ? (
+                                 <div className="space-y-1 group-hover:scale-105 transition-transform">
+                                    <span className="text-sm font-black text-[#6b21a8] block tracking-tighter">₹{halfFee.toLocaleString('en-IN')}</span>
+                                    <Badge className="bg-[#6b21a8] text-white border-none text-[7px] font-black h-4 px-2 uppercase tracking-widest animate-pulse shadow-sm shadow-purple-200 rounded-none">P2 Awaited</Badge>
+                                 </div>
+                              ) : (
+                                 <div className="space-y-1">
+                                    <span className="text-sm font-black text-slate-400 block tracking-tighter">₹{halfFee.toLocaleString('en-IN')}</span>
+                                    <Badge variant="outline" className="text-[7px] font-black text-slate-300 border-slate-200 h-4 px-2 uppercase rounded-none">Scheduled</Badge>
+                                 </div>
+                              )}
+                           </td>
+                           <td className="px-8 py-5 align-middle bg-[#6b21a8]/5">
+                              <div className="space-y-2.5">
+                                 <div className="flex justify-between items-end">
+                                    <div className="space-y-0.5">
+                                       <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Deposited</p>
+                                       <p className="text-sm font-black text-emerald-600 tracking-tighter">₹{(enrollment.final_price || 0).toLocaleString('en-IN')}</p>
+                                    </div>
+                                    <div className="space-y-0.5 text-right">
+                                       <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Total Asset</p>
+                                       <p className="text-sm font-black text-slate-900 tracking-tighter">₹{(fullFee || 0).toLocaleString('en-IN')}</p>
+                                    </div>
+                                 </div>
+                                 <div className="h-1.5 w-full bg-slate-100 rounded-none overflow-hidden border border-slate-200/20">
+                                    <div 
+                                       className="h-full bg-[#6b21a8] transition-all duration-1000 shadow-[0_0_10px_rgba(107,33,168,0.4)]" 
+                                       style={{ width: `${Math.min(100, ((enrollment.final_price || 0) / (fullFee || 1)) * 100)}%` }} 
+                                    />
+                                 </div>
                               </div>
-                           </div>
-                        </td>
-                        <td className="px-6 py-5">
-                          <div className="flex flex-col text-[10px] font-bold text-slate-500 whitespace-nowrap">
-                             <span className="text-slate-900">{new Date(enrollment.enrollment_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
-                             <span className="text-slate-400 font-medium uppercase tracking-tighter">{new Date(enrollment.enrollment_date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-5">
-                          <div className="flex items-center justify-end gap-1.5">
-                            {(enrollment.status === 'pending' || !enrollment.status) ? (
-                              <div className="flex gap-1">
-                                <Button 
-                                  size="sm" 
-                                  disabled={processingId === enrollment.id}
-                                  className="h-8 bg-slate-900 hover:bg-black text-white text-[10px] font-black uppercase tracking-widest rounded-lg px-3"
-                                  onClick={() => handleUpdateStatus(enrollment.id, 'active')}
-                                >
-                                  {processingId === enrollment.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "Approve"}
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="ghost"
-                                  disabled={processingId === enrollment.id}
-                                  className="h-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 text-[10px] font-black uppercase tracking-widest rounded-lg px-2"
-                                  onClick={() => handleUpdateStatus(enrollment.id, 'rejected')}
-                                >
-                                  Reject
-                                </Button>
+                           </td>
+                           <td className="px-8 py-5 text-right align-middle">
+                              <div className="flex items-center justify-end gap-2.5">
+                                 {(enrollment.status === 'pending' || !enrollment.status) ? (
+                                   <Button size="sm" disabled={processingId === enrollment.id} className="h-10 bg-slate-900 text-white text-[9px] font-black uppercase tracking-[0.1em] px-5 rounded-none hover:bg-[#6b21a8] transition-all shadow-lg shadow-slate-200" onClick={() => handleUpdateStatus(enrollment.id, 'active')}>
+                                     {processingId === enrollment.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShieldCheck className="h-4 w-4 mr-2" />}
+                                     Verify Access
+                                   </Button>
+                                 ) : (
+                                   <Button size="sm" variant="ghost" className="h-10 w-10 p-0 bg-slate-50 text-slate-400 hover:text-[#6b21a8] transition-all border border-slate-100 hover:bg-white rounded-none" onClick={() => setSelectedEnrollment(enrollment)}>
+                                     <Eye className="h-5 w-5" />
+                                   </Button>
+                                 )}
+                                 <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                       <Button variant="ghost" size="icon" className="h-10 w-10 rounded-none text-slate-300 hover:text-slate-600 hover:bg-slate-50 transition-all">
+                                          <MoreVertical className="h-5 w-5" />
+                                       </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="rounded-none p-1.5 border-slate-100 shadow-2xl">
+                                       <DropdownMenuItem className="rounded-none px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-600" onClick={() => copyToClipboard(enrollment.user_id || '', enrollment.id + '-menu')}>
+                                          <Copy className="h-3.5 w-3.5 mr-2.5 text-primary" /> Sync ID
+                                       </DropdownMenuItem>
+                                       <DropdownMenuItem className="text-rose-600 rounded-none px-4 py-2.5 text-[10px] font-black uppercase tracking-widest" onClick={() => handleDelete(enrollment.id)}>
+                                          <Trash2 className="h-3.5 w-3.5 mr-2.5" /> Terminate
+                                       </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                 </DropdownMenu>
                               </div>
-                            ) : (
-                               <Button
-                                 size="sm"
-                                 variant="ghost"
-                                 className="h-8 w-8 p-0 text-slate-300 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"
-                                 onClick={() => setSelectedEnrollment(enrollment)}
-                               >
-                                 <Eye className="h-4 w-4" />
-                               </Button>
-                            )}
-                            
-                            <DropdownMenu>
-                               <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-slate-600">
-                                     <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                               </DropdownMenuTrigger>
-                               <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    onClick={() => copyToClipboard(enrollment.user_id || '', enrollment.id + '-menu')}
-                                    className="gap-2"
-                                  >
-                                    {copiedId === enrollment.id + '-menu' ? (
-                                      <><Check className="h-4 w-4 text-emerald-600" /> <span className="text-emerald-600 font-medium">Copied!</span></>
-                                    ) : (
-                                      <><Copy className="h-4 w-4" /> Copy Student UUID</>
-                                    )}
-                                  </DropdownMenuItem>
-                                  {onDelete && (
-                                    <DropdownMenuItem className="text-rose-600 focus:text-rose-700" onClick={() => handleDelete(enrollment.id)}>
-                                       <Trash2 className="h-4 w-4 mr-2" /> Delete Record
-                                    </DropdownMenuItem>
-                                  )}
-                               </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                           </td>
+                        </tr>
+                       );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -632,141 +496,66 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
       </Card>
 
       <Dialog open={!!selectedEnrollment} onOpenChange={(open) => !open && setSelectedEnrollment(null)}>
-        <DialogContent className="w-[95vw] sm:max-w-4xl h-[92vh] p-0 overflow-hidden bg-[#0f172a] border-slate-800 rounded-[2rem] shadow-2xl flex flex-col">
-          {/* Main Scrollable Content */}
+        <DialogContent className="w-[95vw] sm:max-w-4xl h-[92vh] p-0 overflow-hidden bg-white border-2 border-slate-100 rounded-none shadow-[0_50px_100px_rgba(0,0,0,0.1)] flex flex-col">
           <div className="flex-1 overflow-y-auto scrollbar-none">
             <div className="flex flex-col md:flex-row min-h-full">
-              {/* Left: Metadata */}
-              <div className="w-full md:w-80 bg-slate-900/40 p-6 sm:p-8 md:border-r border-slate-800 flex flex-col justify-between shrink-0">
-                  <div className="space-y-8">
+              <div className="w-full md:w-80 bg-slate-50 p-10 md:border-r-2 border-slate-100 flex flex-col justify-between shrink-0">
+                  <div className="space-y-10">
                     <div>
-                        <Badge className="bg-primary/20 text-primary border-primary/20 hover:bg-primary/30 rounded-full px-3 py-1 text-[10px] uppercase font-bold tracking-wider mb-3">
-                           Verification Terminal
-                        </Badge>
-                        <h3 className="text-2xl font-black text-white leading-tight">Enrollment <br/><span className="text-primary font-light">Verification</span></h3>
+                        <Badge className="bg-[#6b21a8]/20 text-[#6b21a8] border border-[#6b21a8]/30 rounded-none px-4 py-1.5 text-[9px] uppercase font-black tracking-widest mb-4">Verification Node</Badge>
+                        <h3 className="text-3xl font-black text-slate-900 leading-tight">Assessment <br/><span className="text-[#6b21a8] tracking-tighter">Terminal</span></h3>
                     </div>
-
-                    <div className="space-y-6">
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                               <RefreshCw className="h-3 w-3" /> Transaction Identifier
-                            </label>
-                            <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/50 group hover:border-primary transition-all shadow-inner">
-                                <span className="text-sm font-mono font-bold text-white tracking-widest break-all">
-                                    {selectedEnrollment?.utr_number || "NOT PROVIDED"}
-                                </span>
-                            </div>
-                        </div>
-
+                    <div className="space-y-8">
                         <div className="space-y-4">
-                            <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-xl bg-slate-800 flex items-center justify-center border border-slate-700">
-                                   <Users className="h-5 w-5 text-slate-400" />
+                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-3">
+                               <RefreshCw className="h-4 w-4 text-[#6b21a8] animate-spin-slow" /> UTR Serial Number
+                            </label>
+                            <div className="bg-white p-5 rounded-none border-2 border-slate-100 shadow-sm">
+                                <span className="text-base font-mono font-black text-slate-900 tracking-wider break-all">{selectedEnrollment?.utr_number || "AWAITING TRANSMISSION"}</span>
+                            </div>
+                        </div>
+                        <div className="space-y-6 pt-4">
+                            <div className="flex items-center gap-4">
+                                <div className="h-12 w-12 rounded-none bg-[#6b21a8] flex items-center justify-center shadow-lg transform -rotate-12 group-hover:rotate-0 transition-transform">
+                                    <Users className="h-6 w-6 text-white" />
                                 </div>
-                                <div className="space-y-0.5">
-                                    <p className="text-[9px] font-bold text-slate-500 uppercase">Student</p>
-                                    <p className="text-sm font-bold text-white leading-tight">{selectedEnrollment?.user_name}</p>
+                                <div className="space-y-1">
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Student Subject</p>
+                                    <p className="text-base font-black text-slate-900 leading-tight">{selectedEnrollment?.user_name}</p>
                                 </div>
                             </div>
-
-                            <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-xl bg-slate-800 flex items-center justify-center border border-slate-700">
-                                   <GraduationCap className="h-5 w-5 text-primary" />
-                                </div>
-                                <div className="space-y-0.5">
-                                    <p className="text-[9px] font-bold text-slate-500 uppercase">Course</p>
-                                    <p className="text-sm font-bold text-white leading-tight">{selectedEnrollment?.course_name}</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-xl bg-slate-800 flex items-center justify-center border border-slate-700">
-                                   <CreditCard className="h-5 w-5 text-emerald-500" />
-                                </div>
-                                <div className="space-y-0.5">
-                                    <p className="text-[9px] font-bold text-slate-500 uppercase">Payment Structure</p>
-                                    <p className="text-sm font-bold text-emerald-500 leading-tight">
-                                       {selectedEnrollment?.payment_term === 'term1' ? '1st Installment' : selectedEnrollment?.payment_term === 'term2' ? '2nd Installment' : 'Full Payment'}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-xl bg-slate-800 flex items-center justify-center border border-slate-700">
-                                   <Clock className="h-5 w-5 text-amber-500" />
-                                </div>
-                                <div className="space-y-0.5">
-                                    <p className="text-[9px] font-bold text-slate-500 uppercase">Submitted On</p>
-                                    <p className="text-sm font-bold text-white leading-tight">
-                                       {selectedEnrollment?.enrollment_date ? formatDate(selectedEnrollment.enrollment_date).split(',')[0] : 'N/A'}
-                                    </p>
+                            <div className="flex items-center gap-4">
+                                <div className="h-12 w-12 rounded-none bg-white border-2 border-slate-100 flex items-center justify-center shadow-sm"><GraduationCap className="h-6 w-6 text-[#6b21a8]" /></div>
+                                <div className="space-y-1">
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Target Course</p>
+                                    <p className="text-base font-black text-slate-900 leading-tight">{selectedEnrollment?.course_name}</p>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <div className="mt-12 pt-6 border-t border-slate-800">
-                    <div className="flex items-start gap-3 bg-primary/10 p-3 rounded-xl border border-primary/20">
-                       <Fingerprint className="h-4 w-4 text-primary shrink-0" />
-                       <p className="text-[10px] text-slate-300 leading-relaxed font-bold uppercase tracking-tight">
-                        Verify Transaction against Statements <br/> 
-                        <span className="text-slate-500 font-medium">Internal Ref: {selectedEnrollment?.id?.substring(0,10)}</span>
-                       </p>
                     </div>
                 </div>
             </div>
-            {/* Right: Payment Proof Image */}
-            <div className="flex-1 flex flex-col min-h-[450px] bg-black/60 relative">
-                <div className="flex-1 p-4 sm:p-8 flex items-center justify-center">
+            <div className="flex-1 flex flex-col min-h-[500px] bg-slate-100/50 relative p-10">
+                <div className="flex-1 bg-white rounded-[2.5rem] p-6 shadow-inner flex items-center justify-center border-2 border-slate-100 group">
                     {selectedEnrollment?.payment_proof_url ? (
-                        <div className="relative p-2 sm:p-4 bg-white rounded-xl shadow-[0_0_50px_rgba(37,99,235,0.15)] group/img max-w-full">
-                            <img 
-                                src={selectedEnrollment.payment_proof_url} 
-                                alt="Payment Proof" 
-                                className="max-w-full max-h-[55vh] rounded-lg object-contain"
-                            />
-                            <div className="absolute top-0 right-0 p-2 opacity-20 group-hover/img:opacity-100 transition-opacity">
-                               <Eye className="h-5 w-5 text-slate-400" />
-                            </div>
+                        <div className="relative group/proof cursor-zoom-in">
+                            <img src={selectedEnrollment.payment_proof_url} alt="Payment Proof" className="max-w-full max-h-[35vh] rounded-none object-contain shadow-2xl transition-all duration-500 group-hover/proof:scale-[1.02]" />
                         </div>
                     ) : (
-                        <div className="text-center space-y-4 py-20 grayscale opacity-40">
-                             <div className="h-24 w-24 bg-slate-800 rounded-[2rem] flex items-center justify-center mx-auto border border-slate-700 rotate-12">
-                                <CreditCard className="h-10 w-10 text-slate-500" />
-                             </div>
-                             <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Digital Receipt Missing</p>
+                        <div className="text-center space-y-4 py-20 opacity-30">
+                             <CreditCard className="h-20 w-20 mx-auto text-slate-400" />
+                             <p className="font-black text-slate-400 uppercase tracking-widest text-xs">Credential Transmission Missing</p>
                         </div>
                     )}
                 </div>
             </div>
           </div>
         </div>
-
-        {/* Sticky Action Footer */}
-          <div className="p-4 sm:p-6 bg-[#0f172a]/95 backdrop-blur-xl border-t border-slate-800 flex flex-wrap justify-center sm:justify-end gap-2 sm:gap-3 shrink-0 z-10">
-              <Button variant="ghost" onClick={() => setSelectedEnrollment(null)} className="flex-1 sm:flex-none text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl h-11 px-6">
-                  Close
-              </Button>
-              <Button 
-                  className="flex-1 sm:flex-none bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 border border-rose-500/20 rounded-xl h-11 px-6 font-bold"
-                  onClick={() => {
-                      if(selectedEnrollment) handleUpdateStatus(selectedEnrollment.id, 'rejected');
-                      setSelectedEnrollment(null);
-                  }}
-              >
-                  Reject
-              </Button>
-              <Button 
-                  className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white rounded-xl shadow-lg shadow-primary/20 h-11 px-8 font-bold"
-                  onClick={() => {
-                      if(selectedEnrollment) handleUpdateStatus(selectedEnrollment.id, 'active');
-                      setSelectedEnrollment(null);
-                  }}
-              >
-                  Approve Enrollment
-              </Button>
-          </div>
+        <div className="p-8 bg-white border-t-2 border-slate-100 flex flex-wrap justify-end gap-4 shrink-0 rounded-none">
+            <Button variant="ghost" onClick={() => setSelectedEnrollment(null)} className="text-slate-400 font-black uppercase tracking-widest text-[10px] h-14 px-8 rounded-none hover:bg-slate-50 transition-all">Close Terminal</Button>
+            <Button className="bg-rose-50 text-rose-600 border-2 border-rose-100 rounded-none h-14 px-8 font-black uppercase tracking-widest text-[10px] hover:bg-rose-600 hover:text-white transition-all shadow-md" onClick={() => { if(selectedEnrollment) handleUpdateStatus(selectedEnrollment.id, 'rejected'); setSelectedEnrollment(null); }}>Deny Access</Button>
+            <Button className="bg-[#6b21a8] hover:bg-slate-900 text-white rounded-none h-14 px-12 font-black uppercase tracking-widest text-[10px] transition-all shadow-[0_10px_40px_rgba(107,33,168,0.3)] hover:translate-y-[-4px] active:translate-y-0" onClick={() => { if(selectedEnrollment) handleUpdateStatus(selectedEnrollment.id, 'active'); setSelectedEnrollment(null); }}>Authorize Enrollment</Button>
+        </div>
         </DialogContent>
       </Dialog>
     </div>

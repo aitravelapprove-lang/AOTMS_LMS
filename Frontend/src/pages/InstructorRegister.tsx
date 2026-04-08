@@ -98,7 +98,6 @@ const instructorSchema = z
 
 type InstructorFormData = z.infer<typeof instructorSchema>;
 
-import Spline from "@splinetool/react-spline";
 import { motion } from "framer-motion";
 
 const expertiseOptions = [
@@ -235,11 +234,7 @@ export default function InstructorRegister() {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-white relative overflow-hidden">
-      {/* Global Spline Background Layer - Restored for Tablet (md+) */}
       <div className="absolute inset-0 z-0 w-full h-full pointer-events-none overflow-hidden bg-gradient-to-br from-[#0075CF]/20 via-white to-[#FD5A1A]/20">
-        <div className="hidden md:block w-[150vw] h-[120vh] absolute -top-[10vh] -left-[30vw] lg:w-[220vw] lg:-top-[15vh] lg:-left-[75vw] pointer-events-auto transition-all duration-700 ease-out mix-blend-multiply">
-          <Spline scene="https://prod.spline.design/atHJsNeB45CbbiBU/scene.splinecode" />
-        </div>
         {/* Subtle Brand Orbs for Depth */}
         <div className="absolute top-1/4 -right-20 w-96 h-96 bg-[#0075CF]/10 rounded-full blur-[120px]" />
         <div className="absolute bottom-1/4 -left-20 w-96 h-96 bg-[#FD5A1A]/10 rounded-full blur-[120px]" />
@@ -300,7 +295,7 @@ export default function InstructorRegister() {
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
                         <FormControl>
                           <Input
-                            placeholder="John Doe"
+                            placeholder="Your Full Name"
                             className="pl-10 h-12 bg-slate-50 border-slate-200 rounded-2xl focus:ring-4 focus:ring-[#0075CF]/10 transition-all"
                             {...field}
                           />

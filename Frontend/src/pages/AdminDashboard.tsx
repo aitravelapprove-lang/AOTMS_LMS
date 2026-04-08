@@ -290,7 +290,7 @@ function AllCoursesList({
                       {course.price === '0' || course.price === 0 || course.price === 'Free' ? (
                         <span className="text-emerald-600">Free</span>
                       ) : (
-                        <span>₹{course.price}</span>
+                        <span className="text-orange-500">₹{course.price}</span>
                       )}
                     </div>
                     <Button
@@ -711,7 +711,7 @@ export default function AdminDashboard() {
       <AdminSidebar />
       <SidebarInset className="flex flex-col h-[100dvh] w-full overflow-hidden bg-transparent">
         <AdminHeader />
-        <main className="flex-1 w-full overflow-y-auto overflow-x-hidden p-3 sm:p-6 custom-scrollbar">
+        <main className="flex-1 w-full overflow-y-auto overflow-x-hidden p-3 sm:p-6 admin-scrollbar">
           <div className="max-w-7xl mx-auto space-y-6 lg:space-y-10">
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -827,7 +827,7 @@ export default function AdminDashboard() {
             {/* Management Portal */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
               <div className="flex flex-col gap-4 border-b border-slate-200">
-                <div className="w-full overflow-x-auto custom-scrollbar pb-2">
+                <div className="w-full overflow-x-auto admin-scrollbar-horizontal pb-2">
                   <TabsList className="bg-transparent h-auto p-0 gap-6 sm:gap-8 flex min-w-max">
                     {[
                       { id: "users", label: "User Management", icon: Users, key: "tab-users" },

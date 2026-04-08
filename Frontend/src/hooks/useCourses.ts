@@ -58,6 +58,7 @@ export interface CourseEnrollment {
   user_phone?: string;
   payment_term?: 'full' | 'term1' | 'term2';
   remaining_balance?: number;
+  user_avatar?: string;
 }
 
 export function useCourses() {
@@ -183,7 +184,8 @@ export function useCourses() {
           course_name: item.course?.title || 'Unknown Course',
           price: item.course?.price !== undefined ? String(item.course.price) : (item.price !== undefined ? String(item.price) : 'Free'),
           payment_term: item.payment_term,
-          remaining_balance: item.remaining_balance
+          remaining_balance: item.remaining_balance,
+          user_avatar: item.profile?.avatar_url || item.profile?.photo_url
         }));
       } catch (err) {
         console.error('[fetchEnrollments] Error:', err);

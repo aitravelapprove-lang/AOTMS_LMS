@@ -221,34 +221,35 @@ function WelcomeBanner({
     <motion.div
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="pro-card p-5 sm:p-8 md:p-10 bg-slate-900 text-white relative overflow-hidden group border-none shadow-lg"
+      className="relative overflow-hidden rounded-3xl bg-white border border-slate-200/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] group"
     >
-      <div className="absolute top-0 right-0 p-8 md:p-12 opacity-10 group-hover:scale-110 transition-transform duration-1000">
-        <BrainCircuit className="h-32 w-32 md:h-48 md:w-48" />
-      </div>
+      {/* Premium Gradient Background Layers */}
+      <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors duration-1000" />
+      <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10 transition-colors duration-1000" />
 
-      <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-10">
+      <div className="relative z-10 p-6 sm:p-8 md:p-12 flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-10">
         <div className="space-y-4">
-          <Badge className="bg-primary/20 text-blue-400 border-primary/20 font-bold px-3 py-1 rounded-full text-xs uppercase tracking-widest shadow-sm">
+          <Badge className="bg-primary/10 text-primary border-primary/20 font-black px-3 py-1 rounded-full text-[10px] uppercase tracking-[0.2em] shadow-sm backdrop-blur-md inline-flex items-center gap-1.5">
+            <Sparkles className="h-3 w-3" />
             Instructor Hub
           </Badge>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-white">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900">
             {greeting},{" "}
-            <span className="font-black italic">
+            <span className="text-primary italic inline-block hover:-translate-y-1 transition-transform cursor-default">
               {name.split(" ")[0]}
             </span>
             .
           </h1>
-          <p className="text-slate-400 max-w-xl font-medium text-base md:text-lg leading-relaxed">
+          <p className="text-slate-600 max-w-xl font-medium text-base md:text-lg leading-relaxed">
             Welcome back to your teaching portal. You have{" "}
-            <span className="text-white font-bold">{studentCount} students</span> enrolled in your courses. 
+            <span className="text-slate-900 font-bold bg-slate-100 px-2 py-0.5 rounded-md">{studentCount} students</span> enrolled in your courses. 
             All systems are ready for your next teaching session.
           </p>
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
           <Button 
-            className="pro-button-primary h-12 md:h-14 px-6 md:px-8 w-full sm:w-auto rounded-xl shadow-lg shadow-primary/20 group text-sm md:text-base"
+            className="h-12 md:h-14 px-6 md:px-8 w-full sm:w-auto rounded-2xl bg-primary hover:bg-primary/95 text-white font-bold text-sm md:text-base shadow-[0_8px_20px_rgba(20,100,250,0.2)] hover:shadow-[0_10px_25px_rgba(20,100,250,0.3)] hover:-translate-y-0.5 transition-all duration-300 border border-transparent"
             onClick={() => navigate('/instructor/courses')}
           >
             <Plus className="mr-2 h-4 w-4 md:h-5 md:w-5" />
@@ -256,9 +257,10 @@ function WelcomeBanner({
           </Button>
           <Button
             variant="outline"
-            className="h-12 md:h-14 px-6 md:px-8 w-full sm:w-auto rounded-xl bg-white/5 border-white/10 text-white hover:bg-white/10 hover:text-white font-semibold text-sm md:text-base"
+            className="h-12 md:h-14 px-6 md:px-8 w-full sm:w-auto rounded-2xl bg-white/50 backdrop-blur-md border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 font-semibold text-sm md:text-base shadow-sm hover:shadow hover:-translate-y-0.5 transition-all duration-300"
             onClick={() => navigate('/instructor/live-classes')}
           >
+            <Calendar className="mr-2 h-4 w-4 md:h-5 md:w-5 text-slate-500" />
             View Schedule
           </Button>
         </div>

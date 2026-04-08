@@ -68,7 +68,7 @@ export function AdminSidebar() {
   return (
     <Sidebar
       collapsible="icon"
-      className="border-r border-slate-200/60 !bg-white/70 backdrop-blur-xl font-sans"
+      className="border-r-4 border-white bg-white font-sans"
     >
       <SidebarHeader className="h-20 flex items-center justify-center px-4 group-data-[collapsible=icon]:px-0 border-b border-slate-200/60">
         <Link
@@ -88,7 +88,7 @@ export function AdminSidebar() {
         </Link>
       </SidebarHeader>
 
-      <SidebarContent className="px-3 group-data-[collapsible=icon]:px-2 py-6 space-y-6 custom-scrollbar">
+      <SidebarContent className="px-3 group-data-[collapsible=icon]:px-2 py-6 space-y-6 admin-scrollbar">
         {/* Main Section */}
         <SidebarGroup>
           <SidebarGroupLabel className="px-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 group-data-[collapsible=icon]:hidden">
@@ -107,9 +107,13 @@ export function AdminSidebar() {
                       <item.icon
                         className={`h-5 w-5 transition-colors shrink-0 ${isActive(item.url) ? "text-primary" : "text-slate-500 group-hover:text-slate-700"}`}
                       />
+<<<<<<< HEAD
                       {!collapsed && <span className="font-medium truncate">{item.title}</span>}
+=======
+                      {!collapsed && <span className="text-[11px] font-black uppercase tracking-[0.05em]">{item.title}</span>}
+>>>>>>> e81fa9c1131a4368c44cfb1b1300c8a2ee2da94f
                       {isActive(item.url) && !collapsed && (
-                        <div className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />
+                        <div className="ml-auto h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(37,99,235,0.6)]" />
                       )}
                     </Link>
                   </SidebarMenuButton>

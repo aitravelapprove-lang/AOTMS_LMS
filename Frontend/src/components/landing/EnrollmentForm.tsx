@@ -1,41 +1,19 @@
-import React, { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { motion, AnimatePresence } from "framer-motion";
+import React from "react";
+import { motion } from "framer-motion";
 import {
-  User,
-  Mail,
-  Phone,
-  BookOpen,
-  Send,
+  UserPlus,
+  LogIn,
   CheckCircle2,
-  Sparkles,
   ShieldCheck,
+  Sparkles,
   Zap,
   ArrowRight,
+  Rocket
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { toast } from "sonner";
-
-const formSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().min(10, "Phone number must be at least 10 digits"),
-  course: z.string().min(1, "Please select a course"),
-});
-
-type FormData = z.infer<typeof formSchema>;
+import { Link } from "react-router-dom";
 
 const EnrollmentForm = () => {
+<<<<<<< HEAD
   const [isFocused, setIsFocused] = useState<string | null>(null);
 
   const {
@@ -70,6 +48,8 @@ const EnrollmentForm = () => {
     }
   };
 
+=======
+>>>>>>> e81fa9c1131a4368c44cfb1b1300c8a2ee2da94f
   return (
     <section
       id="enroll"
@@ -80,7 +60,7 @@ const EnrollmentForm = () => {
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#0075CF]/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/4" />
         <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-[#FD5A1A]/5 blur-[120px] rounded-full translate-y-1/2 -translate-x-1/4" />
         <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-[0.03]"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-[0.02]"
           style={{
             backgroundImage: `radial-gradient(#0075CF 1px, transparent 1px)`,
             backgroundSize: "40px 40px",
@@ -108,11 +88,10 @@ const EnrollmentForm = () => {
               transition={{ delay: 0.1 }}
               className="text-4xl sm:text-5xl md:text-7xl font-black text-slate-950 mb-7 leading-[0.95] tracking-tighter"
             >
-              Start Your <br className="hidden md:block" />
+              Ready to Secure <br className="hidden md:block" />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] via-[#00aaff] to-[#FD5A1A]">
-                Learning Journey Today
+                Your Dream Career?
               </span>
-              .
             </motion.h2>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -121,31 +100,25 @@ const EnrollmentForm = () => {
               transition={{ delay: 0.2 }}
               className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-medium"
             >
-              Transform your aspirations into a career-defining reality. Join
-              2000+ graduates who have launched their futures through AOTMS.
+              Choose your path below to start your transformation. Join 2000+ graduates who have already accelerated their futures.
             </motion.p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-center">
             {/* Left Content: Trust & Benefits */}
-            <div className="lg:col-span-5 space-y-10 py-4">
-              <motion.div
-                initial={{ opacity: 0, x: -30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                className="space-y-8"
-              >
+            <div className="lg:col-span-5 space-y-10">
+              <div className="space-y-8">
                 {[
                   {
                     icon: CheckCircle2,
                     title: "Curriculum Excellence",
-                    desc: "Industry-mapped tracks updated every 90 days for current tech requirements.",
+                    desc: "Industry-mapped tracks updated for current tech requirements.",
                     color: "bg-blue-50 text-[#0075CF]",
                   },
                   {
                     icon: ShieldCheck,
                     title: "Career Assurance",
-                    desc: "Dedicated placement cell connecting you with 100+ MNC hiring partners.",
+                    desc: "Dedicated placement cell connecting you with MNC partners.",
                     color: "bg-orange-50 text-[#FD5A1A]",
                   },
                   {
@@ -157,13 +130,14 @@ const EnrollmentForm = () => {
                 ].map((item, i) => (
                   <motion.div
                     key={i}
-                    whileHover={{ x: 10 }}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
                     className="flex gap-5 group cursor-default"
                   >
-                    <div
-                      className={`w-14 h-14 rounded-2xl ${item.color} flex items-center justify-center flex-shrink-0 shadow-sm transition-transform group-hover:scale-110 group-hover:rotate-3`}
-                    >
-                      <item.icon className="w-7 h-7" />
+                    <div className={`w-12 h-12 rounded-2xl ${item.color} flex items-center justify-center flex-shrink-0 shadow-sm transition-transform group-hover:scale-110`}>
+                      <item.icon className="w-6 h-6" />
                     </div>
                     <div>
                       <h4 className="text-xl font-bold text-slate-900 mb-1 tracking-tight">
@@ -175,279 +149,104 @@ const EnrollmentForm = () => {
                     </div>
                   </motion.div>
                 ))}
-              </motion.div>
+              </div>
 
-              {/* Trust Badge Card */}
+              {/* Success Stat */}
               <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                className="bg-slate-950 rounded-[2rem] p-8 text-white relative overflow-hidden group shadow-2xl shadow-blue-900/20"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  className="bg-white rounded-[2.5rem] p-7 text-slate-900 relative overflow-hidden shadow-xl border border-slate-50"
               >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-[#0075CF]/20 blur-3xl rounded-full group-hover:bg-[#FD5A1A]/20 transition-colors duration-700" />
-                <div className="relative z-10 flex items-center gap-6">
-                  <div className="w-16 h-16 rounded-full border-2 border-white/20 flex items-center justify-center flex-shrink-0">
-                    <Zap className="w-8 h-8 text-[#FD5A1A]" />
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-[#FD5A1A]/5 blur-3xl rounded-full" />
+                  <div className="relative z-10 flex items-center gap-5">
+                      <div className="w-14 h-14 rounded-2xl bg-orange-50 flex items-center justify-center">
+                          <Rocket className="w-7 h-7 text-[#FD5A1A]" />
+                      </div>
+                      <div>
+                          <p className="text-xl font-black tracking-tight leading-none mb-1 text-slate-900">
+                              LMS Driven Success
+                          </p>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">
+                              Powered by modern tech
+                          </p>
+                      </div>
                   </div>
-                  <div>
-                    <p className="text-2xl font-black tracking-tight mb-0.5">
-                      85% Success Rate
-                    </p>
-                    <p className="text-xs font-bold text-white/50 uppercase tracking-widest">
-                      Average Graduate Salary Increase
-                    </p>
-                  </div>
-                </div>
               </motion.div>
             </div>
 
-            {/* Right Side: Premium Glass Form */}
+            {/* Right Side: Gateway Options */}
             <div className="lg:col-span-7">
-              <motion.div
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="relative group "
-              >
-                {/* Visual Accent Layer */}
-                <div className="absolute -inset-1 bg-gradient-to-r from-[#0075CF]/20 via-[#FD5A1A]/20 to-[#0075CF]/20 rounded-[3rem] blur-xl opacity-50 group-hover:opacity-100 transition duration-1000" />
-
-                <div className="relative bg-white/70 backdrop-blur-2xl border border-white rounded-[3rem] p-10 md:p-14 shadow-2xl overflow-hidden">
-                  {/* Subtle Grainy Overlay */}
-                  <div className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay" />
-
-                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      {/* Name input */}
-                      <div className="space-y-3">
-                        <motion.label
-                          animate={{
-                            color: isFocused === "name" ? "#0075CF" : "#94a3b8",
-                          }}
-                          className="text-[10px] font-black uppercase tracking-[0.2em] ml-2"
-                        >
-                          Identity
-                        </motion.label>
-                        <div className="relative">
-                          <User
-                            className={`absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 transition-all duration-300 ${isFocused === "name" ? "text-[#0075CF] scale-110" : "text-slate-300"}`}
-                          />
-                          <Input
-                            {...register("name")}
-                            onFocus={() => setIsFocused("name")}
-                            onBlur={() => setIsFocused(null)}
-                            placeholder="Your full name"
-                            className="pl-14 h-16 rounded-2xl bg-white/50 border-slate-100 focus:border-[#0075CF] focus:bg-white focus:ring-4 focus:ring-blue-500/5 transition-all duration-300 text-slate-900 font-bold placeholder:text-slate-300 border-2"
-                          />
-                          <AnimatePresence>
-                            {errors.name && (
-                              <motion.p
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0 }}
-                                className="text-red-500 text-[9px] mt-2 ml-2 font-black uppercase tracking-tighter italic"
-                              >
-                                {errors.name.message}
-                              </motion.p>
-                            )}
-                          </AnimatePresence>
-                        </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                {/* Register Path */}
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  whileHover={{ y: -10 }}
+                  className="flex"
+                >
+                  <Link 
+                    to="/signup" 
+                    className="group relative flex flex-col justify-between w-full p-8 md:p-10 bg-white border-2 border-slate-100 rounded-[3rem] shadow-xl hover:shadow-[#0075CF]/10 hover:border-[#0075CF]/20 transition-all duration-500 text-left overflow-hidden"
+                  >
+                    <div className="absolute top-0 right-0 w-40 h-40 bg-[#0075CF]/5 blur-[60px] rounded-full transition-all group-hover:bg-[#0075CF]/10" />
+                    
+                    <div className="relative z-10">
+                      <div className="w-16 h-16 rounded-[1.5rem] bg-[#0075CF] text-white flex items-center justify-center mb-8 shadow-lg shadow-[#0075CF]/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                        <UserPlus className="w-8 h-8" />
                       </div>
-
-                      {/* Email input */}
-                      <div className="space-y-3">
-                        <motion.label
-                          animate={{
-                            color:
-                              isFocused === "email" ? "#0075CF" : "#94a3b8",
-                          }}
-                          className="text-[10px] font-black uppercase tracking-[0.2em] ml-2"
-                        >
-                          Communication
-                        </motion.label>
-                        <div className="relative">
-                          <Mail
-                            className={`absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 transition-all duration-300 ${isFocused === "email" ? "text-[#0075CF] scale-110" : "text-slate-300"}`}
-                          />
-                          <Input
-                            {...register("email")}
-                            onFocus={() => setIsFocused("email")}
-                            onBlur={() => setIsFocused(null)}
-                            placeholder="Email address"
-                            className="pl-14 h-16 rounded-2xl bg-white/50 border-slate-100 focus:border-[#0075CF] focus:bg-white focus:ring-4 focus:ring-blue-500/5 transition-all duration-300 text-slate-900 font-bold placeholder:text-slate-300 border-2"
-                          />
-                          <AnimatePresence>
-                            {errors.email && (
-                              <motion.p
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0 }}
-                                className="text-red-500 text-[9px] mt-2 ml-2 font-black uppercase tracking-tighter italic"
-                              >
-                                {errors.email.message}
-                              </motion.p>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      </div>
+                      <h3 className="text-3xl font-black text-slate-950 mb-4 tracking-tighter leading-tight italic uppercase">
+                        New <br /> 
+                        <span className="text-[#0075CF]">Student?</span>
+                      </h3>
+                      <p className="text-slate-500 font-medium leading-relaxed mb-8">
+                        Register now to unlock your personalized dashboard and start learning immediately.
+                      </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      {/* Phone input */}
-                      <div className="space-y-3">
-                        <motion.label
-                          animate={{
-                            color:
-                              isFocused === "phone" ? "#FD5A1A" : "#94a3b8",
-                          }}
-                          className="text-[10px] font-black uppercase tracking-[0.2em] ml-2"
-                        >
-                          Contact Mobile
-                        </motion.label>
-                        <div className="relative">
-                          <Phone
-                            className={`absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 transition-all duration-300 ${isFocused === "phone" ? "text-[#FD5A1A] scale-110" : "text-slate-300"}`}
-                          />
-                          <Input
-                            {...register("phone")}
-                            onFocus={() => setIsFocused("phone")}
-                            onBlur={() => setIsFocused(null)}
-                            placeholder="+91 Phone number"
-                            className="pl-14 h-16 rounded-2xl bg-white/50 border-slate-100 focus:border-[#FD5A1A] focus:bg-white focus:ring-4 focus:ring-orange-500/5 transition-all duration-300 text-slate-900 font-bold placeholder:text-slate-300 border-2"
-                          />
-                          <AnimatePresence>
-                            {errors.phone && (
-                              <motion.p
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0 }}
-                                className="text-red-500 text-[9px] mt-2 ml-2 font-black uppercase tracking-tighter italic"
-                              >
-                                {errors.phone.message}
-                              </motion.p>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      </div>
+                    <div className="relative z-10 flex items-center gap-3 text-[#0075CF] font-black uppercase text-xs tracking-widest group-hover:gap-5 transition-all">
+                      Register Now <ArrowRight className="w-4 h-4" />
+                    </div>
+                  </Link>
+                </motion.div>
 
-                      {/* Course select */}
-                      <div className="space-y-3">
-                        <motion.label
-                          animate={{
-                            color:
-                              isFocused === "course" ? "#0075CF" : "#94a3b8",
-                          }}
-                          className="text-[10px] font-black uppercase tracking-[0.2em] ml-2"
-                        >
-                          Career Path
-                        </motion.label>
-                        <div className="relative group">
-                          <BookOpen
-                            className={`absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 z-10 transition-all duration-300 ${isFocused === "course" ? "text-[#0075CF] scale-110" : "text-slate-300"}`}
-                          />
-                          <Select
-                            onValueChange={(v) => {
-                              setValue("course", v);
-                              setIsFocused("course");
-                            }}
-                            onOpenChange={(open) => !open && setIsFocused(null)}
-                          >
-                            <SelectTrigger className="pl-14 h-16 rounded-2xl bg-white/50 border-slate-100 focus:border-[#0075CF] focus:bg-white focus:ring-4 focus:ring-blue-500/5 transition-all duration-300 text-slate-900 font-bold border-2">
-                              <SelectValue placeholder="Target specialized track" />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-2xl border-slate-100 shadow-2xl p-2">
-                              <SelectItem
-                                className="rounded-xl py-3 font-bold focus:bg-blue-50 focus:text-primary transition-colors"
-                                value="fullstack"
-                              >
-                                Web Application Core (MERN)
-                              </SelectItem>
-                              <SelectItem
-                                className="rounded-xl py-3 font-bold focus:bg-blue-50 focus:text-primary transition-colors"
-                                value="datascience"
-                              >
-                                Data Intelligence & AI
-                              </SelectItem>
-                              <SelectItem
-                                className="rounded-xl py-3 font-bold focus:bg-blue-50 focus:text-primary transition-colors"
-                                value="cloud"
-                              >
-                                Cloud Architecture & AWS
-                              </SelectItem>
-                              <SelectItem
-                                className="rounded-xl py-3 font-bold focus:bg-blue-50 focus:text-primary transition-colors"
-                                value="cyber"
-                              >
-                                Advanced Cyber Resilience
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <AnimatePresence>
-                            {errors.course && (
-                              <motion.p
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0 }}
-                                className="text-red-500 text-[9px] mt-2 ml-2 font-black uppercase tracking-tighter italic"
-                              >
-                                {errors.course.message}
-                              </motion.p>
-                            )}
-                          </AnimatePresence>
-                        </div>
+                {/* Login Path */}
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.1 }}
+                  whileHover={{ y: -10 }}
+                  className="flex"
+                >
+                  <Link 
+                    to="/login" 
+                    className="group relative flex flex-col justify-between w-full p-8 md:p-10 bg-white border-2 border-slate-100 rounded-[3rem] shadow-xl hover:shadow-[#FD5A1A]/10 hover:border-[#FD5A1A]/20 transition-all duration-500 text-left overflow-hidden"
+                  >
+                    <div className="absolute bottom-0 right-0 w-40 h-40 bg-[#FD5A1A]/5 blur-[60px] rounded-full transition-all group-hover:bg-[#FD5A1A]/10" />
+                    
+                    <div className="relative z-10">
+                      <div className="w-16 h-16 rounded-[1.5rem] bg-gradient-to-br from-[#FD5A1A] to-[#FD8C5E] text-white flex items-center justify-center mb-8 shadow-lg shadow-[#FD5A1A]/20 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-500">
+                        <LogIn className="w-8 h-8" />
                       </div>
+                      <h3 className="text-3xl font-black text-slate-950 mb-4 tracking-tighter leading-tight italic uppercase">
+                        Already <br />
+                        <span className="text-[#FD5A1A]">Enrolled?</span>
+                      </h3>
+                      <p className="text-slate-500 font-medium leading-relaxed mb-8">
+                        Sign in to resume your curriculum and continue your professional journey.
+                      </p>
                     </div>
 
-                    {/* Submit CTA */}
-                    <motion.div
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <Button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="relative w-full h-20 rounded-[2rem] bg-gradient-to-r from-[#0075CF] via-[#00aaff] to-[#FD5A1A] animate-gradient-xy overflow-hidden shadow-[0_20px_50px_rgba(0,117,207,0.3)] hover:shadow-[0_25px_60px_rgba(253,90,26,0.4)] transition-all duration-500 disabled:opacity-70 group/btn"
-                      >
-                        <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-500" />
-                        <span className="relative z-10 flex items-center justify-center gap-4 text-xl font-black text-white tracking-widest uppercase">
-                          {isSubmitting ? (
-                            <motion.div
-                              animate={{ rotate: 360 }}
-                              transition={{
-                                duration: 1,
-                                repeat: Infinity,
-                                ease: "linear",
-                              }}
-                            >
-                              <Sparkles className="w-8 h-8" />
-                            </motion.div>
-                          ) : (
-                            <>
-                              Transform My Career
-                              <ArrowRight className="w-6 h-6 group-hover/btn:translate-x-3 transition-transform duration-500" />
-                            </>
-                          )}
-                        </span>
-                      </Button>
-                    </motion.div>
-
-                    <div className="flex items-center justify-center gap-8 pt-4">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                          Free Demo Class
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                          Expert Consultation
-                        </span>
-                      </div>
+                    <div className="relative z-10 flex items-center gap-3 text-[#FD5A1A] font-black uppercase text-xs tracking-widest group-hover:gap-5 transition-all">
+                      Access Portal <ArrowRight className="w-4 h-4" />
                     </div>
-                  </form>
-                </div>
-              </motion.div>
+                  </Link>
+                </motion.div>
+
+              </div>
             </div>
           </div>
         </div>

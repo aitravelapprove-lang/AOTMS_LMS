@@ -4,14 +4,22 @@ import { useAuth } from './useAuth';
 
 // Determine the base URL for the socket connection
 const getSocketUrl = () => {
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
   return apiUrl.replace('/api', '');
 };
+
+interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  timestamp: string;
+}
 
 interface SocketContextType {
   socket: Socket | null;
   isConnected: boolean;
-  notifications: any[];
+  notifications: AppNotification[];
   clearNotifications: () => void;
 }
 
@@ -30,7 +38,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
 
   useEffect(() => {
     // 1. Requirement check: User must be logged in
@@ -74,7 +82,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         newSocket.emit('authenticate', user.id); 
       });
 
-      newSocket.on('notification', (notif: any) => {
+      newSocket.on('notification', (notif: AppNotification) => {
           setNotifications(prev => [notif, ...prev]);
       });
 
@@ -104,6 +112,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error) {
        console.error('[Socket] Failed to initialize socket:', error);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, token]); 
 
   const clearNotifications = () => {

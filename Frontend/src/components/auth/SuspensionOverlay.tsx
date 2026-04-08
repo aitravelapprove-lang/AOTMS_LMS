@@ -73,42 +73,42 @@ export function SuspensionOverlay() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[10000] bg-black flex flex-col justify-center items-center overflow-hidden"
+                    className="fixed inset-0 z-[10000] bg-black flex flex-col items-center justify-start md:justify-center overflow-y-auto overflow-x-hidden py-10"
                 >
                     {/* Pulsing Red Aura */}
-                    <div className="absolute inset-0 z-0">
+                    <div className="fixed inset-0 z-0 pointer-events-none">
                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-600/20 via-black to-black animate-pulse"></div>
                         <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
                     </div>
 
-                    <div className="relative z-10 max-w-4xl w-full px-6 flex flex-col items-center text-center space-y-12">
+                    <div className="relative z-10 max-w-4xl w-full px-4 flex flex-col items-center text-center space-y-6 md:space-y-8">
                         <motion.div
                             initial={{ y: -50, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
-                            className="space-y-4"
+                            className="space-y-2 md:space-y-3"
                         >
-                            <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-red-600/10 border border-red-600/30 text-red-500 text-sm font-black uppercase tracking-[0.3em] shadow-[0_0_20px_rgba(220,38,38,0.2)]">
-                                <ShieldAlert className="h-5 w-5 animate-bounce" />
+                            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-600/10 border border-red-600/30 text-red-500 text-[10px] md:text-xs font-black uppercase tracking-[0.3em] shadow-[0_0_20px_rgba(220,38,38,0.2)]">
+                                <ShieldAlert className="h-4 w-4 animate-bounce" />
                                 Access Terminal Restricted
                             </div>
-                            <h1 className="text-6xl md:text-8xl font-black text-white tracking-tighter leading-none italic uppercase">
+                            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tighter leading-tight italic uppercase">
                                 Account <span className="text-red-600 drop-shadow-[0_0_15px_rgba(220,38,38,0.5)]">Suspended</span>
                             </h1>
                         </motion.div>
 
-                        <div className="relative group">
-                            <div className="absolute -inset-8 bg-red-600/20 rounded-[4rem] blur-3xl opacity-50 animate-pulse"></div>
-                            <div className="relative bg-zinc-900/80 backdrop-blur-3xl border-2 border-red-600/50 rounded-2xl sm:rounded-[3rem] p-6 sm:p-12 md:p-16 shadow-[0_0_50px_rgba(220,38,38,0.3)] text-center w-[90vw] sm:w-auto sm:min-w-[320px] md:min-w-[500px]">
-                                <div className="text-red-500 text-xs font-black uppercase tracking-[0.4em] mb-8 flex items-center justify-center gap-3">
-                                    <Timer className="h-4 w-4" />
-                                    Time Remaining Until Restoration
+                        <div className="relative group w-full max-w-2xl px-2">
+                            <div className="absolute -inset-4 bg-red-600/20 rounded-[2rem] md:rounded-[3rem] blur-2xl md:blur-3xl opacity-50 animate-pulse"></div>
+                            <div className="relative bg-zinc-900/80 backdrop-blur-3xl border-2 border-red-600/50 rounded-2xl p-6 sm:p-8 md:p-10 shadow-[0_0_50px_rgba(220,38,38,0.3)] text-center">
+                                <div className="text-red-500 text-[10px] sm:text-xs font-black uppercase tracking-[0.4em] mb-4 md:mb-6 flex items-center justify-center gap-2">
+                                    <Timer className="h-3 w-3 sm:h-4 sm:w-4" />
+                                    Time Remaining
                                 </div>
-                                <div className="text-7xl md:text-9xl font-mono font-black text-white tracking-tight tabular-nums drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+                                <div className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-mono font-black text-white tracking-tight tabular-nums drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] overflow-hidden">
                                     {timeLeft || "LOCKING..."}
                                 </div>
                                 
-                                <div className="mt-12 space-y-6">
-                                    <div className="h-3 w-full bg-zinc-800 rounded-full overflow-hidden border border-zinc-700">
+                                <div className="mt-6 md:mt-8 space-y-4">
+                                    <div className="h-2 w-full bg-zinc-800 rounded-full overflow-hidden border border-zinc-700">
                                         <motion.div 
                                             className="h-full bg-gradient-to-r from-red-600 to-red-400"
                                             initial={{ width: "100%" }}
@@ -116,25 +116,25 @@ export function SuspensionOverlay() {
                                             transition={{ duration: 3600, repeat: Infinity }}
                                         ></motion.div>
                                     </div>
-                                    <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.5em]">
+                                    <p className="text-zinc-500 text-[8px] sm:text-[10px] font-black uppercase tracking-[0.3em]">
                                         Administrative Enforcement Protocol Active
                                     </p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex flex-col items-center gap-6">
-                             <p className="text-zinc-400 text-lg font-bold max-w-lg leading-relaxed italic">
-                                "Platform integrity is our priority. Your account is currently undergoing a secondary security review. Please wait for the timer to expire."
+                        <div className="flex flex-col items-center gap-4 md:gap-6">
+                             <p className="text-zinc-400 text-xs sm:text-sm md:text-base font-bold max-w-md leading-relaxed italic px-4">
+                                "Platform integrity is our priority. Your account is undergoing security review. Please wait for restoration."
                             </p>
                             
                             <motion.button 
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => signOut()}
-                                className="px-12 h-14 bg-red-600 text-white font-black rounded-2xl hover:bg-red-700 transition-all flex items-center gap-3 group shadow-[0_10px_30px_rgba(220,38,38,0.4)] tracking-widest uppercase text-sm"
+                                className="px-6 md:px-8 h-10 md:h-12 bg-red-600/90 text-white font-black rounded-xl hover:bg-red-700 transition-all flex items-center gap-3 group shadow-[0_10px_20px_rgba(220,38,38,0.2)] tracking-widest uppercase text-[9px] sm:text-[11px]"
                             >
-                                <LogOut className="h-5 w-5" />
+                                <LogOut className="h-4 w-4 md:h-4.5 md:w-4.5" />
                                 Emergency Logout
                             </motion.button>
                         </div>

@@ -154,7 +154,8 @@ const Footer = () => {
           {/* Link Columns */}
           {Object.entries(links).map(([title, items]) => (
             <div key={title}>
-              <h4 className="font-bold text-[#FDFEFE] text-sm uppercase tracking-widest mb-4">
+              <h4 className="font-black text-[#FDFEFE] text-[15px] uppercase tracking-[0.15em] mb-6 flex items-center gap-2">
+                <span className="w-1.5 h-4 bg-[#FD5A1A] rounded-full" />
                 {title}
               </h4>
               <ul className="space-y-3">

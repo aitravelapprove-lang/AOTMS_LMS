@@ -29,7 +29,7 @@ export interface Exam {
   source_topic?: string;
   created_by: string;
   created_at: string | null;
-
+  custom_fields?: { label: string; value: string }[];
 }
 
 export interface Question {
@@ -162,12 +162,12 @@ export interface ExamResult {
 
 
 // Safe version: returns empty array on error (for tables that may not exist yet)
-const safeFetchWithAuth = async (url: string, options: RequestInit = {}) => {
+const safeFetchWithAuth = async <T = unknown[]>(url: string, options: RequestInit = {}): Promise<T> => {
   try {
-    return await fetchWithAuth(url, options);
+    return await fetchWithAuth<T>(url, options);
   } catch {
     console.warn(`[Manager] API call failed (table may not exist): ${url}`);
-    return [];
+    return [] as unknown as T;
   }
 };
 
@@ -392,13 +392,13 @@ export function useExamRules() {
   return useQuery<ExamRule[]>({
     queryKey: ['exam-rules'],
     queryFn: async () => {
-      const data = await safeFetchWithAuth('/data/exam_rules?sort=created_at&order=desc');
+      const data = await safeFetchWithAuth<Partial<ExamRule>[]>('/data/exam_rules?sort=created_at&order=desc');
       // Normalize data for the frontend if keys match DB schema
       return (data || []).map((rule: Partial<ExamRule>) => ({
         ...rule,
         negative_marking_value: rule.negative_marking_value ?? rule.negative_marks_per_question ?? 0,
         passing_percentage: rule.passing_percentage ?? rule.passing_marks ?? 40
-      }));
+      })) as ExamRule[];
     },
     retry: false,
   });
@@ -483,7 +483,7 @@ export function useCourses() {
 export function useInstructorProgress() {
   return useQuery<InstructorProgress[]>({
     queryKey: ['instructor-progress'],
-    queryFn: () => safeFetchWithAuth('/data/instructor_progress?sort=last_activity_at&order=desc'),
+    queryFn: () => safeFetchWithAuth<InstructorProgress[]>('/data/instructor_progress?sort=last_activity_at&order=desc'),
     retry: false,
   });
 }
@@ -492,7 +492,7 @@ export function useCourseTopics(courseId?: string) {
   return useQuery<CourseTopic[]>({
     queryKey: ['course-topics', courseId],
     queryFn: async () => {
-      const data = await safeFetchWithAuth('/data/course_topics?sort=order_index&order=asc');
+      const data = await safeFetchWithAuth<CourseTopic[]>('/data/course_topics?sort=order_index&order=asc');
       if (courseId) return data.filter((t: CourseTopic) => t.course_id === courseId);
       return data;
     },
@@ -522,7 +522,7 @@ export function useExamResults(examId?: string) {
   return useQuery<ExamResult[]>({
     queryKey: ['exam-results', examId],
     queryFn: async () => {
-      const data = await safeFetchWithAuth('/data/student_exam_results?sort=completed_at&order=desc');
+      const data = await safeFetchWithAuth<ExamResult[]>('/data/student_exam_results?sort=completed_at&order=desc');
       if (examId) return data.filter((d: ExamResult) => d.exam_id === examId);
       return data;
     },

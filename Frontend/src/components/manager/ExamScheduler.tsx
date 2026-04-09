@@ -239,14 +239,14 @@ function ExamCard({
             </span>
           </div>
 
-          {(exam as any).custom_fields && (exam as any).custom_fields.length > 0 && (
+          {exam.custom_fields && exam.custom_fields.length > 0 && (
             <div className="flex flex-wrap gap-1.5 pt-1">
-               {(exam as any).custom_fields.slice(0, 3).map((f: any, i: number) => (
+               {exam.custom_fields.slice(0, 3).map((f, i: number) => (
                  <Badge key={i} variant="outline" className="text-[7px] font-bold uppercase tracking-tighter h-5 border-slate-100 text-slate-400 px-1.5 rounded-sm">
                     {f.label}: {f.value}
                  </Badge>
                ))}
-               {(exam as any).custom_fields.length > 3 && <span className="text-[7px] font-bold text-slate-300">+{ (exam as any).custom_fields.length - 3}</span>}
+               {exam.custom_fields.length > 3 && <span className="text-[7px] font-bold text-slate-300">+{exam.custom_fields.length - 3}</span>}
             </div>
           )}
 

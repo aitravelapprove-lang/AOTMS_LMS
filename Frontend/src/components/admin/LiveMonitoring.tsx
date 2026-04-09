@@ -115,7 +115,7 @@ export function LiveMonitoring() {
 
                 {/* Course Progress Tab */}
                 <TabsContent value="courses" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <Card className="pro-card border-none shadow-2xl shadow-slate-200/20 rounded-[2rem] overflow-hidden">
+                    <Card className="pro-card border-none shadow-2xl shadow-slate-200/20 rounded-[2.5rem] overflow-hidden">
                         <CardHeader className="p-5 sm:p-8 pb-4">
                             <CardTitle className="text-xl font-black text-slate-900 tracking-tight">Active Enrollment Streams</CardTitle>
                             <CardDescription className="text-xs sm:text-sm font-medium italic uppercase tracking-widest text-slate-400">Tracking completion depth across the curriculum</CardDescription>
@@ -205,37 +205,37 @@ export function LiveMonitoring() {
                 <TabsContent value="exams" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         {/* Results Table - Spans 2 */}
-                        <Card className="lg:col-span-2 pro-card border-none shadow-2xl shadow-slate-200/20 rounded-[2rem] overflow-hidden">
+                        <Card className="lg:col-span-2 pro-card border-none shadow-2xl shadow-slate-200/20 rounded-[2.5rem] overflow-hidden">
                             <CardHeader className="p-5 sm:p-8 pb-4">
-                                <CardTitle className="text-xl font-black text-slate-900 tracking-tight">Performance History</CardTitle>
-                                <CardDescription className="text-xs sm:text-sm font-medium italic uppercase tracking-widest text-slate-400">Real-time mock and exam submission data</CardDescription>
+                                <CardTitle className="text-xl font-black text-slate-900 tracking-tight">Certification & Performance Log</CardTitle>
+                                <CardDescription className="text-xs sm:text-sm font-medium italic uppercase tracking-widest text-slate-400">Institutional validation and achievement streams</CardDescription>
                             </CardHeader>
                             <CardContent className="p-0">
                                 <div className="overflow-x-auto scrollbar-thin">
                                     <table className="w-full text-left min-w-[750px]">
                                         <thead className="bg-slate-50/50 text-[10px] font-black uppercase tracking-widest text-slate-400">
                                             <tr>
-                                                <th className="px-5 sm:px-8 py-4 whitespace-nowrap">Subject Candidate</th>
-                                                <th className="px-5 sm:px-8 py-4 whitespace-nowrap">Test Title</th>
-                                                <th className="px-5 sm:px-8 py-4 whitespace-nowrap">Score Analysis</th>
-                                                <th className="px-5 sm:px-8 py-4 text-center whitespace-nowrap">Timestamp</th>
-                                                <th className="px-5 sm:px-8 py-4 text-right whitespace-nowrap">Actions</th>
+                                                <th className="px-8 py-4 text-left whitespace-nowrap">Learner Profile</th>
+                                                <th className="px-8 py-4 text-left whitespace-nowrap">Assessment Topic</th>
+                                                <th className="px-8 py-4 text-left whitespace-nowrap">Performance Matrix</th>
+                                                <th className="px-8 py-4 text-left whitespace-nowrap">Time Record</th>
+                                                <th className="px-8 py-4 text-right whitespace-nowrap">Control</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
                                             {filteredResults.map((r, i) => (
                                                 <tr key={i} className="group hover:bg-slate-50/50 transition-colors">
-                                                    <td className="px-8 py-5">
+                                                    <td className="px-8 py-5 align-middle">
                                                         <div className="text-sm font-black text-slate-900">{r.student}</div>
                                                         <div className="text-[10px] font-bold text-slate-400 tracking-tighter">{r.email}</div>
                                                     </td>
-                                                    <td className="px-8 py-5">
-                                                        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${r.type === 'live' ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-indigo-50 text-indigo-600 border border-indigo-100'}`}>
+                                                    <td className="px-8 py-5 align-middle">
+                                                        <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider ${r.type === 'live' ? 'bg-rose-50 text-rose-600 border border-rose-100/50' : 'bg-indigo-50 text-indigo-600 border border-indigo-100/50'}`}>
                                                             {r.type === 'live' ? <Activity className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
-                                                            {r.test_title}
+                                                            {r.test_title.toUpperCase().includes('SYSTEM GENERATED') ? 'Institutional Assessment' : r.test_title}
                                                         </div>
                                                     </td>
-                                                    <td className="px-8 py-5">
+                                                    <td className="px-8 py-5 align-middle">
                                                         <div className="flex items-center gap-3">
                                                             <div className={`h-10 w-10 rounded-xl flex items-center justify-center text-xs font-black shadow-inner border ${r.percentage >= 75 ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : r.percentage >= 40 ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
                                                                 {r.percentage}%
@@ -245,11 +245,11 @@ export function LiveMonitoring() {
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td className="px-8 py-5 text-center">
+                                                    <td className="px-8 py-5 align-middle text-left align-middle">
                                                         <div className="text-xs font-black text-slate-900 uppercase tracking-tighter">{formatDate(r.submitted_at)}</div>
-                                                        <div className="text-[10px] font-bold text-slate-400 italic">ID: {r.id.toString().slice(-6)}</div>
+                                                        <div className="text-[8px] font-black text-slate-300 tracking-[0.2em] mt-1 uppercase">REF: {r.id.toString().slice(-6)}</div>
                                                     </td>
-                                                    <td className="px-8 py-5 text-right">
+                                                    <td className="px-8 py-5 align-middle text-right">
                                                         <Button 
                                                             variant="ghost" 
                                                             size="icon" 
@@ -279,7 +279,7 @@ export function LiveMonitoring() {
 
                         {/* Analysis Sidebar */}
                         <div className="space-y-6">
-                            <Card className="pro-card border-none shadow-2xl shadow-slate-200/20 rounded-[2rem]">
+                            <Card className="pro-card border-none shadow-2xl shadow-slate-200/20 rounded-[2.5rem]">
                                 <CardHeader>
                                     <CardTitle className="text-lg font-black text-slate-900 uppercase font-sans">Grade <span className="text-primary">Distribution</span></CardTitle>
                                 </CardHeader>
@@ -308,26 +308,28 @@ export function LiveMonitoring() {
                                 </CardContent>
                             </Card>
 
-                            <Card className="pro-card border-none shadow-2xl shadow-slate-200/20 rounded-[2rem] bg-slate-900 text-white overflow-hidden relative group">
-                                <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-all duration-700 blur-3xl -z-0" />
+                            <Card className="pro-card border-none shadow-2xl shadow-slate-200/20 rounded-[2.5rem] bg-white overflow-hidden relative group">
+                                <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-all duration-700 blur-3xl -z-0" />
                                 <CardHeader className="relative z-10">
-                                    <CardTitle className="text-lg font-black uppercase font-sans tracking-wider">Top <span className="text-primary">Performers</span></CardTitle>
+                                    <CardTitle className="text-lg font-black uppercase font-sans tracking-wider text-slate-900">Top <span className="text-primary">Performers</span></CardTitle>
                                 </CardHeader>
                                 <CardContent className="relative z-10 space-y-4">
                                     {results.sort((a,b) => b.percentage - a.percentage).slice(0, 3).map((top, i) => (
-                                        <div key={i} className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/10">
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center text-xs font-black text-primary">#{i+1}</div>
+                                        <div key={i} className="flex items-center justify-between p-4 rounded-[1.5rem] bg-slate-50 border border-slate-100/50 hover:bg-white hover:shadow-md transition-all group/performer">
+                                            <div className="flex items-center gap-4">
+                                                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-xs font-black text-primary border border-primary/10 group-hover/performer:scale-110 transition-transform">#{i+1}</div>
                                                 <div>
-                                                    <div className="text-sm font-bold truncate w-24">{top.student}</div>
-                                                    <div className="text-[9px] font-black uppercase text-white/40 tracking-widest">{top.test_title}</div>
+                                                    <div className="text-sm font-black text-slate-900 truncate w-32">{top.student}</div>
+                                                    <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest leading-none mt-1">
+                                                        {top.test_title.toUpperCase().includes('SYSTEM GENERATED') ? 'Intelligent Assessment' : top.test_title}
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div className="text-lg font-black text-emerald-400">{top.percentage}%</div>
+                                            <div className="text-xl font-black text-emerald-500">{top.percentage}%</div>
                                         </div>
                                     ))}
                                 </CardContent>
-                                <Trophy className="absolute -bottom-8 -right-8 h-32 w-32 text-white/5 rotate-12" />
+                                <Trophy className="absolute -bottom-8 -right-8 h-32 w-32 text-slate-100 rotate-12 -z-0" />
                             </Card>
                         </div>
                     </div>

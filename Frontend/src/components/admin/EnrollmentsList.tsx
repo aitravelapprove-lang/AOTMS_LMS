@@ -62,6 +62,14 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [selectedEnrollment, setSelectedEnrollment] = useState<CourseEnrollment | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  
+  const safeParsePrice = (price?: string | number) => {
+    if (!price) return 0;
+    if (typeof price === 'number') return price;
+    // Remove non-numeric chars except dot
+    const cleaned = price.toString().replace(/[^0-9.]/g, '');
+    return parseFloat(cleaned) || 0;
+  };
 
   const EnrollmentAvatar = ({ enrollment }: { enrollment: CourseEnrollment }) => {
     // Priority: Real Profile Pic > Initials
@@ -149,7 +157,7 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
     return matchesSearch && matchesCourse && matchesStatus && matchesTerm;
   });
 
-  const totalValue = filteredEnrollments.reduce((acc, e) => acc + parseInt(e.price?.replace(/[^0-9]/g, '') || '0'), 0);
+  const totalValue = filteredEnrollments.reduce((acc, e) => acc + safeParsePrice(e.price), 0);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -373,11 +381,13 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                   </thead>
                   <tbody className="divide-y-2 divide-slate-50">
                     {filteredEnrollments.map((enrollment) => {
-                       const fullFee = parseInt(enrollment.price || '0');
-                       const halfFee = fullFee / 2;
+                       const fullFee = safeParsePrice(enrollment.price);
                        const isPaidFull = enrollment.payment_term === 'full';
                        const isTerm1 = enrollment.payment_term === 'term1';
                        const isTerm2 = enrollment.payment_term === 'term2';
+                       
+                       const term1Fee = Math.round(fullFee * 0.6);
+                       const term2Fee = Math.round(fullFee * 0.4);
                        
                        return (
                         <tr key={enrollment.id} className="hover:bg-primary/[0.01] transition-all group duration-300">
@@ -425,12 +435,12 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                            <td className="px-8 py-5 text-center bg-purple-50/[0.02] border-r border-slate-50 align-middle">
                               {(isTerm1 || isTerm2 || isPaidFull) ? (
                                  <div className="space-y-1">
-                                    <span className="text-sm font-black text-[#6b21a8] block tracking-tighter">₹{(Math.round(Number(enrollment.price || 0) * (isPaidFull ? 1 : 0.6))).toLocaleString('en-IN')}</span>
+                                    <span className="text-sm font-black text-[#6b21a8] block tracking-tighter">₹{(isPaidFull ? fullFee : term1Fee).toLocaleString('en-IN')}</span>
                                     <Badge className="bg-purple-50 text-[#6b21a8] border border-purple-100 text-[7px] font-black h-4 px-2 uppercase tracking-widest rounded-none">Term 1 Cleared</Badge>
                                  </div>
                               ) : (
                                  <div className="space-y-1 group-hover:scale-105 transition-transform">
-                                    <span className="text-sm font-black text-[#a855f7] block tracking-tighter animate-pulse">₹{(Math.round(Number(enrollment.price || 0) * 0.6)).toLocaleString('en-IN')}</span>
+                                    <span className="text-sm font-black text-[#a855f7] block tracking-tighter animate-pulse">₹{term1Fee.toLocaleString('en-IN')}</span>
                                     <Badge className="bg-violet-50 text-[#a855f7] border border-violet-100 text-[7px] font-black h-4 px-2 uppercase tracking-widest rounded-none">Term 1 Pending</Badge>
                                  </div>
                               )}
@@ -438,17 +448,17 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                            <td className="px-8 py-5 text-center bg-purple-50/[0.01] border-r border-slate-50 align-middle">
                               {(isTerm2 || isPaidFull) ? (
                                  <div className="space-y-1">
-                                    <span className="text-sm font-black text-emerald-600 block tracking-tighter">₹{(Math.round(Number(enrollment.price || 0) * 0.4)).toLocaleString('en-IN')}</span>
+                                    <span className="text-sm font-black text-emerald-600 block tracking-tighter">₹{term2Fee.toLocaleString('en-IN')}</span>
                                     <Badge className="bg-emerald-50 text-emerald-600 border border-emerald-100 text-[7px] font-black h-4 px-2 uppercase tracking-widest rounded-none">Term 2 Cleared</Badge>
                                  </div>
                               ) : isTerm1 ? (
                                  <div className="space-y-1 group-hover:scale-105 transition-transform">
-                                    <span className="text-sm font-black text-orange-500 block tracking-tighter">₹{(enrollment.remaining_balance || Math.round(Number(enrollment.price || 0) * 0.4)).toLocaleString('en-IN')}</span>
+                                    <span className="text-sm font-black text-orange-500 block tracking-tighter">₹{(safeParsePrice(enrollment.remaining_balance) || term2Fee).toLocaleString('en-IN')}</span>
                                     <Badge className="bg-orange-50 text-orange-600 border border-orange-200 text-[7px] font-black h-4 px-2 uppercase tracking-widest animate-pulse shadow-sm shadow-orange-100 rounded-none">Term 2 Awaited</Badge>
                                  </div>
                               ) : (
                                  <div className="space-y-1">
-                                    <span className="text-sm font-black text-slate-400 block tracking-tighter">₹{(enrollment.remaining_balance || Math.round(Number(enrollment.price || 0) * 0.4)).toLocaleString('en-IN')}</span>
+                                    <span className="text-sm font-black text-slate-400 block tracking-tighter">₹{(safeParsePrice(enrollment.remaining_balance) || term2Fee).toLocaleString('en-IN')}</span>
                                     <Badge variant="outline" className="text-[7px] font-black text-slate-300 border-slate-200 h-4 px-2 uppercase rounded-none">Scheduled</Badge>
                                  </div>
                               )}
@@ -458,17 +468,17 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                                  <div className="flex justify-between items-end">
                                     <div className="space-y-0.5">
                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Deposited</p>
-                                       <p className="text-sm font-black text-emerald-600 tracking-tighter">₹{(enrollment.final_price || 0).toLocaleString('en-IN')}</p>
+                                       <p className="text-sm font-black text-emerald-600 tracking-tighter">₹{safeParsePrice(enrollment.final_price).toLocaleString('en-IN')}</p>
                                     </div>
                                     <div className="space-y-0.5 text-right">
                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Total Asset</p>
-                                       <p className="text-sm font-black text-slate-900 tracking-tighter">₹{(fullFee || 0).toLocaleString('en-IN')}</p>
+                                       <p className="text-sm font-black text-slate-900 tracking-tighter">₹{fullFee.toLocaleString('en-IN')}</p>
                                     </div>
                                  </div>
                                  <div className="h-1.5 w-full bg-slate-100 rounded-none overflow-hidden border border-slate-200/20">
                                     <div 
                                        className="h-full bg-[#6b21a8] transition-all duration-1000 shadow-[0_0_10px_rgba(107,33,168,0.4)]" 
-                                       style={{ width: `${Math.min(100, ((enrollment.final_price || 0) / (fullFee || 1)) * 100)}%` }} 
+                                       style={{ width: `${Math.min(100, (safeParsePrice(enrollment.final_price) / (fullFee || 1)) * 100)}%` }} 
                                     />
                                  </div>
                               </div>

@@ -3731,15 +3731,34 @@ app.get('/api/admin/question-bank-summary', authenticateToken, requireAdminOrMan
         const accessMap = {};
         accessCounts.forEach(a => { if (a._id) accessMap[a._id] = a.count; });
 
+        // 3. Find matching exam images for these topics to show as posters
+        const topics = banks.map(b => b.topic);
+        const exams = await Exam.find({ title: { $in: topics } }).lean();
+        
+        // Map exam data for quick lookup
+        const examMap = {};
+        exams.forEach(e => { examMap[e.title] = e; });
+
         // Format the summary response
-        const summary = banks.map(b => ({
-            topic: b.topic,
-            approval_status: b.status,
-            count: b.count,
-            created_by: b.created_by,
-            created_at: b.created_at,
-            access_count: accessMap[b.topic] || 0
-        }));
+        const summary = banks.map(b => {
+            const exam = examMap[b.topic];
+            return {
+                topic: b.topic,
+                approval_status: b.status,
+                count: b.count,
+                created_by: b.created_by,
+                created_at: b.created_at,
+                access_count: accessMap[b.topic] || 0,
+                assigned_image: exam?.assigned_image || null,
+                // New metadata fields
+                duration: exam?.duration_minutes || 0,
+                total_marks: exam?.total_marks || 0,
+                shuffle: exam?.shuffle_questions ?? true,
+                retakes: exam?.max_attempts || 1,
+                exam_type: exam?.exam_type || 'mock',
+                custom_fields: exam?.custom_fields || []
+            };
+        });
 
         res.json(summary);
     } catch (err) {
@@ -4772,6 +4791,17 @@ app.delete('/api/data/:table/:id', authenticateToken, async (req, res) => {
                 return res.status(403).json({ error: 'Unauthorized to delete' });
             }
         }
+
+        // --- CUSTOM HOOKS FOR CASCADE DELETION ---
+        if (table === 'exams') {
+            const examToDelete = await Exam.findById(id);
+            if (examToDelete) {
+                const topic = examToDelete.title;
+                console.log(`[CASCADE] Deleting legacy exam: "${topic}". Syncing Question Bank...`);
+                await QuestionBank.deleteMany({ topic });
+            }
+        }
+        // ----------------------------------------
 
         // Special handling for live classes: Delete from Zoom API first
         if (table === 'live_classes') {

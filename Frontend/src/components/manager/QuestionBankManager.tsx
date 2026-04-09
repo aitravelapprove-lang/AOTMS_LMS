@@ -1437,34 +1437,43 @@ export function QuestionBankManager({
               )}
             </div>
           )}
+          {/* ─── Batch Floating Controls ─── */}
+          <div className="fixed bottom-8 right-8 z-50 flex flex-col gap-3">
+            {batchQuestions.length > 0 && (
+              <Button
+                onClick={handleOpenSaveWizard}
+                className="h-16 rounded-[2rem] px-10 bg-slate-900 hover:bg-black text-white font-black uppercase text-[11px] tracking-[0.3em] flex items-center gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.3)] hover:scale-105 active:scale-95 transition-all animate-in slide-in-from-right-10 duration-500"
+              >
+                <ClipboardList className="h-5 w-5" />
+                Finalize Batch ({batchQuestions.length})
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 
       {/* ─── Save Wizard Dialog ─── */}
       <Dialog open={isSaveWizardOpen} onOpenChange={setIsSaveWizardOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-hidden p-0 border-0 rounded-[2.5rem] shadow-2xl flex flex-col">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-hidden p-0 border-0 rounded-[2.5rem] shadow-2xl flex flex-col">
           <div className="flex flex-col h-full w-full overflow-hidden min-h-[500px] bg-background">
             <div className="flex-1 p-6 pt-8 sm:p-12 sm:pt-14 overflow-y-auto custom-scrollbar relative">
               {/* Background Decorative Gradients */}
               <div className="absolute top-0 right-0 w-80 h-80 bg-primary/5 rounded-full -mr-40 -mt-40 blur-[100px] pointer-events-none" />
               
-              <DialogHeader className="mb-6 sm:mb-10 relative z-10 text-left">
-                <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-2xl sm:rounded-3xl bg-slate-900 flex items-center justify-center mb-4 sm:mb-6 shadow-2xl shadow-slate-200">
-                  <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
-                </div>
-                <div className="space-y-2">
-                  <DialogTitle className="text-2xl sm:text-4xl font-black tracking-tighter italic leading-none uppercase">
-                    Select Exam Scheduling
+              <DialogHeader className="mb-8 relative z-10 text-center">
+                <div className="space-y-3">
+                  <DialogTitle className="text-3xl sm:text-4xl font-black tracking-tighter italic leading-none uppercase text-slate-900">
+                    Finalize Batch
                   </DialogTitle>
-                  <DialogDescription className="text-xs sm:text-base font-bold text-slate-400 uppercase tracking-widest">
-                    Attach this question batch to an active assessment protocol
+                  <DialogDescription className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">
+                    Attach logic particles to an active scheduling poster
                   </DialogDescription>
                 </div>
               </DialogHeader>
 
-              <div className="grid grid-cols-1 gap-4 relative z-10">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 relative z-10 pb-10">
                 {exams.length === 0 ? (
-                  <div className="py-20 text-center border-2 border-dashed border-slate-100 rounded-[3rem] bg-slate-50/50">
+                  <div className="col-span-full py-20 text-center border-2 border-dashed border-slate-100 rounded-[3rem] bg-slate-50/50">
                      <p className="text-sm font-black text-slate-300 uppercase tracking-widest italic">No Active Schedulings Found</p>
                      <Button variant="link" className="text-primary mt-2 uppercase text-[10px] font-bold tracking-widest" onClick={() => onSectionChange?.('exams')}>Create New Schedule</Button>
                   </div>
@@ -1474,41 +1483,37 @@ export function QuestionBankManager({
                       key={exam.id}
                       onClick={() => setSelectedExamId(exam.id)}
                       className={cn(
-                        "group p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border-2 transition-all cursor-pointer flex items-center justify-between",
+                        "group aspect-[4/5] rounded-[2rem] border-4 transition-all cursor-pointer flex flex-col p-3 relative overflow-hidden",
                         selectedExamId === exam.id 
-                          ? "bg-slate-900 border-slate-900 text-white shadow-2xl shadow-slate-200 scale-[1.01]" 
-                          : "bg-white border-slate-50 hover:border-slate-100 text-slate-900"
+                          ? "border-slate-900 bg-slate-900 text-white shadow-2xl scale-[1.05] z-20" 
+                          : "bg-white border-slate-50 hover:border-slate-100 text-slate-900 hover:scale-[1.02]"
                       )}
                     >
-                      <div className="flex items-center gap-4 sm:gap-8 overflow-hidden">
-                         <div className={cn(
-                           "h-14 w-14 shrink-0 sm:h-20 sm:w-20 rounded-xl sm:rounded-[1.8rem] flex items-center justify-center overflow-hidden border-2",
-                           selectedExamId === exam.id ? "border-white/20 bg-white/5" : "border-slate-50 bg-slate-50"
-                         )}>
-                           {exam.assigned_image ? (
-                             <img src={exam.assigned_image} className="h-full w-full object-cover" alt="" />
-                           ) : (
-                             <ShieldCheck className={cn("h-8 w-8", selectedExamId === exam.id ? "text-white" : "text-slate-200")} />
-                           )}
-                         </div>
-                         <div className="space-y-1.5">
-                           <h4 className="text-base sm:text-xl font-black uppercase tracking-tight italic leading-none truncate max-w-[150px] sm:max-w-none">{exam.title}</h4>
-                           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                              <p className={cn("text-[10px] font-bold uppercase tracking-widest opacity-40", selectedExamId === exam.id ? "text-white" : "text-slate-400")}>
-                                Protocol #{exam.id.slice(0, 8)}
-                              </p>
-                              <Badge className={cn("text-[8px] font-black uppercase h-5 rounded-full border-none px-3", selectedExamId === exam.id ? "bg-white/10 text-white" : "bg-slate-100 text-slate-500")}>
-                                 {exam.exam_type}
-                              </Badge>
+                      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/60 to-transparent z-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                       
+                       <div className="flex-1 rounded-[1.5rem] bg-slate-50 overflow-hidden relative z-10 mb-3 shadow-inner">
+                         {exam.assigned_image ? (
+                           <img src={exam.assigned_image} className="h-full w-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-700" alt="" />
+                         ) : (
+                           <div className="h-full w-full flex items-center justify-center">
+                              <ShieldCheck className={cn("h-8 w-8", selectedExamId === exam.id ? "text-slate-700" : "text-slate-200")} />
                            </div>
-                         </div>
-                      </div>
-                      <div className={cn(
-                        "h-10 w-10 rounded-full border-2 flex items-center justify-center transition-all",
-                        selectedExamId === exam.id ? "bg-white border-white text-slate-900 scale-110 shadow-lg shadow-white/20" : "border-slate-100 text-transparent"
-                      )}>
-                        <CheckCircle className="h-5 w-5" />
-                      </div>
+                         )}
+                       </div>
+
+                       <div className="relative z-10 space-y-0.5">
+                          <h4 className="text-[9px] font-black uppercase tracking-widest italic truncate">{exam.title}</h4>
+                          <div className="flex items-center justify-between">
+                             <span className={cn("text-[8px] font-bold uppercase tracking-tighter", selectedExamId === exam.id ? "text-slate-400" : "text-slate-300")}>
+                                #{exam.id.slice(0, 6)}
+                             </span>
+                             {selectedExamId === exam.id && (
+                               <div className="h-4 w-4 rounded-full bg-white flex items-center justify-center">
+                                  <CheckCircle className="h-3 w-3 text-slate-900" />
+                               </div>
+                             )}
+                          </div>
+                       </div>
                     </div>
                   ))
                 )}

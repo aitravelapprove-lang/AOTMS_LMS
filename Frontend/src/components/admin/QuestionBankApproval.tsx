@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { fetchWithAuth } from '@/lib/api';
-import { Loader2, CheckCircle, XCircle, FileText, AlertCircle, LayoutGrid, Clock, History, Eye, Users, Trash2, ShieldCheck, BrainCircuit, RefreshCw } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, FileText, AlertCircle, LayoutGrid, Clock, History, Eye, Users, Trash2, ShieldCheck, BrainCircuit, RefreshCw, Award, Calendar, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -32,6 +32,12 @@ interface PendingQuestionBank {
     count: number;
     created_by: string;
     created_at: string;
+    assigned_image?: string | null;
+    duration?: number;
+    total_marks?: number;
+    shuffle?: boolean;
+    retakes?: number;
+    custom_fields?: { label: string; value: string }[];
 }
 
 interface StudentAccess {
@@ -117,7 +123,7 @@ export function QuestionBankApproval() {
     const [showCourseDialog, setShowCourseDialog] = useState(false);
     const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
     const [selectedCourseId, setSelectedCourseId] = useState<string>("");
-    const [viewTab, setViewTab] = useState<'pending' | 'library' | 'rejected'>('pending');
+    const [viewTab, setViewTab] = useState<'pending' | 'approve' | 'reject'>('pending');
     const { data: courses } = useCourses();
     const [approvedBanks, setApprovedBanks] = useState<PendingQuestionBank[]>([]);
     const [rejectedBanks, setRejectedBanks] = useState<PendingQuestionBank[]>([]);
@@ -471,11 +477,11 @@ export function QuestionBankApproval() {
                     </Button>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                    <Tabs value={viewTab} onValueChange={(v) => setViewTab(v as 'pending' | 'library' | 'rejected')} className="bg-slate-100 p-1 rounded-xl">
+                    <Tabs value={viewTab} onValueChange={(v) => setViewTab(v as 'pending' | 'approve' | 'reject')} className="bg-slate-100 p-1 rounded-xl">
                         <TabsList className="bg-transparent border-none">
                             <TabsTrigger value="pending" className="rounded-lg text-xs sm:text-sm px-2.5 sm:px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm">Pending</TabsTrigger>
-                            <TabsTrigger value="library" className="rounded-lg text-xs sm:text-sm px-2.5 sm:px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm">Library</TabsTrigger>
-                            <TabsTrigger value="rejected" className="rounded-lg text-xs sm:text-sm px-2.5 sm:px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm">Rejected</TabsTrigger>
+                            <TabsTrigger value="approve" className="rounded-lg text-xs sm:text-sm px-2.5 sm:px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm">Approve</TabsTrigger>
+                            <TabsTrigger value="reject" className="rounded-lg text-xs sm:text-sm px-2.5 sm:px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm">Reject</TabsTrigger>
                         </TabsList>
                     </Tabs>
                     <Badge variant="secondary" className="h-6 sm:h-7 px-2.5 sm:px-3 bg-primary/10 text-primary border-none font-bold text-[10px] sm:text-xs">
@@ -503,14 +509,29 @@ export function QuestionBankApproval() {
                             {pendingBanks.map((bank) => (
                                 <Card key={bank.topic} className="overflow-hidden border-slate-200/60 shadow-sm hover:shadow-md transition-shadow rounded-2xl">
                                     <CardContent className="p-0">
-                                        <div className="flex flex-col lg:flex-row items-stretch lg:items-center">
-                                            <div className="bg-primary/5 p-4 sm:p-8 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-slate-100 min-w-0 lg:min-w-[200px]">
-                                                <div className="h-12 w-12 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-4">
-                                                    <FileText className="h-6 w-6 text-primary" />
+                                        <div className="flex flex-col lg:flex-row items-stretch group/card">
+                                            <div className="relative bg-slate-900 min-w-0 lg:min-w-[320px] h-[180px] lg:h-[220px] border-b lg:border-b-0 lg:border-r border-slate-100 overflow-hidden group/poster">
+                                                {bank.assigned_image ? (
+                                                    <img src={bank.assigned_image} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover/poster:scale-110" />
+                                                ) : (
+                                                    <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4">
+                                                        <div className="h-16 w-16 rounded-[1.5rem] bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center shadow-2xl">
+                                                            <FileText className="h-8 w-8 text-white" />
+                                                        </div>
+                                                        <div className="text-center">
+                                                           <p className="text-[10px] font-black uppercase text-white/60 tracking-[0.2em]">Logical Cluster</p>
+                                                           <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest mt-1">Repository Node Ready</p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-between">
+                                                    <Badge variant="secondary" className="bg-white/10 backdrop-blur-md text-white border-white/20 font-black px-3 py-1 text-[10px] uppercase tracking-wider">
+                                                        {bank.count} Questions
+                                                    </Badge>
+                                                    <div className="h-6 w-6 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center">
+                                                       <BrainCircuit className="h-3 w-3 text-white" />
+                                                    </div>
                                                 </div>
-                                                <Badge variant="secondary" className="w-fit bg-primary/20 text-primary border-none font-bold px-3">
-                                                    {bank.count} Questions
-                                                </Badge>
                                             </div>
 
                                             <div className="flex-1 p-4 sm:p-8 space-y-2 min-w-0">
@@ -518,14 +539,48 @@ export function QuestionBankApproval() {
                                                     <h3 className="font-bold text-base sm:text-xl text-slate-900 break-words">{bank.topic}</h3>
                                                     <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none px-2 py-0 text-[10px] uppercase tracking-wider font-black">Pending</Badge>
                                                 </div>
-                                                <div className="flex flex-wrap items-center gap-6 text-xs font-semibold text-slate-500 mt-2">
-                                                    <div className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
+                                                <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-xs font-semibold text-slate-500 mt-4">
+                                                    <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
                                                         <Clock className="h-3.5 w-3.5 text-primary" />
-                                                        <span>Submitted: {new Date(bank.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                                        <span>{bank.duration || 0} Minutes</span>
                                                     </div>
-                                                    <div className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
-                                                        <span>Source: {bank.created_by?.substring(0, 8) || 'System'}...</span>
+                                                    <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
+                                                        <Award className="h-3.5 w-3.5 text-primary" />
+                                                        <span>{bank.total_marks || 0} Total Marks</span>
                                                     </div>
+                                                    <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
+                                                        <RefreshCw className={cn("h-3.5 w-3.5", bank.shuffle ? "text-emerald-500" : "text-slate-300")} />
+                                                        <span>Shuffle: {bank.shuffle ? "ON" : "OFF"}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
+                                                        <History className="h-3.5 w-3.5 text-primary" />
+                                                        <span>{bank.retakes || 1} Retakes</span>
+                                                    </div>
+                                                </div>
+
+                                                {bank.custom_fields && bank.custom_fields.length > 0 && (
+                                                    <div className="pt-4 mt-2 border-t border-slate-50">
+                                                        <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-3">Protocol Variations (Custom Nodes)</p>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {bank.custom_fields.map((field, idx) => (
+                                                                <div key={idx} className="flex items-center gap-2 text-[10px] bg-slate-900 text-white px-3 py-1.5 rounded-lg font-bold shadow-sm">
+                                                                    <span className="opacity-60">{field.label}:</span>
+                                                                    <span>{field.value}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                <div className="flex items-center gap-6 pt-4 border-t border-slate-50 mt-4">
+                                                     <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                                         <Calendar className="h-3.5 w-3.5" />
+                                                         <span>Submitted {new Date(bank.created_at).toLocaleDateString()}</span>
+                                                     </div>
+                                                     <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                                         <User className="h-3.5 w-3.5" />
+                                                         <span>Source: {bank.created_by?.substring(0, 8) || 'System'}...</span>
+                                                     </div>
                                                 </div>
                                             </div>
 
@@ -581,7 +636,7 @@ export function QuestionBankApproval() {
                     )}
                 </TabsContent>
 
-                <TabsContent value="library" className="mt-0">
+                <TabsContent value="approve" className="mt-0">
                     {approvedBanks.length === 0 ? (
                         <Card className="border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-[2rem]">
                             <CardContent className="flex flex-col items-center justify-center py-20 text-center space-y-4">
@@ -589,8 +644,8 @@ export function QuestionBankApproval() {
                                     <LayoutGrid className="h-10 w-10 text-slate-200" />
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-xl font-bold text-slate-900">Library is empty!</p>
-                                    <p className="text-sm font-medium text-slate-500 max-w-sm">No approved question banks in the library yet.</p>
+                                    <p className="text-xl font-bold text-slate-900">Approved list is empty!</p>
+                                    <p className="text-sm font-medium text-slate-500 max-w-sm">No question banks have been approved yet.</p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -599,14 +654,29 @@ export function QuestionBankApproval() {
                             {approvedBanks.map((bank) => (
                                 <Card key={bank.topic} className="overflow-hidden border-slate-200/60 shadow-sm hover:shadow-md transition-shadow rounded-2xl">
                                     <CardContent className="p-0">
-                                        <div className="flex flex-col lg:flex-row items-stretch lg:items-center">
-                                            <div className="bg-emerald-50 p-4 sm:p-6 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-emerald-100 min-w-0 lg:min-w-[160px]">
-                                                <div className="h-10 w-10 rounded-xl bg-white shadow-sm flex items-center justify-center mb-3">
-                                                    <CheckCircle className="h-5 w-5 text-emerald-600" />
+                                        <div className="flex flex-col lg:flex-row items-stretch group/card">
+                                            <div className="relative bg-slate-900 min-w-0 lg:min-w-[320px] h-[180px] lg:h-[220px] border-b lg:border-b-0 lg:border-r border-emerald-100 overflow-hidden group/poster">
+                                                {bank.assigned_image ? (
+                                                    <img src={bank.assigned_image} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover/poster:scale-110" />
+                                                ) : (
+                                                    <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4">
+                                                        <div className="h-16 w-16 rounded-[1.5rem] bg-emerald-500/10 backdrop-blur-xl border border-emerald-500/20 flex items-center justify-center shadow-2xl">
+                                                            <CheckCircle className="h-8 w-8 text-emerald-500" />
+                                                        </div>
+                                                        <div className="text-center">
+                                                           <p className="text-[10px] font-black uppercase text-emerald-500/60 tracking-[0.2em]">Validated Node</p>
+                                                           <p className="text-[8px] font-bold text-emerald-500/30 uppercase tracking-widest mt-1">Repository Sanity Passed</p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-emerald-900/80 to-transparent flex items-center justify-between">
+                                                    <Badge variant="secondary" className="bg-white/10 backdrop-blur-md text-white border-white/20 font-black px-3 py-1 text-[10px] uppercase tracking-wider">
+                                                        {bank.count} Questions
+                                                    </Badge>
+                                                     <div className="h-6 w-6 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-400/30 flex items-center justify-center">
+                                                       <ShieldCheck className="h-3 w-3 text-white" />
+                                                     </div>
                                                 </div>
-                                                <Badge variant="secondary" className="w-fit bg-emerald-100 text-emerald-700 border-none font-bold px-2 py-0 text-xs">
-                                                    {bank.count} Questions
-                                                </Badge>
                                             </div>
 
                                             <div className="flex-1 p-4 sm:p-6 space-y-2 min-w-0">
@@ -614,13 +684,39 @@ export function QuestionBankApproval() {
                                                     <h3 className="font-bold text-base sm:text-lg text-slate-900 break-words">{bank.topic}</h3>
                                                     <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-none px-2 py-0 text-[10px] uppercase tracking-wider font-black">Approved</Badge>
                                                 </div>
-                                                <div className="flex items-center gap-4 text-xs font-semibold text-slate-500">
+                                                <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-xs font-semibold text-slate-500 mt-4">
+                                                    <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
+                                                        <Clock className="h-3.5 w-3.5 text-emerald-600" />
+                                                        <span>{bank.duration || 0}m</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
+                                                        <Award className="h-3.5 w-3.5 text-emerald-600" />
+                                                        <span>{bank.total_marks || 0}pts</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
+                                                        <History className="h-3.5 w-3.5 text-emerald-600" />
+                                                        <span>{bank.retakes || 1} Retakes</span>
+                                                    </div>
+                                                </div>
+                                                
+                                                {bank.custom_fields && bank.custom_fields.length > 0 && (
+                                                    <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-50">
+                                                        {bank.custom_fields.map((field, idx) => (
+                                                            <div key={idx} className="flex items-center gap-1.5 text-[9px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded-md font-black uppercase tracking-tight">
+                                                                <span className="opacity-60">{field.label}:</span>
+                                                                <span>{field.value}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                <div className="flex items-center gap-4 text-xs font-semibold text-slate-500 mt-4 border-t border-slate-50 pt-4">
                                                     <div 
-                                                        className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-200 transition-colors"
+                                                        className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-200 transition-colors text-[10px] font-black uppercase tracking-widest"
                                                         onClick={() => handleViewAccess(bank.topic)}
                                                     >
                                                         <Users className="h-3.5 w-3.5 text-primary" />
-                                                        <span>{accessCount[bank.topic] || 0} Students Accessed</span>
+                                                        <span>{accessCount[bank.topic] || 0} Students Access</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -655,7 +751,7 @@ export function QuestionBankApproval() {
                     )}
                 </TabsContent>
 
-                <TabsContent value="rejected" className="mt-0">
+                <TabsContent value="reject" className="mt-0">
                     {rejectedBanks.length === 0 ? (
                         <Card className="border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-[2rem]">
                             <CardContent className="flex flex-col items-center justify-center py-20 text-center space-y-4">
@@ -663,8 +759,8 @@ export function QuestionBankApproval() {
                                     <XCircle className="h-10 w-10 text-slate-200" />
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-xl font-bold text-slate-900">No rejected banks!</p>
-                                    <p className="text-sm font-medium text-slate-500 max-w-sm">There are no question banks with a rejected status.</p>
+                                    <p className="text-xl font-bold text-slate-900">Reject list is empty!</p>
+                                    <p className="text-sm font-medium text-slate-500 max-w-sm">No question banks have been rejected yet.</p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -673,14 +769,29 @@ export function QuestionBankApproval() {
                             {rejectedBanks.map((bank) => (
                                 <Card key={bank.topic} className="overflow-hidden border-slate-200/60 shadow-sm hover:shadow-md transition-shadow rounded-2xl">
                                     <CardContent className="p-0">
-                                        <div className="flex flex-col lg:flex-row items-stretch lg:items-center">
-                                            <div className="bg-rose-50 p-4 sm:p-6 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-rose-100 min-w-0 lg:min-w-[160px]">
-                                                <div className="h-10 w-10 rounded-xl bg-white shadow-sm flex items-center justify-center mb-3">
-                                                    <XCircle className="h-5 w-5 text-rose-600" />
+                                        <div className="flex flex-col lg:flex-row items-stretch group/card">
+                                            <div className="relative bg-slate-900 min-w-0 lg:min-w-[320px] h-[180px] lg:h-[220px] border-b lg:border-b-0 lg:border-r border-rose-100 overflow-hidden group/poster">
+                                                {bank.assigned_image ? (
+                                                    <img src={bank.assigned_image} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover/poster:scale-110" />
+                                                ) : (
+                                                    <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4">
+                                                        <div className="h-16 w-16 rounded-[1.5rem] bg-rose-500/10 backdrop-blur-xl border border-rose-500/20 flex items-center justify-center shadow-2xl">
+                                                            <XCircle className="h-8 w-8 text-rose-500" />
+                                                        </div>
+                                                        <div className="text-center">
+                                                           <p className="text-[10px] font-black uppercase text-rose-500/60 tracking-[0.2em]">Rejected Node</p>
+                                                           <p className="text-[8px] font-bold text-rose-500/30 uppercase tracking-widest mt-1">Review & Resubmit</p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-rose-900/80 to-transparent flex items-center justify-between">
+                                                    <Badge variant="secondary" className="bg-white/10 backdrop-blur-md text-white border-white/20 font-black px-3 py-1 text-[10px] uppercase tracking-wider">
+                                                        {bank.count} Questions
+                                                    </Badge>
+                                                     <div className="h-6 w-6 rounded-full bg-rose-500/20 backdrop-blur-md border border-rose-400/30 flex items-center justify-center">
+                                                       <AlertCircle className="h-3 w-3 text-white" />
+                                                     </div>
                                                 </div>
-                                                <Badge variant="secondary" className="w-fit bg-rose-100 text-rose-700 border-none font-bold px-2 py-0 text-xs">
-                                                    {bank.count} Questions
-                                                </Badge>
                                             </div>
 
                                             <div className="flex-1 p-4 sm:p-6 space-y-2 min-w-0">

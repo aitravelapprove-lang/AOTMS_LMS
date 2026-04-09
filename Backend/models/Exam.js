@@ -25,6 +25,7 @@ const ExamSchema = new Schema({
     source_topic: { type: String },
     created_by: { type: Schema.Types.ObjectId, ref: 'User' },
     is_active: { type: Boolean, default: true },
+    custom_fields: [{ label: String, value: String }],
     created_at: { type: Date, default: Date.now, index: true },
     updated_at: { type: Date }
 });

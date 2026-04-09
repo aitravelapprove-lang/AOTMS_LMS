@@ -45,7 +45,6 @@ const mainNavItems = [
   { title: "Instructors", url: "/admin/instructors", icon: Award },
   { title: "Video Library", url: "/admin/videos", icon: Video },
   { title: "Question Bank", url: "/admin/questions", icon: FileQuestion },
-  { title: "Exam Approvals", url: "/admin/exams", icon: ShieldCheck },
   { title: "Exam Scheduling", url: "/admin/exam-scheduling", icon: Calendar },
   { title: "Question Repository", url: "/admin/question-repository", icon: Database },
   { title: "Live Monitoring", url: "/admin/live-monitoring", icon: TrendingUp },

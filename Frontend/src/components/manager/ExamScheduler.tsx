@@ -186,16 +186,7 @@ function ExamCard({
           </div>
         )}
 
-        <div className="absolute inset-0 bg-white/40 group-hover:bg-white/80 transition-colors duration-500 flex items-center justify-center opacity-0 group-hover:opacity-100 backdrop-blur-[4px]">
-          <div className="flex flex-col items-center gap-2 text-slate-900">
-            <div className="h-14 w-14 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-white shadow-2xl scale-75 group-hover:scale-100 transition-transform duration-500">
-              <Settings2 className="h-6 w-6" />
-            </div>
-            <span className="text-[10px] font-bold uppercase tracking-widest">
-              Protocol Setup
-            </span>
-          </div>
-        </div>
+        <div className="absolute inset-0 bg-white/10 group-hover:bg-transparent transition-all duration-500 opacity-0 group-hover:opacity-100 backdrop-blur-[2px]" />
 
         <div className="absolute top-4 right-4 flex flex-col gap-2 scale-90 origin-top-right">
           <Badge className="bg-white hover:bg-white text-slate-900 border border-slate-100 text-[9px] font-bold uppercase tracking-widest h-6 rounded-full px-3 shadow-sm">
@@ -229,39 +220,74 @@ function ExamCard({
           <h4 className="font-bold text-base sm:text-xl text-slate-900 leading-tight transition-colors line-clamp-2 uppercase tracking-tighter">
             {exam.title}
           </h4>
-          <div className="flex flex-wrap items-center gap-3 text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em]">
-            <span className="flex items-center gap-1.5">
-              <Clock className="h-3 w-3" /> {exam.duration_minutes} min
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[8px] font-black text-slate-400 uppercase tracking-widest">
+            <span className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
+              <Clock className="h-2.5 w-2.5" /> {exam.duration_minutes}m
             </span>
-            <span className="h-1 w-1 rounded-full bg-slate-100" />
-            <span className="flex items-center gap-1.5">
-              <CalendarIcon className="h-3 w-3" />
-              {exam.scheduled_date && !isNaN(new Date(exam.scheduled_date).getTime())
-                ? format(new Date(exam.scheduled_date), "MMM dd")
-                : "Unscheduled"}
+            <span className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
+              <Target className="h-2.5 w-2.5" /> {exam.total_marks}pts
             </span>
+            <span className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
+              <ShieldAlert className="h-2.5 w-2.5" /> -{exam.negative_marking || 0}
+            </span>
+            <span className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
+              <RefreshCw className="h-2.5 w-2.5" /> {exam.max_attempts}x
+            </span>
+            <span className={cn("flex items-center gap-1.5 px-2 py-1 rounded-md border", exam.shuffle_questions ? "bg-emerald-50 border-emerald-100 text-emerald-600" : "bg-slate-50 border-slate-100 text-slate-400")}>
+              <Shuffle className="h-2.5 w-2.5" /> {exam.shuffle_questions ? "Shuffled" : "Fixed"}
+            </span>
+          </div>
+
+          {(exam as any).custom_fields && (exam as any).custom_fields.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 pt-1">
+               {(exam as any).custom_fields.slice(0, 3).map((f: any, i: number) => (
+                 <Badge key={i} variant="outline" className="text-[7px] font-bold uppercase tracking-tighter h-5 border-slate-100 text-slate-400 px-1.5 rounded-sm">
+                    {f.label}: {f.value}
+                 </Badge>
+               ))}
+               {(exam as any).custom_fields.length > 3 && <span className="text-[7px] font-bold text-slate-300">+{ (exam as any).custom_fields.length - 3}</span>}
+            </div>
+          )}
+
+          <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-300 uppercase tracking-widest pt-1">
+             <CalendarIcon className="h-3 w-3" />
+             {exam.scheduled_date && !isNaN(new Date(exam.scheduled_date).getTime())
+               ? format(new Date(exam.scheduled_date), "MMM dd, yyyy")
+               : "Unscheduled"}
           </div>
         </div>
 
         <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
           {!isPast && exam.approval_status === "approved" && (
-            <Button
-              className={cn(
-                "flex-1 h-12 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all active:scale-95",
-                exam.status === "active"
-                  ? "bg-slate-900 hover:bg-black text-white"
-                  : "bg-slate-100 hover:bg-slate-200 text-slate-900",
-              )}
-              onClick={(e) => {
-                e.stopPropagation();
-                onUpdate({
-                  id: exam.id,
-                  status: exam.status === "active" ? "completed" : "active",
-                });
-              }}
-            >
-              {exam.status === "active" ? "End Protocol" : "Launch Protocol"}
-            </Button>
+            <div className="flex flex-1 gap-2">
+              <Button
+                className={cn(
+                  "flex-[2] h-12 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all active:scale-95",
+                  exam.status === "active"
+                    ? "bg-slate-900 hover:bg-black text-white"
+                    : "bg-slate-100 hover:bg-slate-200 text-slate-900",
+                )}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onUpdate({
+                    id: exam.id,
+                    status: exam.status === "active" ? "completed" : "active",
+                  });
+                }}
+              >
+                {exam.status === "active" ? "End Protocol" : "Launch Protocol"}
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1 h-12 rounded-2xl border-slate-100 text-slate-400 hover:text-slate-900 hover:border-slate-900 font-bold text-[9px] uppercase tracking-widest transition-all"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onConfigure?.(exam);
+                }}
+              >
+                View Analysis
+              </Button>
+            </div>
           )}
           {exam.approval_status === "pending" && userRole !== "instructor" && (
             <div className="flex flex-1 gap-2">
@@ -308,7 +334,7 @@ function ExamCard({
 
 // ─── 3. Main Horizontal Scheduler ──────────────────────────────────────────
 
-export function ExamScheduler() {
+export function ExamScheduler({ onNavigateToRepository }: { onNavigateToRepository?: () => void }) {
   const { user, userRole } = useAuth();
   const { data: rawRatings } = useInstructorRatings();
   const ratings = useMemo(() => Array.isArray(rawRatings) ? rawRatings : [], [rawRatings]);
@@ -709,10 +735,10 @@ export function ExamScheduler() {
               className="flex-1 h-10 sm:h-full rounded-xl sm:rounded-full font-bold text-[8px] sm:text-[10px] uppercase tracking-wider sm:tracking-widest text-slate-300 data-[state=active]:bg-slate-900 data-[state=active]:text-white transition-all duration-500 whitespace-nowrap"
             >
               {tab === "pending"
-                ? `Approval (${pendingExams.length})`
+                ? `Pending (${pendingExams.length})`
                 : tab === "approved"
-                  ? `Approved Protocols (${approvedExams.length})`
-                  : `Rejected (${rejectedExams.length})`}
+                  ? `Approve (${approvedExams.length})`
+                  : `Reject (${rejectedExams.length})`}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -753,6 +779,7 @@ export function ExamScheduler() {
                     userRole={userRole}
                     onUpdate={(p) => updateExam.mutate({ id: p.id, ...p })}
                     onDelete={(id) => deleteExam.mutate(id)}
+                    onConfigure={() => onNavigateToRepository?.()}
                   />
                 ));
               })()}

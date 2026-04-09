@@ -802,7 +802,6 @@ export default function AdminDashboard() {
                         icon: FileQuestion,
                         key: "tab-questions",
                       },
-                      { id: "exams", label: "Assessments", icon: ShieldCheck, key: "tab-exams" },
 
                       { id: "qa", label: "Quality Assurance", icon: ShieldCheck, key: "tab-qa" },
                       { id: "chat", label: "Chat Monitor", icon: MessageSquare, key: "tab-chat" },
@@ -951,15 +950,6 @@ export default function AdminDashboard() {
                   </motion.div>
                 </TabsContent>
 
-                <TabsContent key="tab-exams" value="exams" className="mt-0 outline-none">
-                  <motion.div
-                    key="motion-exams"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                  >
-                    <ExamApproval />
-                  </motion.div>
-                </TabsContent>
 
                 <TabsContent key="tab-security" value="security" className="mt-0 outline-none">
                   <motion.div
@@ -1117,7 +1107,7 @@ export default function AdminDashboard() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                   >
-                    <ExamScheduler />
+                    <ExamScheduler onNavigateToRepository={() => setActiveTab('question-repository')} />
                   </motion.div>
                 </TabsContent>
 

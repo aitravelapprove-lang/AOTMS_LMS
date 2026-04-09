@@ -108,68 +108,60 @@ export function ExamModule({ type }: ExamModuleProps) {
     }
 
     return (
-        <div className="grid gap-4">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
             {data?.map((item: StudentExam) => (
-                <Card key={item.id} className="hover:border-primary/50 transition-colors bg-card/50">
-                    <CardHeader className="p-5 flex flex-row items-center justify-between space-y-0">
-                        <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                                <span className="p-2 rounded-lg bg-primary/10 text-primary">
-                                    {icon}
-                                </span>
-                                <CardTitle className="text-base">
-                                    {item.title}
-                                    {type === 'mock' && <span className="text-red-500 ml-1" title="All answers must be attempted">*</span>}
-                                </CardTitle>
-                            </div>
-                            <CardDescription>{item.description}</CardDescription>
+                <motion.div
+                   key={item.id}
+                   whileHover={{ y: -5 }}
+                   className="group relative flex flex-col rounded-[2rem] border border-slate-100 bg-white shadow-sm hover:shadow-2xl transition-all duration-500 overflow-hidden cursor-pointer h-full"
+                   onClick={() => !item.is_completed && setActiveExam(item)}
+                >
+                   <div className="aspect-video relative overflow-hidden bg-slate-50">
+                      {item.assigned_image ? (
+                        <img src={item.assigned_image} className="h-full w-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-700" alt="" />
+                      ) : (
+                        <div className="h-full w-full flex items-center justify-center bg-slate-100">
+                           <FileText className="h-10 w-10 text-slate-200" />
                         </div>
-                        <div className="hidden md:block">
-                            {item.is_completed ? (
-                                <Badge variant="outline" className="text-slate-400 border-slate-200 bg-slate-50 font-black text-[9px] uppercase tracking-widest">
-                                    Completed
-                                </Badge>
-                            ) : type === 'live' ? (
-                                <Badge variant="outline" className="text-orange-500 border-orange-200 bg-orange-50 font-semibold">
-                                    LIVE SOON
-                                </Badge>
-                            ) : (
-                                <Badge variant="outline" className="text-green-500 border-green-200 bg-green-50">
-                                    PRACTICE
-                                </Badge>
-                            )}
-                        </div>
-                    </CardHeader>
-                    <CardContent className="px-5 pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1.5">
-                                <Clock className="h-4 w-4" />
-                                <span>{item.duration_minutes} mins</span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                                <Award className="h-4 w-4" />
-                                <span>{item.total_marks} Marks</span>
-                            </div>
-                        </div>
-                        <Button 
-                            size="sm" 
-                            className={`gap-2 ${item.is_completed ? 'bg-slate-100 text-slate-500 cursor-not-allowed opacity-80' : 'group bg-primary text-white hover:bg-primary/90'}`}
-                            onClick={() => !item.is_completed && setActiveExam(item)}
-                            disabled={item.is_completed}
-                        >
-                            {item.is_completed ? (
-                                <>
-                                    COMPLETED 🚫
-                                </>
-                            ) : (
-                                <>
-                                    {type === 'live' ? 'Enter Exam' : 'Start Mock'}
-                                    <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                                </>
-                            )}
-                        </Button>
-                    </CardContent>
-                </Card>
+                      )}
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[4px]">
+                         <Button className="rounded-full bg-white text-black font-black uppercase text-[10px] tracking-widest h-12 px-8 border-none transform translate-y-4 group-hover:translate-y-0 transition-all duration-500">
+                            {item.is_completed ? "View Analysis" : "Begin Session"}
+                         </Button>
+                      </div>
+                      <div className="absolute top-4 right-4">
+                         <Badge className={cn("text-[8px] font-black uppercase tracking-widest h-6 rounded-full px-3 border-none shadow-lg", 
+                           item.is_completed ? "bg-slate-200 text-slate-400" : "bg-emerald-500 text-white animate-pulse"
+                         )}>
+                            {item.is_completed ? "Completed" : "Active Node"}
+                         </Badge>
+                      </div>
+                   </div>
+
+                   <div className="p-6 space-y-4 flex-1 flex flex-col justify-between">
+                      <div className="space-y-2">
+                         <h4 className="font-black text-sm uppercase tracking-tight text-slate-900 line-clamp-2">{item.title}</h4>
+                         <div className="flex items-center gap-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                            <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {item.duration_minutes}m</span>
+                            <span className="h-1 w-1 rounded-full bg-slate-200" />
+                            <span className="flex items-center gap-1"><Award className="h-3 w-3" /> {item.total_marks}pts</span>
+                         </div>
+                      </div>
+                      
+                      <div className="pt-4 border-t border-slate-50 flex items-center justify-between">
+                         <div className="flex -space-x-2">
+                             {[1, 2, 3].map(i => (
+                               <div key={i} className="h-6 w-6 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[8px] font-black text-slate-400">
+                                  L{i}
+                               </div>
+                             ))}
+                         </div>
+                         <Button variant="ghost" className="h-8 w-8 rounded-full p-0 text-slate-300 group-hover:text-primary transition-colors">
+                            <ArrowRight className="h-4 w-4" />
+                         </Button>
+                      </div>
+                   </div>
+                </motion.div>
             ))}
 
             <Dialog open={!!showResults} onOpenChange={() => setShowResults(null)}>

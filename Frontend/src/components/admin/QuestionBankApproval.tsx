@@ -507,7 +507,7 @@ export function QuestionBankApproval() {
                     ) : (
                         <div className="grid gap-4">
                             {pendingBanks.map((bank) => (
-                                <Card key={bank.topic} className="overflow-hidden border-slate-200/60 shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+                                <Card key={bank.topic} className="overflow-hidden border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-500 rounded-[2.5rem]">
                                     <CardContent className="p-0">
                                         <div className="flex flex-col lg:flex-row items-stretch group/card">
                                             <div className="relative bg-slate-900 min-w-0 lg:min-w-[320px] h-[180px] lg:h-[220px] border-b lg:border-b-0 lg:border-r border-slate-100 overflow-hidden group/poster">
@@ -652,7 +652,7 @@ export function QuestionBankApproval() {
                     ) : (
                         <div className="grid gap-4">
                             {approvedBanks.map((bank) => (
-                                <Card key={bank.topic} className="overflow-hidden border-slate-200/60 shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+                                <Card key={bank.topic} className="overflow-hidden border-slate-200/60 shadow-sm hover:shadow-md transition-shadow rounded-[2.5rem]">
                                     <CardContent className="p-0">
                                         <div className="flex flex-col lg:flex-row items-stretch group/card">
                                             <div className="relative bg-slate-900 min-w-0 lg:min-w-[320px] h-[180px] lg:h-[220px] border-b lg:border-b-0 lg:border-r border-emerald-100 overflow-hidden group/poster">
@@ -767,7 +767,7 @@ export function QuestionBankApproval() {
                     ) : (
                         <div className="grid gap-4">
                             {rejectedBanks.map((bank) => (
-                                <Card key={bank.topic} className="overflow-hidden border-slate-200/60 shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+                                <Card key={bank.topic} className="overflow-hidden border-slate-200/60 shadow-sm hover:shadow-md transition-shadow rounded-[2.5rem]">
                                     <CardContent className="p-0">
                                         <div className="flex flex-col lg:flex-row items-stretch group/card">
                                             <div className="relative bg-slate-900 min-w-0 lg:min-w-[320px] h-[180px] lg:h-[220px] border-b lg:border-b-0 lg:border-r border-rose-100 overflow-hidden group/poster">
@@ -840,9 +840,9 @@ export function QuestionBankApproval() {
             </Tabs>
 
             <Dialog open={showCourseDialog} onOpenChange={setShowCourseDialog}>
-                <DialogContent className="w-[95vw] sm:max-w-md border-none shadow-2xl rounded-2xl sm:rounded-[2rem] bg-white p-0 overflow-hidden">
+                <DialogContent className="w-[95vw] sm:max-w-md border-none shadow-2xl rounded-[2.5rem] sm:rounded-[2rem] bg-white p-0 overflow-hidden">
                     <div className="bg-primary p-8 text-white relative">
-                        <div className="h-16 w-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 border border-white/30 shadow-xl relative z-10">
+                        <div className="h-16 w-16 bg-white/20 backdrop-blur-md rounded-[2.5rem] flex items-center justify-center mb-6 border border-white/30 shadow-xl relative z-10">
                             <ShieldCheck className="h-8 w-8 text-white" />
                         </div>
                         <DialogTitle className="text-2xl font-black tracking-tight relative z-10">Authorize Repository</DialogTitle>
@@ -854,10 +854,10 @@ export function QuestionBankApproval() {
                             <div className="space-y-2">
                                 <Label htmlFor="course-select-dialog" className="text-xs font-black uppercase text-slate-500 tracking-widest pl-1">Target Curriculum</Label>
                                 <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
-                                    <SelectTrigger id="course-select-dialog" className="h-14 rounded-2xl border-slate-200 bg-slate-50 focus:ring-primary/20 font-bold text-slate-700">
+                                    <SelectTrigger id="course-select-dialog" className="h-14 rounded-[2.5rem] border-slate-200 bg-slate-50 focus:ring-primary/20 font-bold text-slate-700">
                                         <SelectValue placeholder="Associate with Course..." />
                                     </SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-slate-200 shadow-xl">
+                                    <SelectContent className="rounded-[2.5rem] border-slate-200 shadow-xl">
                                         {(courses as { id: string; title: string }[] | undefined)?.map((course) => (
                                             <SelectItem
                                                 key={course.id}
@@ -870,7 +870,7 @@ export function QuestionBankApproval() {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 space-y-2">
+                            <div className="p-5 rounded-[2.5rem] bg-slate-50 border border-slate-100 space-y-2">
                                 <div className="flex items-center gap-2">
                                     <Badge className="bg-primary/10 text-primary border-none font-bold">{selectedTopic}</Badge>
                                     <span className="text-xs font-bold text-slate-400 uppercase tracking-widest italic">Authorization Required</span>
@@ -903,11 +903,11 @@ export function QuestionBankApproval() {
             </Dialog>
 
             <Dialog open={showAccessDialog} onOpenChange={setShowAccessDialog}>
-                <DialogContent className="w-[95vw] sm:max-w-[600px] rounded-2xl sm:rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl">
+                <DialogContent className="w-[95vw] sm:max-w-[600px] rounded-[2.5rem] sm:rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl">
                     <div className="bg-primary p-8 text-white relative">
                         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }} />
 
-                        <div className="h-16 w-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 border border-white/30 shadow-xl relative z-10">
+                        <div className="h-16 w-16 bg-white/20 backdrop-blur-md rounded-[2.5rem] flex items-center justify-center mb-6 border border-white/30 shadow-xl relative z-10">
                             <Users className="h-8 w-8 text-white" />
                         </div>
                         <DialogTitle className="text-2xl font-black tracking-tight relative z-10">Student Access List</DialogTitle>
@@ -965,9 +965,9 @@ export function QuestionBankApproval() {
             </Dialog>
 
             <Dialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
-                <DialogContent className="w-[95vw] sm:max-w-[400px] rounded-2xl sm:rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl">
+                <DialogContent className="w-[95vw] sm:max-w-[400px] rounded-[2.5rem] sm:rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl">
                     <div className="bg-red-500 p-8 text-white relative">
-                        <div className="h-16 w-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 border border-white/30 shadow-xl relative z-10">
+                        <div className="h-16 w-16 bg-white/20 backdrop-blur-md rounded-[2.5rem] flex items-center justify-center mb-6 border border-white/30 shadow-xl relative z-10">
                             <Trash2 className="h-8 w-8 text-white" />
                         </div>
                         <DialogTitle className="text-2xl font-black tracking-tight relative z-10">Remove Question Bank?</DialogTitle>
@@ -1059,19 +1059,22 @@ export function QuestionBankApproval() {
 
             <Dialog open={showGrantDialog} onOpenChange={setShowGrantDialog}>
                 <DialogContent className="sm:max-w-[480px] border-none shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] rounded-[2.5rem] bg-white p-0 overflow-hidden flex flex-col max-h-[90vh]">
-                    <div className="bg-gradient-to-br from-primary via-primary/90 to-[#ff6a00] p-10 text-white relative overflow-hidden shrink-0">
-                        {/* Dynamic background elements */}
-                        <div className="absolute top-0 right-0 -mr-10 -mt-10 h-40 w-40 bg-white/10 rounded-full blur-3xl animate-pulse" />
-                        <div className="absolute bottom-0 left-0 -ml-10 -mb-10 h-32 w-32 bg-white/5 rounded-full blur-2xl" />
+                    <div className="bg-gradient-to-br from-primary to-[#ff6a00] p-10 text-white relative overflow-hidden shrink-0">
+                        {/* High-fidelity brand patterns */}
+                        <div className="absolute inset-0 bg-white/10 opacity-20" />
+                        <div className="absolute top-0 right-0 -mr-16 -mt-16 h-64 w-64 bg-white/20 rounded-full blur-3xl animate-pulse" />
+                        <div className="absolute bottom-0 left-0 -ml-16 -mb-16 h-64 w-64 bg-black/20 rounded-full blur-3xl" />
                         
                         <div className="relative z-10">
-                            <div className="h-16 w-16 bg-white/20 backdrop-blur-xl rounded-[1.25rem] flex items-center justify-center mb-6 border border-white/30 shadow-2xl">
+                            <div className="h-16 w-16 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center mb-6 shadow-2xl border border-white/30">
                                 <Users className="h-8 w-8 text-white" />
                             </div>
-                            <DialogTitle className="text-2xl font-black tracking-tight leading-none mb-2">Grant <span className="text-white/80 font-medium italic">Student Access</span></DialogTitle>
-                            <DialogDescription className="text-white/90 font-medium text-xs uppercase tracking-widest flex items-center gap-2 opacity-80">
-                                <BookOpen className="h-3 w-3 text-white/60" />
-                                Assigning: {grantingTopic}
+                            <DialogTitle className="text-3xl font-black tracking-tight leading-none mb-3 text-white">
+                                Grant <span className="text-white/80 font-medium italic">Student Access</span>
+                            </DialogTitle>
+                            <DialogDescription className="text-white/70 font-bold text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
+                                <div className="h-1 w-4 bg-white/40 rounded-full" />
+                                Repository: {grantingTopic}
                             </DialogDescription>
                         </div>
                     </div>
@@ -1079,7 +1082,7 @@ export function QuestionBankApproval() {
                     <ScrollArea className="flex-1 overflow-y-auto pr-1">
                         <div className="p-8 space-y-8 bg-white relative">
                             <Tabs value={grantType} onValueChange={(v) => setGrantType(v as 'student' | 'batch')} className="w-full">
-                                <TabsList className="grid grid-cols-2 mb-8 bg-slate-50 p-1.5 rounded-2xl border border-slate-100 h-12">
+                                <TabsList className="grid grid-cols-2 mb-8 bg-slate-50 p-1.5 rounded-3xl border border-slate-100 h-12">
                                     <TabsTrigger 
                                         value="student" 
                                         className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary font-black text-[10px] uppercase tracking-[0.15em] transition-all"
@@ -1100,10 +1103,10 @@ export function QuestionBankApproval() {
                                             Select Student
                                         </Label>
                                         <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
-                                            <SelectTrigger className="h-14 rounded-2xl border-slate-200 bg-slate-50/50 focus:ring-primary/20 font-bold text-slate-700 transition-all hover:bg-white hover:shadow-md">
+                                            <SelectTrigger className="h-14 rounded-3xl border-slate-200 bg-slate-50/50 focus:ring-primary/20 font-bold text-slate-700 transition-all hover:bg-white hover:shadow-md">
                                                 <SelectValue placeholder="Search for a student..." />
                                             </SelectTrigger>
-                                            <SelectContent className="rounded-2xl border-slate-200 shadow-[0_10px_40px_rgba(0,0,0,0.1)] max-h-[320px] p-2">
+                                            <SelectContent className="rounded-3xl border-slate-200 shadow-[0_10px_40px_rgba(0,0,0,0.1)] max-h-[320px] p-2">
                                                 {students.map((student) => (
                                                     <SelectItem
                                                         key={student.id}
@@ -1140,7 +1143,7 @@ export function QuestionBankApproval() {
                                                 <SelectTrigger className="h-12 rounded-xl border-slate-200 bg-slate-50/50 focus:ring-primary/20 font-bold text-slate-700">
                                                     <SelectValue placeholder="All Instructors" />
                                                 </SelectTrigger>
-                                                <SelectContent className="rounded-2xl border-slate-200 shadow-xl p-1">
+                                                <SelectContent className="rounded-3xl border-slate-200 shadow-xl p-1">
                                                     <SelectItem value="all" className="font-bold rounded-lg mb-1">Show All</SelectItem>
                                                     {instructors.map((inst) => (
                                                         <SelectItem key={inst.id} value={inst.id?.toString()} className="font-bold rounded-lg mb-1 py-2">{inst.full_name}</SelectItem>
@@ -1154,7 +1157,7 @@ export function QuestionBankApproval() {
                                                 <SelectTrigger className="h-12 rounded-xl border-slate-200 bg-slate-50/50 focus:ring-primary/20 font-bold text-slate-700">
                                                     <SelectValue placeholder="Any Time" />
                                                 </SelectTrigger>
-                                                <SelectContent className="rounded-2xl border-slate-200 shadow-xl p-1">
+                                                <SelectContent className="rounded-3xl border-slate-200 shadow-xl p-1">
                                                     <SelectItem value="all" className="font-bold rounded-lg mb-1 uppercase text-[10px]">All Slots</SelectItem>
                                                     <SelectItem value="morning" className="font-bold rounded-lg mb-1 text-xs">Morning</SelectItem>
                                                     <SelectItem value="afternoon" className="font-bold rounded-lg mb-1 text-xs">Afternoon</SelectItem>
@@ -1170,16 +1173,16 @@ export function QuestionBankApproval() {
                                                 Select Batch
                                             </Label>
                                             {loadingBatches ? (
-                                                <div className="h-14 rounded-2xl border border-dashed border-slate-200 flex items-center justify-center gap-3 text-slate-300 bg-slate-50/30">
+                                                <div className="h-14 rounded-3xl border border-dashed border-slate-200 flex items-center justify-center gap-3 text-slate-300 bg-slate-50/30">
                                                     <Loader2 className="h-4 w-4 animate-spin text-primary" />
                                                     <span className="text-[10px] font-black uppercase tracking-[0.2em]">Loading Batches...</span>
                                                 </div>
                                             ) : (
                                                 <Select value={selectedBatchId} onValueChange={setSelectedBatchId}>
-                                                    <SelectTrigger className="h-14 rounded-2xl border-slate-200 bg-slate-50/50 focus:ring-primary/20 font-bold text-slate-700 transition-all hover:bg-white hover:shadow-md overflow-hidden">
+                                                    <SelectTrigger className="h-14 rounded-3xl border-slate-200 bg-slate-50/50 focus:ring-primary/20 font-bold text-slate-700 transition-all hover:bg-white hover:shadow-md overflow-hidden">
                                                         <SelectValue placeholder={filteredBatches.length > 0 ? "Choose a batch..." : "No batches available"} />
                                                     </SelectTrigger>
-                                                    <SelectContent className="rounded-2xl border-slate-200 shadow-xl max-h-[300px] p-2">
+                                                    <SelectContent className="rounded-3xl border-slate-200 shadow-xl max-h-[300px] p-2">
                                                         {filteredBatches.length === 0 ? (
                                                             <div className="p-8 text-center text-[10px] font-black text-slate-300 uppercase italic tracking-widest">No matching batches</div>
                                                         ) : (
@@ -1234,7 +1237,7 @@ export function QuestionBankApproval() {
                                                 </div>
                                             </div>
 
-                                            <ScrollArea className="h-[120px] rounded-2xl border border-slate-100 bg-slate-50/20 p-2">
+                                            <ScrollArea className="h-[120px] rounded-3xl border border-slate-100 bg-slate-50/20 p-2">
                                                 {loadingBatchStudents ? (
                                                     <div className="flex flex-col items-center justify-center p-8 space-y-3">
                                                         <div className="h-8 w-8 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
@@ -1282,14 +1285,14 @@ export function QuestionBankApproval() {
                                 <Button
                                     variant="ghost"
                                     onClick={() => setShowGrantDialog(false)}
-                                    className="flex-1 h-14 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] text-slate-400 hover:text-slate-900 transition-all"
+                                    className="flex-1 h-14 rounded-3xl font-black text-[10px] uppercase tracking-[0.2em] text-slate-400 hover:text-slate-900 transition-all"
                                 >
                                     Cancel
                                 </Button>
                                 <Button
                                     onClick={handleGrantAccess}
                                     disabled={(grantType === 'student' && !selectedStudentId) || (grantType === 'batch' && !selectedBatchId) || isGranting}
-                                    className="flex-[2] h-14 rounded-2xl bg-slate-900 hover:bg-black text-white shadow-2xl shadow-slate-900/40 font-black text-[10px] uppercase tracking-[.2em] transition-all active:scale-[0.98]"
+                                    className="flex-[2] h-14 rounded-3xl bg-slate-900 hover:bg-black text-white shadow-2xl shadow-slate-900/40 font-black text-[10px] uppercase tracking-[.2em] transition-all active:scale-[0.98]"
                                 >
                                     {isGranting ? <Loader2 className="h-4 w-4 animate-spin mr-3" /> : <ShieldCheck className="h-4 w-4 mr-3 text-primary" />}
                                     {grantType === 'batch' ? 'Confirm Batch' : 'Confirm Access'}

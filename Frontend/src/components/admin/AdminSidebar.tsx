@@ -36,22 +36,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-<<<<<<< HEAD
-const mainNavItems = [
-  { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
-  { title: "My Profile", url: "/admin/profile", icon: User },
-  { title: "Users Management", url: "/admin/users", icon: Users },
-  { title: "Instructor Access", url: "/admin/instructor-access", icon: ShieldCheck },
-  { title: "All Courses", url: "/admin/all-courses", icon: GraduationCap },
-  { title: "Instructors", url: "/admin/instructors", icon: Award },
-  { title: "Video Library", url: "/admin/videos", icon: Video },
-  { title: "Question Bank", url: "/admin/questions", icon: FileQuestion },
-  { title: "Exam Scheduling", url: "/admin/exam-scheduling", icon: Calendar },
-  { title: "Question Repository", url: "/admin/question-repository", icon: Database },
-  { title: "Live Monitoring", url: "/admin/live-monitoring", icon: TrendingUp },
-  { title: "Rewards & Coupons", url: "/admin/coupons", icon: Ticket },
-  { title: "Landing Leads", url: "/admin/leads", icon: Zap },
-=======
 const navGroups = [
   {
     label: "Overview",
@@ -80,7 +64,6 @@ const navGroups = [
   {
     label: "Academic Management",
     items: [
-      { title: "Exam Approvals", url: "/admin/exams", icon: ShieldCheck },
       { title: "Exam Schedule", url: "/admin/exam-scheduling", icon: Calendar },
       { title: "Live Activity", url: "/admin/live-monitoring", icon: TrendingUp },
     ],
@@ -92,7 +75,6 @@ const navGroups = [
       { title: "Student Inquiries", url: "/admin/leads", icon: Zap },
     ],
   },
->>>>>>> 56c4cf229fde9679f9d3be94567b3198c03fa156
 ];
 
 export function AdminSidebar() {
@@ -106,7 +88,7 @@ export function AdminSidebar() {
 
   const filteredGroups = navGroups.map(group => ({
     ...group,
-    items: group.items.filter(item => 
+    items: group.items.filter(item =>
       item.title.toLowerCase().includes(searchQuery.toLowerCase())
     )
   })).filter(group => group.items.length > 0);
@@ -143,7 +125,7 @@ export function AdminSidebar() {
               className="h-9 pl-9 pr-8 text-[11px] bg-slate-50 border-none rounded-xl focus-visible:ring-1 focus-visible:ring-primary/20"
             />
             {searchQuery && (
-              <button 
+              <button
                 onClick={() => setSearchQuery("")}
                 className="absolute right-4 top-1/2 -translate-y-1/2"
               >

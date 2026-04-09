@@ -157,9 +157,6 @@ export function AdminSidebar() {
                             className={`h-5 w-5 transition-colors shrink-0 ${isActive(item.url) ? "text-primary" : "text-slate-500 group-hover:text-slate-700"}`}
                           />
                           {!collapsed && <span className="text-[11px] font-black uppercase tracking-[0.05em]">{item.title}</span>}
-                          {isActive(item.url) && !collapsed && (
-                            <div className="ml-auto h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(37,99,235,0.6)]" />
-                          )}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

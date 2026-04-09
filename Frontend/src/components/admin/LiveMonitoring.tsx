@@ -70,8 +70,8 @@ export function LiveMonitoring() {
                         <Activity className="h-5 w-5 sm:h-7 sm:w-7" />
                     </div>
                     <div>
-                        <h1 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2 uppercase italic">
-                            Live <span className="not-italic text-primary">Monitoring</span>
+                        <h1 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2 uppercase font-sans">
+                            Live <span className="text-primary">Monitoring</span>
                         </h1>
                         <p className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-widest hidden sm:block">Real-time learning ecosystem oversight</p>
                     </div>
@@ -102,7 +102,7 @@ export function LiveMonitoring() {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList className="bg-slate-100/50 p-1.5 rounded-2xl border border-slate-100 inline-flex overflow-x-auto">
+                <TabsList className="bg-slate-100/50 p-1.5 rounded-2xl border border-slate-100 inline-flex">
                     <TabsTrigger value="courses" className="rounded-xl px-4 sm:px-8 h-9 sm:h-10 data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary font-black uppercase text-[10px] tracking-widest whitespace-nowrap">
                         Course Progress
                     </TabsTrigger>
@@ -152,7 +152,7 @@ export function LiveMonitoring() {
                                                 </td>
                                                 <td className="px-8 py-5">
                                                     <div className="w-48 space-y-2">
-                                                        <div className="flex justify-between items-center text-[10px] font-black uppercase italic">
+                                                        <div className="flex justify-between items-center text-[10px] font-black uppercase font-sans">
                                                             <span className={en.progress === 100 ? "text-emerald-500" : "text-primary"}>
                                                                 {en.progress === 100 ? "COMPLETED" : "IN PROGRESS"}
                                                             </span>
@@ -279,7 +279,7 @@ export function LiveMonitoring() {
                         <div className="space-y-6">
                             <Card className="pro-card border-none shadow-2xl shadow-slate-200/20 rounded-[2rem]">
                                 <CardHeader>
-                                    <CardTitle className="text-lg font-black text-slate-900 uppercase italic">Grade <span className="not-italic text-primary">Distribution</span></CardTitle>
+                                    <CardTitle className="text-lg font-black text-slate-900 uppercase font-sans">Grade <span className="text-primary">Distribution</span></CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="h-[250px] w-full">
@@ -309,7 +309,7 @@ export function LiveMonitoring() {
                             <Card className="pro-card border-none shadow-2xl shadow-slate-200/20 rounded-[2rem] bg-slate-900 text-white overflow-hidden relative group">
                                 <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-all duration-700 blur-3xl -z-0" />
                                 <CardHeader className="relative z-10">
-                                    <CardTitle className="text-lg font-black uppercase italic tracking-wider">Top <span className="text-primary not-italic">Performers</span></CardTitle>
+                                    <CardTitle className="text-lg font-black uppercase font-sans tracking-wider">Top <span className="text-primary">Performers</span></CardTitle>
                                 </CardHeader>
                                 <CardContent className="relative z-10 space-y-4">
                                     {results.sort((a,b) => b.percentage - a.percentage).slice(0, 3).map((top, i) => (
@@ -355,7 +355,7 @@ function StatsCard({ title, value, icon, color, description }: { title: string, 
                 </div>
                 <div className="space-y-1">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">{title}</p>
-                    <h3 className="text-xl sm:text-3xl font-black text-slate-900 tracking-tighter italic">{value}</h3>
+                    <h3 className="text-xl sm:text-3xl font-bold text-slate-900 tracking-tight font-sans">{value}</h3>
                     <p className="text-[10px] font-bold text-slate-400">{description}</p>
                 </div>
             </CardContent>

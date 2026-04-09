@@ -59,6 +59,7 @@ export interface CourseEnrollment {
   payment_term?: 'full' | 'term1' | 'term2';
   remaining_balance?: number;
   user_avatar?: string;
+  enrolled_at?: string;
 }
 
 export function useCourses() {

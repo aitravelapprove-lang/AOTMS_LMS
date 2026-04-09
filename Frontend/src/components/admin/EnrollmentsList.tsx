@@ -84,9 +84,9 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
 
     return (
       <div className={`h-12 w-12 rounded-xl flex items-center justify-center font-black text-lg shrink-0 shadow-sm border border-slate-200/50 ${
-         ['bg-blue-100 text-blue-600', 'bg-purple-100 text-purple-600', 'bg-emerald-100 text-emerald-600', 'bg-pink-100 text-pink-600'][enrollment.user_name?.length % 4]
+         ['bg-primary/10 text-primary', 'bg-blue-100 text-blue-600', 'bg-purple-100 text-purple-600', 'bg-emerald-100 text-emerald-600'][enrollment.user_name ? enrollment.user_name.length % 4 : 0]
       }`}>
-         {enrollment.user_name?.charAt(0) || 'U'}
+         {enrollment.user_name?.charAt(0).toUpperCase() || 'U'}
       </div>
     );
   };
@@ -319,7 +319,13 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                           <EnrollmentAvatar enrollment={enrollment} />
                           <div className="overflow-hidden">
                              <h4 className="font-black text-slate-900 text-base leading-tight truncate">{enrollment.user_name}</h4>
-                             <p className="text-[11px] font-bold text-slate-400 truncate mt-1">{enrollment.user_email}</p>
+                             <p className="text-[10px] font-black text-primary uppercase tracking-widest mt-1">
+                                {enrollment.enrollment_date 
+                                  ? new Date(enrollment.enrollment_date).toLocaleDateString('en-GB') + ' ' + new Date(enrollment.enrollment_date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+                                  : 'N/A'
+                                }
+                             </p>
+                             <p className="text-[11px] font-bold text-slate-400 truncate mt-0.5">{enrollment.user_email}</p>
                           </div>
                        </div>
 
@@ -359,8 +365,8 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                     <tr className="bg-slate-50/80 border-b border-slate-200">
                       <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] min-w-[320px]">Student / Identity</th>
                       <th className="px-8 py-6 text-[10px] font-black symbols text-[#6b21a8] uppercase tracking-[0.2em] min-w-[200px] bg-purple-50/30">Strategic Course</th>
-                      <th className="px-8 py-6 text-[10px] font-black text-[#6b21a8] uppercase tracking-[0.2em] text-center bg-purple-50/[0.05] min-w-[150px]">Phase I Payment</th>
-                      <th className="px-8 py-6 text-[10px] font-black text-[#a855f7] uppercase tracking-[0.2em] text-center bg-violet-50/10 min-w-[150px]">Phase II Payment</th>
+                      <th className="px-8 py-6 text-[10px] font-black text-[#6b21a8] uppercase tracking-[0.2em] text-center bg-purple-50/[0.05] min-w-[150px]">Term - 1</th>
+                      <th className="px-8 py-6 text-[10px] font-black text-[#a855f7] uppercase tracking-[0.2em] text-center bg-violet-50/10 min-w-[150px]">Term - 2</th>
                       <th className="px-8 py-6 text-[10px] font-black text-[#6b21a8] uppercase tracking-[0.2em] min-w-[220px] bg-purple-50/20">Accounting Flow</th>
                       <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-right min-w-[150px]">Verification</th>
                     </tr>
@@ -379,7 +385,19 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                             <div className="flex items-center gap-4">
                               <EnrollmentAvatar enrollment={enrollment} />
                               <div className="min-w-0">
-                                <h3 className="text-sm font-black text-slate-900 tracking-tight leading-none mb-1.5">{enrollment.user_name}</h3>
+                                <div className="flex items-center gap-3 mb-1.5">
+                                   <h3 className="text-sm font-black text-slate-900 tracking-tight leading-none">{enrollment.user_name}</h3>
+                                   {getStatusBadge(enrollment.status || 'pending')}
+                                </div>
+                                <div className="flex items-center gap-1.5 mb-2 opacity-60">
+                                   <Calendar className="h-2.5 w-2.5 text-primary" />
+                                   <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                                      {(enrollment.enrollment_date || enrollment.enrolled_at) 
+                                        ? new Date(enrollment.enrollment_date || enrollment.enrolled_at).toLocaleDateString('en-GB') + ' | ' + new Date(enrollment.enrollment_date || enrollment.enrolled_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+                                        : 'N/A'
+                                      }
+                                   </span>
+                                </div>
                                 <div className="flex items-center gap-2 p-1.5 bg-slate-50 border border-slate-100 rounded-none w-fit transition-all hover:bg-white hover:border-primary/30">
                                    <Fingerprint className="h-3 w-3 text-slate-400" />
                                    <span className="text-[9px] font-mono font-bold text-slate-500 uppercase">{enrollment.user_id?.slice(0, 10)}...</span>
@@ -407,30 +425,30 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                            <td className="px-8 py-5 text-center bg-purple-50/[0.02] border-r border-slate-50 align-middle">
                               {(isTerm1 || isTerm2 || isPaidFull) ? (
                                  <div className="space-y-1">
-                                    <span className="text-sm font-black text-[#6b21a8] block tracking-tighter">₹{halfFee.toLocaleString('en-IN')}</span>
-                                    <Badge className="bg-purple-50 text-[#6b21a8] border border-purple-100 text-[7px] font-black h-4 px-2 uppercase tracking-widest rounded-none">P1 Cleared</Badge>
+                                    <span className="text-sm font-black text-[#6b21a8] block tracking-tighter">₹{(Math.round(Number(enrollment.price || 0) * (isPaidFull ? 1 : 0.6))).toLocaleString('en-IN')}</span>
+                                    <Badge className="bg-purple-50 text-[#6b21a8] border border-purple-100 text-[7px] font-black h-4 px-2 uppercase tracking-widest rounded-none">Term 1 Cleared</Badge>
                                  </div>
                               ) : (
                                  <div className="space-y-1 group-hover:scale-105 transition-transform">
-                                    <span className="text-sm font-black text-[#a855f7] block tracking-tighter animate-pulse">₹{halfFee.toLocaleString('en-IN')}</span>
-                                    <Badge className="bg-violet-50 text-[#a855f7] border border-violet-100 text-[7px] font-black h-4 px-2 uppercase tracking-widest rounded-none">P1 Pending</Badge>
+                                    <span className="text-sm font-black text-[#a855f7] block tracking-tighter animate-pulse">₹{(Math.round(Number(enrollment.price || 0) * 0.6)).toLocaleString('en-IN')}</span>
+                                    <Badge className="bg-violet-50 text-[#a855f7] border border-violet-100 text-[7px] font-black h-4 px-2 uppercase tracking-widest rounded-none">Term 1 Pending</Badge>
                                  </div>
                               )}
                            </td>
                            <td className="px-8 py-5 text-center bg-purple-50/[0.01] border-r border-slate-50 align-middle">
                               {(isTerm2 || isPaidFull) ? (
                                  <div className="space-y-1">
-                                    <span className="text-sm font-black text-[#a855f7] block tracking-tighter">₹{halfFee.toLocaleString('en-IN')}</span>
-                                    <Badge className="bg-violet-50 text-[#a855f7] border border-violet-100 text-[7px] font-black h-4 px-2 uppercase tracking-widest rounded-none">P2 Cleared</Badge>
+                                    <span className="text-sm font-black text-emerald-600 block tracking-tighter">₹{(Math.round(Number(enrollment.price || 0) * 0.4)).toLocaleString('en-IN')}</span>
+                                    <Badge className="bg-emerald-50 text-emerald-600 border border-emerald-100 text-[7px] font-black h-4 px-2 uppercase tracking-widest rounded-none">Term 2 Cleared</Badge>
                                  </div>
                               ) : isTerm1 ? (
                                  <div className="space-y-1 group-hover:scale-105 transition-transform">
-                                    <span className="text-sm font-black text-[#6b21a8] block tracking-tighter">₹{halfFee.toLocaleString('en-IN')}</span>
-                                    <Badge className="bg-[#6b21a8] text-white border-none text-[7px] font-black h-4 px-2 uppercase tracking-widest animate-pulse shadow-sm shadow-purple-200 rounded-none">P2 Awaited</Badge>
+                                    <span className="text-sm font-black text-orange-500 block tracking-tighter">₹{(enrollment.remaining_balance || Math.round(Number(enrollment.price || 0) * 0.4)).toLocaleString('en-IN')}</span>
+                                    <Badge className="bg-orange-50 text-orange-600 border border-orange-200 text-[7px] font-black h-4 px-2 uppercase tracking-widest animate-pulse shadow-sm shadow-orange-100 rounded-none">Term 2 Awaited</Badge>
                                  </div>
                               ) : (
                                  <div className="space-y-1">
-                                    <span className="text-sm font-black text-slate-400 block tracking-tighter">₹{halfFee.toLocaleString('en-IN')}</span>
+                                    <span className="text-sm font-black text-slate-400 block tracking-tighter">₹{(enrollment.remaining_balance || Math.round(Number(enrollment.price || 0) * 0.4)).toLocaleString('en-IN')}</span>
                                     <Badge variant="outline" className="text-[7px] font-black text-slate-300 border-slate-200 h-4 px-2 uppercase rounded-none">Scheduled</Badge>
                                  </div>
                               )}
@@ -460,7 +478,7 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                                  {(enrollment.status === 'pending' || !enrollment.status) ? (
                                    <Button size="sm" disabled={processingId === enrollment.id} className="h-10 bg-slate-900 text-white text-[9px] font-black uppercase tracking-[0.1em] px-5 rounded-none hover:bg-[#6b21a8] transition-all shadow-lg shadow-slate-200" onClick={() => handleUpdateStatus(enrollment.id, 'active')}>
                                      {processingId === enrollment.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShieldCheck className="h-4 w-4 mr-2" />}
-                                     Verify Access
+                                     Approve
                                    </Button>
                                  ) : (
                                    <Button size="sm" variant="ghost" className="h-10 w-10 p-0 bg-slate-50 text-slate-400 hover:text-[#6b21a8] transition-all border border-slate-100 hover:bg-white rounded-none" onClick={() => setSelectedEnrollment(enrollment)}>
@@ -473,13 +491,20 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                                           <MoreVertical className="h-5 w-5" />
                                        </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="rounded-none p-1.5 border-slate-100 shadow-2xl">
-                                       <DropdownMenuItem className="rounded-none px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-600" onClick={() => copyToClipboard(enrollment.user_id || '', enrollment.id + '-menu')}>
-                                          <Copy className="h-3.5 w-3.5 mr-2.5 text-primary" /> Sync ID
-                                       </DropdownMenuItem>
-                                       <DropdownMenuItem className="text-rose-600 rounded-none px-4 py-2.5 text-[10px] font-black uppercase tracking-widest" onClick={() => handleDelete(enrollment.id)}>
-                                          <Trash2 className="h-3.5 w-3.5 mr-2.5" /> Terminate
-                                       </DropdownMenuItem>
+                                    <DropdownMenuContent align="end" className="rounded-none p-1.5 border-slate-100 shadow-2xl w-48">
+                                        <DropdownMenuItem className="rounded-none px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-600 focus:bg-slate-50 focus:text-slate-900 cursor-pointer" onClick={() => copyToClipboard(enrollment.user_id || '', enrollment.id + '-menu')}>
+                                           <Copy className="h-3.5 w-3.5 mr-2.5 text-primary" /> Sync ID
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="rounded-none px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-[#6b21a8] focus:bg-purple-50 focus:text-[#6b21a8] cursor-pointer" onClick={() => handleUpdateStatus(enrollment.id, 'active')}>
+                                           <ShieldCheck className="h-3.5 w-3.5 mr-2.5" /> Approve Entry
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="rounded-none px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-amber-600 focus:bg-amber-50 focus:text-amber-700 cursor-pointer" onClick={() => handleUpdateStatus(enrollment.id, 'rejected')}>
+                                           <XCircle className="h-3.5 w-3.5 mr-2.5" /> Reject Enrollment
+                                        </DropdownMenuItem>
+                                        <div className="h-px bg-slate-100 my-1" />
+                                        <DropdownMenuItem className="text-slate-400 rounded-none px-4 py-2.5 text-[10px] font-black uppercase tracking-widest focus:bg-rose-50 focus:text-rose-600 cursor-pointer" onClick={() => handleDelete(enrollment.id)}>
+                                           <Trash2 className="h-3.5 w-3.5 mr-2.5" /> Terminate (Delete)
+                                        </DropdownMenuItem>
                                     </DropdownMenuContent>
                                  </DropdownMenu>
                               </div>

@@ -15,7 +15,9 @@ export interface Course {
   status: string | null;
   thumbnail_url: string | null;
   image?: string | null;
-  instructor_id: string | null;
+  instructor_id: string | null; // Legacy
+  instructor_ids?: string[]; // New array
+  instructors?: { id: string; full_name: string; avatar_url: string }[]; // New populated format
   created_at: string | null;
   level?: string | null;
   duration?: string | null;

@@ -24,7 +24,7 @@ const { User, Profile, UserRole, OTP, VerifiedEmail, InstructorApplication, Gues
 const { Course, Enrollment, Topic, Module, Video, Announcement, Timeline, Resource, InstructorProgress, VideoProgress, CourseRating } = require('./models/Course');
 const { Exam, QuestionBank, ExamSchedule, StudentExamAccess, ExamResult, MockPaper, ExamRule, MockTestConfig } = require('./models/Exam');
 const { Assignment, Submission, Playlist, LiveClass } = require('./models/Content');
-const { SystemLog, SecurityEvent, LeaderboardStat, Notification, Coupon, Lead } = require('./models/System');
+const { SystemLog, SecurityEvent, LeaderboardStat, Notification, Coupon, Lead, Attendance } = require('./models/System');
 const { Conversation, Message } = require('./models/Chat');
 const { Doubt, DoubtReply } = require('./models/Doubt');
 const { Batch, StudentBatch, BatchRequest } = require('./models/Batch');
@@ -74,6 +74,7 @@ const MODEL_MAP = {
     'resume_scans': ResumeScan,
     'leads': Lead,
     'batches': Batch,
+    'attendance': Attendance,
     'student_batches': StudentBatch
 };
 
@@ -1124,6 +1125,83 @@ app.post('/api/auth/admin-resend-otp', async (req, res) => {
     }
 });
 
+// --- Attendance Routes ---
+
+app.post('/api/student/mark-attendance', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const now = new Date();
+        const dateStr = now.toISOString().split('T')[0];
+        const timeStr = now.toLocaleTimeString('en-US', { hour12: false });
+        const dayStr = now.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+        const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+        // 1. Check if already marked for today (24H restart logic)
+        const existing = await Attendance.findOne({ user_id: userId, date: dateStr });
+        if (existing) {
+            return res.status(400).json({ error: 'Attendance already marked for today' });
+        }
+
+        // 2. Mark Attendance
+        const attendance = await Attendance.create({
+            user_id: userId,
+            timestamp: now,
+            ip_address: ip,
+            day: dayStr,
+            time: timeStr,
+            date: dateStr
+        });
+
+        // 3. Automated Suspension Logic (10 missing days)
+        const user = await User.findById(userId);
+        const profile = await Profile.findOne({ user_id: userId });
+        
+        if (user && profile) {
+            const startDate = user.created_at || now;
+            // Calculate total days since joining
+            const daysSinceStart = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
+            
+            // Count total attendance records
+            const totalAttendance = await Attendance.countDocuments({ user_id: userId });
+            
+            // If they have missed 10 or more cumulative days since joining
+            if (daysSinceStart >= 10) {
+                const missedDays = daysSinceStart - totalAttendance;
+                if (missedDays >= 10) {
+                    profile.approval_status = 'suspended';
+                    await profile.save();
+                    
+                    await SecurityEvent.create({
+                        event_type: 'auto_suspension_attendance',
+                        details: { userId, missedDays, totalAttendance, daysSinceStart }
+                    });
+
+                    return res.json({ 
+                        success: true, 
+                        message: 'Attendance recorded. Account suspended due to 10+ missing days.',
+                        attendance,
+                        suspended: true
+                    });
+                }
+            }
+        }
+
+        res.json({ success: true, message: 'Attendance marked successfully', attendance });
+    } catch (err) {
+        handleError(res, err, 'mark-attendance');
+    }
+});
+
+app.get('/api/admin/attendance/:userId', authenticateToken, requireAdminOrManager, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const history = await Attendance.find({ user_id: userId }).sort({ timestamp: -1 });
+        res.json(history);
+    } catch (err) {
+        handleError(res, err, 'get-attendance-admin');
+    }
+});
+
 // Self-Upgrade endpoint (for dev/setup phase)
 app.post('/api/auth/self-upgrade', authenticateToken, async (req, res) => {
     const { email } = req.user;
@@ -1222,6 +1300,54 @@ app.post('/api/admin/send-approval-email', authenticateToken, requireAdmin, asyn
         res.json({ message: 'Approval email sent' });
     } catch (err) {
         handleError(res, err, 'send-approval-email');
+    }
+});
+
+app.post('/api/admin/send-student-email', authenticateToken, requireAdminOrManager, async (req, res) => {
+    const { userId } = req.body;
+    try {
+        // Find profile to get student email and name
+        const profile = await Profile.findOne({ user_id: userId });
+        if (!profile) {
+            console.error(`[Admin Email] Profile not found for userId: ${userId}`);
+            return res.status(404).json({ error: 'Student profile not found' });
+        }
+
+        const n8nUrl = process.env.N8N_ADMIN_STUDENT_EMAIL_URL;
+        if (!n8nUrl) {
+            console.error('[Admin Email] N8N_ADMIN_STUDENT_EMAIL_URL not found in .env');
+            return res.status(500).json({ error: 'Mail webhook not configured in system environment' });
+        }
+
+        // Prepare payload as per email.json specification
+        const payload = {
+            email: profile.email,
+            full_name: profile.full_name,
+            user_id: userId,
+            sent_at: new Date().toISOString(),
+            triggered_by: req.user.id
+        };
+
+        console.log(`[Admin Email] Triggering n8n sequence for ${profile.email}`);
+        
+        await axios.post(n8nUrl, payload, {
+            timeout: 10000 // 10s timeout
+        });
+
+        res.json({ success: true, message: 'Email sequence triggered via n8n' });
+    } catch (err) {
+        console.error('[Admin Email Error]:', err.message);
+        if (err.response) {
+            console.error('[Admin Email Details]:', err.response.status, err.response.data);
+            // If n8n returns 404, it means the workflow is likely deactivated in n8n
+            if (err.response.status === 404) {
+                 return res.status(404).json({ 
+                    error: 'Mail workflow is inactive or path incorrect in n8n.',
+                    details: 'Ensure n8n workflow is "ACTIVE" for production webhooks.'
+                 });
+            }
+        }
+        handleError(res, err, 'send-student-email');
     }
 });
 
@@ -1389,12 +1515,17 @@ app.get('/api/admin/question-bank/:topic/access-list', authenticateToken, requir
 
 app.get('/api/admin/courses-with-instructors', authenticateToken, requireAdminOrManager, async (req, res) => {
     try {
-        const courses = await Course.find()
-            .sort({ created_at: -1 })
+        const courses = await Course.find({
+            $or: [
+                { instructor_ids: { $exists: true, $not: { $size: 0 } } },
+                { instructor_id: { $ne: null } }
+            ]
+        })
+            .sort({ updated_at: -1, created_at: -1 })
             .lean();
 
-        // Get all unique instructor IDs
-        const instructorIds = [...new Set(courses.map(c => c.instructor_id).filter(id => id))];
+        // Get all unique instructor IDs from all courses (instructor_ids is an array)
+        const instructorIds = [...new Set(courses.flatMap(c => c.instructor_ids || []).filter(id => id))];
 
         // Fetch profiles for these instructors
         const profiles = await Profile.find({ user_id: { $in: instructorIds } }).lean();
@@ -1405,13 +1536,22 @@ app.get('/api/admin/courses-with-instructors', authenticateToken, requireAdminOr
 
         // Map courses to include instructor details
         const data = courses.map(course => {
-            const instructor = profileMap[course.instructor_id] || {};
+            const instructors = (course.instructor_ids || []).map(id => {
+                const p = profileMap[id] || {};
+                return {
+                    id: id,
+                    full_name: p.full_name || 'Unknown',
+                    avatar_url: p.avatar_url || ''
+                };
+            });
+
             return {
                 ...course,
                 id: course._id, // Ensure id is present for frontend
-                instructor_name: instructor.full_name || 'Unknown',
-                instructor_email: instructor.email || '',
-                instructor_avatar: instructor.avatar_url || ''
+                instructors, // New array format
+                instructor_name: instructors.map(i => i.full_name).join(', ') || 'Unknown', // Fallback for single-name legacy UI
+                instructor_email: instructors.length > 0 ? (profileMap[course.instructor_ids[0]]?.email || '') : '', // Primary instructor email
+                instructor_avatar: instructors.length > 0 ? (profileMap[course.instructor_ids[0]]?.avatar_url || '') : ''
             };
         });
 
@@ -1511,7 +1651,7 @@ app.post('/api/admin/assign-course', authenticateToken, requireAdminOrManager, a
 
     try {
         const updateData = {
-            instructor_id: instructorId || null,
+            $addToSet: { instructor_ids: instructorId }, // Add, don't replace
             updated_at: new Date()
         };
 
@@ -1529,6 +1669,36 @@ app.post('/api/admin/assign-course', authenticateToken, requireAdminOrManager, a
         res.json({ message: 'Course assignment updated', course });
     } catch (err) {
         handleError(res, err, 'assign-course');
+    }
+});
+
+app.delete('/api/admin/clear-course-instructors/:courseId', authenticateToken, requireAdminOrManager, async (req, res) => {
+    const { courseId } = req.params;
+    try {
+        const course = await Course.findByIdAndUpdate(
+            courseId,
+            { 
+                $set: { instructor_ids: [], instructor_id: null }, 
+                status: 'draft',
+                updated_at: new Date()
+            },
+            { new: true }
+        );
+        
+        if (!course) return res.status(404).json({ error: 'Course not found' });
+
+        // Log action
+        await SystemLog.create({
+            log_type: 'audit',
+            module: 'Course',
+            action: 'Instructors Cleared',
+            details: { course_id: courseId },
+            user_id: req.user.id
+        });
+
+        res.json({ message: 'Requested instructors removed from curriculum node', course });
+    } catch (err) {
+        handleError(res, err, 'clear-course-instructors');
     }
 });
 
@@ -2535,11 +2705,15 @@ app.post('/api/instructor/choose-course', authenticateToken, requireInstructor, 
         const course = await Course.findById(courseId);
         if (!course) return res.status(404).json({ error: 'Course not found' });
         
-        if (course.instructor_id && course.instructor_id.toString() !== req.user.id) {
-            return res.status(400).json({ error: 'Course already assigned to another instructor' });
+        // Ensure instructor_ids is an array
+        if (!course.instructor_ids) course.instructor_ids = [];
+        
+        if (course.instructor_ids.includes(req.user.id)) {
+            return res.status(400).json({ error: 'You are already assigned to this course' });
         }
 
-        course.instructor_id = req.user.id;
+        // Add to instructor_ids array
+        course.instructor_ids.push(req.user.id);
         course.status = 'pending';
         course.updated_at = new Date();
         await course.save();
@@ -2557,11 +2731,14 @@ app.post('/api/instructor/choose-course', authenticateToken, requireInstructor, 
 
 app.get('/api/instructor/courses', authenticateToken, requireInstructor, async (req, res) => {
     try {
-        let query = { instructor_id: req.user.id };
-        if (req.user.role === 'admin' || req.user.role === 'manager') {
-            query = {}; // Managers and admins can see all courses
+        const { all } = req.query;
+        let query = { instructor_ids: req.user.id };
+        
+        if (all === 'true' || req.user.role === 'admin' || req.user.role === 'manager') {
+            query = {}; // View all courses for catalogue or admin/manager view
         }
-        const courses = await Course.find(query);
+        
+        const courses = await Course.find(query).sort({ updated_at: -1 });
         res.json(courses);
     } catch (err) {
         handleError(res, err, 'instructor-courses');
@@ -2573,7 +2750,7 @@ app.get('/api/instructor/courses', authenticateToken, requireInstructor, async (
 app.get('/api/courses/enrollments', authenticateToken, requireAdminOrManager, async (req, res) => {
     try {
         const enrollments = await Enrollment.find()
-            .populate('user_id', 'full_name email mobile_number') // Populate user details
+            .populate('user_id', 'full_name email mobile_number avatar_url photo_url') // Populate user details
             .populate('course_id', 'title price')   // Populate course details
             .sort({ enrolled_at: -1 });
 
@@ -2587,7 +2764,8 @@ app.get('/api/courses/enrollments', authenticateToken, requireAdminOrManager, as
             profile: {
                 full_name: e.user_id?.full_name,
                 email: e.user_id?.email,
-                mobile_number: e.user_id?.mobile_number
+                mobile_number: e.user_id?.mobile_number,
+                avatar_url: e.user_id?.avatar_url || e.user_id?.photo_url
             },
             course: {
                 title: e.course_id?.title,
@@ -2719,14 +2897,16 @@ app.post('/api/courses/enroll', authenticateToken, async (req, res) => {
 
         res.json({ message: 'Enrollment application submitted! Waiting for administrative approval.' });
 
-        // Notify Instructor
-        if (course.instructor_id) {
+        // Notify Instructors
+        if (course.instructor_ids && course.instructor_ids.length > 0) {
             const studentName = (await User.findById(req.user.id))?.full_name || 'A new student';
-            sendNotification(course.instructor_id, {
-                type: 'enrollment_request',
-                title: 'New Enrollment Request',
-                message: `${studentName} wants to join your course: ${course.title}`,
-                courseId: finalCourseId
+            course.instructor_ids.forEach(instId => {
+                sendNotification(instId.toString(), {
+                    type: 'enrollment_request',
+                    title: 'New Enrollment Request',
+                    message: `${studentName} wants to join your course: ${course.title}`,
+                    courseId: finalCourseId
+                });
             });
         }
 
@@ -3187,6 +3367,19 @@ app.put('/api/courses/enrollment-status', authenticateToken, requireAdmin, async
                 message: `Your enrollment for ${course?.title || 'a course'} has been ${status}.`,
                 status
             });
+
+            // Also notify Instructors of the status update
+            if (course?.instructor_ids && course.instructor_ids.length > 0) {
+                const studentProfile = await Profile.findOne({ user_id: enrollment.user_id });
+                course.instructor_ids.forEach(instId => {
+                    sendNotification(instId.toString(), {
+                        type: 'info',
+                        title: 'Registry Update',
+                        message: `Access for ${studentProfile?.full_name || 'a student'} in "${course.title}" was ${status}.`,
+                        priority: 'medium'
+                    });
+                });
+            }
         }
     } catch (err) {
         handleError(res, err, 'update-enrollment-status');
@@ -4363,7 +4556,7 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
                 .populate('mock_paper_id', 'title');
         } else if (table === 'courses') {
             data = await Model.find(query).sort(sort).limit(limit).skip(skip)
-                .populate('instructor_id', 'full_name avatar_url');
+                .populate('instructor_ids', 'full_name avatar_url');
         } else if (table === 'course_enrollments') {
             data = await Model.find(query).sort(sort).limit(limit).skip(skip)
                 .populate('user_id', 'full_name email avatar_url phone')
@@ -4956,18 +5149,22 @@ app.post('/api/batches/student-request', authenticateToken, async (req, res) => 
             });
             await notification.save();
 
-            sendNotification(course.instructor_id?.toString(), {
-                title: "New Batch Assignment",
-                message: `${student?.full_name || 'A student'} joined ${batch.batch_name} for ${course.title}`,
-                type: "batch_assignment",
-                data: { 
-                    student_id: userId, 
-                    course_id: courseId, 
-                    batch_id: batchId,
-                    actor_avatar: student?.avatar_url,
-                    actor_name: student?.full_name
-                }
-            });
+            if (course.instructor_ids && course.instructor_ids.length > 0) {
+                course.instructor_ids.forEach(instId => {
+                    sendNotification(instId.toString(), {
+                        title: "New Batch Assignment",
+                        message: `${student?.full_name || 'A student'} joined ${batch.batch_name} for ${course.title}`,
+                        type: "batch_assignment",
+                        data: { 
+                            student_id: userId, 
+                            course_id: courseId, 
+                            batch_id: batchId,
+                            actor_avatar: student?.avatar_url,
+                            actor_name: student?.full_name
+                        }
+                    });
+                });
+            }
 
             res.json({ message: 'Batch assigned successfully', assignment });
         } else {
@@ -4989,34 +5186,41 @@ app.post('/api/batches/student-request', authenticateToken, async (req, res) => 
 
             // Notify Instructor for Permission
             const student = await Profile.findOne({ user_id: userId }).lean();
-            const notification = new Notification({
-                user_id: course.instructor_id,
-                title: "Batch Change Request",
-                message: `${student?.full_name || 'A student'} requested to move from ${existingAssignment.batch_id.batch_name} to ${batch.batch_name}`,
-                type: "batch_request",
-                data: { 
-                    request_id: request._id, 
-                    student_id: userId, 
-                    course_id: courseId,
-                    actor_avatar: student?.avatar_url,
-                    actor_name: student?.full_name
-                },
-                created_at: new Date()
-            });
-            await notification.save();
-
-            sendNotification(course.instructor_id?.toString(), {
-                title: "Batch Change Request",
-                message: `${student?.full_name || 'A student'} requested to move from ${existingAssignment.batch_id.batch_name} to ${batch.batch_name}`,
-                type: "batch_request",
-                data: { 
-                    request_id: request._id, 
-                    student_id: userId, 
-                    course_id: courseId,
-                    actor_avatar: student?.avatar_url,
-                    actor_name: student?.full_name
+            // Create persistent notifications for all Instructors
+            if (course.instructor_ids && course.instructor_ids.length > 0) {
+                for (const instId of course.instructor_ids) {
+                    await new Notification({
+                        user_id: instId,
+                        title: "Batch Change Request",
+                        message: `${student?.full_name || 'A student'} requested to move from ${existingAssignment.batch_id.batch_name} to ${batch.batch_name}`,
+                        type: "batch_request",
+                        data: { 
+                            request_id: request._id, 
+                            student_id: userId, 
+                            course_id: courseId,
+                            actor_avatar: student?.avatar_url,
+                            actor_name: student?.full_name
+                        },
+                        created_at: new Date()
+                    }).save();
                 }
-            });
+            }
+            if (course.instructor_ids && course.instructor_ids.length > 0) {
+                course.instructor_ids.forEach(instId => {
+                    sendNotification(instId.toString(), {
+                        title: "Batch Change Request",
+                        message: `${student?.full_name || 'A student'} requested to move from ${existingAssignment.batch_id.batch_name} to ${batch.batch_name}`,
+                        type: "batch_request",
+                        data: { 
+                            request_id: request._id, 
+                            student_id: userId, 
+                            course_id: courseId,
+                            actor_avatar: student?.avatar_url,
+                            actor_name: student?.full_name
+                        }
+                    });
+                });
+            }
 
             res.json({ message: 'Change request submitted for instructor permission', request });
         }

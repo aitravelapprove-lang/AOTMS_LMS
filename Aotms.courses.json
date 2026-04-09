@@ -1,0 +1,242 @@
+[{
+  "_id": {
+    "$oid": "696e1d590ff64f63d3184249"
+  },
+  "id": 1,
+  "slug": "ai-machine-learning",
+  "title": "AI & Machine Learning",
+  "category": "Data Science & AI",
+  "image": "https://res.cloudinary.com/dhrommrn4/image/upload/v1767892205/ai_oyxa8p.jpg",
+  "duration": "3 Months",
+  "level": "Artificial Intelligence/Deep Learning/Neural Networks",
+  "price": "₹35,000",
+  "originalPrice": "₹75,000",
+  "rating": 4.9,
+  "themeColor": "#8B5CF6"
+},
+{
+  "_id": {
+    "$oid": "696e1d590ff64f63d318424a"
+  },
+  "id": 2,
+  "slug": "cyber-security",
+  "title": "Cyber Security",
+  "category": "Security",
+  "image": "https://res.cloudinary.com/dhrommrn4/image/upload/v1767892205/cyber-security_rbjfxy.jpg",
+  "duration": "3 Months",
+  "level": "Ethical Hacking/Network Security/Risk Management",
+  "price": "₹35,000",
+  "originalPrice": "₹65,000",
+  "rating": 4.8,
+  "themeColor": "#EF4444"
+},
+{
+  "_id": {
+    "$oid": "696e1d590ff64f63d318424b"
+  },
+  "id": 3,
+  "slug": "data-analytics",
+  "title": "Data Analytics",
+  "category": "Data Science",
+  "image": "https://res.cloudinary.com/dhrommrn4/image/upload/v1768384986/data-analytics-v2_glp5sc_b81jrw.jpg",
+  "duration": "3 Months",
+  "level": "Data Visualization/Business Analytics/Excel & Power BI",
+  "price": "₹35,000",
+  "originalPrice": "₹55,000",
+  "rating": 4.7,
+  "themeColor": "#F59E0B"
+},
+{
+  "_id": {
+    "$oid": "696e1d590ff64f63d318424c"
+  },
+  "id": 4,
+  "slug": "data-science",
+  "title": "Data Science",
+  "category": "Data Science",
+  "image": "https://res.cloudinary.com/dhrommrn4/image/upload/v1768329468/multi-cloud-consultant_czpj7e.jpg",
+  "duration": "6 Months",
+  "level": "Machine Learning/Data Modeling/Predictive Analytics",
+  "price": "₹45,000",
+  "originalPrice": "₹80,000",
+  "rating": 4.9,
+  "themeColor": "#10B981"
+},
+{
+  "_id": {
+    "$oid": "696e1d590ff64f63d318424d"
+  },
+  "id": 5,
+  "slug": "devops",
+  "title": "DevOps Engineering",
+  "category": "Cloud & DevOps",
+  "image": "https://res.cloudinary.com/dhrommrn4/image/upload/v1767892207/devops_am6nxl.jpg",
+  "duration": "3 Months",
+  "level": "CI/CD/Cloud Automation/Docker",
+  "price": "₹35,000",
+  "originalPrice": "₹70,000",
+  "rating": 4.8,
+  "themeColor": "#06B6D4"
+},
+{
+  "_id": {
+    "$oid": "696e1d590ff64f63d318424e"
+  },
+  "id": 6,
+  "slug": "embedded-systems",
+  "title": "Embedded Systems",
+  "category": "Hardware & IoT",
+  "image": "https://res.cloudinary.com/dhrommrn4/image/upload/v1767892208/embedded-systems_keok0a.jpg",
+  "duration": "3 Months",
+  "level": "Microcontrollers/IoT/Hardware ",
+  "price": "₹35,000",
+  "originalPrice": "₹60,000",
+  "rating": 4.6,
+  "themeColor": "#6366F1"
+},
+{
+  "_id": {
+    "$oid": "696e1d590ff64f63d318424f"
+  },
+  "id": 7,
+  "slug": "java-full-stack",
+  "title": "Java Full Stack",
+  "category": "Web Development",
+  "image": "https://res.cloudinary.com/dhrommrn4/image/upload/v1767892209/java-full-stack_x5y7x8.jpg",
+  "duration": "3 Months",
+  "level": "Java Backend/Spring Boot/Full Stack Development",
+  "price": "₹35,000",
+  "originalPrice": "₹60,000",
+  "rating": 4.8,
+  "themeColor": "#EA580C"
+},
+{
+  "_id": {
+    "$oid": "696e1d590ff64f63d3184250"
+  },
+  "id": 8,
+  "slug": "mean-stack",
+  "title": "MEAN Stack",
+  "category": "Web Development",
+  "image": "https://res.cloudinary.com/dhrommrn4/image/upload/v1768329456/MEAN_an1fcb.jpg",
+  "duration": "3 Months",
+  "level": "MongoDB/Angular/Node.js",
+  "price": "₹35,000",
+  "originalPrice": "₹55,000",
+  "rating": 4.5,
+  "themeColor": "#DD0031"
+},
+{
+  "_id": {
+    "$oid": "696e1d590ff64f63d3184251"
+  },
+  "id": 9,
+  "slug": "mern-stack",
+  "title": "MERN Stack",
+  "category": "Web Development",
+  "image": "https://res.cloudinary.com/dhrommrn4/image/upload/v1767892211/MERN_e5yyw3.jpg",
+  "duration": "3 Months",
+  "level": "Beginner to Intermediate",
+  "trainer": "Build modern web apps with JavaScript. ",
+  "price": "₹35,000",
+  "originalPrice": "₹60,000",
+  "rating": 4.9,
+  "themeColor": "#0EA5E9"
+},
+{
+  "_id": {
+    "$oid": "696e1d590ff64f63d3184252"
+  },
+  "id": 10,
+  "slug": "multi-cloud-consultant",
+  "title": "Multi-Cloud Consultant",
+  "category": "Cloud Computing",
+  "image": "https://res.cloudinary.com/dhrommrn4/image/upload/v1767892205/cloud-computing_vhwvx0.jpg",
+  "duration": "3 Months",
+  "level": "AWS/Azure/Cloud Architecture",
+  "price": "₹35,000",
+  "originalPrice": "₹85,000",
+  "rating": 4.9,
+  "themeColor": "#3B82F6"
+},
+{
+  "_id": {
+    "$oid": "696e1d590ff64f63d3184253"
+  },
+  "id": 11,
+  "slug": "multi-cloud-engineering",
+  "title": "Data Engineering",
+  "category": "Cloud Computing",
+  "image": "https://res.cloudinary.com/dhrommrn4/image/upload/v1768329468/multi-cloud-consultant_czpj7e.jpg",
+  "duration": "3 Months",
+  "level": "Big Data Processing/ETL / ELT/ Pipelines/Data Warehousing",
+  "price": "₹35,000",
+  "originalPrice": "₹80,000",
+  "rating": 4.7,
+  "themeColor": "#8B5CF6"
+},
+{
+  "_id": {
+    "$oid": "696e1d590ff64f63d3184254"
+  },
+  "id": 12,
+  "slug": "python-full-stack",
+  "title": "Python Full Stack",
+  "category": "Web Development",
+  "image": "https://res.cloudinary.com/dhrommrn4/image/upload/v1767892211/python_urv1ku.jpg",
+  "duration": "3 Months",
+  "level": "Python Development/Django / Flask/Full Stack Web",
+  "price": "₹35,000",
+  "originalPrice": "₹60,000",
+  "rating": 4.8,
+  "themeColor": "#22C55E"
+},
+{
+  "_id": {
+    "$oid": "696e1d590ff64f63d3184255"
+  },
+  "id": 13,
+  "slug": "quantum-computing",
+  "title": "Quantum Computing",
+  "category": "Emerging Tech",
+  "image": "https://res.cloudinary.com/dhrommrn4/image/upload/v1767892214/quantom-computing_xbug8h.jpg",
+  "duration": "3 Months",
+  "level": "Quantum Algorithms/Qubits/Future",
+  "price": "₹35,000",
+  "originalPrice": "₹65,000",
+  "rating": 5,
+  "themeColor": "#7C3AED"
+},
+{
+  "_id": {
+    "$oid": "696e1d590ff64f63d3184256"
+  },
+  "id": 14,
+  "slug": "ui-ux-design",
+  "title": "UI/UX Design",
+  "category": "Design",
+  "image": "https://res.cloudinary.com/dhrommrn4/image/upload/v1767892215/uiux_ulkrs5.jpg",
+  "duration": "3 Months",
+  "level": "User Experience/Wireframing/Design ",
+  "price": "₹35,000",
+  "originalPrice": "₹50,000",
+  "rating": 4.7,
+  "themeColor": "#EC4899"
+},
+{
+  "_id": {
+    "$oid": "696e1d590ff64f63d3184257"
+  },
+  "id": 15,
+  "slug": "qa-automation",
+  "title": "QA Automation",
+  "category": "Testing",
+  "image": "https://res.cloudinary.com/dhrommrn4/image/upload/v1767892214/qa-automation-v2_guvvno.jpg",
+  "duration": "3 Months",
+  "level": "Test Automation/Selenium/Software",
+  "trainer": "Satish Rao",
+  "price": "₹35,000",
+  "originalPrice": "₹55,000",
+  "rating": 4.6,
+  "themeColor": "#F97316"
+}]

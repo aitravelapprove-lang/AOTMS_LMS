@@ -117,6 +117,7 @@ const examSchema = z.object({
   question_count: z.coerce.number().min(1).default(10),
   marking_scheme: z.enum(["standard", "weighted", "fixed"]).default("standard"),
   exam_mode: z.enum(["automated", "manual"]).default("automated"),
+  custom_fields: z.array(z.object({ label: z.string(), value: z.string() })).default([]),
 });
 
 type ExamFormValues = z.infer<typeof examSchema>;
@@ -348,8 +349,27 @@ export function ExamScheduler() {
       question_count: 10,
       marking_scheme: "standard",
       exam_mode: "automated",
+      custom_fields: [{ label: "Batch", value: "Default" }],
     },
   });
+
+  const customFields = form.watch("custom_fields") || [];
+
+  const addCustomField = () => {
+    form.setValue("custom_fields", [...customFields, { label: "", value: "" }]);
+  };
+
+  const removeCustomField = (index: number) => {
+    const updated = [...customFields];
+    updated.splice(index, 1);
+    form.setValue("custom_fields", updated);
+  };
+
+  const updateCustomField = (index: number, key: 'label' | 'value', val: string) => {
+    const updated = [...customFields];
+    updated[index][key] = val;
+    form.setValue("custom_fields", updated);
+  };
 
   const onDropPoster = useCallback(
     (e: React.DragEvent) => {
@@ -433,22 +453,29 @@ export function ExamScheduler() {
           }}
         >
           <DialogTrigger asChild>
-            <Button className="rounded-xl sm:rounded-2xl h-11 sm:h-14 px-6 sm:px-12 bg-gradient-to-r from-[#001F3D] to-[#000d1a] hover:from-[#FD5A1A] hover:to-[#e04d13] text-white font-black uppercase tracking-[0.2em] text-[10px] gap-3 shadow-[0_10px_40px_rgba(0,31,61,0.2)] hover:shadow-[0_10px_40px_rgba(253,90,26,0.3)] transition-all duration-500 hover:scale-[1.02] active:scale-95 group">
+            <Button className="rounded-xl sm:rounded-2xl h-11 sm:h-14 px-6 sm:px-12 bg-white hover:bg-slate-50 text-black border-2 border-slate-100 font-black uppercase tracking-[0.2em] text-[10px] gap-3 shadow-xl hover:shadow-2xl hover:border-black transition-all duration-500 hover:scale-[1.02] active:scale-95 group">
               <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform duration-500" />
               Commence Scheduling
             </Button>
           </DialogTrigger>
-          <DialogContent className="w-[calc(100%-1rem)] sm:max-w-4xl p-0 overflow-hidden border border-slate-200 shadow-2xl rounded-[3rem] bg-white flex flex-col max-h-[90vh]">
-            <div className="flex h-full">
-              {/* Premium Color Sidebar */}
-              <div className="hidden lg:flex w-24 bg-gradient-to-b from-slate-900 via-[#001F3D] to-black p-6 flex-col items-center justify-between border-r border-slate-800">
-                <div className="space-y-8 flex flex-col items-center">
-                  <div className="h-12 w-12 rounded-2xl bg-primary/20 flex items-center justify-center text-primary border border-primary/30 shadow-lg shadow-primary/20">
-                    <Rocket className="h-6 w-6" />
-                  </div>
-                  <div className="h-0.5 w-6 bg-slate-800 rounded-full" />
-                  <div className="h-12 w-12 rounded-2xl bg-orange-500/20 flex items-center justify-center text-[#FD5A1A] border border-orange-500/30">
-                    <Zap className="h-6 w-6" />
+          <DialogContent className="w-full sm:max-w-[750px] p-0 overflow-hidden border-none shadow-[0_0_80px_rgba(0,0,0,0.15)] rounded-none sm:rounded-[2.5rem] bg-white flex flex-col max-h-screen sm:max-h-[85vh]">
+            <div className="flex flex-col h-full overflow-hidden">
+               {/* Image-Style Stepper Header */}
+               <div className="px-8 pt-10 pb-6 border-b border-slate-50 shrink-0 bg-white">
+                  <div className="max-w-xl mx-auto flex items-center justify-between relative mb-8">
+                     <div className="absolute top-1/2 left-0 w-full h-px bg-slate-100 -translate-y-1/2 z-0" />
+                     {[
+                       { n: "1", label: "Protocol Details" },
+                       { n: "2", label: "Constraints" },
+                       { n: "3", label: "Finalize" }
+                     ].map((step, idx) => (
+                       <div key={idx} className="relative z-10 flex flex-col items-center gap-2 group/step">
+                          <div className={`h-8 w-8 rounded-full flex items-center justify-center font-black text-xs transition-all duration-500 border-2 ${idx === 0 ? 'bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/20' : 'bg-white border-slate-100 text-slate-300 group-hover/step:border-slate-200'}`}>
+                             {step.n}
+                          </div>
+                          <span className={`text-[8px] font-black uppercase tracking-widest transition-colors ${idx === 0 ? 'text-black' : 'text-slate-300'}`}>{step.label}</span>
+                       </div>
+                     ))}
                   </div>
                 </div>
                 <div className="h-12 w-12 rounded-full border border-slate-800 flex items-center justify-center text-slate-600">
@@ -457,283 +484,319 @@ export function ExamScheduler() {
               </div>
 
               <div className="flex-1 flex flex-col min-h-0">
-              <DialogHeader className="px-8 pt-8 pb-6 relative space-y-1.5 bg-white border-b border-slate-100 shrink-0">
-                <DialogTitle className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
-                  <span className="text-slate-900">Initialize</span>
-                  <span className="text-[#FD5A1A] font-black italic">Workspace</span>
-                </DialogTitle>
-                <DialogDescription className="text-[11px] font-semibold text-slate-400 uppercase tracking-[0.3em]">
-                  Master Assessment Configuration Framework
-                </DialogDescription>
-              </DialogHeader>
+                <DialogHeader className="p-10 relative space-y-2 bg-white border-b border-slate-50 shrink-0">
+                  <DialogTitle className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-4">
+                    <span className="bg-gradient-to-r from-slate-900 to-primary bg-clip-text text-transparent">Initialize</span> 
+                    <span className="text-[#FD5A1A] italic">Workspace</span>
+                  </DialogTitle>
+                  <DialogDescription className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">
+                    Master Assessment Configuration Framework
+                  </DialogDescription>
+                </DialogHeader>
 
-              <div
-                className="px-8 pb-8 pt-6 flex-1 min-h-0 overflow-y-auto admin-scrollbar bg-white"
-                id="exam-form-scroll-container"
-              >
+                <div className="p-10 flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-white relative group/form-scroll" id="exam-form-scroll-container">
+                  {/* Floating Scroll Assistant */}
+                  <div className="absolute right-6 top-1/2 -translate-y-1/2 z-[60] flex flex-col gap-3 pointer-events-none opacity-0 group-hover/form-scroll:opacity-100 transition-all duration-700 translate-x-4 group-hover/form-scroll:translate-x-0">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-12 w-12 rounded-full bg-slate-900 shadow-2xl text-white hover:bg-[#FD5A1A] transition-all hover:scale-110 active:scale-95 pointer-events-auto border border-slate-700/50"
+                      onClick={() => {
+                        const container = document.getElementById('exam-form-scroll-container');
+                        if (container) {
+                          container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+                        }
+                      }}
+                    >
+                      <ChevronDown className="h-6 w-6" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-12 w-12 rounded-full bg-white shadow-xl text-slate-400 hover:text-primary transition-all hover:scale-110 active:scale-95 pointer-events-auto border border-slate-100"
+                      onClick={() => {
+                        const container = document.getElementById('exam-form-scroll-container');
+                        if (container) {
+                          container.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
+                      }}
+                    >
+                      <ChevronUp className="h-6 w-6" />
+                    </Button>
+                  </div>
 
+               <div className="flex-1 overflow-y-auto admin-scrollbar p-6 sm:p-10 bg-white">
                   <Form {...form}>
                     <form
                       onSubmit={form.handleSubmit(onSubmitProfile)}
-                      className="space-y-7"
+                      className="space-y-12"
                     >
-                      {/* Row 1: Title + Category */}
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                        <FormField
-                          control={form.control}
-                          name="title"
-                          render={({ field }) => (
-                            <FormItem className="space-y-2">
-                              <FormLabel className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
-                                Assessment Title
-                              </FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Final Certification Protocol"
-                                  className="h-12 rounded-xl border border-slate-200 bg-slate-50 font-semibold px-4 text-[14px] text-slate-800 focus:border-primary focus:bg-white transition-all outline-none shadow-none placeholder:text-slate-300"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="exam_type"
-                          render={({ field }) => (
-                            <FormItem className="space-y-2">
-                              <FormLabel className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
-                                Portal Category
-                              </FormLabel>
-                              <Select
-                                onValueChange={field.onChange}
-                                value={field.value}
-                              >
-                                <FormControl>
-                                  <SelectTrigger className="h-12 rounded-xl border border-slate-200 bg-slate-50 font-semibold px-4 text-[14px] text-slate-800 focus:border-primary transition-all outline-none">
-                                    <SelectValue placeholder="Select Category" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                                  {["mock", "certification", "live"].map((t) => (
-                                    <SelectItem
-                                      key={t}
-                                      value={t}
-                                      className="font-semibold py-2.5 text-[13px] capitalize"
-                                    >
-                                      {t.charAt(0).toUpperCase() + t.slice(1)} Portal
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-
-                      {/* Numeric Parameters */}
-                      <div className="bg-slate-50 rounded-2xl border border-slate-200/80 p-5">
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">Exam Parameters</p>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                          {/* Start Timeline */}
+                      <div className="space-y-14">
+                        {/* Basic Configuration */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                           <FormField
                             control={form.control}
-                            name="scheduled_date"
+                            name="title"
                             render={({ field }) => (
-                              <FormItem className="space-y-2">
-                                <FormLabel className="text-[11px] font-bold uppercase tracking-widest text-[#FD5A1A] flex items-center gap-1.5">
-                                  <CalendarIcon className="h-3.5 w-3.5" /> Start Date
+                              <FormItem className="space-y-3">
+                                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                  Assessment Title
                                 </FormLabel>
                                 <FormControl>
                                   <Input
-                                    type="datetime-local"
-                                    className="h-11 rounded-xl border border-slate-200 bg-white font-semibold px-4 text-[13px] focus:border-[#FD5A1A] transition-all outline-none"
+                                    placeholder="Final Certification Protocol"
+                                    className="h-18 rounded-3xl border-2 border-slate-100 bg-slate-50/50 font-bold px-8 focus:border-primary focus:bg-white transition-all text-slate-900 outline-none shadow-none text-base"
                                     {...field}
                                   />
                                 </FormControl>
+                                <FormMessage />
                               </FormItem>
                             )}
                           />
 
-                          {/* Duration */}
                           <FormField
                             control={form.control}
-                            name="duration_minutes"
+                            name="exam_type"
                             render={({ field }) => (
-                              <FormItem className="space-y-2">
-                                <FormLabel className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
-                                  Duration (Min)
+                              <FormItem className="space-y-3">
+                                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                  Portal Category
                                 </FormLabel>
-                                <FormControl>
-                                  <div className="relative">
-                                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                                    <Input
-                                      type="number"
-                                      className="h-11 rounded-xl border border-slate-200 bg-white font-semibold pl-9 pr-4 text-[14px] text-slate-800 focus:border-primary transition-all outline-none"
-                                      {...field}
-                                    />
-                                  </div>
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-
-                          {/* Total Marks */}
-                          <FormField
-                            control={form.control}
-                            name="total_marks"
-                            render={({ field }) => (
-                              <FormItem className="space-y-2">
-                                <FormLabel className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
-                                  Total Marks
-                                </FormLabel>
-                                <FormControl>
-                                  <div className="relative">
-                                    <Target className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                                    <Input
-                                      type="number"
-                                      className="h-11 rounded-xl border border-slate-200 bg-white font-semibold pl-9 pr-4 text-[14px] text-slate-800 focus:border-primary transition-all outline-none"
-                                      {...field}
-                                    />
-                                  </div>
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-
-                          {/* Negative Marks */}
-                          <FormField
-                            control={form.control}
-                            name="negative_marking"
-                            render={({ field }) => (
-                              <FormItem className="space-y-2">
-                                <FormLabel className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
-                                  Neg. Marks
-                                </FormLabel>
-                                <FormControl>
-                                  <Input
-                                    type="number"
-                                    step="0.25"
-                                    className="h-11 rounded-xl border border-slate-200 bg-white font-semibold px-4 text-[14px] text-slate-800 focus:border-primary transition-all outline-none"
-                                    {...field}
-                                  />
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-
-                          {/* Retakes */}
-                          <FormField
-                            control={form.control}
-                            name="max_attempts"
-                            render={({ field }) => (
-                              <FormItem className="space-y-2">
-                                <FormLabel className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
-                                  Retakes
-                                </FormLabel>
-                                <FormControl>
-                                  <Input
-                                    type="number"
-                                    className="h-11 rounded-xl border border-slate-200 bg-white font-semibold px-4 text-[14px] text-slate-800 focus:border-primary transition-all outline-none"
-                                    {...field}
-                                  />
-                                </FormControl>
+                                <Select
+                                  onValueChange={field.onChange}
+                                  value={field.value}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger className="h-18 rounded-3xl border-2 border-slate-100 bg-slate-50/50 font-bold px-8 focus:border-primary transition-all text-slate-900 outline-none">
+                                      <SelectValue placeholder="Select Category" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent className="rounded-3xl border-slate-100 shadow-2xl">
+                                    {["mock", "certification", "live"].map((t) => (
+                                      <SelectItem
+                                        key={t}
+                                        value={t}
+                                        className="font-bold py-4 uppercase text-[10px] tracking-widest"
+                                      >
+                                        {t.toUpperCase()} PORTAL
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
                               </FormItem>
                             )}
                           />
                         </div>
-                      </div>
 
-                      {/* Shuffle Toggle */}
-                      <FormField
-                        control={form.control}
-                        name="shuffle_questions"
-                        render={({ field }) => (
-                          <div
-                            className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-300 cursor-pointer ${
-                              field.value
-                                ? 'bg-primary/5 border-primary/30'
-                                : 'bg-white border-slate-200 hover:border-slate-300'
-                            }`}
-                            onClick={() => field.onChange(!field.value)}
-                          >
-                            <div className="flex items-center gap-4">
-                              <div className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all ${
-                                field.value ? 'bg-primary text-white shadow-md shadow-primary/30' : 'bg-slate-100 text-slate-400'
-                              }`}>
-                                <Shuffle className="h-5 w-5" />
-                              </div>
-                              <div>
-                                <p className={`text-[13px] font-bold transition-colors ${
-                                  field.value ? 'text-primary' : 'text-slate-700'
-                                }`}>Randomization Protocol</p>
-                                <p className="text-[11px] text-slate-400 font-medium">Shuffle questions for each session</p>
-                              </div>
+                        {/* Numeric Parameters Grid */}
+                        <div className="bg-gradient-to-br from-slate-50 via-white to-primary/5 rounded-[3rem] border-2 border-slate-100 p-10 sm:p-14 shadow-sm relative overflow-hidden">
+                          <div className="absolute -top-24 -right-24 w-64 h-64 bg-[#FD5A1A]/10 blur-[100px] rounded-full pointer-events-none" />
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 relative z-10">
+                            {/* Timeline with Orange Accent */}
+                            <div className="col-span-full lg:col-span-1">
+                              <FormField
+                                control={form.control}
+                                name="scheduled_date"
+                                render={({ field }) => (
+                                  <FormItem className="space-y-3">
+                                    <FormLabel className="text-[10px] font-black uppercase tracking-widest text-[#FD5A1A] flex items-center gap-2">
+                                      <CalendarIcon className="h-4 w-4" /> Start Timeline
+                                    </FormLabel>
+                                    <FormControl>
+                                      <Input
+                                        type="datetime-local"
+                                        className="h-18 rounded-[2rem] border-2 border-[#FD5A1A]/20 bg-white font-bold px-6 text-xs focus:border-[#FD5A1A] transition-all shadow-sm outline-none"
+                                        {...field}
+                                      />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
                             </div>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                              className="data-[state=checked]:bg-primary"
+
+                            {/* Duration */}
+                            <FormField
+                              control={form.control}
+                              name="duration_minutes"
+                              render={({ field }) => (
+                                <FormItem className="space-y-3">
+                                  <FormLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                    Duration (Min)
+                                  </FormLabel>
+                                  <FormControl>
+                                    <div className="relative group">
+                                      <Clock className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
+                                      <Input
+                                        type="number"
+                                        className="h-18 rounded-[2rem] border-2 border-slate-100 bg-white font-bold pl-14 pr-6 text-slate-900 focus:border-primary transition-all shadow-sm outline-none"
+                                        {...field}
+                                      />
+                                    </div>
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+
+                            {/* Total Marks */}
+                            <FormField
+                              control={form.control}
+                              name="total_marks"
+                              render={({ field }) => (
+                                <FormItem className="space-y-3">
+                                  <FormLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                    Final Marks
+                                  </FormLabel>
+                                  <FormControl>
+                                    <div className="relative group">
+                                      <Target className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
+                                      <Input
+                                        type="number"
+                                        className="h-18 rounded-[2rem] border-2 border-slate-100 bg-white font-bold pl-14 pr-6 text-slate-900 focus:border-primary transition-all shadow-sm outline-none"
+                                        {...field}
+                                      />
+                                    </div>
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+
+                            {/* Negative Marks */}
+                            <FormField
+                              control={form.control}
+                              name="negative_marking"
+                              render={({ field }) => (
+                                <FormItem className="space-y-3">
+                                  <FormLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                    Neg. Marks
+                                  </FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      step="0.25"
+                                      className="h-18 rounded-[2rem] border-2 border-slate-100 bg-white font-bold px-8 text-slate-900 focus:border-primary transition-all shadow-sm outline-none"
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+
+                            {/* Max Retakes */}
+                            <FormField
+                              control={form.control}
+                              name="max_attempts"
+                              render={({ field }) => (
+                                <FormItem className="space-y-3">
+                                  <FormLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                    Retakes
+                                  </FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      className="h-18 rounded-[2rem] border-2 border-slate-100 bg-white font-bold px-8 text-slate-900 focus:border-primary transition-all shadow-sm outline-none"
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
                             />
                           </div>
-                        )}
-                      />
 
-                      {/* Instructions */}
-                      <FormField
-                        control={form.control}
-                        name="description"
-                        render={({ field }) => (
-                          <FormItem className="space-y-2">
-                            <FormLabel className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
-                              Guideline Repository
-                            </FormLabel>
-                            <FormControl>
-                              <Textarea
-                                placeholder="Define the core logic and constraints for candidates..."
-                                className="min-h-[120px] rounded-xl border border-slate-200 bg-slate-50 p-4 font-medium text-slate-700 text-[14px] focus:bg-white focus:border-primary transition-all outline-none resize-none leading-relaxed"
-                                {...field}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
+                          {/* Shuffling Protocol Section */}
+                          <div className="mt-14 pt-12 border-t border-slate-100">
+                            <FormField
+                              control={form.control}
+                              name="shuffle_questions"
+                              render={({ field }) => (
+                                <div 
+                                  className={`p-10 rounded-[2.5rem] border-2 transition-all duration-500 cursor-pointer flex items-center justify-between group ${field.value ? 'bg-primary/5 border-primary shadow-xl shadow-primary/10' : 'bg-white border-slate-100 hover:border-slate-200'}`}
+                                  onClick={() => field.onChange(!field.value)}
+                                >
+                                  <div className="flex items-center gap-8">
+                                    <div className={`h-16 w-16 rounded-[1.25rem] flex items-center justify-center transition-all duration-500 ${field.value ? 'bg-primary text-white rotate-12 scale-110 shadow-lg shadow-primary/30' : 'bg-slate-100 text-slate-400 grayscale'}`}>
+                                      <Shuffle className="h-7 w-7" />
+                                    </div>
+                                    <div className="space-y-1.5 text-left">
+                                      <h4 className={`text-sm font-black uppercase tracking-widest transition-colors ${field.value ? 'text-primary' : 'text-slate-400'}`}>
+                                        Randomization Protocol
+                                      </h4>
+                                      <p className="text-[10px] font-semibold text-slate-400 tracking-wide max-w-sm uppercase">
+                                        Generates unique question sorting vectors for each exam session to maximize integrity.
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                    className="data-[state=checked]:bg-primary h-8 w-14"
+                                  />
+                                </div>
+                              )}
+                            />
+                          </div>
+                        </div>
 
-                      {/* Action Buttons */}
-                      <div className="flex flex-col sm:flex-row gap-3 pt-4 pb-2">
+                        {/* Instructions */}
+                        <FormField
+                          control={form.control}
+                          name="description"
+                          render={({ field }) => (
+                            <FormItem className="space-y-6">
+                              <div className="flex items-center gap-4">
+                                <div className="h-1 w-10 bg-slate-200 rounded-full" />
+                                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                  Guideline Repository
+                                </FormLabel>
+                              </div>
+                              <FormControl>
+                                <Textarea
+                                  placeholder="Define the core logic and constraints for candidates..."
+                                  className="min-h-[180px] rounded-[3rem] border-2 border-slate-50 bg-slate-50/20 p-10 font-bold text-slate-700 focus:bg-white focus:border-primary transition-all outline-none resize-none leading-relaxed text-sm italic"
+                                  {...field}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-8 pt-8 pb-10">
                         <Button
                           type="button"
                           variant="ghost"
-                          className="h-12 flex-1 rounded-xl font-bold text-[13px] tracking-wide text-slate-400 hover:text-rose-500 transition-all hover:bg-rose-50"
+                          className="h-20 flex-1 rounded-[2rem] font-black uppercase text-[11px] tracking-[0.4em] text-slate-300 hover:text-rose-500 transition-all hover:bg-rose-50"
                           onClick={() => setIsAddOpen(false)}
                         >
-                          Cancel
+                          Abort
                         </Button>
                         <Button
                           type="submit"
                           disabled={createExam.isPending}
-                          className="h-12 flex-[2.5] rounded-xl bg-gradient-to-r from-slate-900 to-[#001F3D] text-white font-bold text-[14px] tracking-wide shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3 active:scale-95 group relative overflow-hidden"
+                          className="h-20 flex-[2.5] rounded-[2rem] bg-gradient-to-r from-slate-900 to-[#001F3D] text-white font-black uppercase tracking-[0.4em] text-[13px] shadow-[0_20px_60px_rgba(0,31,61,0.3)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.4)] transition-all flex items-center justify-center gap-6 active:scale-95 group relative overflow-hidden"
                         >
-                          <div className="absolute inset-0 bg-gradient-to-r from-[#FD5A1A]/0 via-[#FD5A1A]/10 to-[#FD5A1A]/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                          <div className="absolute inset-0 bg-gradient-to-r from-[#FD5A1A]/0 via-[#FD5A1A]/10 to-[#FD5A1A]/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
                           {createExam.isPending ? (
                             <>
-                              <Loader2 className="h-5 w-5 animate-spin" />
-                              <span>Processing...</span>
+                              <Loader2 className="h-7 w-7 animate-spin" />
+                              <span>PROCESSING...</span>
                             </>
                           ) : (
                             <>
                               <span>Initialize Exam</span>
-                              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                              <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center group-hover:bg-[#FD5A1A] transition-colors">
+                                <ArrowRight className="h-6 w-6 group-hover:translate-x-1 transition-transform" />
+                              </div>
                             </>
                           )}
                         </Button>
                       </div>
                     </form>
                   </Form>
+                </div>
               </div>
-            </div>
             </div>
           </DialogContent>
         </Dialog>

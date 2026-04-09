@@ -11,7 +11,6 @@ import { CourseApproval } from "@/components/admin/CourseApproval";
 import { SecurityMonitor } from "@/components/admin/SecurityMonitor";
 import { QuestionBankApproval } from "@/components/admin/QuestionBankApproval";
 import { QualityAssurance } from "@/components/admin/QualityAssurance";
-import { CourseAssignment } from "@/components/admin/CourseAssignment";
 import { InstructorManagement } from "@/components/admin/InstructorManagement";
 import { ExamApproval } from "@/components/admin/ExamApproval";
 import { EnrollmentsList } from "@/components/admin/EnrollmentsList";
@@ -136,17 +135,8 @@ function AllCoursesList({
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">All Courses</h2>
-          <p className="text-slate-500">Manage your entire course catalog</p>
-        </div>
-        <div className="flex items-center gap-3 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm">
-          <Badge variant="secondary" className="px-3 py-1.5 h-8 text-sm font-medium bg-slate-100 text-slate-700">
-            {coursesList.length} Total
-          </Badge>
-          <div className="h-4 w-px bg-slate-200" />
-          <span className="text-xs font-medium text-slate-400 px-2">
-            {coursesList.filter((c: AdminCourse) => c.status === 'published' || c.status === 'approved').length} Active
-          </span>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900 italic uppercase">Executive Catalog</h2>
+          <p className="text-slate-500 font-medium text-xs tracking-widest uppercase">Global Curriculum Intelligence Node</p>
         </div>
       </div>
 
@@ -166,159 +156,129 @@ function AllCoursesList({
         </motion.div>
       ) : (
         <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {coursesList.map((course: AdminCourse, index: number) => (
-            <motion.div
-              key={course.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className="group relative bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 overflow-hidden flex flex-col"
-            >
-              {/* Image Container */}
-              <div className="aspect-[4/3] relative overflow-hidden bg-slate-100">
-                {course.thumbnail_url ? (
-                  <img 
-                    src={course.thumbnail_url.startsWith('http') ? course.thumbnail_url : `/s3/public/${course.thumbnail_url}`}
-                    alt={course.title}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center bg-slate-50 text-slate-300">
-                    <BookOpen className="h-10 w-10 mb-2" />
-                    <span className="text-xs font-medium uppercase tracking-wider">No Preview</span>
-                  </div>
-                )}
-                
-                {/* Overlay Gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+           {coursesList.map((course: AdminCourse, index: number) => {
+             const CategoryIcon = course.title?.toLowerCase().includes('security') ? Shield : 
+                                course.title?.toLowerCase().includes('ai') ? Zap : 
+                                course.title?.toLowerCase().includes('data') ? BarChart3 : 
+                                course.title?.toLowerCase().includes('design') ? LayoutGrid : BookOpen;
+             
+             return (
+               <motion.div
+                 key={course.id}
+                 initial={{ opacity: 0, scale: 0.95 }}
+                 animate={{ opacity: 1, scale: 1 }}
+                 transition={{ delay: index * 0.05 }}
+                 className="group relative bg-white rounded-[2rem] border border-slate-100/50 shadow-sm hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] transition-all duration-500 flex flex-col p-1.5"
+               >
+                 {/* Premium Image Header */}
+                 <div className="aspect-video relative rounded-2xl overflow-hidden group-hover:shadow-lg transition-all">
+                   {course.thumbnail_url ? (
+                     <img 
+                       src={course.thumbnail_url.startsWith('http') ? course.thumbnail_url : `/s3/public/${course.thumbnail_url}`}
+                       alt={course.title}
+                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                       onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=2070&auto=format&fit=crop'; }}
+                     />
+                   ) : (
+                     <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 text-slate-300">
+                       <BookOpen className="h-10 w-10 mb-2" />
+                       <span className="text-[10px] font-black uppercase tracking-widest">Library Node</span>
+                     </div>
+                   )}
+                   
+                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent group-hover:opacity-100 transition-opacity" />
+                   
+                   {/* Floating Center Icon */}
+                   <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-14 w-14 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 scale-50 group-hover:scale-100 shadow-2xl">
+                      <CategoryIcon className="h-7 w-7 text-white" />
+                   </div>
 
-                {/* Status Badge */}
-                <div className="absolute top-3 right-3 z-10">
-                  <span className={`
-                    inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm backdrop-blur-md
-                    ${(course.status === 'published' || course.status === 'approved') 
-                      ? 'bg-emerald-500/90 text-white' 
-                      : 'bg-slate-500/90 text-white'}
-                  `}>
-                    {course.status || 'Draft'}
-                  </span>
-                </div>
+                   {/* Badges Overlay */}
+                   <div className="absolute top-4 left-4 flex gap-2">
+                     <Badge className={`border-none font-bold text-[9px] uppercase tracking-wider px-3 py-1 rounded-lg ${course.status === 'published' ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white shadow-lg'}`}>
+                       {course.status || 'Draft'}
+                     </Badge>
+                   </div>
+                 </div>
 
-                {/* Active Toggle */}
-                <div className="absolute top-3 left-3 z-10 flex items-center gap-2 bg-white/90 backdrop-blur-md px-2 py-1 rounded-full shadow-sm border border-slate-200/50 transition-opacity whitespace-nowrap">
-                  <Switch 
-                    checked={course.is_active !== false} 
-                    onCheckedChange={(checked) => onToggleActive?.(course.id, checked)}
-                    className="scale-75 data-[state=checked]:bg-emerald-500"
-                  />
-                  <span className={`text-[9px] font-black uppercase tracking-tighter ${course.is_active !== false ? 'text-emerald-600' : 'text-slate-400'}`}>
-                    {course.is_active !== false ? 'Active' : 'Inactive'}
-                  </span>
-                </div>
+                 {/* Content - Floating Icon Join */}
+                 <div className="relative pt-6 pb-5 px-5 flex-1 flex flex-col">
+                   {/* Floating Brand Icon */}
+                   <div className="absolute -top-6 right-6 h-12 w-12 rounded-full bg-white shadow-lg flex items-center justify-center border-4 border-slate-50 group-hover:scale-110 transition-transform duration-500">
+                      <div className="h-8 w-8 rounded-full bg-primary/5 flex items-center justify-center">
+                        <CategoryIcon className="h-4 w-4 text-primary" />
+                      </div>
+                   </div>
 
-                {/* Quick Actions (Hover) */}
-                <div className="absolute bottom-3 right-3 flex gap-2 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 z-10">
-                  {onView && (
+                   <div className="space-y-1 mb-4">
+                     <h3 className="text-xl font-bold text-slate-900 leading-tight group-hover:text-primary transition-colors line-clamp-2">
+                       {course.title}
+                     </h3>
+                     <p className="text-[10px] uppercase font-bold text-primary/60 tracking-[0.2em]">
+                       {course.category || 'Strategic Training'}
+                     </p>
+                   </div>
+                   
+                   <div className="space-y-3 mb-6">
+                      <div className="flex items-center gap-2 text-slate-400">
+                         <Clock className="h-3.5 w-3.5" />
+                         <span className="text-xs font-semibold">{course.duration || '3 Months'} • ONLINE / LIVE</span>
+                      </div>
+                   </div>
+
+                   {/* High Visibility Pricing */}
+                   <div className="mt-auto flex flex-col gap-4">
+                     <div className="flex items-center gap-3">
+                        <span className="text-3xl font-black text-slate-900 tracking-tighter italic">
+                          ₹{course.price || '35,000'}
+                        </span>
+                        {course.price && parseFloat(String(course.price)) > 0 && (
+                          <span className="text-sm text-slate-300 line-through font-bold">
+                            ₹{Math.round(parseFloat(String(course.price)) * 1.5).toLocaleString()}
+                          </span>
+                        )}
+                     </div>
+
+                     <div className="flex gap-2 pt-2">
+                        <Button 
+                          variant="outline" 
+                          className="flex-1 rounded-xl h-10 font-black text-[10px] uppercase tracking-wider border-slate-200 hover:bg-slate-50"
+                          onClick={() => window.open('https://aotms.in', '_blank')}
+                        >
+                          Explore
+                        </Button>
+                        <Button 
+                          className="flex-1 rounded-xl h-10 font-black text-[10px] uppercase tracking-wider bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-100"
+                          onClick={() => onViewSyllabus?.(course)}
+                        >
+                          Start Localize
+                        </Button>
+                     </div>
+                   </div>
+                 </div>
+                 
+                 {/* Hover Management Float */}
+                 <div className="absolute top-6 right-6 flex flex-col gap-2 opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 transition-all duration-300">
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="h-9 w-9 rounded-full bg-white/90 text-slate-700 hover:bg-white hover:text-primary shadow-lg backdrop-blur-sm border-0"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onView(course);
-                      }}
-                      title="View Details"
+                      className="h-8 w-8 rounded-full bg-white shadow-lg text-slate-400 hover:text-primary border-none"
+                      onClick={() => setEditingPrice({ id: course.id, title: course.title, price: String(course.price || "0") })}
                     >
-                      <Eye className="h-4 w-4" />
+                      <Pencil className="h-3.5 w-3.5" />
                     </Button>
-                  )}
-                  {onUpdatePrice && (
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="h-9 w-9 rounded-full bg-white/90 text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 shadow-lg backdrop-blur-sm border-0"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingPrice({ id: course.id, title: course.title, price: String(course.price || "0") });
-                        setNewPrice(String(course.price || "0"));
-                      }}
-                      title="Edit Price"
+                      className="h-8 w-8 rounded-full bg-white shadow-lg text-slate-400 hover:text-red-600 border-none"
+                      onClick={() => onDelete?.(course.id)}
                     >
-                      <DollarSign className="h-4 w-4" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     </Button>
-                  )}
-                  {onDelete && (
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-9 w-9 rounded-full bg-white/90 text-slate-700 hover:bg-red-50 hover:text-red-600 shadow-lg backdrop-blur-sm border-0"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete(course.id);
-                      }}
-                      title="Delete Course"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              {/* Content */}
-              <div className="p-5 flex-1 flex flex-col">
-                <div className="mb-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="px-2 py-1 rounded-md bg-primary/5 text-primary text-[10px] font-bold uppercase tracking-wider">
-                      {course.category || 'General'}
-                    </span>
-                    <span className="px-2 py-1 rounded-md bg-slate-100 text-slate-500 text-[10px] font-bold uppercase tracking-wider">
-                      Status: {course.status}
-                    </span>
-                  </div>
-                  <h3 className="font-bold text-slate-900 leading-snug line-clamp-2 group-hover:text-primary transition-colors">
-                    {course.title}
-                  </h3>
-                </div>
-
-                <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-50">
-                  <div className="flex items-center gap-1.5 text-slate-500 text-xs font-medium">
-                    <Clock className="h-3.5 w-3.5" />
-                    <span>Manage Pricing</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="text-sm font-bold text-slate-900">
-                      {course.price === '0' || course.price === 0 || course.price === 'Free' ? (
-                        <span className="text-emerald-600">Free</span>
-                      ) : (
-                        <span className="text-orange-500">₹{course.price}</span>
-                      )}
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-primary hover:bg-primary/5 rounded-full"
-                      onClick={() => onViewSyllabus?.(course)}
-                      title="Manage Syllabus"
-                    >
-                      <Layers className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-6 w-6 text-slate-400 hover:text-primary"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingPrice({ id: course.id, title: course.title, price: String(course.price || "0") });
-                        setNewPrice(String(course.price || "0"));
-                      }}
-                    >
-                      <Pencil className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          ))}
+                 </div>
+               </motion.div>
+             );
+           })}
         </div>
       )}
 
@@ -618,7 +578,6 @@ export default function AdminDashboard() {
         "/admin/security": "security",
         "/admin/qa": "qa",
         "/admin/chat": "chat",
-        "/admin/assign-courses": "assign-courses",
         "/admin/instructors": "instructors",
         "/admin/videos": "videos",
         "/admin/exam-scheduling": "exam-scheduling",
@@ -847,7 +806,6 @@ export default function AdminDashboard() {
 
                       { id: "qa", label: "Quality Assurance", icon: ShieldCheck, key: "tab-qa" },
                       { id: "chat", label: "Chat Monitor", icon: MessageSquare, key: "tab-chat" },
-                      { id: "assign-courses", label: "Assign Courses", icon: ClipboardList, key: "tab-assign-courses" },
                       { id: "instructors", label: "Instructors", icon: Users, key: "tab-instructors" },
                       { id: "videos", label: "Video Library", icon: VideoIcon, key: "tab-videos" },
                       { id: "exam-scheduling", label: "Exam Scheduling", icon: Calendar, key: "tab-exam-scheduling" },
@@ -961,6 +919,7 @@ export default function AdminDashboard() {
                       onUpdatePrice={adminData.updateCoursePrice}
                       onToggleActive={adminData.toggleCourseActive}
                       onDelete={_deleteCourse}
+                      onViewSyllabus={(course) => setBuildingCourse(course)}
                     />
                   </motion.div>
                 </TabsContent>
@@ -1121,15 +1080,6 @@ export default function AdminDashboard() {
                   </motion.div>
                 </TabsContent>
 
-                <TabsContent key="tab-assign-courses" value="assign-courses" className="mt-0 outline-none">
-                  <motion.div
-                    key="motion-assign-courses"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                  >
-                    <CourseAssignment />
-                  </motion.div>
-                </TabsContent>
 
                 <TabsContent key="tab-instructors" value="instructors" className="mt-0 outline-none">
                   <motion.div

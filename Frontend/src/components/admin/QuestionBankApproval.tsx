@@ -461,7 +461,7 @@ export function QuestionBankApproval() {
                     <Button 
                         variant="outline" 
                         size="sm" 
-                        className="h-9 sm:h-11 px-3 sm:px-4 rounded-xl border-slate-100 bg-white shadow-sm text-[10px] font-black uppercase tracking-widest text-slate-400 gap-2 hover:bg-slate-50 transition-all active:scale-95 self-start sm:self-auto flex-shrink-0"
+                        className="h-9 sm:h-11 px-3 sm:px-4 rounded-xl border-slate-100 bg-white shadow-sm text-[10px] font-black uppercase tracking-widest text-slate-700 gap-2 hover:bg-slate-50 transition-all active:scale-95 self-start sm:self-auto flex-shrink-0"
                         onClick={() => fetchPendingBanks(true)}
                         disabled={loading}
                     >
@@ -487,14 +487,14 @@ export function QuestionBankApproval() {
             <Tabs value={viewTab} className="w-full">
                 <TabsContent value="pending" className="mt-0">
                     {pendingBanks.length === 0 ? (
-                        <Card className="border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-[2rem]">
+                        <Card className="border-2 border-dashed border-slate-300 bg-slate-50/50 rounded-[2rem]">
                             <CardContent className="flex flex-col items-center justify-center py-20 text-center space-y-4">
                                 <div className="h-20 w-20 rounded-full bg-white flex items-center justify-center shadow-inner border border-slate-100">
-                                    <CheckCircle className="h-10 w-10 text-slate-200" />
+                                    <CheckCircle className="h-10 w-10 text-slate-900/20" />
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-xl font-bold text-slate-900">Queue is empty!</p>
-                                    <p className="text-sm font-medium text-slate-500 max-w-sm">There are no pending question banks awaiting review.</p>
+                                    <p className="text-xl font-black text-slate-900 italic uppercase tracking-tighter">Queue is empty!</p>
+                                    <p className="text-sm font-bold text-slate-600 max-w-sm uppercase tracking-widest text-[10px]">There are no pending question banks awaiting review.</p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -518,7 +518,7 @@ export function QuestionBankApproval() {
                                                     <h3 className="font-bold text-base sm:text-xl text-slate-900 break-words">{bank.topic}</h3>
                                                     <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none px-2 py-0 text-[10px] uppercase tracking-wider font-black">Pending</Badge>
                                                 </div>
-                                                <div className="flex flex-wrap items-center gap-6 text-xs font-semibold text-slate-500 mt-2">
+                                                <div className="flex flex-wrap items-center gap-6 text-xs font-semibold text-slate-700 mt-2">
                                                     <div className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
                                                         <Clock className="h-3.5 w-3.5 text-primary" />
                                                         <span>Submitted: {new Date(bank.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
@@ -534,7 +534,7 @@ export function QuestionBankApproval() {
                                                     <Button
                                                         variant="outline"
                                                         onClick={() => handlePreviewQuestions(bank.topic)}
-                                                        className="flex-1 h-11 rounded-xl border-slate-200 text-slate-600 font-bold hover:bg-slate-50"
+                                                        className="flex-1 h-11 rounded-xl border-slate-200 text-slate-800 font-bold hover:bg-slate-50"
                                                     >
                                                         <Eye className="h-4 w-4 mr-2" />
                                                         Preview
@@ -583,14 +583,14 @@ export function QuestionBankApproval() {
 
                 <TabsContent value="library" className="mt-0">
                     {approvedBanks.length === 0 ? (
-                        <Card className="border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-[2rem]">
+                        <Card className="border-2 border-dashed border-slate-300 bg-slate-50/50 rounded-[2rem]">
                             <CardContent className="flex flex-col items-center justify-center py-20 text-center space-y-4">
                                 <div className="h-20 w-20 rounded-full bg-white flex items-center justify-center shadow-inner border border-slate-100">
-                                    <LayoutGrid className="h-10 w-10 text-slate-200" />
+                                    <LayoutGrid className="h-10 w-10 text-slate-900/20" />
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-xl font-bold text-slate-900">Library is empty!</p>
-                                    <p className="text-sm font-medium text-slate-500 max-w-sm">No approved question banks in the library yet.</p>
+                                    <p className="text-xl font-black text-slate-900 italic uppercase tracking-tighter">Library is empty!</p>
+                                    <p className="text-sm font-bold text-slate-600 max-w-sm uppercase tracking-widest text-[10px]">No approved question banks in the library yet.</p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -657,14 +657,14 @@ export function QuestionBankApproval() {
 
                 <TabsContent value="rejected" className="mt-0">
                     {rejectedBanks.length === 0 ? (
-                        <Card className="border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-[2rem]">
+                        <Card className="border-2 border-dashed border-slate-300 bg-slate-50/50 rounded-[2rem]">
                             <CardContent className="flex flex-col items-center justify-center py-20 text-center space-y-4">
                                 <div className="h-20 w-20 rounded-full bg-white flex items-center justify-center shadow-inner border border-slate-100">
-                                    <XCircle className="h-10 w-10 text-slate-200" />
+                                    <XCircle className="h-10 w-10 text-slate-900/20" />
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-xl font-bold text-slate-900">No rejected banks!</p>
-                                    <p className="text-sm font-medium text-slate-500 max-w-sm">There are no question banks with a rejected status.</p>
+                                    <p className="text-xl font-black text-slate-900 italic uppercase tracking-tighter">No rejected banks!</p>
+                                    <p className="text-sm font-bold text-slate-600 max-w-sm uppercase tracking-widest text-[10px]">There are no question banks with a rejected status.</p>
                                 </div>
                             </CardContent>
                         </Card>

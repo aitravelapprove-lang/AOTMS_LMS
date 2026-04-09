@@ -427,34 +427,36 @@ export function BatchManager({ courseId, courseTitle }: BatchManagerProps) {
           <p className="text-sm text-slate-500 font-medium mt-2 ml-16">Intelligence-driven student distribution for <span className="text-primary font-bold">{courseTitle}</span></p>
         </div>
         
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex bg-slate-100 p-1 rounded-2xl mr-2">
-            <Button 
-              variant={viewMode === 'batches' ? 'default' : 'ghost'}
-              onClick={() => setViewMode('batches')}
-              className={`rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest transition-all ${viewMode === 'batches' ? 'bg-white text-primary shadow-sm' : 'text-slate-400'}`}
-            >
-              Batch Cards
-            </Button>
-            <Button 
-              variant={viewMode === 'roster' ? 'default' : 'ghost'}
-              onClick={() => setViewMode('roster')}
-              className={`rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest transition-all ${viewMode === 'roster' ? 'bg-white text-primary shadow-sm' : 'text-slate-400'}`}
-            >
-              Full Roster
-            </Button>
-            <Button 
-              variant={viewMode === 'requests' ? 'default' : 'ghost'}
-              onClick={() => setViewMode('requests')}
-              className={`rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest transition-all relative ${viewMode === 'requests' ? 'bg-white text-primary shadow-sm' : 'text-slate-400'}`}
-            >
-              Requests
-              {requests.length > 0 && (
-                <span className="absolute -top-1 -right-1 h-4 w-4 bg-rose-500 text-white text-[8px] flex items-center justify-center rounded-full animate-bounce shadow-lg">
-                  {requests.length}
-                </span>
-              )}
-            </Button>
+        <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+          <div className="flex-1 min-w-0 overflow-x-auto custom-scrollbar-hide rounded-2xl bg-slate-100/80 p-1 mr-2 no-scrollbar">
+            <div className="flex items-center min-w-max">
+              <Button 
+                variant={viewMode === 'batches' ? 'default' : 'ghost'}
+                onClick={() => setViewMode('batches')}
+                className={`rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest transition-all ${viewMode === 'batches' ? 'bg-white text-primary shadow-sm' : 'text-slate-400'}`}
+              >
+                Batch Cards
+              </Button>
+              <Button 
+                variant={viewMode === 'roster' ? 'default' : 'ghost'}
+                onClick={() => setViewMode('roster')}
+                className={`rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest transition-all ${viewMode === 'roster' ? 'bg-white text-primary shadow-sm' : 'text-slate-400'}`}
+              >
+                Full Roster
+              </Button>
+              <Button 
+                variant={viewMode === 'requests' ? 'default' : 'ghost'}
+                onClick={() => setViewMode('requests')}
+                className={`rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest transition-all relative ${viewMode === 'requests' ? 'bg-white text-primary shadow-sm' : 'text-slate-400'}`}
+              >
+                Requests
+                {requests.length > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-rose-500 text-white text-[8px] flex items-center justify-center rounded-full animate-bounce shadow-lg">
+                    {requests.length}
+                  </span>
+                )}
+              </Button>
+            </div>
           </div>
 
           <Button 

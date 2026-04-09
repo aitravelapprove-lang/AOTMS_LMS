@@ -864,12 +864,12 @@ export function ExamScheduler({ onNavigateToRepository }: { onNavigateToReposito
                       : rejectedExams;
                 if (list.length === 0)
                   return (
-                    <div className="col-span-full py-40 text-center border-2 border-dashed border-slate-100 rounded-[4rem] bg-slate-50/20">
-                      <Rocket className="h-12 w-12 text-slate-100 mx-auto mb-6" />
-                      <h4 className="text-2xl font-bold text-slate-200 uppercase tracking-[0.3em] font-sans">
+                    <div className="col-span-full py-40 text-center border-4 border-dashed border-slate-400/30 rounded-[4rem] bg-slate-50/10 backdrop-blur-[2px]">
+                      <Rocket className="h-12 w-12 text-slate-900/20 mx-auto mb-6" />
+                      <h4 className="text-2xl font-black text-slate-900 uppercase tracking-[0.3em] italic">
                         Workspace Empty
                       </h4>
-                      <p className="text-[10px] font-medium text-slate-200 uppercase tracking-widest mt-2">
+                      <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mt-2">
                         Analytical data set is currently zero
                       </p>
                     </div>

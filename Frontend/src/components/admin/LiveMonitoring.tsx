@@ -64,37 +64,37 @@ export function LiveMonitoring() {
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
             {/* Header Area */}
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 sm:h-14 sm:w-14 rounded-xl sm:rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner flex-shrink-0">
+            <div className="flex flex-col lg:flex-row items-center lg:items-center justify-between gap-6">
+                <div className="flex items-center gap-4 w-full">
+                    <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl sm:rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner flex-shrink-0">
                         <Activity className="h-5 w-5 sm:h-7 sm:w-7" />
                     </div>
                     <div>
-                        <h1 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2 uppercase font-sans">
-                            Live <span className="text-primary">Monitoring</span>
+                        <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2 uppercase font-sans leading-none">
+                            Live <span className="text-primary font-medium tracking-normal capitalize italic">Monitoring</span>
                         </h1>
-                        <p className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-widest hidden sm:block">Real-time learning ecosystem oversight</p>
+                        <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Real-time learning ecosystem oversight</p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3 w-full md:w-auto">
-                    <div className="relative flex-1 md:flex-none">
+                <div className="flex items-center gap-3 w-full lg:w-auto">
+                    <div className="relative flex-1 lg:flex-none">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <Input 
-                            placeholder="Student, Course, or Test..." 
-                            className="h-12 w-full md:w-72 pl-11 rounded-2xl border-none bg-white shadow-xl shadow-slate-200/20 focus:ring-primary/20 transition-all font-medium"
+                            placeholder="Search Student, Course..." 
+                            className="h-12 w-full lg:w-80 pl-11 rounded-2xl border-none bg-white shadow-xl shadow-slate-200/20 focus:ring-primary/20 transition-all font-medium text-xs"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <Button onClick={() => refresh()} variant="ghost" className="h-12 w-12 rounded-2xl bg-white shadow-xl shadow-slate-200/10 hover:bg-slate-50">
+                    <Button onClick={() => refresh()} variant="ghost" className="h-12 w-12 rounded-2xl bg-white shadow-xl shadow-slate-200/10 hover:bg-slate-50 shrink-0">
                        <Activity className={`h-5 w-5 ${loading ? 'animate-spin text-primary' : 'text-slate-400'}`} />
                     </Button>
                 </div>
             </div>
 
             {/* Quick Stats Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                 <StatsCard title="Global Progress" value={`${avgProgress}%`} icon={<BookOpen className="h-5 w-5" />} color="blue" description="Average course completion" />
                 <StatsCard title="Active Learners" value={totalEnrollments} icon={<Users className="h-5 w-5" />} color="indigo" description="Enrolled & active students" />
                 <StatsCard title="Exam Velocity" value={results.filter(r => new Date(r.submitted_at) > new Date(Date.now() - 24*60*60*1000)).length} icon={<Trophy className="h-5 w-5" />} color="amber" description="Tests taken in 24 hours" />
@@ -102,32 +102,34 @@ export function LiveMonitoring() {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList className="bg-slate-100/50 p-1.5 rounded-2xl border border-slate-100 inline-flex">
-                    <TabsTrigger value="courses" className="rounded-xl px-4 sm:px-8 h-9 sm:h-10 data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary font-black uppercase text-[10px] tracking-widest whitespace-nowrap">
-                        Course Progress
-                    </TabsTrigger>
-                    <TabsTrigger value="exams" className="rounded-xl px-4 sm:px-8 h-9 sm:h-10 data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary font-black uppercase text-[10px] tracking-widest whitespace-nowrap">
-                        Mocktest Performance
-                    </TabsTrigger>
-                </TabsList>
+                <div className="overflow-x-auto pb-2 scrollbar-hide">
+                    <TabsList className="bg-slate-100/50 p-1.5 rounded-2xl border border-slate-100 inline-flex min-w-max">
+                        <TabsTrigger value="courses" className="rounded-xl px-4 sm:px-8 h-9 sm:h-10 data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary font-black uppercase text-[10px] tracking-widest whitespace-nowrap">
+                            Course Progress
+                        </TabsTrigger>
+                        <TabsTrigger value="exams" className="rounded-xl px-4 sm:px-8 h-9 sm:h-10 data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary font-black uppercase text-[10px] tracking-widest whitespace-nowrap">
+                            Mocktest Performance
+                        </TabsTrigger>
+                    </TabsList>
+                </div>
 
                 {/* Course Progress Tab */}
                 <TabsContent value="courses" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <Card className="pro-card border-none shadow-2xl shadow-slate-200/20 rounded-[2rem] overflow-hidden">
-                        <CardHeader className="p-8 pb-4">
+                        <CardHeader className="p-5 sm:p-8 pb-4">
                             <CardTitle className="text-xl font-black text-slate-900 tracking-tight">Active Enrollment Streams</CardTitle>
-                            <CardDescription className="text-sm font-medium">Tracking completion depth across the curriculum</CardDescription>
+                            <CardDescription className="text-xs sm:text-sm font-medium italic uppercase tracking-widest text-slate-400">Tracking completion depth across the curriculum</CardDescription>
                         </CardHeader>
                         <CardContent className="p-0">
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left">
-                                    <thead>
-                                        <tr className="bg-slate-50/50 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                            <th className="px-8 py-4">Student Identity</th>
-                                            <th className="px-8 py-4">Course Context</th>
-                                            <th className="px-8 py-4">Progress Map</th>
-                                            <th className="px-8 py-4 text-center">Last Interaction</th>
-                                            <th className="px-8 py-4 text-right">Actions</th>
+                                    <thead className="bg-slate-50/50 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                        <tr>
+                                            <th className="px-5 sm:px-8 py-4 whitespace-nowrap">Student Identity</th>
+                                            <th className="px-5 sm:px-8 py-4 whitespace-nowrap">Course Context</th>
+                                            <th className="px-5 sm:px-8 py-4 whitespace-nowrap">Progress Map</th>
+                                            <th className="px-5 sm:px-8 py-4 text-center whitespace-nowrap">Last Interaction</th>
+                                            <th className="px-5 sm:px-8 py-4 text-right whitespace-nowrap">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
@@ -204,20 +206,20 @@ export function LiveMonitoring() {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         {/* Results Table - Spans 2 */}
                         <Card className="lg:col-span-2 pro-card border-none shadow-2xl shadow-slate-200/20 rounded-[2rem] overflow-hidden">
-                            <CardHeader className="p-8 pb-4">
+                            <CardHeader className="p-5 sm:p-8 pb-4">
                                 <CardTitle className="text-xl font-black text-slate-900 tracking-tight">Performance History</CardTitle>
-                                <CardDescription className="text-sm font-medium">Real-time mock and exam submission data</CardDescription>
+                                <CardDescription className="text-xs sm:text-sm font-medium italic uppercase tracking-widest text-slate-400">Real-time mock and exam submission data</CardDescription>
                             </CardHeader>
                             <CardContent className="p-0">
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left">
+                                <div className="overflow-x-auto scrollbar-thin">
+                                    <table className="w-full text-left min-w-[750px]">
                                         <thead className="bg-slate-50/50 text-[10px] font-black uppercase tracking-widest text-slate-400">
                                             <tr>
-                                                <th className="px-8 py-4">Subject Candidate</th>
-                                                <th className="px-8 py-4">Test Title</th>
-                                                <th className="px-8 py-4">Score Analysis</th>
-                                                <th className="px-8 py-4 text-center">Timestamp</th>
-                                                <th className="px-8 py-4 text-right">Actions</th>
+                                                <th className="px-5 sm:px-8 py-4 whitespace-nowrap">Subject Candidate</th>
+                                                <th className="px-5 sm:px-8 py-4 whitespace-nowrap">Test Title</th>
+                                                <th className="px-5 sm:px-8 py-4 whitespace-nowrap">Score Analysis</th>
+                                                <th className="px-5 sm:px-8 py-4 text-center whitespace-nowrap">Timestamp</th>
+                                                <th className="px-5 sm:px-8 py-4 text-right whitespace-nowrap">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">

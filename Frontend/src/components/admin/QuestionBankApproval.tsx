@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { fetchWithAuth } from '@/lib/api';
-import { Loader2, CheckCircle, XCircle, FileText, AlertCircle, LayoutGrid, Clock, History, Eye, Users, Trash2, ShieldCheck, BrainCircuit, RefreshCw, Award, Calendar, User } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, FileText, AlertCircle, LayoutGrid, Clock, History, Eye, Users, Trash2, ShieldCheck, BrainCircuit, RefreshCw, Award, Calendar, User, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -532,7 +532,7 @@ export function QuestionBankApproval() {
                     ) : (
                         <div className="grid gap-4">
                             {pendingBanks.map((bank) => (
-                                <Card key={bank.topic} className="overflow-hidden border-slate-200/60 shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+                                <Card key={bank.topic} className="overflow-hidden border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-500 rounded-[2.5rem]">
                                     <CardContent className="p-0">
                                         <div className="flex flex-col lg:flex-row items-stretch group/card">
                                             <div className="relative bg-slate-900 min-w-0 lg:min-w-[320px] h-[180px] lg:h-[220px] border-b lg:border-b-0 lg:border-r border-slate-100 overflow-hidden group/poster">
@@ -677,7 +677,7 @@ export function QuestionBankApproval() {
                     ) : (
                         <div className="grid gap-4">
                             {approvedBanks.map((bank) => (
-                                <Card key={bank.topic} className="overflow-hidden border-slate-200/60 shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+                                <Card key={bank.topic} className="overflow-hidden border-slate-200/60 shadow-sm hover:shadow-md transition-shadow rounded-[2.5rem]">
                                     <CardContent className="p-0">
                                         <div className="flex flex-col lg:flex-row items-stretch group/card">
                                             <div className="relative bg-slate-900 min-w-0 lg:min-w-[320px] h-[180px] lg:h-[220px] border-b lg:border-b-0 lg:border-r border-emerald-100 overflow-hidden group/poster">
@@ -804,7 +804,7 @@ export function QuestionBankApproval() {
                     ) : (
                         <div className="grid gap-4">
                             {rejectedBanks.map((bank) => (
-                                <Card key={bank.topic} className="overflow-hidden border-slate-200/60 shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+                                <Card key={bank.topic} className="overflow-hidden border-slate-200/60 shadow-sm hover:shadow-md transition-shadow rounded-[2.5rem]">
                                     <CardContent className="p-0">
                                         <div className="flex flex-col lg:flex-row items-stretch group/card">
                                             <div className="relative bg-slate-900 min-w-0 lg:min-w-[320px] h-[180px] lg:h-[220px] border-b lg:border-b-0 lg:border-r border-rose-100 overflow-hidden group/poster">
@@ -877,9 +877,9 @@ export function QuestionBankApproval() {
             </Tabs>
 
             <Dialog open={showCourseDialog} onOpenChange={setShowCourseDialog}>
-                <DialogContent className="w-[95vw] sm:max-w-md border-none shadow-2xl rounded-2xl sm:rounded-[2rem] bg-white p-0 overflow-hidden">
+                <DialogContent className="w-[95vw] sm:max-w-md border-none shadow-2xl rounded-[2.5rem] sm:rounded-[2rem] bg-white p-0 overflow-hidden">
                     <div className="bg-primary p-8 text-white relative">
-                        <div className="h-16 w-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 border border-white/30 shadow-xl relative z-10">
+                        <div className="h-16 w-16 bg-white/20 backdrop-blur-md rounded-[2.5rem] flex items-center justify-center mb-6 border border-white/30 shadow-xl relative z-10">
                             <ShieldCheck className="h-8 w-8 text-white" />
                         </div>
                         <DialogTitle className="text-2xl font-black tracking-tight relative z-10">Authorize Repository</DialogTitle>
@@ -891,10 +891,10 @@ export function QuestionBankApproval() {
                             <div className="space-y-2">
                                 <Label htmlFor="course-select-dialog" className="text-xs font-black uppercase text-slate-500 tracking-widest pl-1">Target Curriculum</Label>
                                 <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
-                                    <SelectTrigger id="course-select-dialog" className="h-14 rounded-2xl border-slate-200 bg-slate-50 focus:ring-primary/20 font-bold text-slate-700">
+                                    <SelectTrigger id="course-select-dialog" className="h-14 rounded-[2.5rem] border-slate-200 bg-slate-50 focus:ring-primary/20 font-bold text-slate-700">
                                         <SelectValue placeholder="Associate with Course..." />
                                     </SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-slate-200 shadow-xl">
+                                    <SelectContent className="rounded-[2.5rem] border-slate-200 shadow-xl">
                                         {(courses as { id: string; title: string }[] | undefined)?.map((course) => (
                                             <SelectItem
                                                 key={course.id}
@@ -907,7 +907,7 @@ export function QuestionBankApproval() {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 space-y-2">
+                            <div className="p-5 rounded-[2.5rem] bg-slate-50 border border-slate-100 space-y-2">
                                 <div className="flex items-center gap-2">
                                     <Badge className="bg-primary/10 text-primary border-none font-bold">{selectedTopic}</Badge>
                                     <span className="text-xs font-bold text-slate-400 uppercase tracking-widest italic">Authorization Required</span>
@@ -940,11 +940,11 @@ export function QuestionBankApproval() {
             </Dialog>
 
             <Dialog open={showAccessDialog} onOpenChange={setShowAccessDialog}>
-                <DialogContent className="w-[95vw] sm:max-w-[600px] rounded-2xl sm:rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl">
+                <DialogContent className="w-[95vw] sm:max-w-[600px] rounded-[2.5rem] sm:rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl">
                     <div className="bg-primary p-8 text-white relative">
                         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }} />
 
-                        <div className="h-16 w-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 border border-white/30 shadow-xl relative z-10">
+                        <div className="h-16 w-16 bg-white/20 backdrop-blur-md rounded-[2.5rem] flex items-center justify-center mb-6 border border-white/30 shadow-xl relative z-10">
                             <Users className="h-8 w-8 text-white" />
                         </div>
                         <DialogTitle className="text-2xl font-black tracking-tight relative z-10">Student Access List</DialogTitle>
@@ -1002,9 +1002,9 @@ export function QuestionBankApproval() {
             </Dialog>
 
             <Dialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
-                <DialogContent className="w-[95vw] sm:max-w-[400px] rounded-2xl sm:rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl">
+                <DialogContent className="w-[95vw] sm:max-w-[400px] rounded-[2.5rem] sm:rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl">
                     <div className="bg-red-500 p-8 text-white relative">
-                        <div className="h-16 w-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 border border-white/30 shadow-xl relative z-10">
+                        <div className="h-16 w-16 bg-white/20 backdrop-blur-md rounded-[2.5rem] flex items-center justify-center mb-6 border border-white/30 shadow-xl relative z-10">
                             <Trash2 className="h-8 w-8 text-white" />
                         </div>
                         <DialogTitle className="text-2xl font-black tracking-tight relative z-10">Remove Question Bank?</DialogTitle>
@@ -1095,245 +1095,248 @@ export function QuestionBankApproval() {
             </Dialog>
 
             <Dialog open={showGrantDialog} onOpenChange={setShowGrantDialog}>
-                <DialogContent className="sm:max-w-md border-none shadow-2xl rounded-[2rem] bg-white p-0 overflow-hidden">
-                    <div className="bg-primary p-8 text-white relative">
-                        <div className="h-16 w-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 border border-white/30 shadow-xl relative z-10">
-                            <ShieldCheck className="h-8 w-8 text-white" />
+                <DialogContent className="sm:max-w-[480px] border-none shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] rounded-[2.5rem] bg-white p-0 overflow-hidden flex flex-col max-h-[90vh]">
+                    <div className="bg-gradient-to-br from-primary to-[#ff6a00] p-10 text-white relative overflow-hidden shrink-0">
+                        {/* High-fidelity brand patterns */}
+                        <div className="absolute inset-0 bg-white/10 opacity-20" />
+                        <div className="absolute top-0 right-0 -mr-16 -mt-16 h-64 w-64 bg-white/20 rounded-full blur-3xl animate-pulse" />
+                        <div className="absolute bottom-0 left-0 -ml-16 -mb-16 h-64 w-64 bg-black/20 rounded-full blur-3xl" />
+                        
+                        <div className="relative z-10">
+                            <div className="h-16 w-16 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center mb-6 shadow-2xl border border-white/30">
+                                <Users className="h-8 w-8 text-white" />
+                            </div>
+                            <DialogTitle className="text-3xl font-black tracking-tight leading-none mb-3 text-white">
+                                Grant <span className="text-white/80 font-medium italic">Student Access</span>
+                            </DialogTitle>
+                            <DialogDescription className="text-white/70 font-bold text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
+                                <div className="h-1 w-4 bg-white/40 rounded-full" />
+                                Repository: {grantingTopic}
+                            </DialogDescription>
                         </div>
-                        <DialogTitle className="text-2xl font-black tracking-tight relative z-10">Grant Repository Access</DialogTitle>
-                        <DialogDescription className="text-white/80 mt-2 font-medium relative z-10">Deploy {grantingTopic} to students or batches</DialogDescription>
                     </div>
 
-                    <div className="p-8 space-y-6 bg-white">
-                        <Tabs value={grantType} onValueChange={(v) => setGrantType(v as 'student' | 'batch')} className="w-full">
-                            <TabsList className="grid grid-cols-2 mb-6 bg-slate-100 p-1 rounded-xl">
-                                <TabsTrigger value="student" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold text-xs uppercase tracking-widest">Individual</TabsTrigger>
-                                <TabsTrigger value="batch" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold text-xs uppercase tracking-widest">Logic Batch</TabsTrigger>
-                            </TabsList>
+                    <ScrollArea className="flex-1 overflow-y-auto pr-1">
+                        <div className="p-8 space-y-8 bg-white relative">
+                            <Tabs value={grantType} onValueChange={(v) => setGrantType(v as 'student' | 'batch')} className="w-full">
+                                <TabsList className="grid grid-cols-2 mb-8 bg-slate-50 p-1.5 rounded-3xl border border-slate-100 h-12">
+                                    <TabsTrigger 
+                                        value="student" 
+                                        className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary font-black text-[10px] uppercase tracking-[0.15em] transition-all"
+                                    >
+                                        Individual Student
+                                    </TabsTrigger>
+                                    <TabsTrigger 
+                                        value="batch" 
+                                        className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary font-black text-[10px] uppercase tracking-[0.15em] transition-all"
+                                    >
+                                        Entire Batch
+                                    </TabsTrigger>
+                                </TabsList>
 
-                            <TabsContent value="student" className="space-y-4 mt-0">
-                                <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Target Student</Label>
-                                    <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
-                                        <SelectTrigger className="h-14 rounded-2xl border-slate-200 bg-slate-50 focus:ring-primary/20 font-bold text-slate-700 transition-all hover:bg-white">
-                                            <SelectValue placeholder="Pick a student..." />
-                                        </SelectTrigger>
-                                        <SelectContent className="rounded-2xl border-slate-200 shadow-xl max-h-[300px]">
-                                            {students.map((student) => (
-                                                <SelectItem
-                                                    key={student.id}
-                                                    value={student.id}
-                                                    className="font-bold py-3 hover:bg-slate-50 rounded-xl"
-                                                >
-                                                    <div className="flex items-center gap-2">
-                                                        <Avatar className="h-6 w-6">
-                                                            <AvatarImage src={student.avatar_url} />
-                                                            <AvatarFallback>{student.full_name.charAt(0)}</AvatarFallback>
-                                                        </Avatar>
-                                                        <span>{student.full_name}</span>
-                                                    </div>
-                                                </SelectItem>
-                                            ))}
-                                            {students.length === 0 && (
-                                                <div className="p-4 text-center text-sm text-slate-400">No students available</div>
-                                            )}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </TabsContent>
-
-                            <TabsContent value="batch" className="space-y-4 mt-0">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Instructor</Label>
-                                        <Select value={selectedInstructorId} onValueChange={setSelectedInstructorId}>
-                                            <SelectTrigger className="h-12 rounded-xl border-slate-200 bg-slate-50 focus:ring-primary/20 font-bold text-slate-700">
-                                                <SelectValue placeholder="All Instructors" />
+                                <TabsContent value="student" className="space-y-6 mt-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                    <div className="space-y-3">
+                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-1 flex items-center gap-2">
+                                            Select Student
+                                        </Label>
+                                        <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
+                                            <SelectTrigger className="h-14 rounded-3xl border-slate-200 bg-slate-50/50 focus:ring-primary/20 font-bold text-slate-700 transition-all hover:bg-white hover:shadow-md">
+                                                <SelectValue placeholder="Search for a student..." />
                                             </SelectTrigger>
-                                            <SelectContent className="rounded-xl border-slate-200 shadow-xl">
-                                                <SelectItem value="all">All Instructors</SelectItem>
-                                                {instructors.map((inst) => (
-                                                    <SelectItem key={inst.id} value={inst.id?.toString()} className="font-bold py-2">{inst.full_name}</SelectItem>
+                                            <SelectContent className="rounded-3xl border-slate-200 shadow-[0_10px_40px_rgba(0,0,0,0.1)] max-h-[320px] p-2">
+                                                {students.map((student) => (
+                                                    <SelectItem
+                                                        key={student.id}
+                                                        value={student.id}
+                                                        className="font-bold py-3 hover:bg-slate-50 rounded-xl mb-1 data-[state=selected]:bg-primary/5 data-[state=selected]:text-primary"
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <Avatar className="h-8 w-8 border border-white shadow-sm">
+                                                                <AvatarImage src={student.avatar_url} />
+                                                                <AvatarFallback className="bg-slate-100 text-[10px] font-black">{student.full_name.charAt(0)}</AvatarFallback>
+                                                            </Avatar>
+                                                            <div className="flex flex-col">
+                                                                <span className="text-xs leading-none">{student.full_name}</span>
+                                                                <span className="text-[9px] text-slate-400 font-medium tracking-tight truncate w-32">{student.email}</span>
+                                                            </div>
+                                                        </div>
+                                                    </SelectItem>
                                                 ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Batch Schedule</Label>
-                                        <Select value={selectedBatchTypeFilter} onValueChange={setSelectedBatchTypeFilter}>
-                                            <SelectTrigger className="h-12 rounded-xl border-slate-200 bg-slate-50 focus:ring-primary/20 font-bold text-slate-700">
-                                                <SelectValue placeholder="Any Schedule" />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-xl border-slate-200 shadow-xl">
-                                                <SelectItem value="all">All Times</SelectItem>
-                                                <SelectItem value="morning">Morning</SelectItem>
-                                                <SelectItem value="afternoon">Afternoon</SelectItem>
-                                                <SelectItem value="evening">Evening</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-
-                                {(selectedInstructorId !== "all" || selectedBatchTypeFilter !== "all" || instructors.length > 0) && (
-                                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Target Curriculum Batch</Label>
-                                        {loadingBatches ? (
-                                            <div className="h-14 rounded-2xl border border-dashed border-slate-200 flex items-center justify-center gap-2 text-slate-300">
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                                <span className="text-[10px] font-black uppercase tracking-[0.2em]">Syncing Batches...</span>
-                                            </div>
-                                        ) : (
-                                            <Select value={selectedBatchId} onValueChange={setSelectedBatchId}>
-                                                <SelectTrigger className="h-14 rounded-2xl border-slate-200 bg-slate-50 focus:ring-primary/20 font-bold text-slate-700 transition-all hover:bg-white overflow-hidden">
-                                                    <SelectValue placeholder={filteredBatches.length > 0 ? "Select from filtered batches..." : "No matching batches"} />
-                                                </SelectTrigger>
-                                                <SelectContent className="rounded-2xl border-slate-200 shadow-xl max-h-[300px]">
-                                                    {filteredBatches.length === 0 ? (
-                                                        <div className="p-4 text-center text-sm text-slate-400 italic">No batches found for these filters</div>
-                                                    ) : (
-                                                        filteredBatches.map((batch) => {
-                                                            const bId = (batch.id || batch._id)?.toString();
-                                                            return (
-                                                                <SelectItem
-                                                                    key={bId}
-                                                                    value={bId}
-                                                                    className="font-bold py-3 hover:bg-slate-50 rounded-xl"
-                                                                >
-                                                                    <div className="flex flex-col items-start gap-1">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <span className="text-slate-900">{batch.batch_name}</span>
-                                                                            {batch.student_count !== undefined && (
-                                                                                <Badge variant="secondary" className="h-4 px-1.5 text-[8px] bg-emerald-50 text-emerald-600 border-none font-black">
-                                                                                    {batch.student_count} Students
-                                                                                </Badge>
-                                                                            )}
-                                                                        </div>
-                                                                        <div className="flex items-center gap-2">
-                                                                            <Badge variant="outline" className="text-[8px] h-3.5 px-1 uppercase font-black tracking-tight">
-                                                                                {batch.batch_type}
-                                                                            </Badge>
-                                                                            <span className="text-[9px] text-slate-400 font-medium italic">{batch.start_time} - {batch.end_time}</span>
-                                                                            {batch.instructor_name && <span className="text-[9px] text-primary font-black ml-1">• {batch.instructor_name}</span>}
-                                                                        </div>
-                                                                    </div>
-                                                                </SelectItem>
-                                                            );
-                                                        })
-                                                    )}
-                                                </SelectContent>
-                                            </Select>
-                                        )}
-                                    </div>
-                                )}
-
-                                {selectedBatchId && grantType === 'batch' && (
-                                    <div className="space-y-3 pt-6 border-t border-slate-100 animate-in fade-in slide-in-from-bottom-2 duration-500 mt-6 relative">
-                                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white px-4 py-1 rounded-full border border-slate-100 shadow-sm">
-                                            <span className="text-[9px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                                                <Users className="h-3 w-3" />
-                                                Cohort Registry
-                                            </span>
-                                        </div>
-
-                                        <div className="flex items-center justify-between px-1">
-                                            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Enrolled Students ({batchStudents.length})</Label>
-                                            <div className="flex -space-x-2">
-                                                {batchStudents.slice(0, 3).map((s, i) => (
-                                                    <Avatar key={i} className="h-5 w-5 border-2 border-white ring-1 ring-slate-100">
-                                                        <AvatarImage src={s.profile?.avatar_url} />
-                                                        <AvatarFallback className="text-[6px] font-black">{(s.profile?.full_name || 'S').charAt(0)}</AvatarFallback>
-                                                    </Avatar>
-                                                ))}
-                                                {batchStudents.length > 3 && (
-                                                    <div className="h-5 w-5 rounded-full bg-slate-100 border-2 border-white ring-1 ring-slate-100 flex items-center justify-center text-[6px] font-black text-slate-400">
-                                                        +{batchStudents.length - 3}
+                                                {students.length === 0 && (
+                                                    <div className="p-8 text-center">
+                                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-300">No students found</p>
                                                     </div>
                                                 )}
-                                            </div>
-                                        </div>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </TabsContent>
 
-                                        <ScrollArea className="h-[140px] rounded-2xl border border-slate-100 bg-slate-50/30 p-2">
-                                            {loadingBatchStudents ? (
-                                                <div className="flex flex-col items-center justify-center p-8 space-y-3">
-                                                    <div className="relative">
-                                                        <div className="h-8 w-8 rounded-full border-2 border-primary/10 border-t-primary animate-spin" />
-                                                        <div className="absolute inset-0 flex items-center justify-center">
-                                                            <Users className="h-3 w-3 text-primary/40" />
-                                                        </div>
-                                                    </div>
-                                                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 animate-pulse">Syncing Roster...</span>
-                                                </div>
-                                            ) : batchStudents.length === 0 ? (
-                                                <div className="flex flex-col items-center justify-center p-8 text-center bg-white/50 rounded-xl border border-dashed border-slate-200">
-                                                    <div className="h-10 w-10 rounded-full bg-slate-50 flex items-center justify-center mb-3">
-                                                        <Users className="h-5 w-5 text-slate-300" />
-                                                    </div>
-                                                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-tight">Zero members discovered</p>
-                                                    <p className="text-[9px] text-slate-300 font-medium italic mt-1">This cohort is currently vacant</p>
+                                <TabsContent value="batch" className="space-y-6 mt-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Instructor</Label>
+                                            <Select value={selectedInstructorId} onValueChange={setSelectedInstructorId}>
+                                                <SelectTrigger className="h-12 rounded-xl border-slate-200 bg-slate-50/50 focus:ring-primary/20 font-bold text-slate-700">
+                                                    <SelectValue placeholder="All Instructors" />
+                                                </SelectTrigger>
+                                                <SelectContent className="rounded-3xl border-slate-200 shadow-xl p-1">
+                                                    <SelectItem value="all" className="font-bold rounded-lg mb-1">Show All</SelectItem>
+                                                    {instructors.map((inst) => (
+                                                        <SelectItem key={inst.id} value={inst.id?.toString()} className="font-bold rounded-lg mb-1 py-2">{inst.full_name}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Batch Schedule</Label>
+                                            <Select value={selectedBatchTypeFilter} onValueChange={setSelectedBatchTypeFilter}>
+                                                <SelectTrigger className="h-12 rounded-xl border-slate-200 bg-slate-50/50 focus:ring-primary/20 font-bold text-slate-700">
+                                                    <SelectValue placeholder="Any Time" />
+                                                </SelectTrigger>
+                                                <SelectContent className="rounded-3xl border-slate-200 shadow-xl p-1">
+                                                    <SelectItem value="all" className="font-bold rounded-lg mb-1 uppercase text-[10px]">All Slots</SelectItem>
+                                                    <SelectItem value="morning" className="font-bold rounded-lg mb-1 text-xs">Morning</SelectItem>
+                                                    <SelectItem value="afternoon" className="font-bold rounded-lg mb-1 text-xs">Afternoon</SelectItem>
+                                                    <SelectItem value="evening" className="font-bold rounded-lg mb-1 text-xs">Evening</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+
+                                    {(selectedInstructorId !== "all" || selectedBatchTypeFilter !== "all" || instructors.length > 0) && (
+                                        <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                                            <Label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-1 flex items-center gap-2">
+                                                Select Batch
+                                            </Label>
+                                            {loadingBatches ? (
+                                                <div className="h-14 rounded-3xl border border-dashed border-slate-200 flex items-center justify-center gap-3 text-slate-300 bg-slate-50/30">
+                                                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                                                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">Loading Batches...</span>
                                                 </div>
                                             ) : (
-                                                <div className="grid grid-cols-1 gap-1.5">
-                                                    {batchStudents.map((s, idx) => (
-                                                        <div
-                                                            key={s.id}
-                                                            className="flex items-center gap-3 p-2 rounded-xl bg-white border border-slate-100 hover:border-primary/20 hover:shadow-sm transition-all group animate-in fade-in slide-in-from-left duration-500"
-                                                            style={{ animationDelay: `${idx * 40}ms` }}
-                                                        >
-                                                            <div className="relative">
-                                                                <Avatar className="h-7 w-7 border border-slate-100 group-hover:scale-105 transition-transform duration-300">
+                                                <Select value={selectedBatchId} onValueChange={setSelectedBatchId}>
+                                                    <SelectTrigger className="h-14 rounded-3xl border-slate-200 bg-slate-50/50 focus:ring-primary/20 font-bold text-slate-700 transition-all hover:bg-white hover:shadow-md overflow-hidden">
+                                                        <SelectValue placeholder={filteredBatches.length > 0 ? "Choose a batch..." : "No batches available"} />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="rounded-3xl border-slate-200 shadow-xl max-h-[300px] p-2">
+                                                        {filteredBatches.length === 0 ? (
+                                                            <div className="p-8 text-center text-[10px] font-black text-slate-300 uppercase italic tracking-widest">No matching batches</div>
+                                                        ) : (
+                                                            filteredBatches.map((batch) => {
+                                                                const bId = (batch.id || batch._id)?.toString();
+                                                                return (
+                                                                    <SelectItem
+                                                                        key={bId}
+                                                                        value={bId}
+                                                                        className="font-bold py-3 hover:bg-slate-50 rounded-xl mb-1 data-[state=selected]:bg-primary/5 data-[state=selected]:text-primary"
+                                                                    >
+                                                                        <div className="flex flex-col items-start">
+                                                                            <div className="flex items-center gap-2 mb-0.5">
+                                                                                <span className="text-xs">{batch.batch_name}</span>
+                                                                                {batch.student_count !== undefined && (
+                                                                                    <Badge variant="secondary" className="h-4 px-1.5 text-[7px] bg-emerald-50 text-emerald-600 border-none font-black uppercase">
+                                                                                        {batch.student_count} Students
+                                                                                    </Badge>
+                                                                                )}
+                                                                            </div>
+                                                                            <div className="flex items-center gap-2 opacity-50">
+                                                                                <span className="text-[8px] h-3.5 px-1 uppercase font-black tracking-tight">{batch.batch_type}</span>
+                                                                                {batch.instructor_name && <span className="text-[8px] font-black truncate w-24">/ {batch.instructor_name}</span>}
+                                                                            </div>
+                                                                        </div>
+                                                                    </SelectItem>
+                                                                );
+                                                            })
+                                                        )}
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {selectedBatchId && grantType === 'batch' && (
+                                        <div className="space-y-4 pt-6 border-t border-slate-100 animate-in fade-in slide-in-from-bottom-2 duration-500 mt-6 relative">
+                                            <div className="flex items-center justify-between px-1">
+                                                <Label className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Students in Batch ({batchStudents.length})</Label>
+                                                <div className="flex -space-x-1.5">
+                                                    {batchStudents.slice(0, 4).map((s, i) => (
+                                                        <Avatar key={i} className="h-6 w-6 border-2 border-white shadow-sm">
+                                                            <AvatarImage src={s.profile?.avatar_url} />
+                                                            <AvatarFallback className="text-[8px] font-black bg-slate-100">{(s.profile?.full_name || 'S').charAt(0)}</AvatarFallback>
+                                                        </Avatar>
+                                                    ))}
+                                                    {batchStudents.length > 4 && (
+                                                        <div className="h-6 w-6 rounded-full bg-primary/5 border-2 border-white flex items-center justify-center text-[8px] font-black text-primary">
+                                                            +{batchStudents.length - 4}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <ScrollArea className="h-[120px] rounded-3xl border border-slate-100 bg-slate-50/20 p-2">
+                                                {loadingBatchStudents ? (
+                                                    <div className="flex flex-col items-center justify-center p-8 space-y-3">
+                                                        <div className="h-8 w-8 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+                                                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Loading...</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="grid grid-cols-1 gap-1">
+                                                        {batchStudents.map((s) => (
+                                                            <div
+                                                                key={s.id}
+                                                                className="flex items-center gap-3 p-2 rounded-xl bg-white/50 border border-slate-50 hover:bg-white hover:border-primary/20 hover:shadow-sm transition-all group"
+                                                            >
+                                                                <Avatar className="h-6 w-6 border-white shadow-sm">
                                                                     <AvatarImage src={s.avatar_url || s.profile?.avatar_url} />
-                                                                    <AvatarFallback className="text-[9px] font-black bg-primary/5 text-primary">{(s.full_name || s.profile?.full_name || 'S').charAt(0).toUpperCase()}</AvatarFallback>
+                                                                    <AvatarFallback className="text-[8px] font-black">{(s.full_name || 'S').charAt(0)}</AvatarFallback>
                                                                 </Avatar>
-                                                                <div className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 border-2 border-white shadow-sm" />
-                                                            </div>
-                                                            <div className="flex flex-col min-w-0">
-                                                                <span className="text-[10px] font-black text-slate-700 truncate leading-none mb-1 group-hover:text-primary transition-colors">{s.full_name || s.profile?.full_name || s.student_name || `Student #${(s.id || s.student_id)?.toString().slice(-4)}`}</span>
-                                                                <div className="flex items-center gap-1.5 overflow-hidden">
-                                                                    <span className="text-[8px] text-slate-400 font-bold truncate tracking-tight">{s.profile?.email || s.student_email || 'No record'}</span>
-                                                                    <span className="h-1 w-1 rounded-full bg-slate-200 flex-shrink-0" />
-                                                                    <span className="text-[7px] font-black uppercase text-slate-300 tracking-tighter shrink-0">Active ID: {(s.student_id || s.user_id)?.toString().slice(-4)}</span>
+                                                                <div className="flex flex-col min-w-0">
+                                                                    <span className="text-[10px] font-bold text-slate-700 truncate">{s.full_name || s.profile?.full_name || s.student_name}</span>
+                                                                    <span className="text-[8px] text-slate-400 truncate opacity-70">{s.profile?.email || s.student_email}</span>
                                                                 </div>
                                                             </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </ScrollArea>
-                                    </div>
-                                )}
-                            </TabsContent>
-                        </Tabs>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </ScrollArea>
+                                        </div>
+                                    )}
+                                </TabsContent>
+                            </Tabs>
 
-                        <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 space-y-2">
-                            <div className="flex items-center gap-2">
-                                <Badge className="bg-emerald-100 text-emerald-700 border-none font-black text-[9px] uppercase tracking-tighter">Automatic Deployment</Badge>
-                                <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest italic">Encrypted Pipeline</span>
+                            <div className="p-6 rounded-[1.5rem] bg-emerald-50/30 border border-emerald-500/10 space-y-3 relative overflow-hidden group">
+                                <div className="flex items-center gap-2">
+                                    <Badge className="bg-emerald-500 text-white border-none font-black text-[8px] uppercase tracking-widest px-2 py-0.5 rounded-md">Instant Access</Badge>
+                                    <div className="h-1 w-1 rounded-full bg-slate-300" />
+                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest italic leading-none pt-0.5">Live Sync</span>
+                                </div>
+                                <p className="text-[10px] text-slate-600 font-bold leading-relaxed uppercase tracking-tight opacity-80 relative z-10">
+                                    {grantType === 'batch'
+                                        ? "This will give access to ALL students in this batch. They will be notified via email/app immediately."
+                                        : "The student will get immediate access and a notification to start the test."}
+                                </p>
                             </div>
-                            <p className="text-[10px] text-slate-500 font-bold leading-relaxed uppercase tracking-tight opacity-70">
-                                {grantType === 'batch'
-                                    ? "This will grant access to EVERY student currently assigned to the selected batch. Students will be notified instantly."
-                                    : "Individual student will receive immediate access and a push notification for this logic repository."}
-                            </p>
-                        </div>
 
-                        <div className="flex gap-3 pt-2">
-                            <Button
-                                variant="outline"
-                                onClick={() => setShowGrantDialog(false)}
-                                className="flex-1 h-12 rounded-xl border-slate-200 text-slate-600 font-bold hover:bg-slate-50"
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                onClick={handleGrantAccess}
-                                disabled={(grantType === 'student' && !selectedStudentId) || (grantType === 'batch' && !selectedBatchId) || isGranting}
-                                className="flex-[2] h-12 rounded-xl pro-button-primary shadow-xl shadow-primary/30 font-bold"
-                            >
-                                {isGranting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ShieldCheck className="h-4 w-4 mr-2" />}
-                                {grantType === 'batch' ? 'Authorize Batch' : 'Grant Access'}
-                            </Button>
+                            <div className="flex gap-4 pt-2">
+                                <Button
+                                    variant="ghost"
+                                    onClick={() => setShowGrantDialog(false)}
+                                    className="flex-1 h-14 rounded-3xl font-black text-[10px] uppercase tracking-[0.2em] text-slate-400 hover:text-slate-900 transition-all"
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    onClick={handleGrantAccess}
+                                    disabled={(grantType === 'student' && !selectedStudentId) || (grantType === 'batch' && !selectedBatchId) || isGranting}
+                                    className="flex-[2] h-14 rounded-3xl bg-slate-900 hover:bg-black text-white shadow-2xl shadow-slate-900/40 font-black text-[10px] uppercase tracking-[.2em] transition-all active:scale-[0.98]"
+                                >
+                                    {isGranting ? <Loader2 className="h-4 w-4 animate-spin mr-3" /> : <ShieldCheck className="h-4 w-4 mr-3 text-primary" />}
+                                    {grantType === 'batch' ? 'Confirm Batch' : 'Confirm Access'}
+                                </Button>
+                            </div>
                         </div>
-                    </div>
+                    </ScrollArea>
                 </DialogContent>
             </Dialog>
         </div>

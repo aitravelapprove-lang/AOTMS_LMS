@@ -1470,7 +1470,7 @@ export default function AdminDashboard() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                   >
-                    <ManagerVideoLibrary />
+                    <ManagerVideoLibrary showUpload={false} />
                   </motion.div>
                 </TabsContent>
 

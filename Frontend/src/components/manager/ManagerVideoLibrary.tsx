@@ -37,7 +37,11 @@ interface Module {
   course_id: string;
 }
 
-export function ManagerVideoLibrary() {
+interface ManagerVideoLibraryProps {
+  showUpload?: boolean;
+}
+
+export function ManagerVideoLibrary({ showUpload = true }: ManagerVideoLibraryProps) {
   const [videos, setVideos] = useState<Video[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,8 +72,8 @@ export function ManagerVideoLibrary() {
         fetchWithAuth('/data/course_videos?sort=created_at&order=desc'),
         fetchWithAuth('/data/courses?select=id,title')
       ]);
-      setVideos(videosRes || []);
-      setCourses(coursesRes || []);
+      setVideos((videosRes as Video[]) || []);
+      setCourses((coursesRes as Course[]) || []);
     } catch (err) {
       console.error('Failed to load videos:', err);
     } finally {
@@ -192,69 +196,71 @@ export function ManagerVideoLibrary() {
           Refresh
         </Button>
 
-        <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-          <DialogTrigger asChild>
-            <Button className="pro-button-primary shadow-lg shadow-primary/20 rounded-xl px-6 h-10">
-              <UploadCloud className="h-4 w-4 mr-2" />
-              Upload Video
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl p-0 overflow-hidden border-none glass-morphism shadow-2xl">
-            <div className="p-8 space-y-8 bg-white/95 backdrop-blur-xl">
-              <DialogHeader className="p-0 border-b border-indigo-50 pb-6 mb-4">
-                <DialogDescription className="sr-only">Upload and deploy video assets to courses.</DialogDescription>
-                <div className="flex items-center gap-3 mb-2 text-primary font-bold uppercase tracking-widest text-[10px]">
-                  <PlusCircle className="h-4 w-4" /> Management Console
-                </div>
-                <DialogTitle className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic">
-                   Deploy <span className="text-primary not-italic">Media Asset</span>
-                </DialogTitle>
-                <p className="text-sm text-slate-500 font-medium">Managers can deploy videos to any approved course repository.</p>
-              </DialogHeader>
-
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Select Destination Course</Label>
-                  <Select value={uploadCourseId} onValueChange={setUploadCourseId}>
-                    <SelectTrigger className="h-14 rounded-2xl border-indigo-100 bg-indigo-50/30 font-bold focus:ring-primary/20 transition-all text-slate-900 shadow-sm">
-                      <SelectValue placeholder="Choose a course to receive the asset..." />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl border-slate-100 shadow-2xl">
-                      {courses.map(course => (
-                        <SelectItem key={course.id} value={course.id} className="rounded-xl py-3 cursor-pointer">
-                          {course.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {uploadCourseId ? (
-                  <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <VideoUploader 
-                      courseId={uploadCourseId} 
-                      courseStatus="published" 
-                      hideVideoList={true} 
-                      onSuccess={() => {
-                        setIsUploadOpen(false);
-                        loadData();
-                      }}
-                    />
+        {showUpload && (
+          <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+            <DialogTrigger asChild>
+              <Button className="pro-button-primary shadow-lg shadow-primary/20 rounded-xl px-6 h-10">
+                <UploadCloud className="h-4 w-4 mr-2" />
+                Upload Video
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl p-0 overflow-hidden border-none glass-morphism shadow-2xl">
+              <div className="p-8 space-y-8 bg-white/95 backdrop-blur-xl">
+                <DialogHeader className="p-0 border-b border-indigo-50 pb-6 mb-4">
+                  <DialogDescription className="sr-only">Upload and deploy video assets to courses.</DialogDescription>
+                  <div className="flex items-center gap-3 mb-2 text-primary font-bold uppercase tracking-widest text-[10px]">
+                    <PlusCircle className="h-4 w-4" /> Management Console
                   </div>
-                ) : (
-                  <div className="py-20 text-center bg-slate-50/50 rounded-[2.5rem] border-2 border-dashed border-indigo-100/50">
-                    <VideoIcon className="h-12 w-12 text-indigo-100 mx-auto mb-4" />
-                    <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Awaiting Course Selection</p>
-                  </div>
-                )}
-              </div>
+                  <DialogTitle className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic">
+                     Deploy <span className="text-primary not-italic">Media Asset</span>
+                  </DialogTitle>
+                  <p className="text-sm text-slate-500 font-medium">Managers can deploy videos to any approved course repository.</p>
+                </DialogHeader>
 
-              <div className="pt-4 border-t border-indigo-50 flex justify-end">
-                <Button variant="ghost" onClick={() => setIsUploadOpen(false)} className="rounded-xl font-bold text-slate-400 hover:text-slate-600">Close Manager</Button>
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Select Destination Course</Label>
+                    <Select value={uploadCourseId} onValueChange={setUploadCourseId}>
+                      <SelectTrigger className="h-14 rounded-2xl border-indigo-100 bg-indigo-50/30 font-bold focus:ring-primary/20 transition-all text-slate-900 shadow-sm">
+                        <SelectValue placeholder="Choose a course to receive the asset..." />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-2xl border-slate-100 shadow-2xl">
+                        {courses.map(course => (
+                          <SelectItem key={course.id} value={course.id} className="rounded-xl py-3 cursor-pointer">
+                            {course.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {uploadCourseId ? (
+                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                      <VideoUploader 
+                        courseId={uploadCourseId} 
+                        courseStatus="published" 
+                        hideVideoList={true} 
+                        onSuccess={() => {
+                          setIsUploadOpen(false);
+                          loadData();
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="py-20 text-center bg-slate-50/50 rounded-[2.5rem] border-2 border-dashed border-indigo-100/50">
+                      <VideoIcon className="h-12 w-12 text-indigo-100 mx-auto mb-4" />
+                      <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Awaiting Course Selection</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-4 border-t border-indigo-50 flex justify-end">
+                  <Button variant="ghost" onClick={() => setIsUploadOpen(false)} className="rounded-xl font-bold text-slate-400 hover:text-slate-600">Close Manager</Button>
+                </div>
               </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {/* Video Grid */}

@@ -311,36 +311,36 @@ export function UserManagement({
                <p className="text-xs">Adjust your filters to see more results</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {filteredUsers.map((user, idx) => (
                 <div
                   key={user.id}
-                  className={`group flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl border transition-all relative overflow-hidden ${
+                  className={`group flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-[1.5rem] border transition-all relative overflow-hidden ${
                     user.approval_status === 'rejected' 
                       ? 'border-rose-200 bg-rose-50/30' 
                       : 'border-slate-200 bg-white hover:border-primary/30 hover:shadow-md'
                   }`}
                   style={{ animationDelay: `${idx * 40}ms` }}
                 >
-                  <div className="flex items-center gap-4 w-full sm:w-auto overflow-hidden">
+                  <div className="flex items-center gap-4 w-full sm:flex-1 min-w-0">
                     <div className="relative shrink-0">
-                      <Avatar className="h-12 w-12 border-2 border-slate-50 shadow-none">
-                        <AvatarImage src={user.avatar_url} />
+                      <Avatar className="h-12 w-12 sm:h-14 sm:w-14 border-2 border-slate-50 shadow-sm rounded-2xl overflow-hidden">
+                        <AvatarImage src={user.avatar_url} className="object-cover" />
                         <AvatarFallback className="bg-primary/5 text-primary font-bold">
                           {(user.full_name || user.email || "U").charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <div className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white shadow-sm ${
+                      <div className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white shadow-sm ${
                         user.status === 'suspended' ? 'bg-rose-500' : 'bg-emerald-500'
                       }`} />
                     </div>
 
-                    <div className="flex-1 overflow-hidden">
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className="text-sm font-black text-slate-900 leading-none truncate">{user.full_name || "Nexus User"}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <p className="text-sm sm:text-base font-black text-slate-900 leading-tight truncate">{user.full_name || "Nexus User"}</p>
                         <Badge 
                             variant="outline" 
-                            className={`text-[9px] h-4 px-1.5 rounded-md uppercase font-black tracking-tighter border-none shadow-none ${
+                            className={`text-[9px] h-4 px-1.5 rounded-md uppercase font-black tracking-tighter border-none shadow-none shrink-0 ${
                                 user.role === 'admin' ? 'bg-rose-50 text-rose-600' :
                                 user.role === 'manager' ? 'bg-amber-50 text-amber-600' :
                                 user.role === 'instructor' ? 'bg-blue-50 text-blue-600' :
@@ -351,7 +351,7 @@ export function UserManagement({
                         </Badge>
                       </div>
                       <p className="text-[11px] text-muted-foreground truncate leading-none mb-2">{user.email}</p>
-                      <div className="flex items-center gap-1.5 overflow-hidden opacity-100">
+                      <div className="flex flex-wrap items-center gap-1.5 opacity-100">
                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">{formatLastActive(user.last_active_at)}</span>
                           {user.approval_status === 'rejected' && (
                             <span className="text-[8px] font-black text-rose-600 uppercase px-1 bg-rose-100/50 rounded">Rejected</span>
@@ -366,14 +366,14 @@ export function UserManagement({
                     </div>
                   </div>
 
-                  <div className="w-full sm:w-auto sm:ml-auto shrink-0 flex items-center gap-2">
+                  <div className="w-full sm:w-auto shrink-0 flex items-center justify-end gap-2 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-50">
                     {user.approval_status === "pending" ? (
                       <Button
                         onClick={() => {
                           setSelectedUser(user);
                           setShowApprovalDialog(true);
                         }}
-                        className="w-full sm:w-auto h-9 px-4 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all font-bold text-xs"
+                        className="w-full sm:w-auto h-9 px-4 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all font-black text-[11px] uppercase tracking-wider"
                       >
                         Review Node
                       </Button>
@@ -381,7 +381,7 @@ export function UserManagement({
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button 
-                            className="w-full sm:w-auto h-9 px-4 rounded-xl bg-primary/5 text-primary hover:bg-primary hover:text-white transition-all font-bold text-xs flex items-center justify-center gap-1 group/btn shadow-none border-none"
+                            className="w-full sm:w-auto h-9 px-4 rounded-xl bg-primary/5 text-primary hover:bg-primary hover:text-white transition-all font-black text-[11px] uppercase tracking-wider flex items-center justify-center gap-1 group/btn shadow-none border-none"
                           >
                             + Access
                             <ArrowRight className="h-3.5 w-3.5 ml-0.5 transition-transform group-hover/btn:translate-x-1" />
@@ -416,7 +416,7 @@ export function UserManagement({
                           </DropdownMenuItem>
                           <DropdownMenuSeparator className="my-1.5 bg-slate-100" />
                           {user.approval_status === 'rejected' && (
-                            <DropdownMenuItem onClick={() => onUpdateStatus(user.id, "approved")} className="rounded-xl font-bold text-[13px] py-2.5 text-emerald-600 bg-emerald-50 cursor-pointer mb-1">
+                            <DropdownMenuItem onClick={() => onUpdateStatus(user.id, "approved")} className="rounded-xl font-bold text-[13px] py-2.5 text-emerald-600 bg-emerald-50 cursor-pointer mb-1 shadow-sm">
                               <CheckCircle className="mr-3 h-4 w-4" /> Approve Access
                             </DropdownMenuItem>
                           )}

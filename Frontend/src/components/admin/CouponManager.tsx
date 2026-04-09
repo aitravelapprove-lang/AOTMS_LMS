@@ -140,7 +140,7 @@ export function CouponManager() {
           </div>
         </div>
         
-        <div className="flex items-center gap-4 bg-white p-2 rounded-[1.5rem] border border-slate-200 shadow-sm">
+        <div className="flex items-center gap-4 bg-white p-2 rounded-[2rem] border border-slate-200 shadow-sm">
             <div className="flex -space-x-3 px-2">
                 {students.slice(0, 5).map((s, i) => (
                     <Avatar key={i} className="h-9 w-9 border-2 border-white ring-1 ring-slate-100 italic transition-transform hover:scale-110 cursor-help">
@@ -152,7 +152,7 @@ export function CouponManager() {
             <div className="h-5 w-px bg-slate-200 mx-1" />
             <Badge
                 variant="secondary"
-                className="bg-primary text-white border-transparent px-4 py-1.5 rounded-xl font-black text-[10px] tracking-widest uppercase"
+                className="bg-primary text-white border-transparent px-4 py-1.5 rounded-lg font-black text-[10px] tracking-widest uppercase"
             >
                 {students.length} Active Students
             </Badge>
@@ -203,7 +203,7 @@ export function CouponManager() {
                             <p className="text-sm font-black text-slate-300 uppercase tracking-widest">No candidates found in this scope</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto max-h-[600px] pr-2 custom-scrollbar">
+                        <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4 overflow-y-auto max-h-[600px] pr-2 custom-scrollbar">
                             {filteredStudents.map((student) => (
                                 <motion.div
                                     key={student.id}
@@ -234,34 +234,34 @@ export function CouponManager() {
                                             </div>
                                         </div>
                                         
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-0.5">
-                                                <h4 className={`text-[14px] font-black transition-colors truncate tracking-tight ${selectedStudent?.id === student.id ? 'text-primary' : 'text-slate-900 group-hover:text-primary'}`}>
-                                                    {student.full_name}
-                                                </h4>
-                                                <Badge className="text-[8px] h-4 px-1.5 rounded-md uppercase font-black bg-blue-50 text-blue-600 border-none shadow-none">
-                                                    STUDENT
+                                        <div className="flex-1 min-w-0 pr-4">
+                                            <h4 className={`text-sm font-black transition-colors truncate tracking-tight mb-1 ${selectedStudent?.id === student.id ? 'text-primary' : 'text-slate-900 group-hover:text-primary'}`}>
+                                                {student.full_name}
+                                            </h4>
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <Badge className="text-[7px] h-3.5 px-1.5 rounded-md uppercase font-black bg-blue-50 text-blue-600 border-none shadow-none flex-shrink-0">
+                                                    Candidate Profile
                                                 </Badge>
+                                                <span className="text-[10px] font-bold text-slate-400 truncate opacity-70 tracking-tight">
+                                                    {student.email}
+                                                </span>
                                             </div>
-                                            <p className="text-[11px] font-medium text-slate-400 truncate opacity-80 leading-none">
-                                                {student.email}
-                                            </p>
                                         </div>
                                     </div>
 
-                                    <div className="ml-4 shrink-0">
+                                    <div className="shrink-0 flex items-center justify-end">
                                         <Button 
                                             size="sm"
                                             variant={selectedStudent?.id === student.id ? "default" : "secondary"}
-                                            className={`h-9 px-4 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
+                                            className={`h-10 px-4 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 ${
                                                 selectedStudent?.id === student.id 
                                                 ? "bg-primary text-white shadow-lg shadow-primary/20" 
                                                 : "bg-primary/5 text-primary hover:bg-primary hover:text-white"
                                             }`}
                                         >
                                             <Plus className="h-3.5 w-3.5" />
-                                            <span>Reward</span>
-                                            <ArrowRight className="h-3.5 w-3.5 opacity-0 -translate-x-2 transition-all group-hover:opacity-100 group-hover:translate-x-0 hidden sm:block" />
+                                            <span className="hidden xl:inline">Add Propel</span>
+                                            <span className="xl:hidden">Add</span>
                                         </Button>
                                     </div>
                                 </motion.div>
@@ -397,7 +397,7 @@ export function CouponManager() {
             </div>
           </Card>
 
-          <Card className="border-none shadow-xl shadow-slate-200/50 rounded-3xl bg-white/60 border-l-4 border-primary p-5">
+          <Card className="border-none shadow-xl shadow-slate-200/50 rounded-[2.5rem] bg-white/60 border-l-4 border-primary p-5">
             <div className="flex items-center gap-4">
                 <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center">
                     <Sparkles className="h-5 w-5 text-primary" />

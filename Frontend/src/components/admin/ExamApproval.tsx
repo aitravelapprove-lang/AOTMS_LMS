@@ -71,7 +71,7 @@ export function ExamApproval() {
   const fetchExams = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await fetchWithAuth('/admin/exams-list');
+      const data = await fetchWithAuth('/admin/exams-list') as Exam[];
       setExams(data);
     } catch (error) {
        toast({ title: 'Fetch Error', description: 'Slow network or system lag detected.', variant: 'destructive' });
@@ -213,7 +213,7 @@ export function ExamApproval() {
                           {exam.approval_status}
                         </Badge>
                       </div>
-                      <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-[10px] font-black text-slate-300 uppercase tracking-widest italic">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-[10px] font-black text-slate-500 uppercase tracking-widest italic">
                         <span className="flex items-center gap-1.5"><Calendar className="h-3 w-3" /> {exam.scheduled_date ? format(new Date(exam.scheduled_date), 'MMM dd, HH:mm') : 'Unscheduled'}</span>
                         <span className="flex items-center gap-1.5"><History className="h-3 w-3" /> {exam.duration_minutes} Mins</span>
                         <span className="flex items-center gap-1.5"><ShieldCheck className="h-3 w-3" /> {exam.proctoring_enabled ? 'SECURE' : 'OPEN'}</span>
@@ -222,9 +222,9 @@ export function ExamApproval() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                   <Button 
-                    variant="outline" 
-                    className="h-10 sm:h-12 border-slate-100 rounded-xl sm:rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:text-primary gap-2 transition-all hover:bg-slate-50 px-3 sm:px-4"
+                    <Button 
+                     variant="outline" 
+                     className="h-10 sm:h-12 border-slate-100 rounded-xl sm:rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-600 hover:text-primary gap-2 transition-all hover:bg-slate-50 px-3 sm:px-4"
                     onClick={() => { setSelectedExam(exam); setIsDetailOpen(true); }}
                    >
                      <Eye className="h-4 w-4" /> <span className="hidden sm:inline">Comprehensive </span>Audit
@@ -248,7 +248,7 @@ export function ExamApproval() {
                          </>
                        )}
                        <Button 
-                         className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white border-none shadow-none transition-all"
+                         className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl bg-slate-50 text-slate-500 hover:bg-slate-900 hover:text-white border-none shadow-none transition-all"
                          onClick={() => handleDelete(exam.id)}
                        >
                          <Trash2 className="h-4 w-4" />
@@ -267,10 +267,10 @@ export function ExamApproval() {
                  <h4 className="text-sm font-black text-slate-400 uppercase tracking-[0.3em] mt-6 animate-pulse">Running Integrity Audit...</h4>
               </div>
             ) : (
-              <div className="py-32 text-center border-4 border-dashed border-slate-50 rounded-[4rem] bg-slate-50/20">
-                 <ShieldAlert className="h-16 w-16 text-slate-200 mx-auto mb-6 opacity-30" />
-                 <h4 className="text-2xl font-black text-slate-200 uppercase tracking-tighter italic">Queue is Empty</h4>
-                 <p className="text-xs font-bold text-slate-100 uppercase tracking-widest mt-2">All protocols have been successfully reviewed</p>
+              <div className="py-32 text-center border-4 border-dashed border-slate-400/30 rounded-[4rem] bg-slate-50/10 backdrop-blur-sm">
+                 <ShieldAlert className="h-16 w-16 text-slate-900/20 mx-auto mb-6" />
+                 <h4 className="text-2xl font-black text-slate-900 uppercase tracking-tighter italic">Queue is Empty</h4>
+                 <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mt-2">All protocols have been successfully reviewed</p>
               </div>
             )}
          </AnimatePresence>

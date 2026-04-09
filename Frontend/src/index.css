@@ -198,27 +198,62 @@
     @apply bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200/60 transition-all;
   }
 
+  /* ── Global scrollbar ── */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
+    border: 1.5px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f1f5f9;
+  }
+
+  /* ── Named scrollbar classes ── */
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
   }
   .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
+    background: #f1f5f9;
+    border-radius: 999px;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-slate-300 rounded-full hover:bg-primary/50 transition-colors;
+    background: #cbd5e1;
+    border-radius: 999px;
     border: 1.5px solid transparent;
     background-clip: padding-box;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
   }
 
   .admin-scrollbar::-webkit-scrollbar {
     width: 6px;
   }
   .admin-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
+    background: #f1f5f9;
+    border-radius: 999px;
   }
   .admin-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-white rounded-full hover:bg-slate-100 transition-colors shadow-sm border border-slate-200;
-    background-clip: padding-box;
+    background: #cbd5e1;
+    border-radius: 999px;
+  }
+  .admin-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
   }
 }
 
@@ -442,26 +477,35 @@
 
 /* ── Horizontal custom scrollbar for tab strips ──────────────── */
 .custom-scrollbar-horizontal::-webkit-scrollbar {
-  height: 3px;
+  height: 4px;
 }
 .custom-scrollbar-horizontal::-webkit-scrollbar-track {
-  background: transparent;
+  background: #f1f5f9;
+  border-radius: 999px;
 }
 .custom-scrollbar-horizontal::-webkit-scrollbar-thumb {
-  @apply bg-slate-300 rounded-full hover:bg-primary/50 transition-colors;
+  background: #cbd5e1;
+  border-radius: 999px;
   border: 1px solid transparent;
   background-clip: padding-box;
 }
+.custom-scrollbar-horizontal::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
 
 .admin-scrollbar-horizontal::-webkit-scrollbar {
-  height: 3px;
+  height: 4px;
 }
 .admin-scrollbar-horizontal::-webkit-scrollbar-track {
-  background: transparent;
+  background: #f1f5f9;
+  border-radius: 999px;
 }
 .admin-scrollbar-horizontal::-webkit-scrollbar-thumb {
-  @apply bg-white rounded-full hover:bg-slate-100 transition-colors shadow-sm border border-slate-200;
-  background-clip: padding-box;
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+.admin-scrollbar-horizontal::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 /* ── Safe area padding for notched devices ─────────────────────── */

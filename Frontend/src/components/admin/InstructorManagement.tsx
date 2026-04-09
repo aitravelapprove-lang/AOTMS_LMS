@@ -306,7 +306,7 @@ export function InstructorManagement() {
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -383,7 +383,7 @@ export function InstructorManagement() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
           {filteredInstructors.map((instructor) => {
             const assignedCourses = courses.filter(c => 
               c.instructor_ids?.includes(instructor.user_id)
@@ -392,38 +392,38 @@ export function InstructorManagement() {
             return (
               <div
                 key={instructor.user_id}
-                className={`group flex items-center justify-between p-4 rounded-2xl border border-slate-200 bg-white hover:border-primary/30 hover:shadow-md transition-all relative overflow-hidden ${
+                className={`group flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-3xl border border-slate-200 bg-white hover:border-primary/30 hover:shadow-md transition-all relative overflow-hidden gap-4 ${
                   isSuspended ? 'opacity-80 grayscale-[0.3]' : ''
                 }`}
               >
                 <div className="flex items-center gap-4 flex-1 min-w-0">
                   <div className="relative shrink-0">
-                    <Avatar className={`h-12 w-12 border-2 border-slate-50 shadow-none rounded-full`}>
-                      <AvatarImage src={instructor.avatar_url} />
-                      <AvatarFallback className="bg-primary/5 text-primary font-bold">
+                    <Avatar className={`h-12 w-12 sm:h-14 sm:w-14 border-2 border-slate-50 shadow-sm rounded-2xl overflow-hidden`}>
+                      <AvatarImage src={instructor.avatar_url} className="object-cover" />
+                      <AvatarFallback className="bg-primary/5 text-primary font-bold text-lg">
                         {instructor.full_name?.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <div className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white shadow-sm ${
+                    <div className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white shadow-sm ${
                       isSuspended ? 'bg-rose-500' : 'bg-emerald-500'
                     }`} />
                   </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <p className="text-sm font-black text-slate-900 leading-none truncate overflow-hidden">{instructor.full_name}</p>
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <p className="text-sm sm:text-base font-black text-slate-900 leading-tight truncate">{instructor.full_name}</p>
                       <Badge 
                           variant="outline" 
-                          className={`text-[9px] h-4 px-1.5 rounded-md uppercase font-black tracking-tighter border-none shadow-none bg-blue-50 text-blue-600`}
+                          className={`text-[9px] h-4 px-1.5 rounded-md uppercase font-black tracking-tighter border-none shadow-none bg-blue-50 text-blue-600 shrink-0`}
                       >
                           INSTRUCTOR
                       </Badge>
                     </div>
-                    <p className="text-[11px] text-muted-foreground truncate leading-none mb-2">{instructor.email}</p>
+                    <p className="text-[11px] text-muted-foreground truncate leading-none mb-1.5">{instructor.email}</p>
                     
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-primary/5 border border-primary/10 shadow-sm shadow-primary/5">
-                          <BookOpen className="h-3 w-3 text-primary animate-pulse" />
+                          <BookOpen className="h-3 w-3 text-primary" />
                           <span className="text-[10px] font-black text-primary uppercase tracking-tight">Teaching {assignedCourses.length}</span>
                        </div>
                        <div className="flex items-center gap-1">
@@ -436,20 +436,20 @@ export function InstructorManagement() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0 ml-4">
+                <div className="flex items-center gap-2 shrink-0 sm:ml-2 justify-end pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-50">
                   <Button 
                     variant="secondary" 
                     size="sm"
-                    className="h-9 px-3 rounded-xl bg-slate-50 hover:bg-primary hover:text-white text-primary transition-all group/btn font-bold text-xs"
+                    className="h-9 truncate px-3 rounded-xl bg-slate-50 hover:bg-primary hover:text-white text-primary transition-all group/btn font-bold text-xs flex-1 sm:flex-none"
                     onClick={() => handleOpenProfileModal(instructor)}
                   >
                     Management
-                    <ArrowRight className="h-3 w-3 ml-2 transition-transform group-hover/btn:translate-x-1" />
+                    <ArrowRight className="h-3 w-3 ml-2 transition-transform group-hover/btn:translate-x-1 shrink-0" />
                   </Button>
 
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-slate-100 text-slate-400">
+                      <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-slate-100 text-slate-400 border border-slate-100/50">
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -457,28 +457,19 @@ export function InstructorManagement() {
                        <DropdownMenuLabel className="px-2 py-1.5 text-[10px] font-black uppercase text-slate-400 tracking-widest">Instructor Node</DropdownMenuLabel>
                        <DropdownMenuSeparator className="bg-slate-100" />
                        
-                       <DropdownMenuItem onClick={() => handleOpenAssignModal(instructor)}>
+                       <DropdownMenuItem onClick={() => handleOpenAssignModal(instructor)} className="rounded-lg">
                          <Plus className="h-4 w-4 mr-2" /> Assign New Course
                        </DropdownMenuItem>
 
-                       <DropdownMenuItem onClick={() => handleOpenManageAssignments(instructor)}>
+                       <DropdownMenuItem onClick={() => handleOpenManageAssignments(instructor)} className="rounded-lg">
                          <Award className="h-4 w-4 mr-2" /> Global Assignments
-                       </DropdownMenuItem>
-                       
-                       <DropdownMenuSeparator className="bg-slate-100" />
-                       
-                       <DropdownMenuItem 
-                         className="text-rose-600 focus:text-rose-600 focus:bg-rose-50 font-bold"
-                         onClick={() => handleDeleteInstructor(instructor.user_id, instructor.full_name)}
-                       >
-                         <Trash2 className="h-4 w-4 mr-2" /> Delete Account
                        </DropdownMenuItem>
                        
                        <DropdownMenuSeparator className="bg-slate-100" />
                        
                        {isSuspended ? (
                          <DropdownMenuItem 
-                           className="text-emerald-600 focus:text-emerald-600 font-bold"
+                           className="text-emerald-600 focus:text-emerald-600 font-bold rounded-lg"
                            onClick={async () => {
                              try {
                                await fetchWithAuth('/admin/update-user-status', {
@@ -496,7 +487,7 @@ export function InstructorManagement() {
                          </DropdownMenuItem>
                        ) : (
                          <DropdownMenuItem 
-                           className="text-amber-600 focus:text-amber-600 font-bold"
+                           className="text-amber-600 focus:text-amber-600 font-bold rounded-lg"
                            onClick={async () => {
                              if (!confirm(`Suspend ${instructor.full_name}?`)) return;
                              try {
@@ -516,7 +507,7 @@ export function InstructorManagement() {
                        )}
                        
                        <DropdownMenuItem 
-                          className="text-rose-600 focus:text-rose-600 font-bold" 
+                          className="text-rose-600 focus:text-rose-600 font-bold rounded-lg" 
                           onClick={() => handleDeleteInstructor(instructor.user_id, instructor.full_name)}
                        >
                           <Trash2 className="h-4 w-4 mr-2" /> Purge Entity

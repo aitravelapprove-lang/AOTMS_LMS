@@ -157,10 +157,10 @@ export function QuestionBankApproval() {
     const fetchPendingBanks = async (showLoading = true) => {
         try {
             if (showLoading && pendingBanks.length === 0 && approvedBanks.length === 0) setLoading(true);
-            
+
             // Optimized summary fetch instead of fetching ALL questions and looping access lists
             const summary = await fetchWithAuth('/admin/question-bank-summary') as (PendingQuestionBank & { approval_status: string, access_count: number })[];
-            
+
             setPendingBanks(summary.filter(s => s.approval_status === 'pending'));
             setApprovedBanks(summary.filter(s => s.approval_status === 'approved'));
             setRejectedBanks(summary.filter(s => s.approval_status === 'rejected'));
@@ -266,7 +266,7 @@ export function QuestionBankApproval() {
 
     const confirmApproval = async () => {
         if (!selectedTopic) return;
-        
+
         await handleAction(selectedTopic, 'approved', selectedCourseId || undefined);
         setShowCourseDialog(false);
     };
@@ -276,10 +276,10 @@ export function QuestionBankApproval() {
             setProcessing(topic);
             await fetchWithAuth('/admin/approve-question-bank', {
                 method: 'PUT',
-                body: JSON.stringify({ 
-                    topic, 
+                body: JSON.stringify({
+                    topic,
                     status,
-                    course_id: courseId 
+                    course_id: courseId
                 })
             });
 
@@ -383,14 +383,14 @@ export function QuestionBankApproval() {
 
     const filteredBatches = useMemo(() => {
         if (!batches || batches.length === 0) return [];
-        
+
         const filtered = batches.filter(b => {
             const inst = b.instructor;
             const batchInstructorId = (b.instructor_id || (typeof inst === 'object' ? (inst?._id || inst?.id) : inst))?.toString();
-            
+
             const matchesInstructor = selectedInstructorId === 'all' || batchInstructorId === selectedInstructorId;
             const matchesType = selectedBatchTypeFilter === 'all' || b.batch_type === selectedBatchTypeFilter;
-            
+
             return matchesInstructor && matchesType;
         });
 
@@ -418,7 +418,7 @@ export function QuestionBankApproval() {
 
             toast({
                 title: grantType === 'batch' ? 'Batch Access Granted! 🚀' : 'Access Granted! 🚀',
-                description: grantType === 'batch' 
+                description: grantType === 'batch'
                     ? `All students in the selected batch now have access to ${grantingTopic}`
                     : `Student now has access to mock tests for ${grantingTopic}`
             });
@@ -442,13 +442,13 @@ export function QuestionBankApproval() {
     if (loading && pendingBanks.length === 0 && approvedBanks.length === 0) {
         return (
             <div className="py-24 text-center">
-                 <div className="relative inline-block">
+                <div className="relative inline-block">
                     <div className="h-20 w-20 rounded-full border-4 border-slate-100 animate-[spin_3s_linear_infinite]" />
                     <div className="absolute inset-0 flex items-center justify-center">
-                       <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                        <Loader2 className="h-8 w-8 text-primary animate-spin" />
                     </div>
-                 </div>
-                 <h4 className="text-sm font-black text-slate-400 uppercase tracking-[0.3em] mt-6 animate-pulse">Running Integrity Audit...</h4>
+                </div>
+                <h4 className="text-sm font-black text-slate-400 uppercase tracking-[0.3em] mt-6 animate-pulse">Running Integrity Audit...</h4>
             </div>
         );
     }
@@ -464,10 +464,10 @@ export function QuestionBankApproval() {
                         </h2>
                         <p className="text-muted-foreground text-xs sm:text-sm font-medium mt-0.5 hidden sm:block">Review and activate curated question repositories.</p>
                     </div>
-                    <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="h-9 sm:h-11 px-3 sm:px-4 rounded-xl border-slate-100 bg-white shadow-sm text-[10px] font-black uppercase tracking-widest text-slate-400 gap-2 hover:bg-slate-50 transition-all active:scale-95 self-start sm:self-auto flex-shrink-0"
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-9 sm:h-11 px-3 sm:px-4 rounded-xl border-slate-100 bg-white shadow-sm text-[10px] font-black uppercase tracking-widest text-slate-700 gap-2 hover:bg-slate-50 transition-all active:scale-95 self-start sm:self-auto flex-shrink-0"
                         onClick={() => fetchPendingBanks(true)}
                         disabled={loading}
                     >
@@ -493,14 +493,14 @@ export function QuestionBankApproval() {
             <Tabs value={viewTab} className="w-full">
                 <TabsContent value="pending" className="mt-0">
                     {pendingBanks.length === 0 ? (
-                        <Card className="border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-[2rem]">
+                        <Card className="border-2 border-dashed border-slate-300 bg-slate-50/50 rounded-[2rem]">
                             <CardContent className="flex flex-col items-center justify-center py-20 text-center space-y-4">
                                 <div className="h-20 w-20 rounded-full bg-white flex items-center justify-center shadow-inner border border-slate-100">
-                                    <CheckCircle className="h-10 w-10 text-slate-200" />
+                                    <CheckCircle className="h-10 w-10 text-slate-900/20" />
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-xl font-bold text-slate-900">Queue is empty!</p>
-                                    <p className="text-sm font-medium text-slate-500 max-w-sm">There are no pending question banks awaiting review.</p>
+                                    <p className="text-xl font-black text-slate-900 italic uppercase tracking-tighter">Queue is empty!</p>
+                                    <p className="text-sm font-bold text-slate-600 max-w-sm uppercase tracking-widest text-[10px]">There are no pending question banks awaiting review.</p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -519,8 +519,8 @@ export function QuestionBankApproval() {
                                                             <FileText className="h-8 w-8 text-white" />
                                                         </div>
                                                         <div className="text-center">
-                                                           <p className="text-[10px] font-black uppercase text-white/60 tracking-[0.2em]">Logical Cluster</p>
-                                                           <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest mt-1">Repository Node Ready</p>
+                                                            <p className="text-[10px] font-black uppercase text-white/60 tracking-[0.2em]">Logical Cluster</p>
+                                                            <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest mt-1">Repository Node Ready</p>
                                                         </div>
                                                     </div>
                                                 )}
@@ -529,7 +529,7 @@ export function QuestionBankApproval() {
                                                         {bank.count} Questions
                                                     </Badge>
                                                     <div className="h-6 w-6 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center">
-                                                       <BrainCircuit className="h-3 w-3 text-white" />
+                                                        <BrainCircuit className="h-3 w-3 text-white" />
                                                     </div>
                                                 </div>
                                             </div>
@@ -539,8 +539,8 @@ export function QuestionBankApproval() {
                                                     <h3 className="font-bold text-base sm:text-xl text-slate-900 break-words">{bank.topic}</h3>
                                                     <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none px-2 py-0 text-[10px] uppercase tracking-wider font-black">Pending</Badge>
                                                 </div>
-                                                <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-xs font-semibold text-slate-500 mt-4">
-                                                    <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
+                                                <div className="flex flex-wrap items-center gap-6 text-xs font-semibold text-slate-500 mt-2">
+                                                    <div className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
                                                         <Clock className="h-3.5 w-3.5 text-primary" />
                                                         <span>{bank.duration || 0} Minutes</span>
                                                     </div>
@@ -573,14 +573,14 @@ export function QuestionBankApproval() {
                                                 )}
 
                                                 <div className="flex items-center gap-6 pt-4 border-t border-slate-50 mt-4">
-                                                     <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                                         <Calendar className="h-3.5 w-3.5" />
-                                                         <span>Submitted {new Date(bank.created_at).toLocaleDateString()}</span>
-                                                     </div>
-                                                     <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                                         <User className="h-3.5 w-3.5" />
-                                                         <span>Source: {bank.created_by?.substring(0, 8) || 'System'}...</span>
-                                                     </div>
+                                                    <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                                        <Calendar className="h-3.5 w-3.5" />
+                                                        <span>Submitted {new Date(bank.created_at).toLocaleDateString()}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                                        <User className="h-3.5 w-3.5" />
+                                                        <span>Source: {bank.created_by?.substring(0, 8) || 'System'}...</span>
+                                                    </div>
                                                 </div>
                                             </div>
 
@@ -589,7 +589,7 @@ export function QuestionBankApproval() {
                                                     <Button
                                                         variant="outline"
                                                         onClick={() => handlePreviewQuestions(bank.topic)}
-                                                        className="flex-1 h-11 rounded-xl border-slate-200 text-slate-600 font-bold hover:bg-slate-50"
+                                                        className="flex-1 h-11 rounded-xl border-slate-200 text-slate-800 font-bold hover:bg-slate-50"
                                                     >
                                                         <Eye className="h-4 w-4 mr-2" />
                                                         Preview
@@ -638,14 +638,14 @@ export function QuestionBankApproval() {
 
                 <TabsContent value="approve" className="mt-0">
                     {approvedBanks.length === 0 ? (
-                        <Card className="border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-[2rem]">
+                        <Card className="border-2 border-dashed border-slate-300 bg-slate-50/50 rounded-[2rem]">
                             <CardContent className="flex flex-col items-center justify-center py-20 text-center space-y-4">
                                 <div className="h-20 w-20 rounded-full bg-white flex items-center justify-center shadow-inner border border-slate-100">
-                                    <LayoutGrid className="h-10 w-10 text-slate-200" />
+                                    <LayoutGrid className="h-10 w-10 text-slate-900/20" />
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-xl font-bold text-slate-900">Approved list is empty!</p>
-                                    <p className="text-sm font-medium text-slate-500 max-w-sm">No question banks have been approved yet.</p>
+                                    <p className="text-xl font-bold text-slate-900">Library is empty!</p>
+                                    <p className="text-sm font-medium text-slate-500 max-w-sm">No approved question banks in the library yet.</p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -664,8 +664,8 @@ export function QuestionBankApproval() {
                                                             <CheckCircle className="h-8 w-8 text-emerald-500" />
                                                         </div>
                                                         <div className="text-center">
-                                                           <p className="text-[10px] font-black uppercase text-emerald-500/60 tracking-[0.2em]">Validated Node</p>
-                                                           <p className="text-[8px] font-bold text-emerald-500/30 uppercase tracking-widest mt-1">Repository Sanity Passed</p>
+                                                            <p className="text-[10px] font-black uppercase text-emerald-500/60 tracking-[0.2em]">Validated Node</p>
+                                                            <p className="text-[8px] font-bold text-emerald-500/30 uppercase tracking-widest mt-1">Repository Sanity Passed</p>
                                                         </div>
                                                     </div>
                                                 )}
@@ -673,9 +673,9 @@ export function QuestionBankApproval() {
                                                     <Badge variant="secondary" className="bg-white/10 backdrop-blur-md text-white border-white/20 font-black px-3 py-1 text-[10px] uppercase tracking-wider">
                                                         {bank.count} Questions
                                                     </Badge>
-                                                     <div className="h-6 w-6 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-400/30 flex items-center justify-center">
-                                                       <ShieldCheck className="h-3 w-3 text-white" />
-                                                     </div>
+                                                    <div className="h-6 w-6 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-400/30 flex items-center justify-center">
+                                                        <ShieldCheck className="h-3 w-3 text-white" />
+                                                    </div>
                                                 </div>
                                             </div>
 
@@ -698,7 +698,7 @@ export function QuestionBankApproval() {
                                                         <span>{bank.retakes || 1} Retakes</span>
                                                     </div>
                                                 </div>
-                                                
+
                                                 {bank.custom_fields && bank.custom_fields.length > 0 && (
                                                     <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-50">
                                                         {bank.custom_fields.map((field, idx) => (
@@ -711,7 +711,7 @@ export function QuestionBankApproval() {
                                                 )}
 
                                                 <div className="flex items-center gap-4 text-xs font-semibold text-slate-500 mt-4 border-t border-slate-50 pt-4">
-                                                    <div 
+                                                    <div
                                                         className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-200 transition-colors text-[10px] font-black uppercase tracking-widest"
                                                         onClick={() => handleViewAccess(bank.topic)}
                                                     >
@@ -726,8 +726,8 @@ export function QuestionBankApproval() {
                                                     onClick={() => handleGrantAccessClick(bank.topic)}
                                                     className="w-full h-11 rounded-xl pro-button-primary shadow-lg shadow-primary/20 font-bold"
                                                 >
-                                                   <Users className="h-4 w-4 mr-2" />
-                                                   + Access
+                                                    <Users className="h-4 w-4 mr-2" />
+                                                    + Access
                                                 </Button>
                                                 <Button
                                                     variant="outline"
@@ -753,14 +753,14 @@ export function QuestionBankApproval() {
 
                 <TabsContent value="reject" className="mt-0">
                     {rejectedBanks.length === 0 ? (
-                        <Card className="border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-[2rem]">
+                        <Card className="border-2 border-dashed border-slate-300 bg-slate-50/50 rounded-[2rem]">
                             <CardContent className="flex flex-col items-center justify-center py-20 text-center space-y-4">
                                 <div className="h-20 w-20 rounded-full bg-white flex items-center justify-center shadow-inner border border-slate-100">
-                                    <XCircle className="h-10 w-10 text-slate-200" />
+                                    <XCircle className="h-10 w-10 text-slate-900/20" />
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-xl font-bold text-slate-900">Reject list is empty!</p>
-                                    <p className="text-sm font-medium text-slate-500 max-w-sm">No question banks have been rejected yet.</p>
+                                    <p className="text-xl font-bold text-slate-900">No rejected banks!</p>
+                                    <p className="text-sm font-medium text-slate-500 max-w-sm">There are no question banks with a rejected status.</p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -779,8 +779,8 @@ export function QuestionBankApproval() {
                                                             <XCircle className="h-8 w-8 text-rose-500" />
                                                         </div>
                                                         <div className="text-center">
-                                                           <p className="text-[10px] font-black uppercase text-rose-500/60 tracking-[0.2em]">Rejected Node</p>
-                                                           <p className="text-[8px] font-bold text-rose-500/30 uppercase tracking-widest mt-1">Review & Resubmit</p>
+                                                            <p className="text-[10px] font-black uppercase text-rose-500/60 tracking-[0.2em]">Rejected Node</p>
+                                                            <p className="text-[8px] font-bold text-rose-500/30 uppercase tracking-widest mt-1">Review & Resubmit</p>
                                                         </div>
                                                     </div>
                                                 )}
@@ -788,9 +788,9 @@ export function QuestionBankApproval() {
                                                     <Badge variant="secondary" className="bg-white/10 backdrop-blur-md text-white border-white/20 font-black px-3 py-1 text-[10px] uppercase tracking-wider">
                                                         {bank.count} Questions
                                                     </Badge>
-                                                     <div className="h-6 w-6 rounded-full bg-rose-500/20 backdrop-blur-md border border-rose-400/30 flex items-center justify-center">
-                                                       <AlertCircle className="h-3 w-3 text-white" />
-                                                     </div>
+                                                    <div className="h-6 w-6 rounded-full bg-rose-500/20 backdrop-blur-md border border-rose-400/30 flex items-center justify-center">
+                                                        <AlertCircle className="h-3 w-3 text-white" />
+                                                    </div>
                                                 </div>
                                             </div>
 
@@ -848,7 +848,7 @@ export function QuestionBankApproval() {
                         <DialogTitle className="text-2xl font-black tracking-tight relative z-10">Authorize Repository</DialogTitle>
                         <DialogDescription className="text-white/80 mt-2 font-medium relative z-10">Curriculum Association Required</DialogDescription>
                     </div>
-                    
+
                     <div className="p-8 space-y-6 bg-white">
                         <div className="space-y-4">
                             <div className="space-y-2">
@@ -859,8 +859,8 @@ export function QuestionBankApproval() {
                                     </SelectTrigger>
                                     <SelectContent className="rounded-2xl border-slate-200 shadow-xl">
                                         {(courses as { id: string; title: string }[] | undefined)?.map((course) => (
-                                            <SelectItem 
-                                                key={course.id} 
+                                            <SelectItem
+                                                key={course.id}
                                                 value={course.id}
                                                 className="font-bold py-3 hover:bg-slate-50 rounded-xl"
                                             >
@@ -906,7 +906,7 @@ export function QuestionBankApproval() {
                 <DialogContent className="w-[95vw] sm:max-w-[600px] rounded-2xl sm:rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl">
                     <div className="bg-primary p-8 text-white relative">
                         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }} />
-                        
+
                         <div className="h-16 w-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 border border-white/30 shadow-xl relative z-10">
                             <Users className="h-8 w-8 text-white" />
                         </div>
@@ -1046,8 +1046,8 @@ export function QuestionBankApproval() {
                             </div>
                         )}
                         <div className="flex justify-end mt-8 border-t border-slate-100 pt-6">
-                            <Button 
-                                onClick={() => setViewingQuestions(null)} 
+                            <Button
+                                onClick={() => setViewingQuestions(null)}
                                 className="h-12 px-10 rounded-xl font-black bg-slate-900 hover:bg-black text-white uppercase tracking-widest text-[10px]"
                             >
                                 Done Inspection
@@ -1066,14 +1066,14 @@ export function QuestionBankApproval() {
                         <DialogTitle className="text-2xl font-black tracking-tight relative z-10">Grant Repository Access</DialogTitle>
                         <DialogDescription className="text-white/80 mt-2 font-medium relative z-10">Deploy {grantingTopic} to students or batches</DialogDescription>
                     </div>
-                    
+
                     <div className="p-8 space-y-6 bg-white">
                         <Tabs value={grantType} onValueChange={(v) => setGrantType(v as 'student' | 'batch')} className="w-full">
                             <TabsList className="grid grid-cols-2 mb-6 bg-slate-100 p-1 rounded-xl">
                                 <TabsTrigger value="student" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold text-xs uppercase tracking-widest">Individual</TabsTrigger>
                                 <TabsTrigger value="batch" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold text-xs uppercase tracking-widest">Logic Batch</TabsTrigger>
                             </TabsList>
-                            
+
                             <TabsContent value="student" className="space-y-4 mt-0">
                                 <div className="space-y-2">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Target Student</Label>
@@ -1083,8 +1083,8 @@ export function QuestionBankApproval() {
                                         </SelectTrigger>
                                         <SelectContent className="rounded-2xl border-slate-200 shadow-xl max-h-[300px]">
                                             {students.map((student) => (
-                                                <SelectItem 
-                                                    key={student.id} 
+                                                <SelectItem
+                                                    key={student.id}
                                                     value={student.id}
                                                     className="font-bold py-3 hover:bg-slate-50 rounded-xl"
                                                 >
@@ -1157,8 +1157,8 @@ export function QuestionBankApproval() {
                                                         filteredBatches.map((batch) => {
                                                             const bId = (batch.id || batch._id)?.toString();
                                                             return (
-                                                                <SelectItem 
-                                                                    key={bId} 
+                                                                <SelectItem
+                                                                    key={bId}
                                                                     value={bId}
                                                                     className="font-bold py-3 hover:bg-slate-50 rounded-xl"
                                                                 >
@@ -1214,7 +1214,7 @@ export function QuestionBankApproval() {
                                                 )}
                                             </div>
                                         </div>
-                                        
+
                                         <ScrollArea className="h-[140px] rounded-2xl border border-slate-100 bg-slate-50/30 p-2">
                                             {loadingBatchStudents ? (
                                                 <div className="flex flex-col items-center justify-center p-8 space-y-3">
@@ -1237,8 +1237,8 @@ export function QuestionBankApproval() {
                                             ) : (
                                                 <div className="grid grid-cols-1 gap-1.5">
                                                     {batchStudents.map((s, idx) => (
-                                                        <div 
-                                                            key={s.id} 
+                                                        <div
+                                                            key={s.id}
                                                             className="flex items-center gap-3 p-2 rounded-xl bg-white border border-slate-100 hover:border-primary/20 hover:shadow-sm transition-all group animate-in fade-in slide-in-from-left duration-500"
                                                             style={{ animationDelay: `${idx * 40}ms` }}
                                                         >
@@ -1273,7 +1273,7 @@ export function QuestionBankApproval() {
                                 <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest italic">Encrypted Pipeline</span>
                             </div>
                             <p className="text-[10px] text-slate-500 font-bold leading-relaxed uppercase tracking-tight opacity-70">
-                                {grantType === 'batch' 
+                                {grantType === 'batch'
                                     ? "This will grant access to EVERY student currently assigned to the selected batch. Students will be notified instantly."
                                     : "Individual student will receive immediate access and a push notification for this logic repository."}
                             </p>

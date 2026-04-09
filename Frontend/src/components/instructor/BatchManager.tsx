@@ -1,4 +1,25 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { 
+  DndContext, 
+  DragOverlay, 
+  closestCorners, 
+  KeyboardSensor, 
+  PointerSensor, 
+  useSensor, 
+  useSensors,
+  DragEndEvent,
+  DragStartEvent
+} from '@dnd-kit/core';
+import { 
+  arrayMove, 
+  SortableContext, 
+  sortableKeyboardCoordinates, 
+  verticalListSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { useDroppable } from '@dnd-kit/core';
+import { useDraggable } from '@dnd-kit/core';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -95,6 +116,105 @@ interface BatchManagerProps {
   courseTitle: string;
 }
 
+// ─── Draggable Student Card ─────────────────────────────────────────────────
+function DraggableStudentCard({ student, onRemove }: { student: RosterStudent, onRemove?: (studentId: string, batchId: string) => void }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: student.student_id,
+    data: student
+  });
+
+  const style = transform ? {
+    transform: CSS.Translate.toString(transform),
+  } : undefined;
+
+  return (
+    <motion.div 
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      layout
+      className={`bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all group relative cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-50 z-50 ring-2 ring-primary' : ''}`}
+    >
+      <div className="flex items-center gap-3">
+        <Avatar className="h-10 w-10 border-2 border-white shadow-sm pointer-events-none">
+          <AvatarImage src={student.avatar_url} />
+          <AvatarFallback className="bg-slate-100 text-slate-400 font-bold text-xs">
+            {student.full_name.split(' ').map(n => n[0]).join('')}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex-1 min-w-0 pointer-events-none">
+          <p className="text-sm font-black text-slate-900 truncate">{student.full_name}</p>
+          <p className="text-[10px] font-bold text-slate-500 truncate">{student.email}</p>
+        </div>
+        {!isDragging && student.batch && (
+           <Button 
+             variant="ghost" 
+             size="icon" 
+             className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 z-10"
+             onClick={(e) => {
+               e.stopPropagation();
+               onRemove?.(student.student_id, student.batch!.id);
+             }}
+           >
+             <Trash2 className="h-4 w-4" />
+           </Button>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── Droppable Roster Column ───────────────────────────────────────────────
+function DroppableRosterColumn({ title, students, colorClass, type, onRemove }: { title: string, students: RosterStudent[], colorClass: string, type: string, onRemove?: (id: string, bId: string) => void }) {
+  const { isOver, setNodeRef } = useDroppable({
+    id: type,
+  });
+
+  return (
+    <div 
+      ref={setNodeRef}
+      className={`flex flex-col gap-4 p-5 rounded-[2.5rem] border transition-all duration-300 min-h-[500px] shadow-sm ${
+        isOver 
+          ? 'bg-primary/10 border-primary border-dashed scale-[1.02] shadow-2xl ring-4 ring-primary/5' 
+          : 'bg-slate-50 border-slate-200/60 hover:border-slate-300'
+      }`}
+    >
+      <div className="flex items-center justify-between px-3 py-1">
+        <div className="flex items-center gap-2.5">
+           <div className={`h-2.5 w-2.5 rounded-full ${
+             type === 'morning' ? 'bg-orange-400' :
+             type === 'afternoon' ? 'bg-blue-400' :
+             type === 'evening' ? 'bg-violet-400' :
+             'bg-slate-400'
+           } ${isOver ? 'animate-ping' : ''}`} />
+           <h3 className="font-black text-[11px] uppercase tracking-[0.2em] text-slate-600">{title}</h3>
+        </div>
+        <Badge className={`${colorClass} border-none font-black shadow-sm`}>{students.length}</Badge>
+      </div>
+      
+      <div className="space-y-3 flex-1">
+        {students.length === 0 ? (
+          <div className="h-full py-12 border-2 border-dashed border-slate-300 rounded-[2rem] flex flex-col items-center justify-center text-slate-400 bg-white/40 group-hover:bg-white/60 transition-colors">
+            <Users className="h-10 w-10 mb-3 opacity-30 text-slate-500" />
+            <p className="text-[10px] uppercase font-black tracking-[0.15em] text-center px-6 leading-relaxed opacity-80">
+              Drag Students Here<br/>to Assign Session
+            </p>
+          </div>
+        ) : (
+          students.map(student => (
+            <DraggableStudentCard 
+              key={student.student_id} 
+              student={student} 
+              onRemove={onRemove}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function BatchManager({ courseId, courseTitle }: BatchManagerProps) {
   const [batches, setBatches] = useState<Batch[]>([]);
   const [roster, setRoster] = useState<GroupedRoster | null>(null);
@@ -104,6 +224,20 @@ export function BatchManager({ courseId, courseTitle }: BatchManagerProps) {
   const [rosterFilter, setRosterFilter] = useState<'all' | 'morning' | 'afternoon' | 'evening' | 'unassigned'>('all');
   const { toast } = useToast();
   
+  // Dnd-kit sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const [activeStudent, setActiveStudent] = useState<RosterStudent | null>(null);
+
   // Create Batch State
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newBatch, setNewBatch] = useState({
@@ -158,22 +292,68 @@ export function BatchManager({ courseId, courseTitle }: BatchManagerProps) {
     }
   };
 
-  const handleAssignStudent = async (batchId: string) => {
-    if (!assignmentModal.student) return;
+  const handleAssignStudent = async (batchId: string, studentId?: string) => {
+    const targetStudentId = studentId || assignmentModal.student?.student_id;
+    if (!targetStudentId) return;
+
     try {
       await fetchWithAuth(`/batches/${batchId}/students`, {
         method: 'POST',
         body: JSON.stringify({ 
-          student_id: assignmentModal.student.student_id,
+          student_id: targetStudentId,
           course_id: courseId 
         })
       });
-      toast({ title: "Assigned", description: `${assignmentModal.student.full_name} moved to new batch.` });
+      toast({ title: "Assigned", description: "Batch assignment updated." });
       setAssignmentModal({ student: null, isOpen: false });
       loadBatches();
     } catch (e: unknown) {
       const error = e as Error;
       toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveStudent(event.active.data.current as RosterStudent);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveStudent(null);
+    
+    if (!over) return;
+
+    const studentId = active.id as string;
+    const targetBatchType = over.id as 'morning' | 'afternoon' | 'evening' | 'unassigned';
+    
+    // Find if the student is already in a batch of this type
+    const student = active.data.current as RosterStudent;
+    if (student.batch?.type === targetBatchType) return;
+
+    if (targetBatchType === 'unassigned') {
+      if (student.batch) {
+        handleRemoveStudent(studentId, student.batch.id);
+      }
+      return;
+    }
+
+    // Assign to a batch of the target type
+    const possibleBatches = batches.filter(b => b.batch_type === targetBatchType && b.is_active);
+    
+    if (possibleBatches.length === 0) {
+      toast({ 
+        title: "No Batches", 
+        description: `Create a ${targetBatchType} batch first.`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (possibleBatches.length === 1) {
+      handleAssignStudent(possibleBatches[0].id, studentId);
+    } else {
+      // Multiple batches of this type, open modal to choose
+      setAssignmentModal({ student, isOpen: true });
     }
   };
 
@@ -233,67 +413,6 @@ export function BatchManager({ courseId, courseTitle }: BatchManagerProps) {
     });
   };
 
-  const RosterColumn = ({ title, students, colorClass, type }: { title: string, students: RosterStudent[], colorClass: string, type: string }) => (
-    <div className="flex flex-col gap-4 bg-slate-50/50 p-4 rounded-[2.5rem] border border-slate-100 min-h-[500px]">
-      <div className="flex items-center justify-between px-4 py-2">
-        <h3 className="font-black text-xs uppercase tracking-[0.2em] text-slate-500">{title}</h3>
-        <Badge className={`${colorClass} border-none font-black`}>{students.length}</Badge>
-      </div>
-      
-      <div className="space-y-3">
-        {students.length === 0 ? (
-          <div className="py-12 border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center text-slate-300">
-            <Users className="h-8 w-8 mb-2 opacity-20" />
-            <p className="text-[10px] uppercase font-bold tracking-widest">No Students</p>
-          </div>
-        ) : (
-          students.map(student => (
-            <motion.div 
-              key={student.student_id}
-              layout
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all group"
-            >
-              <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
-                  <AvatarImage src={student.avatar_url} />
-                  <AvatarFallback className="bg-slate-100 text-slate-400 font-bold text-xs">
-                    {student.full_name.split(' ').map(n => n[0]).join('')}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-black text-slate-800 truncate">{student.full_name}</p>
-                  <p className="text-[10px] font-medium text-slate-400 truncate">{student.email}</p>
-                </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                   <Button 
-                     variant="ghost" 
-                     size="icon" 
-                     className="h-8 w-8 rounded-lg text-slate-400 hover:text-primary"
-                     onClick={() => setAssignmentModal({ student, isOpen: true })}
-                   >
-                     <UserPlus className="h-4 w-4" />
-                   </Button>
-                   {student.batch && (
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-500"
-                        onClick={() => handleRemoveStudent(student.student_id, student.batch!.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                   )}
-                </div>
-              </div>
-            </motion.div>
-          ))
-        )}
-      </div>
-    </div>
-  );
-
   return (
     <div className="space-y-8">
       {/* Header & Stats */}
@@ -308,34 +427,36 @@ export function BatchManager({ courseId, courseTitle }: BatchManagerProps) {
           <p className="text-sm text-slate-500 font-medium mt-2 ml-16">Intelligence-driven student distribution for <span className="text-primary font-bold">{courseTitle}</span></p>
         </div>
         
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex bg-slate-100 p-1 rounded-2xl mr-2">
-            <Button 
-              variant={viewMode === 'batches' ? 'default' : 'ghost'}
-              onClick={() => setViewMode('batches')}
-              className={`rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest transition-all ${viewMode === 'batches' ? 'bg-white text-primary shadow-sm' : 'text-slate-400'}`}
-            >
-              Batch Cards
-            </Button>
-            <Button 
-              variant={viewMode === 'roster' ? 'default' : 'ghost'}
-              onClick={() => setViewMode('roster')}
-              className={`rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest transition-all ${viewMode === 'roster' ? 'bg-white text-primary shadow-sm' : 'text-slate-400'}`}
-            >
-              Full Roster
-            </Button>
-            <Button 
-              variant={viewMode === 'requests' ? 'default' : 'ghost'}
-              onClick={() => setViewMode('requests')}
-              className={`rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest transition-all relative ${viewMode === 'requests' ? 'bg-white text-primary shadow-sm' : 'text-slate-400'}`}
-            >
-              Requests
-              {requests.length > 0 && (
-                <span className="absolute -top-1 -right-1 h-4 w-4 bg-rose-500 text-white text-[8px] flex items-center justify-center rounded-full animate-bounce shadow-lg">
-                  {requests.length}
-                </span>
-              )}
-            </Button>
+        <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+          <div className="flex-1 min-w-0 overflow-x-auto custom-scrollbar-hide rounded-2xl bg-slate-100/80 p-1 mr-2 no-scrollbar">
+            <div className="flex items-center min-w-max">
+              <Button 
+                variant={viewMode === 'batches' ? 'default' : 'ghost'}
+                onClick={() => setViewMode('batches')}
+                className={`rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest transition-all ${viewMode === 'batches' ? 'bg-white text-primary shadow-sm' : 'text-slate-400'}`}
+              >
+                Batch Cards
+              </Button>
+              <Button 
+                variant={viewMode === 'roster' ? 'default' : 'ghost'}
+                onClick={() => setViewMode('roster')}
+                className={`rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest transition-all ${viewMode === 'roster' ? 'bg-white text-primary shadow-sm' : 'text-slate-400'}`}
+              >
+                Full Roster
+              </Button>
+              <Button 
+                variant={viewMode === 'requests' ? 'default' : 'ghost'}
+                onClick={() => setViewMode('requests')}
+                className={`rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest transition-all relative ${viewMode === 'requests' ? 'bg-white text-primary shadow-sm' : 'text-slate-400'}`}
+              >
+                Requests
+                {requests.length > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-rose-500 text-white text-[8px] flex items-center justify-center rounded-full animate-bounce shadow-lg">
+                    {requests.length}
+                  </span>
+                )}
+              </Button>
+            </div>
           </div>
 
           <Button 
@@ -529,65 +650,101 @@ export function BatchManager({ courseId, courseTitle }: BatchManagerProps) {
       ) : (
         /* Categorized Roster View */
         <div className="space-y-6">
-          {/* Roster Filters */}
-          <div className="flex flex-wrap items-center gap-2 pb-2">
-            {[
-              { id: 'all', label: 'All Students', icon: Users },
-              { id: 'morning', label: 'Morning Session', icon: Clock },
-              { id: 'afternoon', label: 'Afternoon Session', icon: Clock },
-              { id: 'evening', label: 'Evening Session', icon: Clock },
-              { id: 'unassigned', label: 'Unassigned', icon: X }
-            ].map((f) => (
-              <Button
-                key={f.id}
-                onClick={() => setRosterFilter(f.id as typeof rosterFilter)}
-                variant={rosterFilter === f.id ? 'default' : 'outline'}
-                className={`rounded-2xl h-10 px-6 font-black text-[10px] uppercase tracking-widest flex items-center gap-2 transition-all ${
-                  rosterFilter === f.id 
-                    ? 'bg-slate-900 text-white shadow-lg' 
-                    : 'bg-white text-slate-500 border-slate-100 hover:border-primary/50 hover:bg-slate-50'
-                }`}
-              >
-                <f.icon className="h-3 w-3" />
-                {f.label}
-              </Button>
-            ))}
-          </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            {/* Roster Filters */}
+            <div className="flex flex-wrap items-center justify-between gap-4 pb-4">
+              <div className="flex flex-wrap items-center gap-2">
+                {[
+                  { id: 'all', label: 'All Students', icon: Users },
+                  { id: 'morning', label: 'Morning Session', icon: Clock },
+                  { id: 'afternoon', label: 'Afternoon Session', icon: Clock },
+                  { id: 'evening', label: 'Evening Session', icon: Clock },
+                  { id: 'unassigned', label: 'Unassigned', icon: X }
+                ].map((f) => (
+                  <Button
+                    key={f.id}
+                    onClick={() => setRosterFilter(f.id as typeof rosterFilter)}
+                    variant={rosterFilter === f.id ? 'default' : 'outline'}
+                    className={`rounded-2xl h-10 px-6 font-black text-[10px] uppercase tracking-widest flex items-center gap-2 transition-all ${
+                      rosterFilter === f.id 
+                        ? 'bg-slate-900 text-white shadow-lg' 
+                        : 'bg-white text-slate-500 border-slate-100 hover:border-primary/50 hover:bg-slate-50'
+                    }`}
+                  >
+                    <f.icon className="h-3 w-3" />
+                    {f.label}
+                  </Button>
+                ))}
+              </div>
+              <div className={`px-4 py-2 bg-slate-100 rounded-full border border-slate-200 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-slate-500 transition-opacity ${activeStudent ? 'opacity-100 animate-pulse' : 'opacity-40'}`}>
+                 <ArrowRight className="h-3.5 w-3.5" />
+                 Drag student to a column to reassign
+              </div>
+            </div>
 
-          <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-${rosterFilter === 'all' ? '4' : '1'} gap-6`}>
-            {(rosterFilter === 'all' || rosterFilter === 'morning') && (
-              <RosterColumn 
-                title="Morning Batch" 
-                students={roster?.morning || []} 
-                colorClass="bg-orange-100 text-orange-700" 
-                type="morning"
-              />
-            )}
-            {(rosterFilter === 'all' || rosterFilter === 'afternoon') && (
-              <RosterColumn 
-                title="Afternoon Batch" 
-                students={roster?.afternoon || []} 
-                colorClass="bg-blue-100 text-blue-700" 
-                type="afternoon"
-              />
-            )}
-            {(rosterFilter === 'all' || rosterFilter === 'evening') && (
-              <RosterColumn 
-                title="Evening Batch" 
-                students={roster?.evening || []} 
-                colorClass="bg-violet-100 text-violet-700" 
-                type="evening"
-              />
-            )}
-            {(rosterFilter === 'all' || rosterFilter === 'unassigned') && (
-              <RosterColumn 
-                title="Unassigned" 
-                students={roster?.unassigned || []} 
-                colorClass="bg-slate-200 text-slate-600" 
-                type="unassigned"
-              />
-            )}
-          </div>
+            <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-${rosterFilter === 'all' ? '4' : '1'} gap-6`}>
+              {(rosterFilter === 'all' || rosterFilter === 'morning') && (
+                <DroppableRosterColumn 
+                  title="Morning Batch" 
+                  students={roster?.morning || []} 
+                  colorClass="bg-orange-100 text-orange-700" 
+                  type="morning"
+                  onRemove={handleRemoveStudent}
+                />
+              )}
+              {(rosterFilter === 'all' || rosterFilter === 'afternoon') && (
+                <DroppableRosterColumn 
+                  title="Afternoon Batch" 
+                  students={roster?.afternoon || []} 
+                  colorClass="bg-blue-100 text-blue-700" 
+                  type="afternoon"
+                  onRemove={handleRemoveStudent}
+                />
+              )}
+              {(rosterFilter === 'all' || rosterFilter === 'evening') && (
+                <DroppableRosterColumn 
+                  title="Evening Batch" 
+                  students={roster?.evening || []} 
+                  colorClass="bg-violet-100 text-violet-700" 
+                  type="evening"
+                  onRemove={handleRemoveStudent}
+                />
+              )}
+              {(rosterFilter === 'all' || rosterFilter === 'unassigned') && (
+                <DroppableRosterColumn 
+                  title="Unassigned" 
+                  students={roster?.unassigned || []} 
+                  colorClass="bg-slate-200 text-slate-600" 
+                  type="unassigned"
+                  onRemove={handleRemoveStudent}
+                />
+              )}
+            </div>
+
+            <DragOverlay>
+              {activeStudent ? (
+                <div className="bg-white p-4 rounded-2xl border-2 border-primary shadow-2xl opacity-90 scale-105 cursor-grabbing w-[300px]">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
+                      <AvatarImage src={activeStudent.avatar_url} />
+                      <AvatarFallback className="bg-slate-100 text-slate-400 font-bold text-xs">
+                        {activeStudent.full_name[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-black text-slate-800 truncate">{activeStudent.full_name}</p>
+                      <p className="text-[10px] font-medium text-slate-400 truncate">{activeStudent.email}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
         </div>
       )}
 

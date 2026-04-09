@@ -9,7 +9,7 @@ const CourseSchema = new Schema({
     slug: { type: String, unique: true },
     description: { type: String },
     thumbnail_url: { type: String },
-    instructor_id: { type: Schema.Types.ObjectId, ref: 'User' }, // Reference to User
+    instructor_ids: [{ type: Schema.Types.ObjectId, ref: 'User' }], // References to multiple Users
     category: { type: String },
     price: { type: Number, default: 0 },
     original_price: { type: Number },

@@ -59,11 +59,22 @@ const LeadSchema = new Schema({
 });
 LeadSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
 
+const AttendanceSchema = new Schema({
+    user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    timestamp: { type: Date, default: Date.now, index: true },
+    ip_address: { type: String },
+    day: { type: String }, // MON, TUE, etc.
+    time: { type: String }, // 14:30:00
+    date: { type: String }, // 2026-04-09
+});
+AttendanceSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
+
 module.exports = {
     SystemLog: mongoose.model('SystemLog', SystemLogSchema),
     SecurityEvent: mongoose.model('SecurityEvent', SecurityEventSchema),
     LeaderboardStat: mongoose.model('LeaderboardStat', LeaderboardStatSchema),
     Notification: mongoose.model('Notification', NotificationSchema),
     Coupon: mongoose.model('Coupon', CouponSchema),
-    Lead: mongoose.model('Lead', LeadSchema)
+    Lead: mongoose.model('Lead', LeadSchema),
+    Attendance: mongoose.model('Attendance', AttendanceSchema)
 };

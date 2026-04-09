@@ -52,10 +52,12 @@ import {
   Calendar,
   Activity,
   MoreVertical,
-  ArrowRight
+  ArrowRight,
+  CheckCircle2
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -65,6 +67,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { Profile } from "@/hooks/useAdminData";
+
+interface AttendanceRecord {
+  id: string;
+  user_id: string;
+  timestamp: string;
+  ip_address: string;
+  day: string;
+  time: string;
+  date: string;
+}
 
 interface UserManagementProps {
   users: Profile[];
@@ -110,6 +122,44 @@ export function UserManagement({
   }
   const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null);
   const [loadingPerformance, setLoadingPerformance] = useState(false);
+
+  // Attendance states
+  const [showAttendanceDialog, setShowAttendanceDialog] = useState(false);
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [loadingAttendance, setLoadingAttendance] = useState(false);
+
+  const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
+
+  const handleSendEmail = async (user: Profile) => {
+    setSendingEmailId(user.id);
+    try {
+      await fetchWithAuth(`/admin/send-student-email`, {
+        method: "POST",
+        body: JSON.stringify({ userId: user.id }),
+      });
+      toast.success(`Mail protocol triggered for ${user.full_name}`);
+    } catch (err) {
+      console.error("Failed to send email:", err);
+      toast.error("Mail sequence failed to initialize");
+    } finally {
+      setSendingEmailId(null);
+    }
+  };
+
+  const handleViewAttendance = async (user: Profile) => {
+    setSelectedUser(user);
+    setLoadingAttendance(true);
+    setShowAttendanceDialog(true);
+    try {
+      const data = await fetchWithAuth(`/admin/attendance/${user.id}`);
+      setAttendanceRecords(data as AttendanceRecord[]);
+    } catch (err) {
+      console.error("Failed to fetch attendance:", err);
+      setAttendanceRecords([]);
+    } finally {
+      setLoadingAttendance(false);
+    }
+  };
 
   useEffect(() => {
     if (showProfileDialog && selectedUser?.id) {
@@ -265,7 +315,11 @@ export function UserManagement({
               {filteredUsers.map((user, idx) => (
                 <div
                   key={user.id}
-                  className="group flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl border border-slate-200 bg-white hover:border-primary/30 hover:shadow-md transition-all relative overflow-hidden"
+                  className={`group flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl border transition-all relative overflow-hidden ${
+                    user.approval_status === 'rejected' 
+                      ? 'border-rose-200 bg-rose-50/30' 
+                      : 'border-slate-200 bg-white hover:border-primary/30 hover:shadow-md'
+                  }`}
                   style={{ animationDelay: `${idx * 40}ms` }}
                 >
                   <div className="flex items-center gap-4 w-full sm:w-auto overflow-hidden">
@@ -299,6 +353,12 @@ export function UserManagement({
                       <p className="text-[11px] text-muted-foreground truncate leading-none mb-2">{user.email}</p>
                       <div className="flex items-center gap-1.5 overflow-hidden opacity-100">
                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">{formatLastActive(user.last_active_at)}</span>
+                          {user.approval_status === 'rejected' && (
+                            <span className="text-[8px] font-black text-rose-600 uppercase px-1 bg-rose-100/50 rounded">Rejected</span>
+                          )}
+                          {user.approval_status === 'approved' && user.status !== 'suspended' && (
+                            <span className="text-[8px] font-black text-emerald-600 uppercase px-1 bg-emerald-50 rounded">Approved</span>
+                          )}
                          {user.status === 'suspended' && (
                            <span className="text-[8px] font-black text-rose-500 uppercase px-1 bg-rose-50 rounded">Suspended</span>
                          )}
@@ -332,6 +392,21 @@ export function UserManagement({
                           <DropdownMenuItem onClick={() => handleViewProfile(user)} className="rounded-xl font-bold text-[13px] py-2.5 cursor-pointer hover:bg-slate-50">
                             <Eye className="mr-3 h-4 w-4 text-primary" /> View Intelligence
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleViewAttendance(user)} className="rounded-xl font-bold text-[13px] py-2.5 cursor-pointer hover:bg-slate-50">
+                            <Fingerprint className="mr-3 h-4 w-4 text-blue-500" /> Attendance Records
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleSendEmail(user)} 
+                            disabled={sendingEmailId === user.id}
+                            className="rounded-xl font-bold text-[13px] py-2.5 cursor-pointer hover:bg-slate-50"
+                          >
+                            {sendingEmailId === user.id ? (
+                              <Loader2 className="mr-3 h-4 w-4 animate-spin text-primary" />
+                            ) : (
+                              <Mail className="mr-3 h-4 w-4 text-amber-500" />
+                            )}
+                            Mail Intelligence
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => {
                             setSelectedUser(user);
                             setNewRole(user.role || "student");
@@ -340,6 +415,11 @@ export function UserManagement({
                             <UserCog className="mr-3 h-4 w-4 text-emerald-500" /> Reassign Role
                           </DropdownMenuItem>
                           <DropdownMenuSeparator className="my-1.5 bg-slate-100" />
+                          {user.approval_status === 'rejected' && (
+                            <DropdownMenuItem onClick={() => onUpdateStatus(user.id, "approved")} className="rounded-xl font-bold text-[13px] py-2.5 text-emerald-600 bg-emerald-50 cursor-pointer mb-1">
+                              <CheckCircle className="mr-3 h-4 w-4" /> Approve Access
+                            </DropdownMenuItem>
+                          )}
                           {user.status === 'suspended' ? (
                             <DropdownMenuItem onClick={() => onUpdateStatus(user.id, "approved")} className="rounded-xl font-bold text-[13px] py-2.5 text-emerald-600 bg-emerald-50/50 cursor-pointer">
                               <Unlock className="mr-3 h-4 w-4" /> Restore Access
@@ -894,6 +974,86 @@ export function UserManagement({
                 {isProcessing ? "Processing..." : "Confirm Suspension"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Attendance History Dialog */}
+      <Dialog open={showAttendanceDialog} onOpenChange={setShowAttendanceDialog}>
+        <DialogContent className="w-[95vw] sm:max-w-lg p-0 border-0 rounded-[2rem] shadow-2xl bg-white overflow-hidden flex flex-col max-h-[90vh]">
+           <DialogHeader className="sr-only">
+             <DialogTitle>Attendance Log</DialogTitle>
+             <DialogDescription>Viewing attendance history and node verification status.</DialogDescription>
+           </DialogHeader>
+           <div className="bg-slate-900 px-6 py-5 text-white shrink-0">
+             <div className="flex items-center gap-3">
+               <div className="h-10 w-10 rounded-xl bg-blue-500/20 flex items-center justify-center border border-blue-500/20">
+                 <Fingerprint className="h-5 w-5 text-blue-400" />
+               </div>
+               <div>
+                 <h2 className="text-lg font-black leading-none">Attendance Log</h2>
+                 <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest font-bold">24H Node Monitoring</p>
+               </div>
+               <div className="ml-auto flex items-center gap-2">
+                 <Badge className="bg-emerald-500/10 text-emerald-400 border-none text-[9px] font-black">{attendanceRecords.length} Check-ins</Badge>
+               </div>
+             </div>
+           </div>
+
+           <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+             {loadingAttendance ? (
+               <div className="flex flex-col items-center justify-center py-20 gap-4">
+                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Querying Node History...</p>
+               </div>
+             ) : attendanceRecords.length === 0 ? (
+               <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
+                 <Activity className="h-12 w-12 mb-4" />
+                 <p className="text-sm font-bold text-slate-900 uppercase">No Activity Detected</p>
+                 <p className="text-[10px] font-medium text-slate-500 max-w-[200px] mt-1">This node has not initiated any attendance protocols yet.</p>
+               </div>
+             ) : (
+               <div className="space-y-2">
+                 {attendanceRecords.map((record, i) => (
+                   <div key={record.id || i} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100 group hover:border-blue-200 transition-all">
+                      <div className="flex items-center gap-4">
+                        <div className="h-10 w-10 rounded-xl bg-white flex flex-col items-center justify-center border border-slate-200 shadow-sm">
+                           <span className="text-[9px] font-black text-slate-400 uppercase leading-none mb-0.5">{record.day}</span>
+                           <span className="text-sm font-black text-slate-900 leading-none">{record.date.split('-').pop()}</span>
+                        </div>
+                        <div>
+                          <p className="text-[13px] font-bold text-slate-900">{record.date}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <Clock className="h-3 w-3 text-slate-400" />
+                            <span className="text-[10px] font-bold text-slate-500 uppercase">{record.time}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                         <Badge variant="outline" className="text-[9px] font-black border-slate-200 bg-white text-slate-500">
+                           {record.ip_address || '0.0.0.0'}
+                         </Badge>
+                         <div className="flex items-center gap-1 justify-end mt-1 text-emerald-500">
+                            <CheckCircle2 className="h-3 w-3" />
+                            <span className="text-[8px] font-black uppercase tracking-tighter">Verified</span>
+                         </div>
+                      </div>
+                   </div>
+                 ))}
+               </div>
+             )}
+           </div>
+
+           <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between shrink-0">
+              <p className="text-[9px] text-slate-400 font-medium">Automatic suspension triggers at 10+ missing days.</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowAttendanceDialog(false)}
+                className="h-9 px-6 rounded-xl font-bold text-[10px] uppercase border-slate-200 bg-white"
+              >
+                Close Logs
+              </Button>
+           </div>
         </DialogContent>
       </Dialog>
     </div>

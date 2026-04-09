@@ -42,7 +42,6 @@ const mainNavItems = [
   { title: "Users Management", url: "/admin/users", icon: Users },
   { title: "Instructor Access", url: "/admin/instructor-access", icon: ShieldCheck },
   { title: "All Courses", url: "/admin/all-courses", icon: GraduationCap },
-  { title: "Assign Courses", url: "/admin/assign-courses", icon: ClipboardList },
   { title: "Instructors", url: "/admin/instructors", icon: Award },
   { title: "Video Library", url: "/admin/videos", icon: Video },
   { title: "Question Bank", url: "/admin/questions", icon: FileQuestion },

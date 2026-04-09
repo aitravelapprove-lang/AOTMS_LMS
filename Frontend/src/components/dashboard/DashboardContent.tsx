@@ -44,6 +44,7 @@ import {
   Cpu,
   Activity,
   CheckCircle,
+  Fingerprint,
   CheckCircle2,
   Download,
   ArrowRight,
@@ -227,6 +228,10 @@ function CoursesTab() {
       {/* Payment Modal JSX */}
       <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
         <DialogContent className="w-[95vw] sm:max-w-xl p-0 overflow-hidden border-0 rounded-[1.5rem] sm:rounded-[2rem] shadow-2xl bg-white max-h-[90vh] flex flex-col">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Enrollment & Payment Protocol</DialogTitle>
+            <DialogDescription>Verify credentials and submit payment proof for course activation.</DialogDescription>
+          </DialogHeader>
           {/* Top Course Strip (Compact) */}
           {paymentCourse && (
             <div className="bg-slate-900 px-6 py-4 text-white flex items-center justify-between shrink-0">
@@ -710,6 +715,115 @@ const dummyActivityData = [
   { name: 'Sun', minutes: 150 },
 ];
 
+function AttendancePulse() {
+  const [loading, setLoading] = useState(false);
+  const [checkedIn, setCheckedIn] = useState(false);
+  const [checking, setChecking] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    // Check if already checked in today
+    const checkStatus = async () => {
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const res = await fetchWithAuth(`/attendance?date=${today}`) as unknown[];
+        if (res && res.length > 0) {
+          setCheckedIn(true);
+        }
+      } catch (e) {
+        console.error("Attendance check failed", e);
+      } finally {
+        setChecking(false);
+      }
+    };
+    checkStatus();
+  }, []);
+
+  const handleMark = async () => {
+    setLoading(true);
+    try {
+      const res = await fetchWithAuth('/student/mark-attendance', {
+        method: 'POST'
+      }) as { success: boolean, message: string, suspended?: boolean };
+
+      if (res.success) {
+        setCheckedIn(true);
+        toast({
+          title: "Attendance Marked! 👋",
+          description: res.message,
+          className: "bg-slate-900 text-white border-slate-800"
+        });
+        if (res.suspended) {
+          setTimeout(() => window.location.reload(), 3000);
+        }
+      }
+    } catch (err: unknown) {
+      toast({
+        title: "Already Recorded",
+        description: "Your attendance for today is already secured.",
+        variant: "default"
+      });
+      setCheckedIn(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (checking) return <Skeleton className="h-12 w-40 rounded-full" />;
+
+  return (
+    <div className="relative group">
+       <AnimatePresence mode="wait">
+         {checkedIn ? (
+           <motion.div 
+             key="checked"
+             initial={{ scale: 0.8, opacity: 0 }}
+             animate={{ scale: 1, opacity: 1 }}
+             className="h-12 px-6 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center gap-2 font-black text-[10px] uppercase tracking-tighter shadow-sm"
+           >
+             <CheckCircle2 className="h-4 w-4" />
+             Attendance Secured
+           </motion.div>
+         ) : (
+           <motion.button
+             key="mark"
+             whileHover={{ scale: 1.02 }}
+             whileTap={{ scale: 0.98 }}
+             onClick={handleMark}
+             disabled={loading}
+             className="relative h-12 px-8 rounded-full bg-slate-900 text-white font-black uppercase tracking-widest text-[11px] shadow-xl hover:shadow-primary/20 transition-all flex items-center gap-3 overflow-hidden"
+           >
+             {loading ? (
+               <Loader2 className="h-4 w-4 animate-spin" />
+             ) : (
+               <>
+                 <div className="relative h-5 w-5">
+                    <Fingerprint className="h-5 w-5 text-emerald-400 absolute inset-0" />
+                    <motion.div 
+                      animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+                      transition={{ repeat: Infinity, duration: 2 }}
+                      className="absolute inset-0 bg-emerald-400 rounded-full blur-md"
+                    />
+                 </div>
+                 Mark Attendance
+               </>
+             )}
+             
+             {/* Scanner Wave Animation */}
+             {!loading && (
+               <motion.div 
+                 className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-400/10 to-transparent w-full"
+                 animate={{ x: ['-200%', '200%'] }}
+                 transition={{ repeat: Infinity, duration: 3, ease: 'linear' }}
+               />
+             )}
+           </motion.button>
+         )}
+       </AnimatePresence>
+    </div>
+  );
+}
+
 function DashboardHome() {
   const { data: stats } = useStudentStats();
   const { data: enrolledCourses } = useEnrolledCourses();
@@ -741,9 +855,7 @@ function DashboardHome() {
           </p>
         </div>
         <div className="hidden md:flex gap-3">
-           <Button variant="outline" className="h-12 px-6 rounded-xl border-slate-200 text-slate-600 font-semibold shadow-sm hover:shadow-md transition-all" onClick={() => window.location.href='/student-dashboard/courses'}>
-              Browse Library
-           </Button>
+           <AttendancePulse />
         </div>
       </div>
 

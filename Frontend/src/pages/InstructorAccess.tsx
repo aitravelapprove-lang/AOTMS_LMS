@@ -152,18 +152,18 @@ export default function InstructorAccess() {
   };
 
   const handleDeleteCourse = async (courseId: string, title: string) => {
-    if (!confirm(`Are you sure you want to delete "${title}"? This will remove it from the database permanently.`)) return;
+    if (!confirm(`Are you sure you want to remove all instructor assignments from "${title}"? This will return the course to draft status but will NOT delete the course content.`)) return;
     
     setProcessing(true);
     try {
-      await fetchWithAuth(`/data/courses/${courseId}`, {
+      await fetchWithAuth(`/admin/clear-course-instructors/${courseId}`, {
         method: 'DELETE'
       });
-      toast.success(`Node purged: ${title}`);
+      toast.success(`Access removed: ${title}`);
       fetchCourses();
     } catch (err) {
-      console.error("Failed to delete:", err);
-      toast.error("Failed to delete course node");
+      console.error("Failed to unassign:", err);
+      toast.error("Failed to remove instructors");
     } finally {
       setProcessing(false);
     }
@@ -372,28 +372,54 @@ export default function InstructorAccess() {
                                             <BookOpen className="h-2.5 w-2.5 text-slate-300 shrink-0" />
                                             <span className="text-[9px] font-bold text-slate-400 truncate uppercase tracking-tighter">{course.title}</span>
                                         </div>
+                                        {course.created_at && (
+                                            <div className="px-2 py-0.5 bg-slate-50/50 rounded-md border border-slate-100/50 flex items-center gap-1">
+                                                <Clock className="h-2.5 w-2.5 text-slate-300 shrink-0" />
+                                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter whitespace-nowrap">
+                                                    {new Date(course.created_at).toLocaleDateString('en-GB')}
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
 
                             <div className="flex items-center gap-2 ml-4 shrink-0">
                                 {course.status === 'pending' ? (
-                                    <Button 
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleApprove(course.id, course.title);
-                                        }}
-                                        disabled={processing}
-                                        className="h-9 px-4 gap-2 bg-primary/5 text-primary hover:bg-primary hover:text-white border border-primary/10 rounded-xl transition-all font-bold text-xs group/btn"
-                                    >
-                                        <Plus className="h-3.5 w-3.5" />
-                                        <span>Access</span>
-                                        <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover/btn:translate-x-1" />
-                                    </Button>
+                                    <div className="flex items-center gap-1.5">
+                                        <Button 
+                                            size="sm"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleApprove(course.id, course.title);
+                                            }}
+                                            disabled={processing}
+                                            className="h-8 w-8 p-0 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg shadow-sm shadow-emerald-200 transition-all font-black text-xs"
+                                            title="Approve Access"
+                                        >
+                                            <Check className="h-4 w-4" />
+                                        </Button>
+                                        <Button 
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSelectedCourse(course);
+                                                setShowRejectDialog(true);
+                                            }}
+                                            disabled={processing}
+                                            className="h-8 w-8 p-0 bg-rose-50 hover:bg-rose-100 text-rose-500 border border-rose-100 rounded-lg transition-all"
+                                            title="Reject Proposal"
+                                        >
+                                            <XCircle className="h-4 w-4" />
+                                        </Button>
+                                    </div>
                                 ) : (
-                                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-400 border border-slate-100 rounded-xl font-bold text-[10px] opacity-80">
-                                        <Check className="h-3.5 w-3.5 text-emerald-500" />
-                                        <span>Verified</span>
+                                    <div className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-xl font-bold text-[10px] opacity-80 ${
+                                        course.status === 'rejected' ? 'bg-rose-50 text-rose-500 border-rose-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                    }`}>
+                                        {course.status === 'rejected' ? <XCircle className="h-3.5 w-3.5" /> : <Check className="h-3.5 w-3.5" />}
+                                        <span className="uppercase">{course.status === 'approved' ? 'Verified' : course.status}</span>
                                     </div>
                                 )}
                                 

@@ -67,7 +67,8 @@ interface Instructor {
 interface Course {
   id: string;
   title: string;
-  instructor_id: string | { _id: string; full_name?: string } | null;
+  instructor_ids?: string[];
+  instructors?: { id: string; full_name: string; avatar_url: string }[];
 }
 
 interface MockPaper {
@@ -159,12 +160,7 @@ export function InstructorManagement() {
     
     try {
       const assignedCourseIds = courses
-        .filter(c => {
-          const c_instructor_id = typeof c.instructor_id === 'object' && c.instructor_id !== null 
-            ? c.instructor_id._id 
-            : c.instructor_id;
-          return String(c_instructor_id) === String(instructor.user_id);
-        })
+        .filter(c => c.instructor_ids?.includes(instructor.user_id))
         .map(c => c.id);
       
       if (assignedCourseIds.length > 0) {
@@ -212,10 +208,11 @@ export function InstructorManagement() {
 
     setAssigning(true);
     try {
-      await fetchWithAuth(`/data/courses/${selectedCourseId}`, {
-        method: 'PUT',
+      await fetchWithAuth(`/admin/assign-course`, {
+        method: 'POST', // Use our new dedicated endpoint
         body: JSON.stringify({
-          instructor_id: selectedInstructor.user_id
+          courseId: selectedCourseId,
+          instructorId: selectedInstructor.user_id
         })
       });
 
@@ -285,15 +282,14 @@ export function InstructorManagement() {
   // Filter courses for the dropdown
   const filteredCoursesDropdown = courses.filter(course => {
     if (showAllCourses) return true;
-    // By default, only show courses that are NOT assigned
-    return !course.instructor_id;
+    // By default, only show courses where this instructor is NOT already assigned
+    return !course.instructor_ids?.includes(selectedInstructor?.user_id || "");
   });
 
   const availableCourses = filteredCoursesDropdown.sort((a, b) => {
-    // Sort unassigned first
-    if (!a.instructor_id && b.instructor_id) return -1;
-    if (a.instructor_id && !b.instructor_id) return 1;
-    return a.title.localeCompare(b.title);
+    const aCount = a.instructor_ids?.length || 0;
+    const bCount = b.instructor_ids?.length || 0;
+    return aCount - bCount || a.title.localeCompare(b.title);
   });
 
   if (loading) {
@@ -389,12 +385,9 @@ export function InstructorManagement() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {filteredInstructors.map((instructor) => {
-            const assignedCourses = courses.filter(c => {
-              const c_instructor_id = typeof c.instructor_id === 'object' && c.instructor_id !== null 
-                ? c.instructor_id._id 
-                : c.instructor_id;
-              return String(c_instructor_id) === String(instructor.user_id);
-            });
+            const assignedCourses = courses.filter(c => 
+              c.instructor_ids?.includes(instructor.user_id)
+            );
             const isSuspended = instructor.status === 'suspended';
             return (
               <div
@@ -671,10 +664,10 @@ export function InstructorManagement() {
           </DialogHeader>
 
           <div className="py-4 space-y-3 max-h-[400px] overflow-y-auto">
-             {courses.filter(c => c.instructor_id === selectedInstructor?.user_id).length === 0 ? (
+             {courses.filter(c => c.instructor_ids?.includes(selectedInstructor?.user_id || "")).length === 0 ? (
                  <p className="text-center text-muted-foreground py-8">No courses assigned.</p>
              ) : (
-                courses.filter(c => c.instructor_id === selectedInstructor?.user_id).map(course => (
+                courses.filter(c => c.instructor_ids?.includes(selectedInstructor?.user_id || "")).map(course => (
                     <div key={course.id} className="flex items-center justify-between p-3 rounded-lg border bg-slate-50/50">
                         <div className="flex items-center gap-3">
                             <div className="h-8 w-8 rounded bg-primary/10 flex items-center justify-center">
@@ -737,37 +730,38 @@ export function InstructorManagement() {
                       No courses available.
                     </div>
                   ) : (
-                    availableCourses.map((course) => {
-                      const isAssignedToThis = course.instructor_id === selectedInstructor?.user_id;
-                      const isUnassigned = !course.instructor_id;
+                        availableCourses.map((course) => {
+                          const isAssignedToThis = course.instructor_ids?.includes(selectedInstructor?.user_id || "");
+                          const count = course.instructor_ids?.length || 0;
                       
                       // Find current instructor name if assigned
                       let assignedToName = "";
-                      if (!isUnassigned && !isAssignedToThis) {
-                        const currentInstructor = instructors.find(i => i.user_id === course.instructor_id);
-                        assignedToName = currentInstructor?.full_name || "Unknown";
+                      if (count > 0 && !isAssignedToThis) {
+                        const firstInstructorId = course.instructor_ids?.[0];
+                        const currentInstructor = instructors.find(i => i.user_id === firstInstructorId);
+                        assignedToName = currentInstructor?.full_name || "Assigned";
                       }
 
-                      return (
-                        <SelectItem 
-                          key={course.id} 
-                          value={String(course.id)}
-                          disabled={isAssignedToThis}
-                        >
-                          <div className="flex items-center justify-between w-full gap-2 min-w-0">
-                            <span className="truncate max-w-[200px] font-medium">{course.title}</span>
-                            <div className="shrink-0 flex items-center">
-                              {isAssignedToThis && <Badge variant="secondary" className="text-[10px]">Current</Badge>}
-                              {!isUnassigned && !isAssignedToThis && (
-                                <Badge variant="outline" className="text-[10px] text-muted-foreground">
-                                  {assignedToName}
-                                </Badge>
-                              )}
-                              {isUnassigned && <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200 text-[10px]">Unassigned</Badge>}
-                            </div>
-                          </div>
-                        </SelectItem>
-                      );
+                          return (
+                            <SelectItem 
+                              key={course.id} 
+                              value={String(course.id)}
+                              disabled={isAssignedToThis}
+                            >
+                              <div className="flex items-center justify-between w-full gap-2 min-w-0">
+                                <span className="truncate max-w-[200px] font-medium">{course.title}</span>
+                                <div className="shrink-0 flex items-center gap-1">
+                                  {isAssignedToThis && <Badge variant="secondary" className="text-[10px]">Current</Badge>}
+                                  {count > 0 && !isAssignedToThis && (
+                                    <Badge variant="outline" className="text-[10px] text-muted-foreground">
+                                      {count} Instructor{count > 1 ? 's' : ''}
+                                    </Badge>
+                                  )}
+                                  {count === 0 && <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200 text-[10px]">Unassigned</Badge>}
+                                </div>
+                              </div>
+                            </SelectItem>
+                          );
                     })
                   )}
                 </SelectContent>

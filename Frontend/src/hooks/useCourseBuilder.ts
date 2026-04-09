@@ -31,15 +31,15 @@ export function useInstructorS3Courses(showAll?: boolean) {
         queryFn: async () => {
             if (!user?.id) return [];
             
-            // If showAll is requested, fetch all courses
+            // If showAll is requested, fetch all courses for the catalogue
             if (showAll) {
-                console.log(`[useInstructorS3Courses] Fetching all courses (Library View)`);
-                return await fetchWithAuth('/data/courses');
+                console.log(`[useInstructorS3Courses] Fetching all courses for Catalogue`);
+                return await fetchWithAuth('/instructor/courses?all=true');
             }
             
             // Otherwise, fetch courses assigned to this instructor/user
             console.log(`[useInstructorS3Courses] Fetching assigned courses for: ${user.id}`);
-            return await fetchWithAuth(`/data/courses?instructor_id=eq.${user.id}`);
+            return await fetchWithAuth('/instructor/courses');
         },
         enabled: !!user?.id,
         staleTime: 5 * 60 * 1000,

@@ -249,16 +249,11 @@
     border-radius: 999px;
   }
   .admin-scrollbar::-webkit-scrollbar-thumb {
-<<<<<<< HEAD
     background: #cbd5e1;
     border-radius: 999px;
   }
   .admin-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
-=======
-    @apply bg-white rounded-full hover:bg-slate-100 transition-colors shadow-sm border border-slate-200;
-    background-clip: padding-box;
->>>>>>> 4543e92e45664a32dcd676a0d2d8735d8402eab8
   }
 }
 
@@ -506,16 +501,11 @@
   border-radius: 999px;
 }
 .admin-scrollbar-horizontal::-webkit-scrollbar-thumb {
-<<<<<<< HEAD
   background: #cbd5e1;
   border-radius: 999px;
 }
 .admin-scrollbar-horizontal::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
-=======
-  @apply bg-white rounded-full hover:bg-slate-100 transition-colors shadow-sm border border-slate-200;
-  background-clip: padding-box;
->>>>>>> 4543e92e45664a32dcd676a0d2d8735d8402eab8
 }
 
 /* ── Safe area padding for notched devices ─────────────────────── */

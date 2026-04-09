@@ -68,7 +68,8 @@ export function useStudentExams() {
                         description: sched.description,
                         duration_minutes: sched.duration_minutes,
                         total_marks: sched.total_marks,
-                        is_completed: !!a.is_completed
+                        is_completed: !!a.is_completed,
+                        assigned_image: a.assigned_image
                     };
                 });
         },
@@ -93,7 +94,8 @@ export function useStudentMockPapers() {
                         description: mock.description,
                         duration_minutes: mock.duration_minutes,
                         total_marks: mock.total_marks,
-                        is_completed: !!a.is_completed
+                        is_completed: !!a.is_completed,
+                        assigned_image: a.assigned_image
                     };
                 });
         },
@@ -166,6 +168,7 @@ export interface AccessibleExam {
     exam_schedules?: Record<string, unknown>;
     mock_papers?: Record<string, unknown>;
     is_completed?: boolean;
+    assigned_image?: string;
 }
 
 export interface StudentExam {
@@ -175,6 +178,7 @@ export interface StudentExam {
     duration_minutes: number;
     total_marks: number;
     is_completed: boolean;
+    assigned_image?: string;
 }
 
 export interface LeaderboardEntry {

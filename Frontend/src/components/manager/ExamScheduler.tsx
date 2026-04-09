@@ -41,6 +41,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   useExams,
+  useQuestions,
   useCreateExam,
   useUpdateExam,
   useDeleteExam,
@@ -341,6 +342,8 @@ export function ExamScheduler({ onNavigateToRepository }: { onNavigateToReposito
   const { toast } = useToast();
   const { data: rawExams, isLoading } = useExams();
   const exams = useMemo(() => Array.isArray(rawExams) ? rawExams : [], [rawExams]);
+  const { data: rawQuestions } = useQuestions();
+  const questions = useMemo(() => Array.isArray(rawQuestions) ? rawQuestions : [], [rawQuestions]);
   const createExam = useCreateExam();
   const updateExam = useUpdateExam();
   const deleteExam = useDeleteExam();
@@ -484,11 +487,11 @@ export function ExamScheduler({ onNavigateToRepository }: { onNavigateToReposito
               Commence Scheduling
             </Button>
           </DialogTrigger>
-          <DialogContent className="w-full sm:max-w-[750px] p-0 overflow-hidden border-none shadow-[0_0_80px_rgba(0,0,0,0.15)] rounded-none sm:rounded-[2.5rem] bg-white flex flex-col max-h-screen sm:max-h-[85vh]">
+          <DialogContent className="w-full sm:max-w-[640px] p-0 overflow-hidden border-none shadow-[0_0_80px_rgba(0,0,0,0.15)] rounded-none sm:rounded-[2rem] bg-white flex flex-col max-h-[90vh]">
             <div className="flex flex-col h-full overflow-hidden">
                {/* Image-Style Stepper Header */}
-               <div className="px-8 pt-10 pb-6 border-b border-slate-50 shrink-0 bg-white">
-                  <div className="max-w-xl mx-auto flex items-center justify-between relative mb-8">
+                <div className="px-8 pt-8 pb-4 border-b border-slate-50 shrink-0 bg-white">
+                  <div className="max-w-md mx-auto flex items-center justify-between relative mb-6">
                      <div className="absolute top-1/2 left-0 w-full h-px bg-slate-100 -translate-y-1/2 z-0" />
                      {[
                        { n: "1", label: "Protocol Details" },
@@ -504,23 +507,20 @@ export function ExamScheduler({ onNavigateToRepository }: { onNavigateToReposito
                      ))}
                   </div>
                 </div>
-                <div className="h-12 w-12 rounded-full border border-slate-800 flex items-center justify-center text-slate-600">
-                  <Activity className="h-5 w-5" />
-                </div>
               </div>
 
               <div className="flex-1 flex flex-col min-h-0">
-                <DialogHeader className="p-10 relative space-y-2 bg-white border-b border-slate-50 shrink-0">
-                  <DialogTitle className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-4">
+                <DialogHeader className="p-6 sm:p-8 relative space-y-1 bg-white border-b border-slate-50 shrink-0">
+                  <DialogTitle className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
                     <span className="bg-gradient-to-r from-slate-900 to-primary bg-clip-text text-transparent">Initialize</span> 
                     <span className="text-[#FD5A1A] italic">Workspace</span>
                   </DialogTitle>
-                  <DialogDescription className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">
+                  <DialogDescription className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em]">
                     Master Assessment Configuration Framework
                   </DialogDescription>
                 </DialogHeader>
 
-                <div className="p-10 flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-white relative group/form-scroll" id="exam-form-scroll-container">
+                <div className="p-6 sm:p-8 flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-white relative group/form-scroll" id="exam-form-scroll-container">
                   {/* Floating Scroll Assistant */}
                   <div className="absolute right-6 top-1/2 -translate-y-1/2 z-[60] flex flex-col gap-3 pointer-events-none opacity-0 group-hover/form-scroll:opacity-100 transition-all duration-700 translate-x-4 group-hover/form-scroll:translate-x-0">
                     <Button
@@ -561,6 +561,188 @@ export function ExamScheduler({ onNavigateToRepository }: { onNavigateToReposito
                     >
                       <div className="space-y-14">
                         {/* Basic Configuration */}
+                        {/* Visual Identity Section */}
+                        <div className="pt-2 px-1">
+                          <FormLabel className="text-[10px] font-black uppercase tracking-widest text-[#FD5A1A] mb-4 block">
+                            Visual Identity Matrix
+                          </FormLabel>
+                          <div
+                            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                            onDrop={onDropPoster}
+                            className={cn(
+                              "relative group flex flex-col items-center justify-center border-4 border-dashed rounded-[2.5rem] transition-all duration-700 overflow-hidden min-h-[200px]",
+                              form.watch("assigned_image") 
+                                ? "border-emerald-500 bg-emerald-50/20" 
+                                : "border-slate-100 bg-slate-50/30 hover:bg-slate-50 hover:border-primary/20"
+                            )}
+                          >
+                            {form.watch("assigned_image") ? (
+                              <div className="absolute inset-0 group">
+                                <img
+                                  src={getImageSrc(form.watch("assigned_image")) || ""}
+                                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                                  alt="Identity Poster"
+                                />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center backdrop-blur-sm">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    onClick={() => form.setValue("assigned_image", "")}
+                                    className="rounded-2xl bg-white text-rose-500 font-black uppercase text-[10px] tracking-widest h-14 px-10 hover:bg-rose-50 border-none shadow-2xl"
+                                  >
+                                    Reset Identity
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex flex-col items-center gap-4 p-6 text-center">
+                                <div className="h-16 w-16 rounded-[1.5rem] bg-white shadow-2xl flex items-center justify-center text-slate-300 group-hover:text-primary group-hover:scale-110 transition-all duration-500 border border-slate-50">
+                                  <ImageIcon className="h-8 w-8" />
+                                </div>
+                                <div className="space-y-2">
+                                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest">
+                                    Drop Poster Artwork
+                                  </h4>
+                                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest max-w-xs leading-relaxed">
+                                    Drag external URL or upload local asset <br /> 
+                                    (16:9 Aspect Ratio recommended)
+                                  </p>
+                                </div>
+                                <input
+                                  type="file"
+                                  id="poster-upload"
+                                  className="hidden"
+                                  accept="image/*"
+                                  onChange={handleFileUpload}
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => document.getElementById("poster-upload")?.click()}
+                                  className="rounded-xl border-slate-200 font-bold uppercase text-[9px] tracking-widest h-10 px-8 hover:bg-white bg-white shadow-sm"
+                                >
+                                  Browse Directory
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Question Acquisition Strategy */}
+                        <div className="bg-slate-900 rounded-[2.5rem] p-8 sm:p-10 space-y-8 relative overflow-hidden group/strategy shadow-2xl">
+                          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[100px] rounded-full translate-x-1/2 -translate-y-1/2" />
+                          <div className="flex items-center gap-4 relative z-10">
+                            <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20">
+                              <BrainCircuit className="h-5 w-5 text-white" />
+                            </div>
+                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Logic Acquisition Strategy</h4>
+                          </div>
+
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10">
+                            <FormField
+                              control={form.control}
+                              name="exam_mode"
+                              render={({ field }) => (
+                                <FormItem className="space-y-4">
+                                  <FormLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400">Creation Mode</FormLabel>
+                                  <FormControl>
+                                    <RadioGroup
+                                      onValueChange={field.onChange}
+                                      defaultValue={field.value}
+                                      className="grid grid-cols-2 gap-4"
+                                    >
+                                      <FormItem>
+                                        <FormControl>
+                                          <RadioGroupItem value="automated" className="hidden" id="mode-auto" />
+                                        </FormControl>
+                                        <Label
+                                          htmlFor="mode-auto"
+                                          className={cn(
+                                            "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all cursor-pointer text-center gap-2",
+                                            field.value === "automated" ? "bg-white border-white text-slate-900 shadow-xl" : "bg-white/5 border-white/10 text-white/40 hover:bg-white/10"
+                                          )}
+                                        >
+                                          <Zap className={cn("h-5 w-5", field.value === "automated" ? "text-primary" : "text-white/20")} />
+                                          <span className="text-[10px] font-black uppercase tracking-widest">Automated</span>
+                                        </Label>
+                                      </FormItem>
+                                      <FormItem>
+                                        <FormControl>
+                                          <RadioGroupItem value="manual" className="hidden" id="mode-manual" />
+                                        </FormControl>
+                                        <Label
+                                          htmlFor="mode-manual"
+                                          className={cn(
+                                            "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all cursor-pointer text-center gap-2",
+                                            field.value === "manual" ? "bg-white border-white text-slate-900 shadow-xl" : "bg-white/5 border-white/10 text-white/40 hover:bg-white/10"
+                                          )}
+                                        >
+                                          <Plus className={cn("h-5 w-5", field.value === "manual" ? "text-primary" : "text-white/20")} />
+                                          <span className="text-[10px] font-black uppercase tracking-widest">Manual</span>
+                                        </Label>
+                                      </FormItem>
+                                    </RadioGroup>
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+
+                            {form.watch("exam_mode") === "automated" ? (
+                              <div className="space-y-6">
+                                <FormField
+                                  control={form.control}
+                                  name="source_topic"
+                                  render={({ field }) => (
+                                    <FormItem className="space-y-3">
+                                      <FormLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400">Target Repository Node</FormLabel>
+                                      <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl>
+                                          <SelectTrigger className="h-16 rounded-[1.5rem] bg-white/5 border-white/10 text-white font-bold focus:ring-0 focus:border-white/40 transition-all px-6">
+                                            <SelectValue placeholder="Select Repository Topic" />
+                                          </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent className="rounded-2xl border-white/10 bg-slate-900 text-white shadow-3xl">
+                                          {[...new Set(questions.map(q => q.topic))].map((t) => (
+                                            <SelectItem key={t} value={t} className="font-bold py-3 uppercase text-[10px] tracking-widest focus:bg-white/10 focus:text-white">
+                                              {t}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name="question_count"
+                                  render={({ field }) => (
+                                    <FormItem className="space-y-3">
+                                      <div className="flex justify-between items-center">
+                                        <FormLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Selection</FormLabel>
+                                        <span className="text-xs font-black text-white">{field.value} Questions</span>
+                                      </div>
+                                      <FormControl>
+                                        <Input
+                                          type="number"
+                                          className="h-16 rounded-[1.5rem] bg-white/5 border-white/10 text-white font-black px-6 focus:ring-0 focus:border-white/40 transition-all"
+                                          {...field}
+                                        />
+                                      </FormControl>
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+                            ) : (
+                              <div className="flex flex-col items-center justify-center p-10 border-2 border-dashed border-white/10 rounded-[2.5rem] text-center gap-4">
+                                <Plus className="h-8 w-8 text-white/20" />
+                                <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest max-w-[200px] leading-relaxed">
+                                  Manual Mode Activated. Protocol questions will be defined after initialization.
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                           <FormField
                             control={form.control}
@@ -732,7 +914,124 @@ export function ExamScheduler({ onNavigateToRepository }: { onNavigateToReposito
                           </div>
 
                           {/* Shuffling Protocol Section */}
-                          <div className="mt-14 pt-12 border-t border-slate-100">
+                          {/* Advanced Protocol Constraints */}
+                          <div className="mt-14 pt-12 border-t border-slate-100 space-y-12">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                              {/* Passing Percentage */}
+                              <FormField
+                                control={form.control}
+                                name="passing_percentage"
+                                render={({ field }) => (
+                                  <FormItem className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                      <FormLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                        Success Threshold (%)
+                                      </FormLabel>
+                                      <span className="text-xs font-black text-primary">{field.value}%</span>
+                                    </div>
+                                    <FormControl>
+                                      <div className="pt-2">
+                                        <input
+                                          type="range"
+                                          min="0"
+                                          max="100"
+                                          step="5"
+                                          value={field.value}
+                                          onChange={(e) => field.onChange(parseInt(e.target.value))}
+                                          className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-primary"
+                                        />
+                                      </div>
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+
+                              {/* Attempts */}
+                              <FormField
+                                control={form.control}
+                                name="max_attempts"
+                                render={({ field }) => (
+                                  <FormItem className="space-y-3">
+                                    <FormLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                      Iteration Limit
+                                    </FormLabel>
+                                    <FormControl>
+                                      <Input
+                                        type="number"
+                                        className="h-18 rounded-[2rem] border-2 border-slate-100 bg-white font-bold px-8 text-slate-900 focus:border-primary transition-all shadow-sm outline-none"
+                                        {...field}
+                                      />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                              {/* Browser Security */}
+                              <FormField
+                                control={form.control}
+                                name="browser_security"
+                                render={({ field }) => (
+                                  <div 
+                                    className={`p-8 rounded-[2rem] border-2 transition-all duration-500 cursor-pointer flex items-center justify-between group ${field.value ? 'bg-slate-900 border-slate-900 shadow-2xl shadow-slate-900/20' : 'bg-white border-slate-100 hover:border-slate-200'}`}
+                                    onClick={() => field.onChange(!field.value)}
+                                  >
+                                    <div className="flex items-center gap-6">
+                                      <div className={`h-12 w-12 rounded-xl flex items-center justify-center transition-all duration-500 ${field.value ? 'bg-white text-slate-900 scale-110' : 'bg-slate-100 text-slate-400'}`}>
+                                        <ShieldCheck className="h-6 w-6" />
+                                      </div>
+                                      <div className="space-y-0.5 text-left">
+                                        <h4 className={`text-[10px] font-black uppercase tracking-widest transition-colors ${field.value ? 'text-white' : 'text-slate-400'}`}>
+                                          Secure Node
+                                        </h4>
+                                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter line-clamp-1">
+                                          Lock Browser Focus
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <Switch
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                      className="data-[state=checked]:bg-white h-6 w-11 data-[state=checked]:[&>span]:bg-slate-900"
+                                    />
+                                  </div>
+                                )}
+                              />
+
+                              {/* Proctoring */}
+                              <FormField
+                                control={form.control}
+                                name="proctoring_enabled"
+                                render={({ field }) => (
+                                  <div 
+                                    className={`p-8 rounded-[2rem] border-2 transition-all duration-500 cursor-pointer flex items-center justify-between group ${field.value ? 'bg-emerald-600 border-emerald-600 shadow-2xl shadow-emerald-600/20' : 'bg-white border-slate-100 hover:border-slate-200'}`}
+                                    onClick={() => field.onChange(!field.value)}
+                                  >
+                                    <div className="flex items-center gap-6">
+                                      <div className={`h-12 w-12 rounded-xl flex items-center justify-center transition-all duration-500 ${field.value ? 'bg-white text-emerald-600 scale-110' : 'bg-slate-100 text-slate-400'}`}>
+                                        <Activity className="h-6 w-6" />
+                                      </div>
+                                      <div className="space-y-0.5 text-left">
+                                        <h4 className={`text-[10px] font-black uppercase tracking-widest transition-colors ${field.value ? 'text-white' : 'text-slate-400'}`}>
+                                          AI Proctoring
+                                        </h4>
+                                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter line-clamp-1">
+                                          Telemetry Monitoring
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <Switch
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                      className="data-[state=checked]:bg-white h-6 w-11 data-[state=checked]:[&>span]:bg-emerald-600"
+                                    />
+                                  </div>
+                                )}
+                              />
+                            </div>
+
+                            {/* Shuffling Protocol Section */}
                             <FormField
                               control={form.control}
                               name="shuffle_questions"

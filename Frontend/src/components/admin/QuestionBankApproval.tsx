@@ -114,7 +114,15 @@ interface Batch {
     end_time?: string;
 }
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 export function QuestionBankApproval() {
+    const getImageSrc = (path?: string | null) => {
+        if (!path) return null;
+        if (path.startsWith('http')) return path;
+        // In the student portal it uses /s3/public/
+        return `${API_URL}/s3/public/${path}`;
+    };
     const [pendingBanks, setPendingBanks] = useState<PendingQuestionBank[]>([]);
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState<string | null>(null);
@@ -454,39 +462,56 @@ export function QuestionBankApproval() {
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col gap-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="min-w-0">
-                        <h2 className="text-lg sm:text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-                            <LayoutGrid className="h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
-                            <span className="truncate">Question Bank Approvals</span>
-                        </h2>
-                        <p className="text-muted-foreground text-xs sm:text-sm font-medium mt-0.5 hidden sm:block">Review and activate curated question repositories.</p>
+        <div className="space-y-8 pb-12">
+            {/* Premium Banner Header */}
+            <div className="relative overflow-hidden rounded-[2.5rem] bg-slate-900 p-8 sm:p-12 mb-8 group shadow-2xl">
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/20 blur-[120px] rounded-full translate-x-1/2 -translate-y-1/2 group-hover:bg-primary/30 transition-all duration-1000" />
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/10 blur-[100px] rounded-full -translate-x-1/2 translate-y-1/2" />
+                
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
+                    <div className="space-y-4 max-w-2xl">
+                        <div className="flex items-center gap-3">
+                            <div className="h-12 w-12 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center shadow-2xl">
+                                <ShieldCheck className="h-6 w-6 text-white" />
+                            </div>
+                            <Badge className="bg-emerald-500/20 text-emerald-400 border-none px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest animate-pulse">
+                                Active Compliance Node
+                            </Badge>
+                        </div>
+                        
+                        <div className="space-y-2">
+                            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white italic">
+                                Question Bank <span className="text-primary not-italic">Approvals</span>
+                            </h2>
+                            <p className="text-slate-400 text-sm sm:text-lg font-medium max-w-lg leading-relaxed">
+                                Review and activate curated question repositories. Ensure logical integrity before releasing to the simulation environment.
+                            </p>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-4 pt-4">
+                            <Tabs value={viewTab} onValueChange={(v) => setViewTab(v as 'pending' | 'approve' | 'reject')} className="bg-white/5 p-1.5 rounded-2xl backdrop-blur-md border border-white/10">
+                                <TabsList className="bg-transparent border-none">
+                                    <TabsTrigger value="pending" className="h-10 rounded-xl text-xs px-6 data-[state=active]:bg-white data-[state=active]:text-slate-900 transition-all font-black uppercase tracking-widest">Pending</TabsTrigger>
+                                    <TabsTrigger value="approve" className="h-10 rounded-xl text-xs px-6 data-[state=active]:bg-white data-[state=active]:text-slate-900 transition-all font-black uppercase tracking-widest">Active</TabsTrigger>
+                                    <TabsTrigger value="reject" className="h-10 rounded-xl text-xs px-6 data-[state=active]:bg-white data-[state=active]:text-slate-900 transition-all font-black uppercase tracking-widest">Archive</TabsTrigger>
+                                </TabsList>
+                            </Tabs>
+                            <div className="h-12 flex items-center px-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+                                <p className="text-[10px] font-black text-white uppercase tracking-widest leading-none">
+                                    <span className="text-primary text-lg mr-2 italic">{pendingBanks.length}</span> Requests Pipeline
+                                </p>
+                            </div>
+                        </div>
                     </div>
+
                     <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-9 sm:h-11 px-3 sm:px-4 rounded-xl border-slate-100 bg-white shadow-sm text-[10px] font-black uppercase tracking-widest text-slate-700 gap-2 hover:bg-slate-50 transition-all active:scale-95 self-start sm:self-auto flex-shrink-0"
                         onClick={() => fetchPendingBanks(true)}
                         disabled={loading}
+                        className="h-16 px-10 rounded-[2rem] bg-white text-slate-900 font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl hover:bg-slate-50 transition-all active:scale-95 group/sync shrink-0"
                     >
-                        <RefreshCw className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", loading && "animate-spin text-primary")} />
-                        <span className="hidden sm:inline">Manual Audit Sync</span>
-                        <span className="sm:hidden">Sync</span>
+                        <RefreshCw className={cn("h-4 w-4 mr-3 transition-transform duration-1000 group-hover:rotate-180", loading && "animate-spin text-primary")} />
+                        Manual Audit Sync
                     </Button>
-                </div>
-                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                    <Tabs value={viewTab} onValueChange={(v) => setViewTab(v as 'pending' | 'approve' | 'reject')} className="bg-slate-100 p-1 rounded-xl">
-                        <TabsList className="bg-transparent border-none">
-                            <TabsTrigger value="pending" className="rounded-lg text-xs sm:text-sm px-2.5 sm:px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm">Pending</TabsTrigger>
-                            <TabsTrigger value="approve" className="rounded-lg text-xs sm:text-sm px-2.5 sm:px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm">Approve</TabsTrigger>
-                            <TabsTrigger value="reject" className="rounded-lg text-xs sm:text-sm px-2.5 sm:px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm">Reject</TabsTrigger>
-                        </TabsList>
-                    </Tabs>
-                    <Badge variant="secondary" className="h-6 sm:h-7 px-2.5 sm:px-3 bg-primary/10 text-primary border-none font-bold text-[10px] sm:text-xs">
-                        {pendingBanks.length} Requests
-                    </Badge>
                 </div>
             </div>
 
@@ -511,8 +536,8 @@ export function QuestionBankApproval() {
                                     <CardContent className="p-0">
                                         <div className="flex flex-col lg:flex-row items-stretch group/card">
                                             <div className="relative bg-slate-900 min-w-0 lg:min-w-[320px] h-[180px] lg:h-[220px] border-b lg:border-b-0 lg:border-r border-slate-100 overflow-hidden group/poster">
-                                                {bank.assigned_image ? (
-                                                    <img src={bank.assigned_image} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover/poster:scale-110" />
+                                                {getImageSrc(bank.assigned_image) ? (
+                                                    <img src={getImageSrc(bank.assigned_image)!} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover/poster:scale-110" />
                                                 ) : (
                                                     <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4">
                                                         <div className="h-16 w-16 rounded-[1.5rem] bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center shadow-2xl">
@@ -687,7 +712,7 @@ export function QuestionBankApproval() {
                                                 <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-xs font-semibold text-slate-500 mt-4">
                                                     <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
                                                         <Clock className="h-3.5 w-3.5 text-emerald-600" />
-                                                        <span>{bank.duration || 0}m</span>
+                                                        <span>{bank.duration || 60}m</span>
                                                     </div>
                                                     <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
                                                         <Award className="h-3.5 w-3.5 text-emerald-600" />
@@ -696,6 +721,10 @@ export function QuestionBankApproval() {
                                                     <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
                                                         <History className="h-3.5 w-3.5 text-emerald-600" />
                                                         <span>{bank.retakes || 1} Retakes</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 bg-emerald-50/50 px-3 py-2 rounded-xl border border-emerald-100">
+                                                        <RefreshCw className={cn("h-3.5 w-3.5 text-emerald-600", bank.shuffle && "animate-spin-slow")} />
+                                                        <span>Shuffle: {bank.shuffle ? 'ON' : 'OFF'}</span>
                                                     </div>
                                                 </div>
 
@@ -721,10 +750,18 @@ export function QuestionBankApproval() {
                                                 </div>
                                             </div>
 
-                                            <div className="p-4 sm:p-6 lg:bg-slate-50/50 flex flex-row lg:flex-col justify-center gap-2 sm:gap-3 border-t lg:border-t-0 lg:border-l border-slate-100 min-w-0 lg:min-w-[200px]">
+                                            <div className="p-4 sm:p-6 lg:bg-slate-50/50 flex flex-col justify-center gap-2 sm:gap-3 border-t lg:border-t-0 lg:border-l border-slate-100 min-w-0 lg:min-w-[200px]">
+                                                <Button
+                                                    onClick={() => handlePreviewQuestions(bank.topic)}
+                                                    variant="outline"
+                                                    className="w-full h-10 rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50 font-bold"
+                                                >
+                                                    <Eye className="h-4 w-4 mr-2" />
+                                                    View Test
+                                                </Button>
                                                 <Button
                                                     onClick={() => handleGrantAccessClick(bank.topic)}
-                                                    className="w-full h-11 rounded-xl pro-button-primary shadow-lg shadow-primary/20 font-bold"
+                                                    className="w-full h-10 rounded-xl pro-button-primary shadow-lg shadow-primary/20 font-bold"
                                                 >
                                                     <Users className="h-4 w-4 mr-2" />
                                                     + Access
@@ -733,7 +770,7 @@ export function QuestionBankApproval() {
                                                     variant="outline"
                                                     onClick={() => handleRemoveClick(bank.topic)}
                                                     disabled={!!processing}
-                                                    className="w-full h-11 rounded-xl border-slate-200 text-red-600 hover:bg-red-50 hover:border-red-100 transition-all font-bold"
+                                                    className="w-full h-10 rounded-xl border-slate-200 text-red-600 hover:bg-red-50 hover:border-red-100 transition-all font-bold"
                                                 >
                                                     {processing === bank.topic ? (
                                                         <Loader2 className="h-4 w-4 animate-spin mr-2" />

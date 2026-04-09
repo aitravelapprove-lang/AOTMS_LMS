@@ -726,7 +726,7 @@ function AttendancePulse() {
     const checkStatus = async () => {
       try {
         const today = new Date().toISOString().split('T')[0];
-        const res = await fetchWithAuth(`/attendance?date=${today}`) as unknown[];
+        const res = await fetchWithAuth(`/data/attendance?date=${today}`) as unknown[];
         if (res && res.length > 0) {
           setCheckedIn(true);
         }

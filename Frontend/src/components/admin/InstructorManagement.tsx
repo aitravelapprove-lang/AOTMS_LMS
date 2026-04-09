@@ -523,123 +523,199 @@ export function InstructorManagement() {
 
       {/* Profile Modal */}
       <Dialog open={profileModalOpen} onOpenChange={setProfileModalOpen}>
-        <DialogContent className="max-w-md bg-white/95 backdrop-blur-xl border-slate-200/60 shadow-2xl rounded-2xl">
-          <DialogHeader className="pb-4 border-b">
-            <DialogTitle className="flex items-center gap-3 text-xl font-bold text-slate-900">
-              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Award className="h-5 w-5 text-primary" />
-              </div>
-              Instructor Profile
-            </DialogTitle>
-            <DialogDescription className="sr-only">Detailed profile information for the selected instructor.</DialogDescription>
+        <DialogContent className="max-w-2xl bg-white/95 backdrop-blur-xl border-slate-200/60 shadow-2xl rounded-[2.5rem] p-0 overflow-hidden border-none pro-modal">
+          <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-primary/20 via-primary/5 to-transparent pointer-events-none" />
+          
+          <DialogHeader className="p-8 pb-0 relative z-10">
+            <div className="flex items-center justify-between">
+                <DialogTitle className="flex items-center gap-3 text-2xl font-black text-slate-900 tracking-tight">
+                    <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20 shadow-inner group">
+                        <Award className="h-6 w-6 text-primary group-hover:rotate-12 transition-transform" />
+                    </div>
+                    Instructor Node <span className="text-primary italic">Profile</span>
+                </DialogTitle>
+                <Badge className="bg-emerald-500/10 text-emerald-600 border-none px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest">
+                    Verified Faculty
+                </Badge>
+            </div>
+            <DialogDescription className="text-slate-500 font-medium text-sm mt-1">Management matrix for assigned courses and student bandwidth.</DialogDescription>
           </DialogHeader>
           
           {selectedInstructor && (
-            <>
-            <div className="space-y-6 pt-6">
-              <div className="flex flex-col sm:flex-row items-center gap-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-                <Avatar className="h-20 w-20 rounded-2xl border-4 border-white shadow-lg shrink-0">
-                    <AvatarImage src={selectedInstructor.avatar_url} className="object-cover" />
-                    <AvatarFallback className="text-3xl font-bold text-primary bg-primary/10">
-                        {selectedInstructor.full_name?.[0]?.toUpperCase()}
-                    </AvatarFallback>
-                </Avatar>
-                <div className="text-center sm:text-left">
-                  <h3 className="text-xl font-bold text-slate-900">{selectedInstructor.full_name}</h3>
-                  <div className="flex items-center gap-2 mt-1 justify-center sm:justify-start">
-                    <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
-                      Primary Instructor
+            <div className="p-8 space-y-8 relative z-10 max-h-[85vh] overflow-y-auto custom-scrollbar">
+              <div className="flex flex-col sm:flex-row items-center gap-6 bg-white/40 backdrop-blur-md p-6 rounded-[2rem] border border-white shadow-xl shadow-slate-200/50">
+                <div className="relative">
+                    <Avatar className="h-24 w-24 rounded-3xl border-4 border-white shadow-2xl shrink-0 overflow-hidden">
+                        <AvatarImage src={selectedInstructor.avatar_url} className="object-cover" />
+                        <AvatarFallback className="text-4xl font-black text-primary bg-primary/10">
+                            {selectedInstructor.full_name?.[0]?.toUpperCase()}
+                        </AvatarFallback>
+                    </Avatar>
+                    <div className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full bg-emerald-500 border-4 border-white flex items-center justify-center shadow-lg">
+                        <Shield className="h-4 w-4 text-white" />
+                    </div>
+                </div>
+                <div className="text-center sm:text-left space-y-2">
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tighter">{selectedInstructor.full_name}</h3>
+                  <div className="flex flex-wrap items-center gap-2 mt-1 justify-center sm:justify-start">
+                    <Badge className="bg-slate-900 text-white border-none py-1 px-3 rounded-lg text-[10px] font-black uppercase tracking-widest">
+                      {selectedInstructor.role || 'Instructor'}
                     </Badge>
-                    <Badge variant={selectedInstructor.status === 'suspended' ? 'destructive' : 'secondary'} className="capitalize">
+                    <Badge variant={selectedInstructor.status === 'suspended' ? 'destructive' : 'secondary'} className="rounded-lg py-1 px-3 text-[10px] uppercase font-black tracking-widest">
                       {selectedInstructor.status || 'Active'}
                     </Badge>
                   </div>
                 </div>
               </div>
 
-              <div className="grid gap-3">
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Email Address</p>
-                  <p className="text-sm font-medium text-slate-900">{selectedInstructor.email}</p>
-                </div>
-                
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Mobile Number</p>
-                  <p className="text-sm font-medium text-slate-900">{selectedInstructor.mobile_number || selectedInstructor.phone || 'N/A'}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[
+                  { label: 'Network Alias', value: selectedInstructor.email, icon: Mail },
+                  { label: 'Secure Link', value: selectedInstructor.mobile_number || selectedInstructor.phone || 'Disconnected', icon: Phone },
+                  { label: 'Access Level', value: selectedInstructor.role === 'admin' ? 'Root Administrator' : 'Curriculum Master', icon: Shield },
+                  { label: 'Active Since', value: selectedInstructor.created_at ? new Date(selectedInstructor.created_at).toLocaleDateString(undefined, { month: 'long', year: 'numeric' }) : 'Unknown', icon: Users }
+                ].map((item, idx) => (
+                  <div key={idx} className="p-4 rounded-2xl bg-slate-50/50 border border-slate-100 space-y-1.5 transition-all hover:border-primary/20 hover:bg-white group">
+                    <div className="flex items-center justify-between">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.label}</p>
+                        <item.icon className="h-3 w-3 text-slate-300 group-hover:text-primary transition-colors" />
+                    </div>
+                    <p className="text-sm font-bold text-slate-700 truncate">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+
+                {/* New Feature: Batch & Student Lists */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between px-2">
+                        <h4 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em] flex items-center gap-2">
+                             <Users className="h-4 w-4 text-primary" />
+                             Assigned Roster
+                        </h4>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black text-slate-400 uppercase">Live Index</span>
+                            <Badge className="bg-primary/10 text-primary border-none text-xs font-black rounded-lg">
+                                {instructorBatches.reduce((acc, b) => acc + (b.studentCount || 0), 0)}
+                            </Badge>
+                        </div>
+                    </div>
+
+                    {loadingMockData ? (
+                        <div className="space-y-3">
+                            {[1, 2].map(i => <Skeleton key={i} className="h-28 w-full rounded-[1.5rem]" />)}
+                        </div>
+                    ) : instructorBatches.length === 0 ? (
+                        <div className="p-12 text-center bg-slate-50/50 rounded-[2rem] border-2 border-dashed border-slate-200 group hover:border-primary/20 transition-all duration-500">
+                            <div className="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                                <Users className="h-8 w-8 text-slate-300" />
+                            </div>
+                            <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Student pool is currently empty</p>
+                            <p className="text-[10px] text-slate-300 font-bold mt-2">ASSIGN COURSES TO INITIALIZE BATCH NODES</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4 pr-1">
+                            {instructorBatches.map(batch => (
+                                <div key={batch.id} className="space-y-4 bg-slate-50/30 p-5 rounded-[1.5rem] border border-slate-100 hover:border-primary/10 transition-all shadow-sm">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-10 w-10 rounded-xl bg-white shadow-sm flex items-center justify-center">
+                                                <BookOpen className="h-5 w-5 text-slate-400" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-black text-slate-900 uppercase tracking-tight leading-none">{batch.batch_name}</p>
+                                                <div className="flex items-center gap-2 mt-1.5">
+                                                    <Badge variant="outline" className="text-[9px] font-black h-4 px-1.5 tracking-tighter uppercase text-slate-500 border-slate-200">
+                                                        {batch.batch_type} Session
+                                                    </Badge>
+                                                    <span className="text-[9px] font-bold text-slate-300">•</span>
+                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Active Cluster</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xl font-black text-slate-900 leading-none">{batch.studentCount || 0}</p>
+                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Personnel</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-2.5 pt-2">
+                                        {batchStudents[batch.id]?.length > 0 ? (
+                                            batchStudents[batch.id].map(student => (
+                                                <div 
+                                                    key={student.user_id} 
+                                                    className="flex items-center gap-3 p-1.5 pr-4 rounded-full bg-white border border-slate-100 shadow-sm hover:border-primary/30 hover:shadow-md transition-all group/student cursor-default"
+                                                >
+                                                    <Avatar className="h-7 w-7 rounded-full border border-slate-50 group-hover/student:scale-110 transition-transform">
+                                                        <AvatarImage src={student.avatar_url} />
+                                                        <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-black italic">
+                                                            {student.full_name?.charAt(0)}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div>
+                                                        <p className="text-[11px] font-black text-slate-900 tracking-tight leading-none">{student.full_name}</p>
+                                                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">Scholar Entity</p>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="w-full py-4 text-center border border-dashed border-slate-200 rounded-xl">
+                                                 <p className="text-[10px] text-slate-300 font-black uppercase tracking-widest">No candidates assigned</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Account Type</p>
-                  <p className="text-sm font-medium text-slate-900 capitalize">{selectedInstructor.role}</p>
-                </div>
-
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Status</p>
-                  <Badge 
-                    variant={selectedInstructor.status === 'suspended' ? 'destructive' : 'default'}
-                    className="capitalize"
-                  >
-                    {selectedInstructor.status || 'active'}
-                  </Badge>
-                </div>
-
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Member Since</p>
-                  <p className="text-sm font-medium text-slate-900">
-                    {selectedInstructor.created_at ? new Date(selectedInstructor.created_at).toLocaleDateString() : 'N/A'}
-                  </p>
-                </div>
-
+              <div className="pt-6 border-t flex gap-3">
+                <Button variant="ghost" className="rounded-2xl flex-1 font-black uppercase tracking-widest text-[10px] h-12" onClick={() => setProfileModalOpen(false)}>
+                    Terminate Session
+                </Button>
+                {selectedInstructor.status === 'suspended' ? (
+                    <Button 
+                    className="rounded-2xl flex-1 bg-emerald-600 hover:bg-emerald-700 shadow-xl shadow-emerald-200 font-black uppercase tracking-widest text-[10px] h-12" 
+                    onClick={async () => {
+                        try {
+                        await fetchWithAuth('/admin/update-user-status', {
+                            method: 'PUT',
+                            body: JSON.stringify({ userId: selectedInstructor.user_id, status: 'approved' })
+                        });
+                        toast.success('Access binary restored');
+                        setProfileModalOpen(false);
+                        loadData();
+                        } catch (err) {
+                        toast.error('Sync failure');
+                        }
+                    }}
+                    >
+                    Restore Node Access
+                    </Button>
+                ) : (
+                    <Button 
+                    variant="destructive"
+                    className="rounded-2xl flex-1 shadow-xl shadow-rose-100 font-black uppercase tracking-widest text-[10px] h-12" 
+                    onClick={async () => {
+                        if (!confirm(`Force suspend ${selectedInstructor.full_name}?`)) return;
+                        try {
+                        await fetchWithAuth('/admin/update-user-status', {
+                            method: 'PUT',
+                            body: JSON.stringify({ userId: selectedInstructor.user_id, status: 'suspended', suspensionDays: '30' })
+                        });
+                        toast.success('Instructor node offline');
+                        setProfileModalOpen(false);
+                        loadData();
+                        } catch (err) {
+                        toast.error('Protocol failed');
+                        }
+                    }}
+                    >
+                    Suspend Protocol
+                    </Button>
+                )}
               </div>
             </div>
-
-            <DialogFooter className="pt-6 border-t flex gap-2">
-              <Button variant="outline" className="rounded-xl flex-1" onClick={() => setProfileModalOpen(false)}>
-                Close
-              </Button>
-              {selectedInstructor.status === 'suspended' ? (
-                <Button 
-                  className="rounded-xl flex-1 bg-emerald-600 hover:bg-emerald-700" 
-                  onClick={async () => {
-                    try {
-                      await fetchWithAuth('/admin/update-user-status', {
-                        method: 'PUT',
-                        body: JSON.stringify({ userId: selectedInstructor.user_id, status: 'approved' })
-                      });
-                      toast.success('Access restored');
-                      setProfileModalOpen(false);
-                      loadData();
-                    } catch (err) {
-                      toast.error('Failed to restore');
-                    }
-                  }}
-                >
-                  Restore Access
-                </Button>
-              ) : (
-                <Button 
-                  variant="destructive"
-                  className="rounded-xl flex-1" 
-                  onClick={async () => {
-                    if (!confirm(`Suspend ${selectedInstructor.full_name}?`)) return;
-                    try {
-                      await fetchWithAuth('/admin/update-user-status', {
-                        method: 'PUT',
-                        body: JSON.stringify({ userId: selectedInstructor.user_id, status: 'suspended', suspensionDays: '30' })
-                      });
-                      toast.success('Instructor suspended');
-                      setProfileModalOpen(false);
-                      loadData();
-                    } catch (err) {
-                      toast.error('Failed to suspend');
-                    }
-                  }}
-                >
-                  Suspend Access
-                </Button>
-              )}
-            </DialogFooter>
-            </>
           )}
         </DialogContent>
       </Dialog>

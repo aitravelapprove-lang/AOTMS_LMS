@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -118,7 +121,11 @@ export function ExamModule({ type }: ExamModuleProps) {
                 >
                    <div className="aspect-video relative overflow-hidden bg-slate-50">
                       {item.assigned_image ? (
-                        <img src={item.assigned_image} className="h-full w-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-700" alt="" />
+                        <img 
+                          src={item.assigned_image.startsWith('http') ? item.assigned_image : `${API_URL}/s3/public/${item.assigned_image}`} 
+                          className="h-full w-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-700" 
+                          alt="" 
+                        />
                       ) : (
                         <div className="h-full w-full flex items-center justify-center bg-slate-100">
                            <FileText className="h-10 w-10 text-slate-200" />

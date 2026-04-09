@@ -2842,6 +2842,17 @@ app.post('/api/upload/live-posters', authenticateToken, upload.single('file'), a
     }
 });
 
+app.get(/\/api\/s3\/public\/(.*)/, async (req, res) => {
+    try {
+        const key = req.params[0];
+        const url = await generateViewUrl(key);
+        // Redirect to S3 signed URL
+        res.redirect(url);
+    } catch (err) {
+        res.status(404).json({ error: 'File not found' });
+    }
+});
+
 app.post('/api/courses/enroll', authenticateToken, async (req, res) => {
     const { course_id, courseId, payment_proof_url, utr_number, coupon_code, payment_term = 'full' } = req.body;
     const finalCourseId = course_id || courseId;
@@ -3409,9 +3420,13 @@ app.get('/api/student/accessible-exams', authenticateToken, async (req, res) => 
         const completedQBTopics = new Set(examResults.map(r => r.test_title).filter(Boolean));
 
         const checkCompleted = (type, id) => {
-            if (type === 'qb') return completedQBTopics.has(id);
-            if (type === 'exam') return completedExamIds.has(id?.toString());
-            if (type === 'mock') return completedMockIds.has(id?.toString());
+            if (!id) return false;
+            const normalizedId = id.toString().trim().toLowerCase();
+            if (type === 'qb') {
+                return Array.from(completedQBTopics).some(t => t.toLowerCase().trim() === normalizedId);
+            }
+            if (type === 'exam') return completedExamIds.has(normalizedId);
+            if (type === 'mock') return completedMockIds.has(normalizedId);
             return false;
         };
 
@@ -3428,38 +3443,54 @@ app.get('/api/student/accessible-exams', authenticateToken, async (req, res) => 
             .map(a => a.question_bank_topic);
 
         // 5. Build the list of Question Banks (qbs)
+        const normalizedTopics = explicitQBTopics.map(t => t.trim());
         const qbs = await QuestionBank.find({
             $or: [
                 { course_id: { $in: enrolledCourseIds }, approval_status: 'approved' },
+                { topic: { $in: normalizedTopics }, approval_status: 'approved' },
                 { topic: { $in: explicitQBTopics }, approval_status: 'approved' }
             ]
         }).lean();
+        console.log(`[ACL] Found ${qbs.length} matching Question Banks.`);
+
+        // 5.5. Find matching exam images and metadata for these topics to show as posters
+        const qbTopics = [...new Set(qbs.map(qb => qb.topic))];
+        const matchingExams = await Exam.find({ title: { $in: qbTopics } }).lean();
+        const qbExamMap = {};
+        matchingExams.forEach(e => { qbExamMap[e.title] = e; });
 
         // 6. Map Question Banks into the "topicMap" for frontend mock test interface
         const topicMap = new Map();
         qbs.forEach(qb => {
-            if (!topicMap.has(qb.topic)) {
-                // Find if there's an explicit grant for this topic to use its granted_at date
-                const explicitGrant = explicitAccess.find(a => a.question_bank_topic === qb.topic);
+            const topicKey = qb.topic.trim();
+            if (!topicMap.has(topicKey)) {
+                // Find if there's an explicit grant for this topic
+                const explicitGrant = explicitAccess.find(a => 
+                    a.question_bank_topic && a.question_bank_topic.trim().toLowerCase() === topicKey.toLowerCase()
+                );
+                const matchingExam = qbExamMap[qb.topic] || qbExamMap[topicKey];
                 
-                topicMap.set(qb.topic, {
-                    id: `qb_${qb.topic}`,
+                topicMap.set(topicKey, {
+                    id: `qb_${topicKey}`,
                     access_type: 'mock', 
                     granted_at: explicitGrant ? explicitGrant.granted_at : (qb.updated_at || qb.created_at),
-                    mock_paper_id: `qb_${qb.topic}`, // Topic becomes the ID
-                    is_completed: checkCompleted('qb', qb.topic),
+                    mock_paper_id: `qb_${topicKey}`, 
+                    is_completed: checkCompleted('qb', topicKey),
+                    assigned_image: matchingExam?.assigned_image || null,
                     mock_papers: {
-                        title: `${qb.topic} Practice Set${explicitGrant ? ' (Unlocked)' : ''}`,
-                        description: `Topic-wise questions for ${qb.topic}`,
-                        duration_minutes: 60,
-                        total_marks: 0, 
+                        title: `${topicKey} Practice Set${explicitGrant ? ' (Unlocked)' : ''}`,
+                        description: matchingExam?.description || `Topic-wise questions for ${topicKey}`,
+                        duration_minutes: matchingExam?.duration_minutes || 60,
+                        total_marks: matchingExam?.total_marks || 0, 
                         question_count: 0
                     }
                 });
             }
-            const item = topicMap.get(qb.topic);
+            const item = topicMap.get(topicKey);
             item.mock_papers.question_count++;
-            item.mock_papers.total_marks++; 
+            if (!item.mock_papers.total_marks) {
+                  item.mock_papers.total_marks = (qbExamMap[qb.topic] || qbExamMap[topicKey])?.total_marks || 0;
+            }
         });
 
         // 7. Map Course-based Exams into consistent format
@@ -3472,6 +3503,7 @@ app.get('/api/student/accessible-exams', authenticateToken, async (req, res) => 
                 exam_id: isMock ? null : exam._id,
                 mock_paper_id: isMock ? exam._id : null,
                 is_completed: isMock ? checkCompleted('mock', exam._id) : checkCompleted('exam', exam._id),
+                assigned_image: exam.assigned_image || null,
                 exam_schedules: isMock ? null : {
                     title: exam.title,
                     description: exam.description || '',
@@ -3501,6 +3533,7 @@ app.get('/api/student/accessible-exams', authenticateToken, async (req, res) => 
                 is_completed: access.access_type === 'mock' 
                     ? checkCompleted('mock', access.mock_paper_id?._id) 
                     : checkCompleted('exam', access.exam_id?._id),
+                assigned_image: access.exam_id?.assigned_image || access.mock_paper_id?.assigned_image || null,
                 exam_schedules: access.exam_id ? {
                     title: access.exam_id.title,
                     duration_minutes: access.exam_id.duration_minutes,
@@ -3827,7 +3860,8 @@ app.get('/api/admin/question-bank/:topic/access-list', authenticateToken, requir
 });
 
 app.post('/api/admin/question-bank/grant-access', authenticateToken, requireAdminOrManager, async (req, res) => {
-    const { userId, topic, batchId, type } = req.body;
+    const { userId, student_id, topic, batchId, type } = req.body;
+    const targetUserId = userId || student_id;
     if (!topic) return res.status(400).json({ error: 'Topic required' });
 
     try {
@@ -3838,8 +3872,8 @@ app.post('/api/admin/question-bank/grant-access', authenticateToken, requireAdmi
             if (studentIds.length === 0) {
                 return res.status(400).json({ error: 'No students found in the selected batch.' });
             }
-        } else if (userId) {
-            studentIds = [userId];
+        } else if (targetUserId) {
+            studentIds = [targetUserId];
         } else {
             return res.status(400).json({ error: 'Student ID or Batch ID required' });
         }
@@ -4035,16 +4069,18 @@ app.post('/api/student/submit-exam', authenticateToken, async (req, res) => {
         res.json({ message: 'Exam submitted successfully', resultId: result._id, score, percentage, correctCount, wrongCount });
 
         // Notify Instructor
-        const exam = await Exam.findById(examId);
-        if (exam && exam.instructor_id) {
-            const student = await User.findById(req.user.id);
-            sendNotification(exam.instructor_id, {
-                type: 'exam_submission',
-                title: 'Exam Submitted',
-                message: `${student?.full_name || 'A student'} submitted the exam: ${exam.title}`,
-                score,
-                percentage
-            });
+        if (!examId.startsWith('qb_')) {
+            const exam = await Exam.findById(examId);
+            if (exam && exam.instructor_id) {
+                const student = await User.findById(req.user.id);
+                sendNotification(exam.instructor_id, {
+                    type: 'exam_submission',
+                    title: 'Exam Submitted',
+                    message: `${student?.full_name || 'A student'} submitted the exam: ${exam.title}`,
+                    score,
+                    percentage
+                });
+            }
         }
     } catch (err) {
         handleError(res, err, 'submit-exam');
@@ -4511,7 +4547,10 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
                 'exam_results': 'student_id',
                 'resume_scans': 'user_id',
                 'student_exam_access': 'student_id',
-                'course_enrollments': 'user_id'
+                'course_enrollments': 'user_id',
+                'attendance': 'user_id',
+                'notifications': 'user_id',
+                'coupons': 'user_id'
             };
 
             if (studentScopedTables[table]) {

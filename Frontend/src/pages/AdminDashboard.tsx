@@ -188,7 +188,7 @@ function AllCoursesList({
           </p>
         </motion.div>
       ) : (
-        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {coursesList.map((course: AdminCourse, index: number) => {
             const CategoryIcon = course.title
               ?.toLowerCase()
@@ -208,7 +208,7 @@ function AllCoursesList({
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.05 }}
-                className="group relative bg-white rounded-[2rem] border border-slate-100/50 shadow-sm hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] transition-all duration-500 flex flex-col p-1.5"
+                className="group relative bg-white rounded-[2rem] border border-slate-100/50 shadow-sm hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] transition-all duration-500 flex flex-col p-1.5 overflow-hidden"
               >
                 {/* Premium Image Header */}
                 <div className="aspect-video relative rounded-2xl overflow-hidden group-hover:shadow-lg transition-all">
@@ -311,19 +311,19 @@ function AllCoursesList({
                     </div>
                   </div>
 
-                  <div className="flex gap-2 pt-2">
+                  <div className="flex flex-col sm:flex-row xl:flex-row gap-2 pt-2">
                     <Button
                       variant="outline"
-                      className="flex-1 rounded-xl h-10 font-black text-[10px] uppercase tracking-wider border-slate-200 hover:bg-slate-50"
+                      className="w-full sm:flex-1 rounded-xl h-10 font-black text-[10px] uppercase tracking-wider border-slate-200 hover:bg-slate-50 truncate"
                       onClick={() => window.open("https://aotms.in", "_blank")}
                     >
                       Explore
                     </Button>
                     <Button
-                      className="flex-1 rounded-xl h-10 font-black text-[10px] uppercase tracking-wider bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-100"
+                      className="w-full sm:flex-1 rounded-xl h-10 font-black text-[10px] uppercase tracking-wider bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-100 truncate"
                       onClick={() => onViewSyllabus?.(course)}
                     >
-                      Start Localize
+                      Manage
                     </Button>
                   </div>
                 </div>

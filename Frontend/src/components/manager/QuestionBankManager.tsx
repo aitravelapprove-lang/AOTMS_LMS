@@ -212,7 +212,7 @@ function parseAiText(
       const mappedQuestions: AiQuestion[] = [];
 
       for (const item of questionsArray) {
-        const itemObj = item as Record<string, any>;
+        const itemObj = item as Record<string, unknown>;
         // loose check for question-like object
         const qText = String(itemObj.question || itemObj.question_text || itemObj.Question || itemObj.questionText || itemObj.text || '');
 
@@ -220,10 +220,12 @@ function parseAiText(
 
         // Options
         let opts: string[] = [];
-        if (Array.isArray(itemObj.options)) {
-          opts = itemObj.options.map((o: any) => {
+        const itemOptions = itemObj.options;
+        if (Array.isArray(itemOptions)) {
+          opts = itemOptions.map((o: unknown) => {
             if (typeof o === 'object' && o !== null) {
-              return String(o.text || o.option || String(o));
+              const oObj = o as Record<string, unknown>;
+              return String(oObj.text || oObj.option || String(o));
             }
             return String(o);
           });
@@ -232,9 +234,12 @@ function parseAiText(
             itemObj.optionA, itemObj.optionB, itemObj.optionC, itemObj.optionD, itemObj.optionE,
             itemObj.OptionA, itemObj.OptionB, itemObj.OptionC, itemObj.OptionD, itemObj.OptionE
           ].filter(Boolean).map(String);
-        } else if (typeof itemObj.options === 'object' && itemObj.options !== null) {
-          opts = Object.values(itemObj.options).map((o: any) => {
-             if (o && typeof o === 'object') return String(o.text || o);
+        } else if (typeof itemOptions === 'object' && itemOptions !== null) {
+          opts = Object.values(itemOptions).map((o: unknown) => {
+             if (o && typeof o === 'object') {
+               const oObj = o as Record<string, unknown>;
+               return String(oObj.text || o);
+             }
              return String(o);
           });
         }
@@ -243,10 +248,13 @@ function parseAiText(
         let ans = String(itemObj.answer || itemObj.correct_answer || itemObj.Answer || itemObj.correctAnswer || '');
 
         // NEW: If correct_answer was not found at the root, check if any option has isCorrect: true
-        if (!ans && Array.isArray(itemObj.options)) {
-          const correctOpt = itemObj.options.find((o: any) => o && typeof o === 'object' && (o.isCorrect === true || o.is_correct === true));
+        if (!ans && Array.isArray(itemOptions)) {
+          const correctOpt = itemOptions.find((o: unknown) => 
+            o && typeof o === 'object' && ((o as Record<string, unknown>).isCorrect === true || (o as Record<string, unknown>).is_correct === true)
+          );
           if (correctOpt) {
-            ans = String(correctOpt.text || correctOpt.option || String(correctOpt));
+            const coObj = correctOpt as Record<string, unknown>;
+            ans = String(coObj.text || coObj.option || String(correctOpt));
           }
         }
 
@@ -492,7 +500,7 @@ export function QuestionBankManager({
       q.topic.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTopic = filterTopic === 'all' || q.topic === filterTopic;
     const matchesDifficulty = filterDifficulty === 'all' || q.difficulty === filterDifficulty;
-    const matchesType = filterType === 'all' || (q as any).type === filterType || (q as any).question_type === filterType;
+    const matchesType = filterType === 'all' || q.type === filterType;
     return matchesSearch && matchesTopic && matchesDifficulty && matchesType;
   });
 
@@ -503,7 +511,7 @@ export function QuestionBankManager({
     hard: questions.filter(q => q.difficulty === 'hard').length,
     typeBreakdown: QUESTION_TYPES.map(t => ({
       ...t,
-      count: questions.filter(q => (q as any).type === t.value || (q as any).question_type === t.value).length,
+      count: questions.filter(q => q.type === t.value).length,
     })),
   };
 
@@ -529,7 +537,7 @@ export function QuestionBankManager({
     setBatchQuestions(prev => [...prev, ...blanks]);
   };
 
-  const handleUpdateQuestion = (index: number, field: string, value: any) => {
+  const handleUpdateQuestion = (index: number, field: string, value: unknown) => {
     setBatchQuestions(prev => {
       const next = [...prev];
       next[index] = { ...next[index], [field]: value };
@@ -710,10 +718,7 @@ export function QuestionBankManager({
             type: finalType,
             difficulty: globalDifficulty,
             options: finalType === 'multiple_choice' ? 
-              (Array.isArray(q.options) ? q.options.filter(o => o?.trim()).map(o => ({
-                text: o,
-                is_correct: String(o).trim() === String(q.correct_answer).trim()
-              })) : []) : [],
+              (Array.isArray(q.options) ? q.options.filter(o => o && o.trim()) : []) : [],
             correct_answer: q.correct_answer || '',
             explanation: q.explanation || null,
             marks: Number(globalMarks) || 1,
@@ -1197,49 +1202,63 @@ export function QuestionBankManager({
       {/* ── Questions Table ── */}
       <Card className="shadow-sm">
         <CardHeader className="px-6 pt-5 pb-4 border-b">
-          <div className="flex flex-col gap-5">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <CardTitle className="flex items-center gap-3 text-2xl font-black italic tracking-tighter">
-                <Brain className="h-7 w-7 text-primary" />
-                EXPLORER
-                <Badge variant="secondary" className="ml-1 text-sm font-mono">{filteredQuestions.length}</Badge>
-              </CardTitle>
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-5">
+              <div className="flex items-center gap-4 shrink-0">
+                <div className="p-2.5 bg-primary/10 rounded-2xl">
+                  <Brain className="h-7 w-7 text-primary" />
+                </div>
+                <div className="flex flex-col">
+                  <CardTitle className="text-2xl font-black italic tracking-tighter leading-none">
+                    EXPLORER
+                  </CardTitle>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge variant="secondary" className="text-[10px] font-mono h-5 px-2">{filteredQuestions.length} Questions</Badge>
+                    <div className="h-1 w-1 rounded-full bg-slate-200" />
+                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Repository Base</span>
+                  </div>
+                </div>
+              </div>
 
-              {/* Filters */}
-              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                <div className="relative flex-1 sm:flex-none">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              {/* Filters Container */}
+              <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+                {/* Search Input */}
+                <div className="relative flex-1 sm:flex-none sm:min-w-[280px]">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input
-                    placeholder="Search context..."
-                    className="pl-9 h-10 w-full sm:w-64 bg-muted/50 border-transparent focus:bg-background transition-all"
+                    placeholder="Search context or keywords..."
+                    className="pl-10 h-12 w-full rounded-xl bg-slate-50 border-slate-100 hover:border-slate-200 focus:bg-white transition-all text-sm font-medium"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
 
-                <Select value={filterType} onValueChange={setFilterType}>
-                  <SelectTrigger className="h-10 w-[140px] bg-muted/50 border-transparent capitalize">
-                    <SelectValue placeholder="Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All types</SelectItem>
-                    {QUESTION_TYPES.map(t => (
-                      <SelectItem key={t.value} value={t.value}>{t.label.split('(')[0]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {/* Select Controls Group */}
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <Select value={filterType} onValueChange={setFilterType}>
+                    <SelectTrigger className="h-12 flex-1 sm:w-[150px] rounded-xl bg-slate-50 border-slate-100 font-bold text-[10px] uppercase tracking-widest">
+                      <SelectValue placeholder="Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All types</SelectItem>
+                      {QUESTION_TYPES.map(t => (
+                        <SelectItem key={t.value} value={t.value} className="text-xs uppercase font-bold tracking-wider">{t.label.split('(')[0]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-                <Select value={filterDifficulty} onValueChange={setFilterDifficulty}>
-                  <SelectTrigger className="h-10 w-[130px] bg-muted/50 border-transparent capitalize">
-                    <SelectValue placeholder="Level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All levels</SelectItem>
-                    <SelectItem value="easy">Easy</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="hard">Hard</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <Select value={filterDifficulty} onValueChange={setFilterDifficulty}>
+                    <SelectTrigger className="h-12 flex-1 sm:w-[140px] rounded-xl bg-slate-50 border-slate-100 font-bold text-[10px] uppercase tracking-widest">
+                      <SelectValue placeholder="Level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All levels</SelectItem>
+                      <SelectItem value="easy" className="text-emerald-600 font-bold uppercase text-[10px]">Easy</SelectItem>
+                      <SelectItem value="medium" className="text-amber-600 font-bold uppercase text-[10px]">Medium</SelectItem>
+                      <SelectItem value="hard" className="text-rose-600 font-bold uppercase text-[10px]">Hard</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 
@@ -1360,10 +1379,8 @@ export function QuestionBankManager({
                             <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest pl-1">Options Preview</p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               {opts.map((opt, i) => {
-                                const optText = typeof opt === 'object' && opt !== null && 'text' in opt ? String(opt.text) : String(opt);
-                                const isCorrect = typeof opt === 'object' && opt !== null && 'is_correct' in opt 
-                                  ? Boolean(opt.is_correct) 
-                                  : String(opt).trim() === String(q.correct_answer).trim();
+                                const isCorrect = opt ? (typeof opt === 'object' ? (opt as Record<string, unknown>).is_correct === true : String(opt).trim() === String(q.correct_answer).trim()) : false;
+                                const optText = opt ? (typeof opt === 'object' ? String((opt as Record<string, unknown>).text || '') : String(opt)) : '';
                                 
                                 return (
                                   <div

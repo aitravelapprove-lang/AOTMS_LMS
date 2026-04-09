@@ -12,14 +12,18 @@ import { LeaderboardManager } from "@/components/manager/LeaderboardManager";
 import { LiveMonitoring } from "@/components/admin/LiveMonitoring";
 import { ExamRulesManager } from "@/components/manager/ExamRulesManager";
 import { ManagerCourses } from "@/components/manager/ManagerCourses";
-import { ExecutiveCatalog } from "@/components/manager/ExecutiveCatalog";
+import { ManagerVideoLibrary } from "@/components/manager/ManagerVideoLibrary";
+import { AllCoursesList } from "@/components/admin/AllCoursesList";
+import { QuestionBankApproval } from "@/components/admin/QuestionBankApproval";
+import { CourseBuilder } from "@/components/instructor/courses/CourseBuilder";
+import { Course as CatalogCourse, CourseEnrollment } from "@/hooks/useCourses";
+import { Course as InstructorCourse } from "@/hooks/useInstructorData";
 import { EnrollmentsList } from "@/components/admin/EnrollmentsList";
 import { CourseAssignment } from "@/components/admin/CourseAssignment";
 import { CourseApproval } from "@/components/admin/CourseApproval";
 import { CouponManager } from "@/components/admin/CouponManager";
 import { GrantStudentAccess } from "@/components/admin/GrantStudentAccess";
 import { ResumeScanHistory } from "@/components/admin/ResumeScanHistory";
-import { QuestionBankApproval } from "@/components/admin/QuestionBankApproval";
 import { QualityAssurance } from "@/components/admin/QualityAssurance";
 import { ChatMonitor } from "@/components/admin/ChatMonitor";
 import { InstructorManagement } from "@/components/admin/InstructorManagement";
@@ -68,6 +72,7 @@ export default function ManagerDashboard() {
   const location = useLocation();
   const { toast } = useToast();
   const [activeSection, setActiveSection] = useState("overview");
+  const [buildingCourse, setBuildingCourse] = useState<InstructorCourse | null>(null);
 
   useEffect(() => {
     const path = location.pathname.split("/").pop();
@@ -89,6 +94,11 @@ export default function ManagerDashboard() {
     rejectCourse,
     updateCourseStatus,
     toggleCourseActive,
+    updateCoursePrice,
+    updateEnrollmentStatus,
+    deleteEnrollment,
+    enrollments,
+    deleteCourse: _deleteCourse,
   } = useAdminData(userRole);
 
   if (authLoading) {
@@ -257,30 +267,37 @@ export default function ManagerDashboard() {
       case "overview":
         return renderOverview();
       case "profile":
-        return <UserProfile user={user} />;
+        return <UserProfile />;
       case "exams":
         return <ExamScheduler />;
       case "questions":
         return <QuestionBankManager />;
-      case "qb-approvals":
-        return <QuestionBankApproval />;
       case "leaderboard":
         return <LeaderboardManager />;
       case "monitoring":
         return <LiveMonitoring />;
       case "video-library":
-        return <ManagerCourses />;
+        return <ManagerVideoLibrary />;
       case "all-courses":
         return (
-          <ExecutiveCatalog 
+          <AllCoursesList 
             courses={courses} 
             loading={dataLoading} 
-            onApprove={approveCourse}
-            onReject={rejectCourse}
-            onUpdateStatus={updateCourseStatus}
-            onToggleActive={toggleCourseActive} 
+            onUpdatePrice={updateCoursePrice}
+            onToggleActive={toggleCourseActive}
+            onDelete={_deleteCourse}
+            onViewSyllabus={(course) => {
+              // Normalize the course object to match InstructorCourse interface
+              const normalizedCourse = {
+                ...course,
+                price: typeof course.price === 'string' ? parseFloat(course.price) || 0 : course.price
+              } as unknown as InstructorCourse;
+              setBuildingCourse(normalizedCourse);
+            }}
           />
         );
+      case "question-access":
+        return <QuestionBankApproval />;
       case "instructors":
         return <InstructorManagement />;
       case "coupons":
@@ -294,7 +311,18 @@ export default function ManagerDashboard() {
       case "leads":
         return <LeadManagement />;
       case "enrollments":
-        return <EnrollmentsList />;
+        return (
+          <EnrollmentsList 
+            enrollments={enrollments as unknown as CourseEnrollment[]} 
+            loading={dataLoading} 
+            onUpdateStatus={async (id, status) => { 
+                await updateEnrollmentStatus(id, status); 
+            }}
+            onDelete={async (id) => { 
+                await deleteEnrollment(id); 
+            }}
+          />
+        );
       case "settings":
         return <div className="p-8"><h2 className="text-2xl font-bold">Settings Under Development</h2></div>;
       case "notifications":
@@ -303,6 +331,19 @@ export default function ManagerDashboard() {
         return renderOverview();
     }
   };
+
+  if (buildingCourse) {
+    return (
+      <div className="min-h-screen bg-slate-50 relative">
+        <div className="p-8 max-w-7xl mx-auto">
+          <CourseBuilder
+            course={buildingCourse as InstructorCourse}
+            onBack={() => setBuildingCourse(null)}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider className="mesh-bg font-sans">

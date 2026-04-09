@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { fetchWithAuth } from "@/lib/api";
 import {
   Card,
   CardContent,
@@ -49,6 +50,11 @@ interface TimelineManagerProps {
   courseId: string;
 }
 
+interface Batch {
+  id: string;
+  batch_name: string;
+}
+
 const milestoneTypes = [
   {
     value: "start",
@@ -92,12 +98,12 @@ export function TimelineManager({ courseId }: TimelineManagerProps) {
     allowed_batches: [] as string[]
   });
 
-  const [batches, setBatches] = useState<any[]>([]);
+  const [batches, setBatches] = useState<Batch[]>([]);
   
   useEffect(() => {
     const loadBatches = async () => {
       try {
-        const data = await fetchWithAuth(`/batches?course_id=${courseId}`);
+        const data = await fetchWithAuth(`/batches?course_id=${courseId}`) as Batch[];
         setBatches(data || []);
       } catch (e) {
         console.error("Failed to load batches", e);

@@ -1,6 +1,6 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
 
 @layer base {
   :root {
@@ -72,10 +72,13 @@
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
   body {
-    @apply bg-background text-foreground antialiased selection:bg-primary/20;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     font-family: "Inter", "Outfit", sans-serif;
     letter-spacing: -0.011em;
     overflow-x: hidden;
@@ -94,7 +97,9 @@
   h3,
   h4,
   .font-heading {
-    @apply font-bold tracking-tight text-slate-900;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: hsl(222.2 47.4% 11.2%); /* slate-900 */
   }
   /* Ensure body text and labels are always dark enough */
   p,
@@ -107,45 +112,101 @@
 @layer components {
   /* Premium Professional Cards */
   .pro-card {
-    @apply bg-white border border-slate-200/60 rounded-xl transition-all duration-300;
+    background-color: white;
+    border: 1px solid rgba(226, 232, 240, 0.6); /* slate-200/60 */
+    border-radius: 0.75rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: var(--shadow-premium);
   }
 
   .pro-card-hover {
-    @apply pro-card hover:shadow-lg hover:border-primary/20;
+    box-shadow: var(--shadow-lg);
+    border-color: hsla(var(--primary), 0.2);
   }
 
   .pro-button-primary {
-    @apply h-11 px-6 rounded-lg bg-primary text-white font-semibold text-sm transition-all duration-200 hover:bg-primary/90 active:scale-[0.98] shadow-sm;
+    height: 2.75rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    border-radius: 0.5rem;
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: all 0.2s;
   }
+  .pro-button-primary:hover { background-color: hsla(var(--primary), 0.9); }
+  .pro-button-primary:active { transform: scale(0.98); }
 
   .pro-button-secondary {
-    @apply h-11 px-6 rounded-lg bg-white border border-slate-200 text-slate-700 font-semibold text-sm transition-all duration-200 hover:bg-slate-50 active:scale-[0.98] shadow-xs;
+    height: 2.75rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    border-radius: 0.5rem;
+    background-color: white;
+    border: 1px solid hsl(var(--border));
+    color: hsl(215.4 16.3% 46.9%); /* slate-600 */
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: all 0.2s;
   }
+  .pro-button-secondary:hover { background-color: hsl(var(--secondary)); }
+  .pro-button-secondary:active { transform: scale(0.98); }
 
   .pro-button-accent {
-    @apply h-11 px-6 rounded-lg bg-accent text-white font-semibold text-sm transition-all duration-200 hover:bg-accent/90 active:scale-[0.98] shadow-sm;
+    height: 2.75rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    border-radius: 0.5rem;
+    background-color: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: all 0.2s;
   }
+  .pro-button-accent:hover { background-color: hsla(var(--accent), 0.9); }
+  .pro-button-accent:active { transform: scale(0.98); }
 
   .status-pill {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border: 1px solid hsl(var(--border));
   }
 
   .container-width {
-    @apply max-w-7xl mx-auto;
+    max-width: 80rem;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .section-padding {
-    @apply py-16 md:py-24 lg:py-32;
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+  }
+  @media (min-width: 768px) {
+    .section-padding {
+      padding-top: 6rem;
+      padding-bottom: 6rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    .section-padding {
+      padding-top: 8rem;
+      padding-bottom: 8rem;
+    }
   }
 }
 
 @layer utilities {
   .text-brand-blue {
-    @apply text-[hsl(205,100%,42%)];
+    color: hsl(205, 100%, 42%);
   }
   .text-brand-orange {
-    @apply text-[hsl(25,100%,50%)];
+    color: hsl(25, 100%, 50%);
   }
 
   .mesh-bg {
@@ -195,7 +256,13 @@
   }
 
   .glass-header {
-    @apply bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200/60 transition-all;
+    background-color: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+    transition: all 0.3s;
   }
 
   /* ── Global scrollbar ── */

@@ -90,10 +90,10 @@ export function ResumeScanHistory() {
                     </Avatar>
                     <div className="space-y-1 overflow-hidden">
                       <CardTitle className="text-lg font-black text-slate-900 leading-none truncate">
-                        {scan.user_id?.full_name || 'Unknown Student'}
+                        {scan.user_id?.full_name || 'Scholar'}
                       </CardTitle>
                       <CardDescription className="flex items-center gap-1.5 text-xs font-medium text-slate-500 truncate">
-                        <Mail className="h-3 w-3 shrink-0" /> {scan.user_id?.email}
+                        <Mail className="h-3 w-3 shrink-0" /> {scan.user_id?.email || 'N/A'}
                       </CardDescription>
                       <div className="lg:hidden flex items-center gap-2 mt-2">
                          <Badge variant={scan.score >= 80 ? 'default' : scan.score >= 60 ? 'secondary' : 'destructive'} className="font-black text-[10px] h-6 uppercase tracking-tighter">

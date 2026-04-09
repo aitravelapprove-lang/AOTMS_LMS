@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch as UISwitch } from "@/components/ui/switch";
 import { 
   Users, 
   Search, 
@@ -23,6 +24,7 @@ import {
   Phone,
   Lock as LockIcon,
   Unlock as UnlockIcon,
+  ExternalLink,
 } from "lucide-react";
 import { fetchWithAuth } from "@/lib/api";
 import { toast } from "sonner";
@@ -67,6 +69,7 @@ interface Instructor {
 interface Course {
   id: string;
   title: string;
+  category?: string;
   instructor_ids?: string[];
   instructors?: { id: string; full_name: string; avatar_url: string }[];
 }
@@ -147,7 +150,7 @@ export function InstructorManagement() {
   const handleOpenAssignModal = (instructor: Instructor) => {
     setSelectedInstructor(instructor);
     setSelectedCourseId("");
-    setShowAllCourses(false);
+    setShowAllCourses(true);
     setAssignModalOpen(true);
   };
 
@@ -764,67 +767,73 @@ export function InstructorManagement() {
 
       {/* Assign Course Modal */}
       <Dialog open={assignModalOpen} onOpenChange={setAssignModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Assign Course to Instructor</DialogTitle>
-            <DialogDescription>
-              Select a course to assign to <b>{selectedInstructor?.full_name}</b>.
-              Existing instructor for the course will be replaced.
+        <DialogContent className="max-w-md bg-white/95 backdrop-blur-xl border-none shadow-2xl rounded-[2.5rem] p-8 pro-modal">
+          <DialogHeader className="space-y-3">
+            <div className="flex items-center gap-3">
+                 <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
+                    <Plus className="h-5 w-5 text-primary" />
+                 </div>
+                 <DialogTitle className="text-xl font-black text-slate-900 tracking-tight">Assign Course <span className="text-primary italic">Node</span></DialogTitle>
+            </div>
+            <DialogDescription className="text-xs font-bold text-slate-500 uppercase tracking-widest leading-relaxed">
+              Provisioning <b>{selectedInstructor?.full_name}</b> as primary faculty. Existing mappings will be superseded.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="py-4 space-y-4">
-            <div className="flex items-center space-x-2">
-              <Checkbox 
+          <div className="py-6 space-y-6">
+            <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100 group hover:border-primary/20 transition-all">
+              <div className="space-y-0.5">
+                  <Label htmlFor="show-all" className="text-[10px] font-black uppercase tracking-widest text-slate-500 cursor-pointer">Re-assignment Protocol</Label>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase">Include already assigned nodes</p>
+              </div>
+              <UISwitch 
                 id="show-all" 
                 checked={showAllCourses} 
                 onCheckedChange={(checked) => setShowAllCourses(checked as boolean)} 
               />
-              <Label htmlFor="show-all" className="text-sm cursor-pointer">
-                Include already assigned courses (Re-assign)
-              </Label>
             </div>
 
-            <div>
-              <label className="text-sm font-medium mb-2 block">Select Course</label>
+            <div className="space-y-3">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Select Curriculum Node</label>
               <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
-                <SelectTrigger>
+                <SelectTrigger className="h-14 rounded-2xl bg-white border-slate-200 shadow-sm focus:ring-primary/20 focus:border-primary/50 font-bold text-slate-700">
                   <SelectValue placeholder="Select a course..." />
                 </SelectTrigger>
-                <SelectContent className="max-h-[300px]">
+                <SelectContent className="max-h-[300px] p-1 rounded-2xl shadow-2xl border-slate-200/60 overflow-hidden">
                   {availableCourses.length === 0 ? (
-                    <div className="p-2 text-sm text-muted-foreground text-center">
-                      No courses available.
+                    <div className="p-12 text-center space-y-3">
+                      <div className="h-12 w-12 bg-slate-50 rounded-xl mx-auto flex items-center justify-center border border-dashed border-slate-200">
+                         <BookOpen className="h-6 w-6 text-slate-200" />
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">No nodes available</p>
                     </div>
                   ) : (
                         availableCourses.map((course) => {
                           const isAssignedToThis = course.instructor_ids?.includes(selectedInstructor?.user_id || "");
                           const count = course.instructor_ids?.length || 0;
                       
-                      // Find current instructor name if assigned
-                      let assignedToName = "";
-                      if (count > 0 && !isAssignedToThis) {
-                        const firstInstructorId = course.instructor_ids?.[0];
-                        const currentInstructor = instructors.find(i => i.user_id === firstInstructorId);
-                        assignedToName = currentInstructor?.full_name || "Assigned";
-                      }
-
                           return (
                             <SelectItem 
                               key={course.id} 
                               value={String(course.id)}
                               disabled={isAssignedToThis}
+                              className="rounded-xl py-3 focus:bg-primary/5 cursor-pointer group"
                             >
-                              <div className="flex items-center justify-between w-full gap-2 min-w-0">
-                                <span className="truncate max-w-[200px] font-medium">{course.title}</span>
-                                <div className="shrink-0 flex items-center gap-1">
-                                  {isAssignedToThis && <Badge variant="secondary" className="text-[10px]">Current</Badge>}
-                                  {count > 0 && !isAssignedToThis && (
-                                    <Badge variant="outline" className="text-[10px] text-muted-foreground">
-                                      {count} Instructor{count > 1 ? 's' : ''}
+                              <div className="flex items-center justify-between w-full gap-4 pr-2">
+                                <div className="min-w-0 flex flex-col">
+                                    <span className="truncate max-w-[180px] font-bold text-slate-900 group-hover:text-primary transition-colors">{course.title}</span>
+                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{course.category || 'Curriculum Asset'}</span>
+                                </div>
+                                <div className="shrink-0 flex items-center gap-1.5">
+                                  {isAssignedToThis ? (
+                                    <Badge className="bg-emerald-500/10 text-emerald-600 border-none text-[8px] font-black uppercase tracking-widest px-2 h-5">Current</Badge>
+                                  ) : count > 0 ? (
+                                    <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest px-2 h-5 border-slate-200 text-slate-400">
+                                      {count} Assigned
                                     </Badge>
+                                  ) : (
+                                    <Badge className="bg-emerald-500 text-white border-none text-[8px] font-black uppercase tracking-widest px-2 h-5 shadow-lg shadow-emerald-100">Unassigned</Badge>
                                   )}
-                                  {count === 0 && <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200 text-[10px]">Unassigned</Badge>}
                                 </div>
                               </div>
                             </SelectItem>
@@ -836,16 +845,23 @@ export function InstructorManagement() {
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAssignModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleAssignCourse} disabled={!selectedCourseId || assigning}>
+          <DialogFooter className="gap-3 sm:flex-col lg:flex-row">
+            <Button variant="outline" className="h-12 rounded-2xl flex-1 font-bold text-slate-600 hover:bg-slate-50" onClick={() => setAssignModalOpen(false)}>Cancel Session</Button>
+            <Button 
+                onClick={handleAssignCourse} 
+                disabled={!selectedCourseId || assigning}
+                className="h-12 rounded-2xl flex-[2] font-black uppercase tracking-widest text-[11px] shadow-xl shadow-primary/20 active:scale-[0.98] transition-all"
+            >
               {assigning ? (
                 <>
                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Assigning...
+                  Synchronizing...
                 </>
               ) : (
-                'Assign Course'
+                <>
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Deploy Assignment
+                </>
               )}
             </Button>
           </DialogFooter>
@@ -854,4 +870,3 @@ export function InstructorManagement() {
     </div>
   );
 }
-

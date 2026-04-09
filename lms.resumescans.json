@@ -1,0 +1,204 @@
+[{
+  "_id": {
+    "$oid": "69cf877e7a2a2b679e4d70d4"
+  },
+  "user_id": {
+    "$oid": "69bc3fee4ad1dcfab384f509"
+  },
+  "score": 65,
+  "analysis": {
+    "missing_keywords": [
+      "Software Development",
+      "Full-Stack Development",
+      "Web Development",
+      "Computer Science",
+      "Programming Languages (mention specific ones if not listed, e.g., Python if used in projects)",
+      "Database Management",
+      "API Development",
+      "Agile Methodologies",
+      "Version Control",
+      "Problem Solving"
+    ],
+    "formatting_issues": [
+      "Inconsistent capitalization in skills (e.g., 'React Node.js , Express.js' vs. 'Git & GitHub')",
+      "Redundant information (e.g., 'Existing AI tools follow abstract text prompts well...' listed under both 'PROJECTS' and 'WORK EXPERIENCE' for the Haiku generator)",
+      "Unclear project descriptions (e.g., 'expensive art' is vague and unprofessional)",
+      "Project dates are listed as years, which can be less precise than months/years.",
+      "The date and localhost URL at the very end appear to be an accidental inclusion from a resume builder and should be removed.",
+      "Lack of clear dates for 'WORK EXPERIENCE' – only the year is provided.",
+      "The term 'vibe code developer' is unprofessional and likely won't be understood by an ATS."
+    ],
+    "suggestions": [
+      "Standardize capitalization and spacing in the Skills section. Use consistent separators (e.g., commas).",
+      "Remove duplicate content. Ensure each section provides unique information.",
+      "Refine project descriptions to be more concise and outcome-oriented. Quantify achievements where possible. Replace vague or unprofessional language with precise technical terms.",
+      "For projects and work experience, aim for Month/Year format for dates (e.g., 'May 2024 - Present'). If it was a short-term project, specify the duration.",
+      "Completely remove the footer information (date, localhost URL) as it is irrelevant and unprofessional.",
+      "Rephrase the Professional Summary to be more direct and keyword-rich. Instead of 'vibe code developer', use terms like 'Full-Stack Developer' or 'Software Engineer'. Clearly state your career objective.",
+      "Expand on the 'ACHIEVEMENTS' section. Describe the bootcamp more specifically, highlighting key learnings or projects completed within the program. Use action verbs.",
+      "In the 'WORK EXPERIENCE' section, for the 'Emotion-Based Haiku Poem Generator', detail your specific contributions and technologies used in a bulleted format. The current description is too narrative.",
+      "For 'Decentralized Return and Refund Trust Mechanism', clearly outline your role and responsibilities. Mention specific smart contract languages or frameworks if used.",
+      "Add a 'Technical Skills' or 'Tools & Technologies' section to consolidate all technical proficiencies for better ATS parsing. Categorize skills if extensive (e.g., Languages, Frameworks, Databases, Tools).",
+      "Consider adding a brief mention of relevant soft skills if they can be naturally integrated into project descriptions or the summary (e.g., collaboration, analytical thinking).",
+      "Ensure your GitHub profile link is functional and showcases well-organized repositories that align with your skills and projects."
+    ]
+  },
+  "file_name": "Jayaveer-resume .pdf",
+  "created_at": {
+    "$date": "2026-04-03T09:25:18.582Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "69cfba137868e2e90ff879f2"
+  },
+  "user_id": {
+    "$oid": "69bc3fee4ad1dcfab384f509"
+  },
+  "score": 55,
+  "analysis": {
+    "missing_keywords": [
+      "Full-stack development",
+      "Frontend development",
+      "Backend development",
+      "Web development",
+      "Software development",
+      "Computer Science",
+      "JavaScript",
+      "HTML",
+      "CSS",
+      "Database management",
+      "Agile methodologies",
+      "Testing",
+      "Deployment",
+      "Version control (beyond Git/GitHub mention)"
+    ],
+    "formatting_issues": [
+      "Inconsistent spacing and punctuation within skills section (e.g., 'React Node.js , Express.js', 'Move , Aptos')",
+      "Project details are interspersed with a date and URL ('View Project', '08/12/2025, 16:22 StudentPortal - Your Complete Academic Hub', 'localhost:8080/resume/builder 1/1') which is highly unusual and unprofessional.",
+      "The 'WORK EXPERIENCE' section appears to list projects, not actual work experience. This could confuse an ATS and a human recruiter.",
+      "The 'ACHIEVEMENTS' section is very brief and could be expanded.",
+      "The 'PROFESSIONAL SUMMARY' uses informal language ('vibe code developer')."
+    ],
+    "suggestions": [
+      "Standardize spacing and punctuation in the SKILLS section. Use commas or separate lines clearly.",
+      "Completely remove extraneous information like '08/12/2025, 16:22 StudentPortal - Your Complete Academic Hub' and 'localhost:8080/resume/builder 1/1'. This appears to be a system artifact.",
+      "Rename the 'WORK EXPERIENCE' section to 'PROJECTS' to accurately reflect its content. If actual work experience exists, it should be listed separately and clearly.",
+      "Elaborate on the 'ACHIEVEMENTS' section. Quantify results if possible, or provide more detail about the impact of the bootcamp.",
+      "Revise the 'PROFESSIONAL SUMMARY' to be more professional and keyword-rich. Replace informal terms with industry-standard descriptors (e.g., 'Full-Stack Developer', 'Blockchain Developer', 'UI/UX Designer', 'Problem Solver').",
+      "Integrate relevant keywords naturally throughout the resume, especially in the project descriptions (e.g., mention specific technologies used in solutions).",
+      "Ensure each project description follows a clear STAR method (Situation, Task, Action, Result) or PAR (Problem, Action, Result) structure, even in the 'Solution' part. Focus on what you achieved and the impact.",
+      "Consider adding a dedicated 'Technical Skills' section for clarity and ATS scanning. Break down skills into categories if applicable (e.g., Frontend, Backend, Databases, Blockchain, Tools).",
+      "For 'Emotion-Based Haiku Poem Generator', specify the AI models or libraries used for emotion detection, if any."
+    ]
+  },
+  "file_name": "Jayaveer-resume .pdf",
+  "created_at": {
+    "$date": "2026-04-03T13:01:07.641Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "69d0c795b69af27a2381c711"
+  },
+  "user_id": {
+    "$oid": "69d0c597b69af27a2381b9d9"
+  },
+  "score": 85,
+  "analysis": {
+    "missing_keywords": [],
+    "formatting_issues": [
+      "The 'Personal Details' section is unnecessary and can clutter the resume. ATS systems do not typically parse or value this type of information.",
+      "The date format for the internship (Mar 2026 to Apr 2026) is in the future, which is likely an error.",
+      "The date ranges for the university degrees overlap or are out of chronological order (e.g., B.Sc. ending April 2025, B.Tech. starting June 2018). This needs clarification.",
+      "The 'AREAS OF EXPERTISE' and 'TECHNICAL PROFICIENCIES' sections are redundant. Consolidate into a single, well-defined 'Skills' section.",
+      "The 'HOBBIES' section is generally not relevant for ATS parsing and should be removed.",
+      "The 'LANGUAGES' section is good to have, but could be integrated into a broader 'Skills' section or kept separate if space allows."
+    ],
+    "suggestions": [
+      "Remove the 'Personal Details' section. Your name, contact information, and LinkedIn should be at the top. Do not include birth dates or nationality.",
+      "Correct the internship dates immediately. Ensure all dates are accurate and reflect actual past employment or study periods.",
+      "Clarify the education timeline. If the B.Sc. is ongoing, adjust the end date. If the B.Tech. was discontinued, state it clearly and accurately as completed between the Junior College and B.Sc. enrollment. Focus on the completed degrees.",
+      "Consolidate 'AREAS OF EXPERTISE', 'TECHNICAL PROFICIENCIES', and relevant skills from your 'PROFILE' into a single, strong 'Skills' section. Categorize skills (e.g., Programming Languages, Data Visualization Tools, Databases, Machine Learning) for better readability and ATS parsing.",
+      "Remove the 'Hobbies' section. Focus on professional and technical attributes.",
+      "Integrate programming languages and tools (Python, SQL, Power BI, Tableau, Excel) prominently in the 'Skills' section and ensure they are naturally woven into the 'PROFILE' and 'EXPERIENCE'/'PROJECTS' descriptions.",
+      "Quantify achievements where possible. For example, in projects, mention the percentage improvement in accuracy or reduction in churn rate if calculated.",
+      "Ensure consistent terminology. While you use 'data analysis' and 'data analytics' interchangeably, consistent use or a clear preference can be beneficial.",
+      "Rephrase the 'PROFILE' to be more action-oriented and directly state your career goals and the value you bring, integrating key skills. Consider making it a concise 'Summary' section.",
+      "The project descriptions are good. Ensure keywords like 'data cleaning', 'EDA', 'machine learning', 'visualization', 'dashboards', 'forecasting' are present and used naturally.",
+      "In the 'PROFESSIONAL EXPERIENCE' section, ensure the bullet points start with strong action verbs. The current description is a bit narrative and could be more impactful with bullet points detailing specific responsibilities and achievements.",
+      "For the discontinued B.Tech., clearly state it was discontinued due to circumstances beyond your control (COVID-19) and focus on the completed education that aligns with your career goals."
+    ]
+  },
+  "file_name": "SHARAFATH MOHAMMED.pdf",
+  "created_at": {
+    "$date": "2026-04-04T08:11:01.184Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "69d7e4806523472daa9b0f4b"
+  },
+  "user_id": {
+    "$oid": "69bc3fee4ad1dcfab384f509"
+  },
+  "score": 42,
+  "analysis": {
+    "missing_keywords": [
+      "JavaScript",
+      "TypeScript",
+      "RESTful APIs",
+      "SQL",
+      "Docker",
+      "Kubernetes",
+      "CI/CD",
+      "Agile",
+      "Scrum",
+      "Test‑driven development",
+      "unit testing",
+      "microservices",
+      "AWS",
+      "Azure",
+      "Google Cloud",
+      "GitHub Actions",
+      "Redux",
+      "GraphQL",
+      "WebSockets",
+      "OAuth",
+      "JWT",
+      "soft skills: communication, teamwork, problem‑solving"
+    ],
+    "formatting_issues": [
+      "Missing standard header format – name, phone, email, LinkedIn/GitHub should be on one line with clear labels.",
+      "Inconsistent date formatting (e.g., \"2024-2026\" vs. \"2025\" vs. \"08/12/2025\").",
+      "Project and work experience sections are combined and lack bullet‑pointed achievements.",
+      "No clear separation between professional experience and academic projects; both are mixed under vague headings.",
+      "Section headings are not capitalized consistently (e.g., \"EDUCATION\" vs. \"PROFESSIONAL SUMMARY\").",
+      "Skills are listed without commas or grouping; “MongoDB Move , Aptos” appears to be a typo.",
+      "Use of first‑person narrative in the professional summary – ATS prefers concise, third‑person statements.",
+      "No quantifiable results (e.g., % improvement, users served, lines of code).",
+      "Missing location for education institutions and work experience entries.",
+      "No use of standard ATS‑friendly fonts or simple plain‑text layout – the resume appears to be a screenshot or copy‑paste with line breaks mid‑sentence."
+    ],
+    "suggestions": [
+      "Reformat the header: place Name, Phone, Email, Location, LinkedIn/GitHub on one line or separate lines with clear labels.",
+      "Standardize date ranges (e.g., \"May 2024 – Present\" or \"2024 – 2026\").",
+      "Create distinct sections: Professional Summary, Skills, Education, Projects, Work Experience, Achievements.",
+      "Write the Professional Summary in 2‑3 concise sentences, focusing on key technologies (e.g., \"Full‑Stack Engineer with 2+ years of experience in React, Node.js, and blockchain development on Aptos.\") and omit first‑person pronouns.",
+      "List Skills in categorized groups, e.g., \"Programming Languages: JavaScript, TypeScript, Python; Frameworks: React, Node.js, Express.js; Databases: MongoDB, PostgreSQL; DevOps: Docker, Git, CI/CD; Blockchain: Aptos, Solidity\".",
+      "For each project/work entry, use bullet points that start with strong action verbs and include measurable outcomes (e.g., \"Developed a React/Node.js application that generated haiku poems from facial‑emotion detection, increasing user engagement by 30%.\").",
+      "Add keywords that match the target job description – especially those listed in the missing_keywords array.",
+      "Proofread for typos (e.g., \"MongoDB Move\" should be \"MongoDB\"), and ensure proper punctuation and spacing.",
+      "Include any relevant certifications, internships, or hackathon participation that demonstrate practical experience.",
+      "Save the final resume as a plain .docx or PDF with selectable text (no images) to ensure ATS readability."
+    ]
+  },
+  "file_name": "Jayaveer-resume .pdf",
+  "created_at": {
+    "$date": "2026-04-09T17:40:16.531Z"
+  },
+  "__v": 0
+}]

@@ -337,35 +337,35 @@ export function UserProfile() {
                             {userRole ? userRole : 'Student'} • Joined {new Date().getFullYear()}
                         </div>
 
-                        {userRole === 'student' && (
-                            <div className="pt-4 border-t">
-                                <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold mb-3 block">My Learning ID</Label>
-                                <div className="flex gap-2">
-                                    <Input
-                                        readOnly
-                                        value={profile.id}
-                                        className="bg-muted/50 font-mono text-[10px] h-9"
-                                    />
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="h-9 px-3"
-                                        onClick={() => {
-                                            navigator.clipboard.writeText(profile.id);
-                                            toast({
-                                                title: "ID Copied",
-                                                description: "Share this ID with your instructor to get course access.",
-                                            });
-                                        }}
-                                    >
-                                        Copy
-                                    </Button>
-                                </div>
-                                <p className="text-[10px] text-muted-foreground mt-2 leading-tight">
-                                    Share this UUID with your instructor so they can manually enroll you in courses.
-                                </p>
+                        <div className="pt-4 border-t">
+                            <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold mb-3 block">My Identity ID (UUID)</Label>
+                            <div className="flex gap-2">
+                                <Input
+                                    readOnly
+                                    value={profile.id}
+                                    className="bg-muted/50 font-mono text-[10px] h-9"
+                                />
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-9 px-3"
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(profile.id);
+                                        toast({
+                                            title: "ID Copied",
+                                            description: "Your unique identification ID has been copied to clipboard.",
+                                        });
+                                    }}
+                                >
+                                    <Copy className="h-3.5 w-3.5" />
+                                </Button>
                             </div>
-                        )}
+                            <p className="text-[10px] text-muted-foreground mt-2 leading-tight">
+                                {userRole === 'student' 
+                                    ? "Share this UUID with your instructor so they can manually enroll you in courses."
+                                    : "This is your unique system identifier for administrative purposes."}
+                            </p>
+                        </div>
                     </CardContent>
                 </Card>
 

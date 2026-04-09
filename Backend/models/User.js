@@ -49,7 +49,7 @@ const ResumeScanSchema = new mongoose.Schema({
     resume_url: { type: String },
     file_name: { type: String },
     created_at: { type: Date, default: Date.now, index: true }
-});
+}, { collection: 'resumescans' });
 ResumeScanSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
 
 
@@ -111,5 +111,5 @@ module.exports = {
     VerifiedEmail: mongoose.model('VerifiedEmail', VerifiedEmailSchema),
     InstructorApplication: mongoose.model('InstructorApplication', InstructorApplicationSchema),
     GuestCredential: mongoose.model('GuestCredential', GuestCredentialSchema),
-    ResumeScan: mongoose.model('ResumeScan', ResumeScanSchema)
+    ResumeScan: mongoose.model('ResumeScan', ResumeScanSchema, 'resumescans')
 };

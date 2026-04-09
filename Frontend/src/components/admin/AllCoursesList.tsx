@@ -1,0 +1,350 @@
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import {
+  BookOpen,
+  LayoutGrid,
+  Shield,
+  Zap,
+  BarChart3,
+  Clock,
+  Pencil,
+  Trash2,
+  DollarSign,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import type { Course as AdminCourse } from "@/hooks/useAdminData";
+
+interface AllCoursesListProps {
+  courses: AdminCourse[];
+  loading: boolean;
+  onDelete?: (id: string) => void;
+  onView?: (course: AdminCourse) => void;
+  onViewSyllabus?: (course: AdminCourse) => void;
+  onUpdatePrice?: (id: string, price: string) => void;
+  onToggleActive?: (id: string, isActive: boolean) => void;
+}
+
+export function AllCoursesList({
+  courses: allCourses,
+  loading,
+  onDelete,
+  onView,
+  onViewSyllabus,
+  onUpdatePrice,
+  onToggleActive,
+}: AllCoursesListProps) {
+  const [editingPrice, setEditingPrice] = useState<{
+    id: string;
+    title: string;
+    price: string;
+  } | null>(null);
+  const [newPrice, setNewPrice] = useState("");
+
+  useEffect(() => {
+    if (editingPrice) {
+      setNewPrice(editingPrice.price);
+    }
+  }, [editingPrice]);
+
+  const handlePriceUpdate = async () => {
+    if (editingPrice && onUpdatePrice) {
+      onUpdatePrice(editingPrice.id, newPrice);
+      setEditingPrice(null);
+    }
+  };
+
+  const coursesList = allCourses || [];
+
+  if (loading && coursesList.length === 0) {
+    return (
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+          <div
+            key={i}
+            className="rounded-3xl overflow-hidden bg-white shadow-sm border border-slate-100 h-[320px]"
+          >
+            <Skeleton className="h-48 w-full" />
+            <div className="p-5 space-y-3">
+              <Skeleton className="h-6 w-3/4 rounded-lg" />
+              <div className="flex gap-2">
+                <Skeleton className="h-5 w-20 rounded-full" />
+                <Skeleton className="h-5 w-20 rounded-full" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900 italic uppercase">
+            Curriculum Catalog
+          </h2>
+          <p className="text-slate-500 font-medium text-xs tracking-widest uppercase">
+            Platform Curriculum Nodes
+          </p>
+        </div>
+      </div>
+
+      {coursesList.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center justify-center py-20 bg-slate-50/50 rounded-3xl border border-dashed border-slate-200"
+        >
+          <div className="h-16 w-16 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-4">
+            <LayoutGrid className="h-8 w-8 text-slate-300" />
+          </div>
+          <h3 className="text-lg font-medium text-slate-900">
+            No courses found
+          </h3>
+          <p className="text-slate-500 max-w-sm text-center mt-2">
+            Get started by creating a new course in the Instructor portal.
+          </p>
+        </motion.div>
+      ) : (
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          {coursesList.map((course: AdminCourse, index: number) => {
+            const CategoryIcon = course.title
+              ?.toLowerCase()
+              .includes("security")
+              ? Shield
+              : course.title?.toLowerCase().includes("ai")
+                ? Zap
+                : course.title?.toLowerCase().includes("data")
+                  ? BarChart3
+                  : course.title?.toLowerCase().includes("design")
+                    ? LayoutGrid
+                    : BookOpen;
+
+            return (
+              <motion.div
+                key={course.id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: index * 0.05 }}
+                className="group relative bg-white rounded-[2rem] border border-slate-100/50 shadow-sm hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] transition-all duration-500 flex flex-col p-1.5 overflow-hidden"
+              >
+                {/* Premium Image Header */}
+                <div className="aspect-video relative rounded-2xl overflow-hidden group-hover:shadow-lg transition-all">
+                  {course.thumbnail_url ? (
+                    <img
+                      src={
+                        course.thumbnail_url.startsWith("http")
+                          ? course.thumbnail_url
+                          : `/s3/public/${course.thumbnail_url}`
+                      }
+                      alt={course.title}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      onError={(e) => {
+                        e.currentTarget.src =
+                          "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=2070&auto=format&fit=crop";
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 text-slate-300">
+                      <BookOpen className="h-10 w-10 mb-2" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">
+                        Library Node
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent group-hover:opacity-100 transition-opacity" />
+
+                  {/* Floating Center Icon */}
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-14 w-14 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 scale-50 group-hover:scale-100 shadow-2xl">
+                    <CategoryIcon className="h-7 w-7 text-white" />
+                  </div>
+
+                  {/* Badges Overlay */}
+                  <div className="absolute top-4 left-4 flex gap-2">
+                    <Badge
+                      className={`border-none font-bold text-[9px] uppercase tracking-wider px-3 py-1 rounded-lg ${course.status === "published" ? "bg-emerald-500 text-white" : "bg-amber-500 text-white shadow-lg"}`}
+                    >
+                      {course.status || "Draft"}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Content - Floating Icon Join */}
+                <div className="relative pt-6 pb-5 px-5 flex-1 flex flex-col">
+                  {/* Floating Brand Icon */}
+                  <div className="absolute -top-6 right-6 h-12 w-12 rounded-full bg-white shadow-lg flex items-center justify-center border-4 border-slate-50 group-hover:scale-110 transition-transform duration-500">
+                    <div className="h-8 w-8 rounded-full bg-primary/5 flex items-center justify-center">
+                      <CategoryIcon className="h-4 w-4 text-primary" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1 mb-4">
+                    <h3 className="text-xl font-bold text-slate-900 leading-tight group-hover:text-primary transition-colors line-clamp-2">
+                      {course.title}
+                    </h3>
+                    <p className="text-[10px] uppercase font-bold text-primary/60 tracking-[0.2em]">
+                      {course.category || "Strategic Training"}
+                    </p>
+                  </div>
+
+                  <div className="space-y-3 mb-6">
+                    <div className="flex items-center gap-2 text-slate-400">
+                      <Clock className="h-3.5 w-3.5" />
+                      <span className="text-xs font-semibold">
+                        {course.duration || "3 Months"} • ONLINE / LIVE
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* High Visibility Pricing */}
+                  <div className="mt-auto pt-4 border-t border-slate-50">
+                    <div className="flex flex-col gap-1.5 mb-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg uppercase tracking-wider">
+                          Special Rate
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-3xl font-black text-slate-900 tracking-tighter">
+                          ₹
+                          {course.price
+                            ? Number(course.price).toLocaleString("en-IN")
+                            : "0"}
+                        </span>
+                        {course.price && Number(course.price) > 0 && (
+                          <div className="flex flex-col leading-none">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mb-0.5">
+                              Regular
+                            </span>
+                            <span className="text-sm text-slate-400 line-through font-bold">
+                              ₹
+                              {Math.round(
+                                Number(course.price) * 1.4,
+                              ).toLocaleString("en-IN")}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row xl:flex-row gap-2 pt-2">
+                    <Button
+                      variant="outline"
+                      className="w-full sm:flex-1 rounded-xl h-10 font-black text-[10px] uppercase tracking-wider border-slate-200 hover:bg-slate-50 truncate"
+                      onClick={() => window.open("https://aotms.in", "_blank")}
+                    >
+                      Explore
+                    </Button>
+                    <Button
+                      className="w-full sm:flex-1 rounded-xl h-10 font-black text-[10px] uppercase tracking-wider bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-100 truncate"
+                      onClick={() => onViewSyllabus?.(course)}
+                    >
+                      Manage
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Hover Management Float */}
+                <div className="absolute top-6 right-6 flex flex-col gap-2 opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 transition-all duration-300">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 rounded-full bg-white shadow-lg text-slate-400 hover:text-primary border-none"
+                    onClick={() =>
+                      setEditingPrice({
+                        id: course.id,
+                        title: course.title,
+                        price: String(course.price || "0"),
+                      })
+                    }
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 rounded-full bg-white shadow-lg text-slate-400 hover:text-red-600 border-none"
+                    onClick={() => onDelete?.(course.id)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Price Edit Modal */}
+      <Dialog
+        open={!!editingPrice}
+        onOpenChange={(open) => !open && setEditingPrice(null)}
+      >
+        <DialogContent className="sm:max-w-md pro-modal">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-emerald-500" />
+              Edit Course Price
+            </DialogTitle>
+            <DialogDescription>
+              Update the pricing for "{editingPrice?.title}"
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">
+                  New Price (₹)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
+                    ₹
+                  </span>
+                  <Input
+                    type="number"
+                    value={newPrice}
+                    onChange={(e) => setNewPrice(e.target.value)}
+                    className="pl-8 h-12 text-lg font-bold rounded-xl"
+                    placeholder="Enter amount"
+                  />
+                </div>
+                <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">
+                  Set to 0 for free courses
+                </p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditingPrice(null)}
+              className="rounded-xl"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handlePriceUpdate}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-8 shadow-lg shadow-emerald-200"
+            >
+              Update Price
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

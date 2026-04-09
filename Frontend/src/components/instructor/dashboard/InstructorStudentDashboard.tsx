@@ -6,7 +6,7 @@ import {
   BookOpen, Clock, CheckCircle2, AlertTriangle, PlayCircle,
   TrendingUp, TrendingDown, UserPlus, UserMinus, Activity,
   Eye, FileText, ChevronRight, RefreshCw, Bell, Loader2,
-  Phone, Play, Upload, Link as LinkIcon, Image as ImageIcon, AlertCircle, User
+  Phone, Play, Upload, Link as LinkIcon, Image as ImageIcon, AlertCircle, User, Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -240,6 +240,32 @@ function StudentRow({ student, onSendMessage, onViewDetails }: {
             student.status === 'at-risk' ? 'bg-amber-500' : 'bg-primary'
           }
         />
+        {student.atsScore !== undefined && (
+          <div className="flex items-center justify-between mt-2 px-2 py-1 bg-amber-50 rounded-lg border border-amber-100">
+             <span className="text-[8px] font-black text-amber-600 uppercase">ATS Rank</span>
+             <span className="text-[10px] font-black text-amber-700">{student.atsScore}</span>
+             <Zap className="h-2.5 w-2.5 text-amber-500" />
+          </div>
+        )}
+        
+        {/* Actions */}
+        <div className="mt-2.5 flex items-center gap-2">
+           <Button variant="outline" size="sm" className="h-7 text-[10px] font-bold py-0 px-2 rounded-lg border-primary/20 hover:bg-primary/5 text-primary">
+              Performance
+           </Button>
+           <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-7 text-[10px] font-bold py-0 px-2 rounded-lg text-slate-500 hover:text-slate-900"
+            onClick={() => {
+              if (student.email) {
+                window.location.href = `mailto:${student.email}`;
+              }
+            }}
+           >
+              Message
+           </Button>
+        </div>
       </div>
 
       {/* 5. Last Session & Actions (col-span-2) */}

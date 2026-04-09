@@ -71,7 +71,7 @@ export function StudentSettings() {
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 p-5 sm:p-8 bg-slate-50/80 rounded-3xl border border-slate-100 shadow-inner">
                         <div className="flex items-center gap-4 w-full sm:w-auto">
                             <div className="h-12 w-12 sm:h-16 sm:w-16 shrink-0 rounded-2xl bg-white shadow-sm flex items-center justify-center border border-slate-200 text-primary">
-                                <Bell className="h-6 w-6 sm:h-8 w-8" />
+                                <Bell className="h-6 w-6 sm:h-8 sm:w-8" />
                             </div>
                             <div className="flex-1 sm:flex-none min-w-0">
                                 <h4 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight truncate">Alert Center</h4>

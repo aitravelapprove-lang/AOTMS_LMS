@@ -717,8 +717,16 @@ export function QuestionBankManager({
             question_text: q.question_text,
             type: finalType,
             difficulty: globalDifficulty,
-            options: finalType === 'multiple_choice' ? 
-              (Array.isArray(q.options) ? q.options.filter(o => o && o.trim()) : []) : [],
+            options: (finalType === 'multiple_choice' || finalType === 'true_false') ? 
+              (Array.isArray(q.options) 
+                ? q.options
+                    .filter(o => o && o.trim())
+                    .map(o => ({
+                      text: o.trim(),
+                      is_correct: o.trim().toLowerCase() === (q.correct_answer || '').trim().toLowerCase()
+                    })) 
+                : []) 
+              : [],
             correct_answer: q.correct_answer || '',
             explanation: q.explanation || null,
             marks: Number(globalMarks) || 1,

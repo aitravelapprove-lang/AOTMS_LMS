@@ -937,6 +937,7 @@ export interface InstructorStudent {
   status: 'active' | 'inactive' | 'at-risk' | 'completed';
   enrolledAt: string;
   certificates: number;
+  atsScore?: number;
   courseEnrollments: {
     courseId: string;
     courseTitle: string;
@@ -983,20 +984,24 @@ export function useInstructorAllStudents() {
     queryFn: async () => {
       if (!user?.id) return [];
 
-      // 1. Fetch instructor's courses
-      const courses = await fetchWithAuth<Course[]>(`/data/courses?instructor_id=eq.${user.id}`) || [];
-      const courseIds = courses.map(c => c.id || (c as Record<string, any>)._id).filter(Boolean);
+      // 1. Fetch instructor's courses using the robust dedicated endpoint
+      const courses = await fetchWithAuth<Course[]>('/instructor/courses') || [];
+      const courseIds = courses.map(c => c.id || c._id).filter(Boolean);
 
       if (courseIds.length === 0) return [];
 
       // 2. Fetch enrollments and batch assignments for these courses
-      const [allEnrollments, allBatchAssignments] = await Promise.all([
+      const [allEnrollments, allBatchAssignments, allResumeScans] = await Promise.all([
         fetchWithAuth<Record<string, any>[]>(`/data/course_enrollments?course_id=in.(${courseIds.join(',')})`).catch(e => {
             console.error("[useInstructorAllStudents] Enrollments fetch failed:", e);
             return [] as Record<string, any>[];
         }),
         fetchWithAuth<Record<string, any>[]>(`/batches/student-assignments?course_id=in.(${courseIds.join(',')})`).catch(e => {
             console.error("[useInstructorAllStudents] Batch assignments fetch failed:", e);
+            return [] as Record<string, any>[];
+        }),
+        fetchWithAuth<Record<string, any>[]>('/admin/resume-scans').catch(e => {
+            console.error("[useInstructorAllStudents] Resume scans fetch failed:", e);
             return [] as Record<string, any>[];
         })
       ]);
@@ -1078,6 +1083,7 @@ export function useInstructorAllStudents() {
             lastActiveAt: enrollment.last_accessed_at || enrollment.enrolled_at || new Date().toISOString(),
             overallProgress: progress,
             status,
+            atsScore: allResumeScans?.find(rs => rs.user_id?._id === userId || rs.user_id?.id === userId || rs.user_id === userId)?.score,
             enrolledAt: enrollment.enrolled_at || new Date().toISOString(),
             certificates: progress === 100 ? 1 : 0,
             courseEnrollments: [{

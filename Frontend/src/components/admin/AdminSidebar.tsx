@@ -29,7 +29,8 @@ import {
   Zap,
   User,
   Search,
-  X
+  X,
+  UserCheck,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useAuth } from "@/hooks/useAuth";
@@ -48,7 +49,7 @@ const navGroups = [
     label: "User Administration",
     items: [
       { title: "User Directory", url: "/admin/users", icon: Users },
-      { title: "Staff Permissions", url: "/admin/instructor-access", icon: ShieldCheck },
+      { title: "Instructor Access", url: "/admin/instructor-access", icon: ShieldCheck },
       { title: "Instructor List", url: "/admin/instructors", icon: Award },
     ],
   },
@@ -59,6 +60,7 @@ const navGroups = [
       { title: "Video Lessons", url: "/admin/videos", icon: Video },
       { title: "Question Bank", url: "/admin/questions", icon: FileQuestion },
       { title: "Question Database", url: "/admin/question-repository", icon: Database },
+      { title: "Question Access", url: "/admin/question-access", icon: UserCheck },
     ],
   },
   {

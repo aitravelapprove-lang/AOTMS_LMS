@@ -475,16 +475,16 @@ export function QuestionBankApproval() {
                                 <ShieldCheck className="h-6 w-6 text-white" />
                             </div>
                             <Badge className="bg-emerald-500/20 text-emerald-400 border-none px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest animate-pulse">
-                                Active Compliance Node
+                                Active Access Node
                             </Badge>
                         </div>
                         
                         <div className="space-y-2">
                             <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white italic">
-                                Question Bank <span className="text-primary not-italic">Approvals</span>
+                                Question <span className="text-primary not-italic">Access Center</span>
                             </h2>
                             <p className="text-slate-400 text-sm sm:text-lg font-medium max-w-lg leading-relaxed">
-                                Review and activate curated question repositories. Ensure logical integrity before releasing to the simulation environment.
+                                Review question repositories and grant student access to mock tests. Ensure logical integrity before final release.
                             </p>
                         </div>
 

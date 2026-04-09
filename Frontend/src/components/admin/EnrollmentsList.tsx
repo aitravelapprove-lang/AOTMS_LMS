@@ -68,16 +68,17 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
     return parseFloat(cleaned) || 0;
   };
 
-  const EnrollmentAvatar = ({ enrollment }: { enrollment: CourseEnrollment }) => {
-    const hasProfilePic = !!enrollment.user_avatar;
+  const EnrollmentAvatar = ({ enrollment }: { enrollment: any }) => {
+    const avatar = enrollment.user_avatar || enrollment.profile?.avatar_url;
+    const name = enrollment.user_name || enrollment.profile?.full_name || 'U';
 
-    if (hasProfilePic) {
+    if (avatar) {
       return (
         <div className="relative group">
           <div className="h-14 w-14 rounded-[1.25rem] overflow-hidden border-2 border-white shadow-xl bg-slate-100 transition-transform duration-500 group-hover:scale-105">
             <img 
-              src={enrollment.user_avatar} 
-              alt={enrollment.user_name} 
+              src={avatar} 
+              alt={name} 
               className="h-full w-full object-cover"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
@@ -94,9 +95,9 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
     return (
       <div className={cn(
         "h-14 w-14 rounded-[1.25rem] flex items-center justify-center font-black text-xl shadow-xl border-2 border-white transition-all duration-500 hover:rotate-6",
-        ['bg-indigo-600 text-white', 'bg-emerald-600 text-white', 'bg-rose-600 text-white', 'bg-amber-600 text-white'][enrollment.user_name ? enrollment.user_name.length % 4 : 0]
+        ['bg-indigo-600 text-white', 'bg-emerald-600 text-white', 'bg-rose-600 text-white', 'bg-amber-600 text-white'][name.length % 4]
       )}>
-         {enrollment.user_name?.charAt(0).toUpperCase() || 'U'}
+         {name.charAt(0).toUpperCase()}
       </div>
     );
   };
@@ -131,15 +132,24 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
     }
   };
 
-  const courses = [...new Set(enrollments.map(e => e.course_name).filter(Boolean))];
+  const getEnrollmentName = (e: any) => e.user_name || e.profile?.full_name || 'Unknown Student';
+  const getEnrollmentEmail = (e: any) => e.user_email || e.profile?.email || 'N/A';
+  const getCourseName = (e: any) => e.course_name || e.course?.title || 'Unknown Course';
+  const getAvatarUrl = (e: any) => e.user_avatar || e.profile?.avatar_url || null;
 
-  const filteredEnrollments = enrollments.filter(e => {
+  const courses = [...new Set((enrollments || []).map(e => getCourseName(e)).filter(Boolean))];
+
+  const filteredEnrollments = (enrollments || []).filter(e => {
+    const userName = getEnrollmentName(e);
+    const userEmail = getEnrollmentEmail(e);
+    const courseName = getCourseName(e);
+    
     const matchesSearch = 
-      e.user_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      e.user_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      e.course_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      e.user_id?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCourse = filterCourse === "all" || e.course_name === filterCourse;
+      userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      userEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      courseName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (e.user_id || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCourse = filterCourse === "all" || courseName === filterCourse;
     const matchesStatus = filterStatus === "all" || e.status === filterStatus;
 
     return matchesSearch && matchesCourse && matchesStatus;
@@ -317,7 +327,9 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                                 <EnrollmentAvatar enrollment={enrollment} />
                                 <div className="space-y-1 min-w-0">
                                   <div className="flex items-center gap-3">
-                                    <h4 className="font-black text-slate-900 group-hover:text-indigo-600 transition-colors whitespace-nowrap">{enrollment.user_name}</h4>
+                                    <h4 className="font-black text-slate-900 group-hover:text-indigo-600 transition-colors whitespace-nowrap">
+                                      {enrollment.user_name || enrollment.profile?.full_name}
+                                    </h4>
                                     {getStatusBadge(enrollment.status || 'pending')}
                                   </div>
                                   <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 bg-slate-50/80 px-2 py-1 rounded-lg w-fit">
@@ -344,7 +356,9 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                             </td>
                             <td className="px-6 py-6 font-black">
                               <div className="space-y-2">
-                                <p className="text-xs text-slate-900 leading-tight uppercase tracking-tight">{enrollment.course_name}</p>
+                                <p className="text-xs text-slate-900 leading-tight uppercase tracking-tight">
+                                  {enrollment.course_name || enrollment.course?.title}
+                                </p>
                                 <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 w-fit">
                                   <Globe className="h-2.5 w-2.5 text-slate-400" />
                                   <span className="text-[8px] font-black uppercase text-slate-400 tracking-wider">Strategic Node</span>
@@ -466,8 +480,12 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                       <div className="flex gap-4">
                         <EnrollmentAvatar enrollment={enrollment} />
                         <div className="space-y-1">
-                          <h4 className="font-black text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight">{enrollment.user_name}</h4>
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest truncate max-w-[140px]">{enrollment.user_email}</p>
+                          <h4 className="font-black text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight">
+                            {enrollment.user_name || enrollment.profile?.full_name}
+                          </h4>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest truncate max-w-[140px]">
+                            {enrollment.user_email || enrollment.profile?.email}
+                          </p>
                         </div>
                       </div>
                       {getStatusBadge(enrollment.status || 'pending')}
@@ -476,7 +494,9 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                     <div className="bg-slate-50/50 p-5 rounded-3xl space-y-4 border border-slate-100">
                       <div className="space-y-1">
                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Enrolled In</p>
-                         <p className="text-sm font-black text-slate-800 leading-tight uppercase tracking-tight">{enrollment.course_name}</p>
+                         <p className="text-sm font-black text-slate-800 leading-tight uppercase tracking-tight">
+                           {enrollment.course_name || enrollment.course?.title}
+                         </p>
                       </div>
                       
                       <div className="grid grid-cols-2 gap-4 pt-1">

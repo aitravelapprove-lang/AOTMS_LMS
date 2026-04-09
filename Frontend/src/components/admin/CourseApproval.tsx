@@ -142,9 +142,9 @@ export function CourseApproval({
               <div className="space-y-1">
                 <CardTitle className="text-xl flex items-center gap-2">
                   <BookOpen className="h-5 w-5 text-primary" />
-                  Executive Catalog
+                  Curriculum Catalog
                 </CardTitle>
-                <CardDescription>Global Curriculum Intelligence Node</CardDescription>
+                <CardDescription>Platform Curriculum Nodes</CardDescription>
               </div>
             </div>
             

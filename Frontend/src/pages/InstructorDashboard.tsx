@@ -23,6 +23,7 @@ import { InstructorVideoLibrary } from "@/components/instructor/dashboard/Instru
 import { LiveClassManager } from "@/components/instructor/dashboard/LiveClassManager";
 import { UserProfile } from "@/components/dashboard/UserProfile";
 import { ResumeScanHistory } from "@/components/admin/ResumeScanHistory";
+import { StudentResumeScan } from "@/components/dashboard/StudentResumeScan";
 import { InstructorNotifications } from "@/components/instructor/dashboard/InstructorNotifications";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

@@ -431,8 +431,8 @@ export default function InstructorAccess() {
                       <div className="relative shrink-0">
                         <Avatar className="h-14 w-14 border-2 border-slate-50 shadow-md rounded-2xl overflow-hidden transition-transform duration-500 group-hover:scale-105">
                           <AvatarImage src={course.instructor_avatar || ""} />
-                          <AvatarFallback className="bg-primary/5 text-primary text-base font-black">
-                            {course.instructor_name?.[0]}
+                          <AvatarFallback className={`${course.instructor_name === 'No Instructor Assigned' ? 'bg-slate-50 text-slate-300' : 'bg-primary/5 text-primary'} text-base font-black`}>
+                            {course.instructor_name === 'No Instructor Assigned' ? '?' : (course.instructor_name?.[0] || 'I')}
                           </AvatarFallback>
                         </Avatar>
                         <div
@@ -450,7 +450,7 @@ export default function InstructorAccess() {
 
                       <div className="flex-1 min-w-0 space-y-1.5">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h4 className="text-[16px] font-black text-slate-900 group-hover:text-primary transition-colors line-clamp-1 tracking-tight">
+                          <h4 className={`text-[16px] font-black group-hover:text-primary transition-colors line-clamp-1 tracking-tight ${course.instructor_name === 'No Instructor Assigned' ? 'text-slate-400 italic' : 'text-slate-900'}`}>
                             {course.instructor_name}
                           </h4>
                           <Badge

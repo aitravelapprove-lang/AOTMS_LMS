@@ -175,23 +175,20 @@ export function CourseList({ type = 'enrolled', onSelectCourse }: CourseListProp
                                             </div>
                                         ) : (
                                             <>
-                                                <div className="flex justify-between text-[11px] font-bold mb-1">
-                                                    <span className="text-slate-500 uppercase tracking-tighter">Payment Status</span>
-                                                    <span className="text-primary font-black uppercase">
-                                                        {course.payment_term === 'term1' ? '1st Term' : course.payment_term === 'term2' ? '2nd Term' : 'Paid in Full'}
-                                                    </span>
-                                                </div>
                                                 {course.remaining_balance ? (
-                                                    <div className="text-[10px] text-amber-600 bg-amber-50 px-2 py-1 rounded-md border border-amber-100 flex justify-between items-center mb-3">
-                                                       <span className="font-bold flex items-center gap-1"><CreditCard className="h-3 w-3" /> Remaining:</span>
-                                                       <span className="font-black">₹{course.remaining_balance.toLocaleString('en-IN')}</span>
-                                                    </div>
-                                                ) : (
-                                                    <div className="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100 flex justify-between items-center mb-3">
-                                                       <span className="font-bold">✨ Clear</span>
-                                                       <span className="font-black">Fully Covered</span>
-                                                    </div>
-                                                )}
+                                                    <>
+                                                        <div className="flex justify-between text-[11px] font-bold mb-1">
+                                                            <span className="text-slate-500 uppercase tracking-tighter">Payment Status</span>
+                                                            <span className="text-primary font-black uppercase">
+                                                                {course.payment_term === 'term1' ? '1st Term' : course.payment_term === 'term2' ? '2nd Term' : 'Paid in Full'}
+                                                            </span>
+                                                        </div>
+                                                        <div className="text-[10px] text-amber-600 bg-amber-50 px-2 py-1 rounded-md border border-amber-100 flex justify-between items-center mb-3">
+                                                           <span className="font-bold flex items-center gap-1"><CreditCard className="h-3 w-3" /> Remaining:</span>
+                                                           <span className="font-black">₹{course.remaining_balance.toLocaleString('en-IN')}</span>
+                                                        </div>
+                                                    </>
+                                                ) : null}
 
                                                 <div className="flex justify-between text-sm font-bold">
                                                     <span className="text-foreground">Course Progress</span>

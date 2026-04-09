@@ -58,7 +58,7 @@ export function StudentResumeScan() {
   const { data: history = [], isLoading: historyLoading } = useQuery<ScanResult[]>({
     queryKey: ['my-resume-scans'],
     queryFn: async () => {
-      return await fetchWithAuth('/data/resume_scans?limit=10&sort=created_at&order=desc');
+      return await fetchWithAuth('/data/resumescans?limit=10&sort=created_at&order=desc');
     }
   });
 

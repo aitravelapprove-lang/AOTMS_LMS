@@ -38,7 +38,7 @@ export interface Question {
   question_text: string;
   type: string;
   difficulty: string;
-  options: string[] | null;
+  options: { text: string; is_correct: boolean }[] | null;
   correct_answer: string;
   explanation: string | null;
   marks: number | null;

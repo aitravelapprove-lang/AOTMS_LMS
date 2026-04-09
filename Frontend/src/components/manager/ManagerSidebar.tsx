@@ -16,6 +16,11 @@ import {
   LogOut,
   Search,
   BookOpen as BookOpenIcon,
+  ShieldCheck,
+  UserCheck,
+  TrendingUp,
+  Zap,
+  Video,
 } from "lucide-react";
 import {
   Sidebar,
@@ -31,36 +36,41 @@ import {
 } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
 
-const navGroups = [
-  {
-    label: "Exam Management",
-    items: [
-      { id: "dashboard", title: "Dashboard", url: "/manager", icon: LayoutDashboard },
-      { id: "profile", title: "My Profile", url: "/manager/profile", icon: User },
-      { id: "exams", title: "Exam Scheduling", url: "/manager/exams", icon: Calendar },
-      { id: "questions", title: "Question Bank", url: "/manager/questions", icon: FileQuestion },
-      { id: "qb-approvals", title: "QB Approvals", url: "/manager/qb-approvals", icon: CheckCircle },
-    ],
-  },
-  {
-    label: "Management",
-    items: [
-      { id: "leaderboard", title: "Leaderboard", url: "/manager/leaderboard", icon: Trophy },
-      { id: "instructors", title: "Instructors", url: "/manager/instructors", icon: Users },
-      { id: "all-courses", title: "All Courses", url: "/manager/all-courses", icon: BookOpenIcon },
-      { id: "coupons", title: "Rewards & Coupons", url: "/manager/coupons", icon: Ticket },
-      { id: "grant-access", title: "Grant Access", url: "/manager/grant-access", icon: KeyRound },
-      { id: "resume-scans", title: "Resume Scan Logs", url: "/manager/resume-scans", icon: ClipboardList },
-    ],
-  },
-];
-
 export function ManagerSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
   const { signOut } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
+
+  const navGroups = [
+    {
+      label: "Exam Management",
+      items: [
+        { id: "dashboard", title: "Dashboard", url: "/manager", icon: LayoutDashboard },
+        { id: "profile", title: "My Profile", url: "/manager/profile", icon: User },
+        { id: "exams", title: "Exam Scheduling", url: "/manager/exams", icon: Calendar },
+        { id: "questions", title: "Question Bank", url: "/manager/questions", icon: FileQuestion },
+      ],
+    },
+    {
+      label: "Management",
+      items: [
+        { id: "leaderboard", title: "Leaderboard", url: "/manager/leaderboard", icon: Trophy },
+        { id: "instructors", title: "Instructors", url: "/manager/instructors", icon: Users },
+        { id: "instructor-access", title: "Instructor Access", url: "/manager/instructor-access", icon: ShieldCheck },
+        { id: "all-courses", title: "All Courses", url: "/manager/all-courses", icon: BookOpenIcon },
+        { id: "coupons", title: "Rewards & Coupons", url: "/manager/coupons", icon: Ticket },
+        { id: "grant-access", title: "Grant Access", url: "/manager/grant-access", icon: KeyRound },
+        { id: "question-access", title: "Question Access", url: "/manager/question-access", icon: UserCheck },
+        { id: "resume-scans", title: "Resume Scan Logs", url: "/manager/resume-scans", icon: ClipboardList },
+        { id: "video-library", title: "Video Library", url: "/manager/video-library", icon: Video },
+        { id: "monitoring", title: "Live Monitoring", url: "/manager/monitoring", icon: TrendingUp },
+        { id: "leads", title: "Landing Leads", url: "/manager/leads", icon: Zap },
+        { id: "enrollments", title: "Enrollments Hub", url: "/manager/enrollments", icon: Users },
+      ],
+    },
+  ];
 
   const isActive = (path: string) => {
     if (path === "/manager" && location.pathname === "/manager") return true;

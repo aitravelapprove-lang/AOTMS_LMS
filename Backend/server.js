@@ -71,7 +71,7 @@ const MODEL_MAP = {
     'guest_credentials': GuestCredential,
     'notifications': Notification,
     'users': User,
-    'resume_scans': ResumeScan,
+    'resumescans': ResumeScan,
     'leads': Lead,
     'batches': Batch,
     'attendance': Attendance,
@@ -1515,11 +1515,8 @@ app.get('/api/admin/question-bank/:topic/access-list', authenticateToken, requir
 
 app.get('/api/admin/courses-with-instructors', authenticateToken, requireAdminOrManager, async (req, res) => {
     try {
-        const courses = await Course.find({
-            $or: [
-                { instructor_ids: { $exists: true, $not: { $size: 0 } } },
-                { instructor_id: { $ne: null } }
-            ]
+        const courses = await Course.find({ 
+            instructor_ids: { $exists: true, $not: { $size: 0 } } 
         })
             .sort({ updated_at: -1, created_at: -1 })
             .lean();
@@ -1527,31 +1524,46 @@ app.get('/api/admin/courses-with-instructors', authenticateToken, requireAdminOr
         // Get all unique instructor IDs from all courses (instructor_ids is an array)
         const instructorIds = [...new Set(courses.flatMap(c => c.instructor_ids || []).filter(id => id))];
 
-        // Fetch profiles for these instructors
-        const profiles = await Profile.find({ user_id: { $in: instructorIds } }).lean();
+        // Fetch profiles AND User details for these instructors
+        const [profiles, users] = await Promise.all([
+            Profile.find({ user_id: { $in: instructorIds } }).lean(),
+            User.find({ _id: { $in: instructorIds } }).select('full_name email avatar_url').lean()
+        ]);
+
         const profileMap = profiles.reduce((acc, p) => {
-            acc[p.user_id] = p;
+            acc[p.user_id.toString()] = p;
+            return acc;
+        }, {});
+
+        const userMap = users.reduce((acc, u) => {
+            acc[u._id.toString()] = u;
             return acc;
         }, {});
 
         // Map courses to include instructor details
         const data = courses.map(course => {
             const instructors = (course.instructor_ids || []).map(id => {
-                const p = profileMap[id] || {};
+                const p = profileMap[id.toString()] || {};
+                const u = userMap[id.toString()] || {};
                 return {
                     id: id,
-                    full_name: p.full_name || 'Unknown',
-                    avatar_url: p.avatar_url || ''
+                    full_name: p.full_name || u.full_name || 'System Instructor',
+                    email: p.email || u.email || '',
+                    avatar_url: p.avatar_url || u.avatar_url || ''
                 };
             });
+
+            // Filter out internal/empty instructor slots if any (optional)
+            
+            const mainInstructor = instructors[0] || { full_name: 'No Instructor Assigned', email: '', avatar_url: '' };
 
             return {
                 ...course,
                 id: course._id, // Ensure id is present for frontend
                 instructors, // New array format
-                instructor_name: instructors.map(i => i.full_name).join(', ') || 'Unknown', // Fallback for single-name legacy UI
-                instructor_email: instructors.length > 0 ? (profileMap[course.instructor_ids[0]]?.email || '') : '', // Primary instructor email
-                instructor_avatar: instructors.length > 0 ? (profileMap[course.instructor_ids[0]]?.avatar_url || '') : ''
+                instructor_name: instructors.map(i => i.full_name).join(', ') || 'No Instructor Assigned',
+                instructor_email: mainInstructor.email,
+                instructor_avatar: mainInstructor.avatar_url
             };
         });
 
@@ -2732,7 +2744,12 @@ app.post('/api/instructor/choose-course', authenticateToken, requireInstructor, 
 app.get('/api/instructor/courses', authenticateToken, requireInstructor, async (req, res) => {
     try {
         const { all } = req.query;
-        let query = { instructor_ids: req.user.id };
+        let query = { 
+            $or: [
+                { instructor_id: req.user.id },
+                { instructor_ids: req.user.id }
+            ] 
+        };
         
         if (all === 'true' || req.user.role === 'admin' || req.user.role === 'manager') {
             query = {}; // View all courses for catalogue or admin/manager view
@@ -3239,12 +3256,57 @@ app.post('/api/student/scan-resume', authenticateToken, upload.single('resume'),
     }
 });
 
-app.get('/api/admin/resume-scans', authenticateToken, requireAdminOrManager, async (req, res) => {
+app.get('/api/admin/resume-scans', authenticateToken, async (req, res) => {
     try {
-        const scans = await ResumeScan.find()
-            .populate('user_id', 'full_name email avatar_url')
-            .sort({ created_at: -1 });
-        res.json(scans);
+        const userId = req.user.id;
+        const userRole = (await getUserRole(userId))?.toLowerCase();
+        console.log(`[API] Fetching scans. User ID: ${userId}, Role: ${userRole}`);
+
+        if (userRole === 'admin' || userRole === 'manager') {
+            const scans = await ResumeScan.find()
+                .populate('user_id', 'full_name email avatar_url')
+                .sort({ created_at: -1 });
+            console.log(`[API] Found ${scans.length} resume scans for role: ${userRole}`);
+            return res.json(scans);
+        } else if (userRole === 'instructor') {
+            // 1. Fetch instructor's courses
+            // Ensure userId is converted to ObjectId for robust matching
+            let instructorId = userId;
+            try {
+                if (mongoose.Types.ObjectId.isValid(userId)) {
+                    instructorId = new mongoose.Types.ObjectId(userId);
+                }
+            } catch (e) {
+                console.warn("[get-all-scans] Failed to convert instructor ID to ObjectId:", userId);
+            }
+
+            const instructorCourses = await Course.find({ 
+                $or: [
+                    { instructor_id: instructorId },
+                    { instructor_ids: instructorId }
+                ]
+            });
+            const courseIds = instructorCourses.map(c => c._id);
+
+            // 2. Fetch students from Enrollments
+            const enrollments = await Enrollment.find({ course_id: { $in: courseIds } });
+            let studentIds = enrollments.map(e => e.user_id.toString());
+
+            // 3. Fetch students from Batches (StudentBatch)
+            if (StudentBatch) {
+                const assignments = await StudentBatch.find({ course_id: { $in: courseIds } });
+                const batchStudentIds = assignments.map(a => a.student_id ? a.student_id.toString() : null).filter(Boolean);
+                studentIds = [...new Set([...studentIds, ...batchStudentIds])];
+            }
+
+            const scans = await ResumeScan.find({ user_id: { $in: studentIds } })
+                .populate('user_id', 'full_name email avatar_url')
+                .sort({ created_at: -1 });
+            console.log(`[API] Instructor ${userId} found ${studentIds.length} students and ${scans.length} scans`);
+            return res.json(scans);
+        } else {
+            return res.status(403).json({ error: 'Access denied' });
+        }
     } catch (err) {
         handleError(res, err, 'get-all-scans');
     }
@@ -3362,7 +3424,7 @@ app.get('/api/student/all-resources', authenticateToken, async (req, res) => {
     }
 });
 
-app.put('/api/courses/enrollment-status', authenticateToken, requireAdmin, async (req, res) => {
+app.put('/api/courses/enrollment-status', authenticateToken, requireAdminOrManager, async (req, res) => {
     const { enrollmentId, status } = req.body;
     try {
         await Enrollment.findByIdAndUpdate(enrollmentId, { status, updated_at: new Date() });
@@ -4498,7 +4560,14 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
         // Utility to convert hex strings to ObjectId if they look like one
         const tryConvertId = (val) => {
             if (typeof val === 'string' && val.length === 24 && /^[0-9a-fA-F]{24}$/.test(val)) {
-                try { return new mongoose.Types.ObjectId(val); } catch (e) { return val; }
+                try { 
+                    // Only convert if it's explicitly used for an ID field like _id, student_id, etc.
+                    // For generic queries, we'll try to convert but catch any potential issues.
+                    return new mongoose.Types.ObjectId(val); 
+                } catch (e) { 
+                    console.warn(`[tryConvertId] Failed to convert ${val}:`, e.message);
+                    return val; 
+                }
             }
             return val;
         };
@@ -4545,7 +4614,7 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
         if (role === 'student') {
             const studentScopedTables = {
                 'exam_results': 'student_id',
-                'resume_scans': 'user_id',
+                'resumescans': 'user_id',
                 'student_exam_access': 'student_id',
                 'course_enrollments': 'user_id',
                 'attendance': 'user_id',

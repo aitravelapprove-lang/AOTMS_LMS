@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
@@ -12,16 +12,22 @@ import { LeaderboardManager } from "@/components/manager/LeaderboardManager";
 import { LiveMonitoring } from "@/components/admin/LiveMonitoring";
 import { ExamRulesManager } from "@/components/manager/ExamRulesManager";
 import { ManagerCourses } from "@/components/manager/ManagerCourses";
+import { ExecutiveCatalog } from "@/components/manager/ExecutiveCatalog";
 import { EnrollmentsList } from "@/components/admin/EnrollmentsList";
 import { CourseAssignment } from "@/components/admin/CourseAssignment";
+import { CourseApproval } from "@/components/admin/CourseApproval";
 import { CouponManager } from "@/components/admin/CouponManager";
 import { GrantStudentAccess } from "@/components/admin/GrantStudentAccess";
 import { ResumeScanHistory } from "@/components/admin/ResumeScanHistory";
-import { ExamApproval } from "@/components/admin/ExamApproval";
-import { InstructorManagement } from "@/components/manager/InstructorManagement";
-import { ManagerVideoLibrary } from "@/components/manager/ManagerVideoLibrary";
+import { QuestionBankApproval } from "@/components/admin/QuestionBankApproval";
+import { QualityAssurance } from "@/components/admin/QualityAssurance";
+import { ChatMonitor } from "@/components/admin/ChatMonitor";
+import { InstructorManagement } from "@/components/admin/InstructorManagement";
+import { LeadManagement } from "@/components/admin/LeadManagement";
+import InstructorAccessAdmin from "@/pages/InstructorAccess";
+import { useNotifications } from "@/hooks/useNotifications";
+import { useCourses } from "@/hooks/useCourses";
 import { useAdminData } from "@/hooks/useAdminData";
-import { useCourses, CourseEnrollment } from "@/hooks/useCourses";
 import { useSocket } from "@/hooks/useSocket";
 import { UserProfile } from "@/components/dashboard/UserProfile";
 import {
@@ -33,112 +39,63 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  CalendarCheck,
-  BookOpen,
-  FileText,
+  LayoutDashboard,
+  Calendar,
+  FileQuestion,
   Trophy,
-  UserPlus,
-  Shield,
-  MonitorPlay,
+  Users,
   Video,
-  Gavel,
-  Server,
-  Settings,
-  ChevronRight,
-  Activity,
+  MonitorPlay,
+  Shield,
   Plus,
-  KeyRound,
-  CheckCircle,
-  ArrowRight
+  RefreshCw,
+  Clock,
+  CheckCircle2,
+  ExternalLink,
+  ShieldCheck,
 } from "lucide-react";
 import {
   useExams,
   useQuestions,
   useLeaderboard,
-  useExamRules,
-  useExamResults,
   type ExamRule,
 } from "@/hooks/useManagerData";
 import { cn } from "@/lib/utils";
 
 export default function ManagerDashboard() {
-  const { user, userRole, loading } = useAuth();
-  const [activeSection, setActiveSection] = useState("overview");
-  const [qbFlowStep, setQbFlowStep] = useState<'rules' | 'container' | 'manager'>('rules');
-  const [lastCreatedRule, setLastCreatedRule] = useState<ExamRule | null>(null);
+  const { user, userRole, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+  const [activeSection, setActiveSection] = useState("overview");
 
-  // Reset flow when changing sections
   useEffect(() => {
-    if (activeSection !== "questions") {
-        setQbFlowStep('rules');
-        setLastCreatedRule(null);
+    const path = location.pathname.split("/").pop();
+    if (path && path !== "manager") {
+      setActiveSection(path);
+    } else {
+      setActiveSection("overview");
     }
-  }, [activeSection]);
+  }, [location.pathname]);
 
-  // Data hooks for overview
   const { data: exams = [] } = useExams();
   const { data: questions = [] } = useQuestions();
   const { data: leaderboard = [] } = useLeaderboard();
 
-  const { data: examRules = [] } = useExamRules();
-  const { data: examResults = [] } = useExamResults();
+  const {
+    courses,
+    loading: dataLoading,
+    approveCourse,
+    rejectCourse,
+    updateCourseStatus,
+    toggleCourseActive,
+  } = useAdminData(userRole);
 
-  const { updateEnrollmentStatus, deleteEnrollment } = useAdminData(userRole);
-  const { fetchEnrollments } = useCourses();
-  const [enrollments, setEnrollments] = useState<CourseEnrollment[]>([]);
-  const [enrollmentsLoading, setEnrollmentsLoading] = useState(false);
-
-  const loadEnrollments = useCallback(async () => {
-    setEnrollmentsLoading(true);
-    try {
-      const data = await fetchEnrollments();
-      setEnrollments(data);
-    } catch (err) {
-      console.error('Failed to load enrollments:', err);
-    } finally {
-      setEnrollmentsLoading(false);
-    }
-  }, [fetchEnrollments]);
-
-  useEffect(() => {
-    if (user && activeSection === 'enrollments') {
-      loadEnrollments();
-    }
-  }, [user, activeSection, loadEnrollments]);
-
-  // Socket support for real-time enrollment updates
-  const { socket } = useSocket();
-
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleEnrollmentChange = () => {
-      console.log('[Socket-Manager] Enrollments changed, refreshing...');
-      loadEnrollments();
-    };
-
-    socket.on('course_enrollments_changed', handleEnrollmentChange);
-    
-    return () => {
-      socket.off('course_enrollments_changed', handleEnrollmentChange);
-    };
-  }, [socket, loadEnrollments]);
-
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate("/auth");
-    }
-  }, [user, loading, navigate]);
-
-  if (loading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center space-y-4">
         <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary/20 border-t-primary"></div>
-        <p className="text-xs font-medium text-muted-foreground animate-pulse tracking-tight">
-          Loading console...
-        </p>
+        <p className="text-xs font-medium text-muted-foreground animate-pulse">Loading dashboard...</p>
       </div>
     );
   }
@@ -147,201 +104,147 @@ export default function ManagerDashboard() {
     return <Navigate to="/student-dashboard" replace />;
   }
 
-  const activeExamsCount = exams.filter((e) => e.status === "active").length;
-
   const renderOverview = () => (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Search and Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="space-y-1">
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">
-            Manager Dashboard
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Welcome back, {user?.user_metadata?.full_name || "Manager"}. Here is
-            what's happening today.
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Manager Dashboard</h1>
+          <p className="text-slate-500 font-medium">Welcome back, Manager. Here's what's happening today.</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            onClick={() => setActiveSection("exams")}
-            className="rounded-lg"
-          >
-            <Plus className="h-4 w-4 mr-1" /> New Exam
-          </Button>
-        </div>
+        <Button className="rounded-xl h-11 px-6 gap-2 shadow-lg shadow-primary/20" onClick={() => navigate('/manager/exams')}>
+          <Plus className="h-4 w-4" />
+          <span>New Exam</span>
+        </Button>
       </div>
 
-      {/* Standard Stats Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
-          {
-            label: "Exams Scheduled",
-            value: exams.length,
-            color: "text-blue-600",
-            icon: CalendarCheck,
-            bg: "bg-blue-50",
-          },
-          {
-            label: "Question Bank",
-            value: questions.length,
-            color: "text-purple-600",
-            icon: BookOpen,
-            bg: "bg-purple-50",
-          },
-          {
-            label: "Leaderboard",
-            value: leaderboard.length,
-            color: "text-amber-600",
-            icon: Trophy,
-            bg: "bg-amber-50",
-          },
+          { label: "EXAMS SCHEDULED", value: exams.length, icon: Calendar, color: "text-blue-600", bg: "bg-blue-50" },
+          { label: "QUESTION BANK", value: questions.length, icon: FileQuestion, color: "text-purple-600", bg: "bg-purple-50" },
+          { label: "LEADERBOARD", value: 9, icon: Trophy, color: "text-amber-600", bg: "bg-amber-50" },
         ].map((stat, i) => (
-          <Card
-            key={i}
-            className="rounded-xl border shadow-sm hover:shadow-md transition-shadow"
-          >
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div
-                  className={cn(
-                    "h-10 w-10 rounded-lg flex items-center justify-center",
-                    stat.bg,
-                  )}
-                >
-                  <stat.icon className={cn("h-5 w-5", stat.color)} />
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-tight">
-                    {stat.label}
-                  </p>
-                  <h3 className="text-2xl font-bold">{stat.value}</h3>
-                </div>
+          <Card key={i} className="border-none shadow-sm bg-white/50 backdrop-blur-sm">
+            <CardContent className="p-6 flex items-center gap-6">
+              <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center shadow-inner", stat.bg)}>
+                <stat.icon className={cn("h-6 w-6", stat.color)} />
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
+                <h3 className="text-3xl font-black text-slate-900">{stat.value}</h3>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-        <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-3">
-        {/* Main Quick Actions Section */}
-        <Card className="md:col-span-2 rounded-xl border-none shadow-sm bg-muted/30">
-          <CardHeader>
-            <CardTitle className="text-lg">Quick Tasks</CardTitle>
-            <CardDescription>Commonly used management tools</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <h2 className="text-xl font-bold text-slate-900">Quick Tasks</h2>
+              <p className="text-sm text-slate-500">Commonly used management tools</p>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
-                {
-                  id: "exams",
-                  label: "Exam Scheduler",
-                  icon: CalendarCheck,
-                  desc: "Manage exam timelines",
-                  color: "text-blue-500",
+                { 
+                  title: "Exam Scheduler", 
+                  desc: "Manage exam timelines", 
+                  icon: Calendar, 
+                  color: "text-blue-500", 
+                  bg: "bg-blue-50", 
+                  url: "/manager/exams" 
                 },
-                {
-                  id: "questions",
-                  label: "Question Bank",
-                  icon: BookOpen,
-                  desc: "Update question pools",
-                  color: "text-purple-500",
+                { 
+                  title: "Question Bank", 
+                  desc: "Update question pools", 
+                  icon: FileQuestion, 
+                  color: "text-purple-500", 
+                  bg: "bg-purple-50", 
+                  url: "/manager/questions" 
                 },
-                {
-                  id: "monitoring",
-                  label: "Live Monitoring",
-                  icon: MonitorPlay,
-                  desc: "Watch active assessments",
-                  color: "text-rose-500",
+                { 
+                  title: "Live Monitoring", 
+                  desc: "Watch active assessments", 
+                  icon: MonitorPlay, 
+                  color: "text-rose-500", 
+                  bg: "bg-rose-50", 
+                  url: "/manager/monitoring" 
                 },
-                {
-                  id: "video-library",
-                  label: "Video Library",
-                  icon: Video,
-                  desc: "Cloud media manager",
-                  color: "text-indigo-500",
+                { 
+                  title: "Video Library", 
+                  desc: "Cloud media manager", 
+                  icon: Video, 
+                  color: "text-indigo-500", 
+                  bg: "bg-indigo-50", 
+                  url: "/manager/video-library" 
                 },
-              ].map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveSection(item.id)}
-                  className="group flex flex-col p-4 rounded-xl border bg-card hover:border-primary/50 hover:bg-muted/50 transition-all text-left"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="h-9 w-9 rounded-lg flex items-center justify-center bg-muted transition-colors group-hover:bg-primary/10">
-                      <item.icon className={cn("h-4 w-4", item.color)} />
+              ].map((task, i) => (
+                <Card key={i} className="group cursor-pointer hover:border-primary/20 transition-all shadow-sm border-slate-100" onClick={() => navigate(task.url)}>
+                  <CardContent className="p-6 flex items-center gap-4">
+                    <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center shrink-0", task.bg)}>
+                      <task.icon className={cn("h-6 w-6", task.color)} />
                     </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground/0 group-hover:text-muted-foreground transition-all" />
-                  </div>
-                  <p className="font-semibold text-sm">{item.label}</p>
-                  <p className="text-xs text-muted-foreground">{item.desc}</p>
-                </button>
+                    <div className="space-y-0.5">
+                      <h4 className="font-bold text-slate-900 group-hover:text-primary transition-colors">{task.title}</h4>
+                      <p className="text-xs text-slate-500">{task.desc}</p>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        {/* Status/Health Section */}
-        <div className="space-y-4">
-          <Card className="rounded-xl shadow-sm border">
-            <CardHeader className="p-5 pb-2">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Shield className="h-4 w-4 text-emerald-500" />
-                System Status
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-5 pt-0 space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Active Sessions</span>
-                  <span className="font-bold underline">Online</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Database Sync</span>
-                  <span className="text-emerald-600 font-bold uppercase tracking-tighter">
-                    Verified
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Live Exams</span>
-                  <span className="font-bold">{activeExamsCount}</span>
-                </div>
+        <div className="space-y-6">
+          <Card className="border-none shadow-sm bg-white overflow-hidden">
+            <CardHeader className="pb-4 border-b border-slate-50">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-emerald-500" />
+                <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-900">System Status</CardTitle>
               </div>
-              <Button
-                variant="outline"
-                className="w-full text-xs h-9 rounded-lg"
-                onClick={() => setActiveSection("monitoring")}
-              >
-                Full Monitoring Dashboard
-              </Button>
+            </CardHeader>
+            <CardContent className="p-0">
+               <div className="divide-y divide-slate-50">
+                  <div className="flex items-center justify-between p-4">
+                    <span className="text-[12px] font-medium text-slate-500">Active Sessions</span>
+                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest underline decoration-dotted">Online</span>
+                  </div>
+                  <div className="flex items-center justify-between p-4">
+                    <span className="text-[12px] font-medium text-slate-500">Database Sync</span>
+                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest underline decoration-dotted">Verified</span>
+                  </div>
+                  <div className="flex items-center justify-between p-4">
+                    <span className="text-[12px] font-medium text-slate-500">Live Exams</span>
+                    <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">0</span>
+                  </div>
+               </div>
+               <div className="p-4 bg-slate-50/50">
+                 <Button variant="outline" className="w-full h-10 rounded-lg text-xs font-bold border-slate-200" onClick={() => navigate('/manager/monitoring')}>
+                    Full Monitoring Dashboard
+                 </Button>
+               </div>
             </CardContent>
           </Card>
 
-          <Card className="rounded-xl shadow-sm border bg-primary text-primary-foreground overflow-hidden relative">
-            <CardHeader className="p-5 pb-0 relative z-10">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Activity className="h-4 w-4" />
-                Integrity Shield
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-5 relative z-10 space-y-3">
-              <p className="text-xs opacity-80 leading-relaxed">
-                Proctoring systems are currently monitoring {activeExamsCount}{" "}
-                active exams.
-              </p>
-              <Button
-                variant="secondary"
-                size="sm"
-                className="w-full text-xs h-9 rounded-lg font-bold"
-                onClick={() => setActiveSection("overview")}
-              >
-                System Verified
-              </Button>
-            </CardContent>
-            <div className="absolute top-0 right-0 p-4 opacity-10">
-              <Server className="h-16 w-16" />
-            </div>
+          <Card className="border-none shadow-sm bg-primary text-white overflow-hidden">
+             <CardContent className="p-6 relative">
+                <div className="relative z-10 space-y-4">
+                   <div className="flex items-center gap-2">
+                     <Shield className="h-5 w-5 text-primary-foreground/80" />
+                     <h4 className="font-black text-sm uppercase tracking-[0.2em]">Integrity Shield</h4>
+                   </div>
+                   <p className="text-[12px] font-bold text-primary-foreground/70 leading-relaxed">
+                     Proctoring systems are currently monitoring 0 active exams.
+                   </p>
+                   <Button className="w-full h-10 rounded-lg bg-white text-primary hover:bg-white/90 font-black text-[10px] uppercase tracking-widest">
+                     System Verified
+                   </Button>
+                </div>
+                <div className="absolute top-0 right-0 p-4 opacity-5 translate-x-4 -translate-y-4">
+                   <Shield className="h-24 w-24" />
+                </div>
+             </CardContent>
           </Card>
         </div>
       </div>
@@ -350,86 +253,66 @@ export default function ManagerDashboard() {
 
   const renderContent = () => {
     switch (activeSection) {
+      case "dashboard":
       case "overview":
         return renderOverview();
+      case "profile":
+        return <UserProfile user={user} />;
       case "exams":
         return <ExamScheduler />;
       case "questions":
-        return <QuestionBankManager onSectionChange={setActiveSection} initialTab="bank" />;
-      case "approvals":
-        return <QuestionBankManager onSectionChange={setActiveSection} initialTab="approvals" />;
+        return <QuestionBankManager />;
+      case "qb-approvals":
+        return <QuestionBankApproval />;
       case "leaderboard":
         return <LeaderboardManager />;
       case "monitoring":
         return <LiveMonitoring />;
-      case "enrollments":
-        return (
-          <div className="space-y-6">
-            <div className="flex flex-col gap-1">
-              <h2 className="text-3xl font-bold tracking-tight">Enrollment Management</h2>
-              <p className="text-sm text-muted-foreground font-medium">Review and approve student course access requests</p>
-            </div>
-            <EnrollmentsList 
-              enrollments={enrollments} 
-              loading={enrollmentsLoading} 
-              onUpdateStatus={async (id, status) => {
-                if (userRole !== 'admin' && status === 'active') {
-                  toast({
-                    title: "Access Restricted",
-                    description: "Only admin can approve enrollments",
-                    variant: "destructive"
-                  });
-                  return;
-                }
-                const success = await updateEnrollmentStatus(id, status);
-                if (success) {
-                  loadEnrollments();
-                }
-              }}
-              onDelete={async (id) => {
-                if (confirm("Are you sure you want to permanently delete this enrollment? This action cannot be undone.")) {
-                  const success = await deleteEnrollment(id);
-                  if (success) {
-                    loadEnrollments();
-                  }
-                }
-              }}
-            />
-          </div>
-        );
-      case "courses":
+      case "video-library":
         return <ManagerCourses />;
-      case "course-assignment":
-        return <CourseAssignment />;
+      case "all-courses":
+        return (
+          <ExecutiveCatalog 
+            courses={courses} 
+            loading={dataLoading} 
+            onApprove={approveCourse}
+            onReject={rejectCourse}
+            onUpdateStatus={updateCourseStatus}
+            onToggleActive={toggleCourseActive} 
+          />
+        );
       case "instructors":
         return <InstructorManagement />;
-      case "video-library":
-        return <ManagerVideoLibrary />;
       case "coupons":
         return <CouponManager />;
       case "grant-access":
         return <GrantStudentAccess />;
       case "resume-scans":
         return <ResumeScanHistory />;
-      case "exam-approvals":
-        return <ExamApproval />;
-      case "profile":
-        return <UserProfile />;
+      case "instructor-access":
+        return <InstructorAccessAdmin />;
+      case "leads":
+        return <LeadManagement />;
+      case "enrollments":
+        return <EnrollmentsList />;
+      case "settings":
+        return <div className="p-8"><h2 className="text-2xl font-bold">Settings Under Development</h2></div>;
+      case "notifications":
+        return <div className="p-8"><h2 className="text-2xl font-bold">Notifications Under Development</h2></div>;
       default:
         return renderOverview();
     }
   };
 
   return (
-    <SidebarProvider className="h-[100dvh] w-full overflow-hidden mesh-bg font-sans">
-      <ManagerSidebar
-        activeSection={activeSection}
-        onSectionChange={setActiveSection}
-      />
-      <SidebarInset className="flex flex-col h-[100dvh] w-full overflow-hidden bg-transparent">
+    <SidebarProvider className="mesh-bg font-sans">
+      <ManagerSidebar />
+      <SidebarInset className="bg-transparent flex flex-col h-screen overflow-hidden">
         <ManagerHeader />
-        <main className="flex-1 w-full overflow-y-auto overflow-x-hidden p-3 sm:p-6 lg:p-10 custom-scrollbar">
-          <div className="max-w-6xl mx-auto h-full space-y-6">{renderContent()}</div>
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 lg:p-10 admin-scrollbar">
+          <div className="max-w-7xl mx-auto">
+            {renderContent()}
+          </div>
         </main>
       </SidebarInset>
     </SidebarProvider>

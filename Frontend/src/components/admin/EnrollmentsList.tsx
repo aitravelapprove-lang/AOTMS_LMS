@@ -165,28 +165,31 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
         case 'day':
           matchesTimeframe = enrollmentDate.toDateString() === now.toDateString();
           break;
-        case 'week':
+        case 'week': {
           const weekAgo = new Date();
           weekAgo.setDate(now.getDate() - 7);
           matchesTimeframe = enrollmentDate >= weekAgo;
           break;
-        case 'month':
+        }
+        case 'month': {
           const monthAgo = new Date();
           monthAgo.setMonth(now.getMonth() - 1);
           matchesTimeframe = enrollmentDate >= monthAgo;
           break;
-        case 'year':
+        }
+        case 'year': {
           const yearAgo = new Date();
           yearAgo.setFullYear(now.getFullYear() - 1);
           matchesTimeframe = enrollmentDate >= yearAgo;
           break;
+        }
       }
     }
 
     return matchesSearch && matchesCourse && matchesStatus && matchesTimeframe;
   });
 
-  const totalValue = filteredEnrollments.reduce((acc, e) => acc + safeParsePrice(e.price), 0);
+  const totalValue = filteredEnrollments.reduce((acc, e) => acc + safeParsePrice(e.final_price || e.price), 0);
 
   const getStatusBadge = (status: string) => {
     switch (status) {

@@ -47,18 +47,30 @@ export default function ShaderShowcase() {
   const navigate = useNavigate();
   const orbitCount = 3;
   const iconsPerOrbit = 5;
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check, { passive: true });
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   return (
     <div
       ref={containerRef}
       className="min-h-screen relative overflow-hidden flex items-center justify-center bg-[#011B33]"
     >
-      {/* Branded Background Mesh - Pure Logo Colors: Blue & Orange */}
-      <MeshGradient
-        className="absolute inset-0 w-full h-full opacity-80"
-        colors={["#011B33", "#0075CF", "#FD5A1A", "#011B33", "#0075CF"]}
-        speed={0.07}
-      />
+      {/* Branded Background - CSS gradient on mobile, WebGL shader on desktop */}
+      {isMobile ? (
+        <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#011B33] via-[#0044a8] to-[#011B33]" />
+      ) : (
+        <MeshGradient
+          className="absolute inset-0 w-full h-full opacity-80"
+          colors={["#011B33", "#0075CF", "#FD5A1A", "#011B33", "#0075CF"]}
+          speed={0.07}
+        />
+      )}
 
       <main className="relative z-20 container-width mx-auto px-6 flex flex-col lg:flex-row items-center justify-between gap-12 w-full pt-24 sm:pt-32 lg:pt-36 pb-20">
         {/* Left side: Content */}
@@ -112,8 +124,79 @@ export default function ShaderShowcase() {
           </motion.div>
         </div>
 
-        {/* Right side: Orbit Animation */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center relative min-h-[400px] lg:min-h-[600px]">
+        {/* ─── MOBILE ORBIT ─────────────────────────────────────────────────────
+             Compact, CSS-only rotation — runs on compositor thread, zero JS cost.
+             Only renders on mobile (< md). Uses 2 rings × 4 icons = 8 icons total.
+        ──────────────────────────────────────────────────────────────────────── */}
+        <div className="flex md:hidden w-full items-center justify-center mt-2 pb-6">
+          <div className="relative flex items-center justify-center" style={{ width: 220, height: 220 }}>
+
+            {/* Center logo */}
+            <div className="w-14 h-14 rounded-full bg-white/10 border border-white/20 shadow-[0_0_30px_rgba(0,117,207,0.4)] flex items-center justify-center z-30 p-2.5 absolute">
+              <img src="/favicon.png" alt="AOTMS" className="w-full h-full object-contain" />
+            </div>
+
+            {/* Ring 1 — CW, radius ~68px */}
+            <div
+              className="absolute rounded-full border border-white/30 border-dashed"
+              style={{ width: 136, height: 136, animation: "orbit-cw 14s linear infinite", willChange: "transform" }}
+            >
+              {[
+                { Icon: FaReact, color: "#61DAFB" }, { Icon: FaNodeJs, color: "#339933" },
+                { Icon: SiTypescript, color: "#3178C6" }, { Icon: FaDocker, color: "#2496ED" },
+              ].map((cfg, i) => {
+                const angle = (i / 4) * 2 * Math.PI;
+                return (
+                  <div
+                    key={i}
+                    className="absolute bg-white/10 rounded-full p-1.5 border border-white/15"
+                    style={{
+                      left: `${50 + 50 * Math.cos(angle)}%`,
+                      top: `${50 + 50 * Math.sin(angle)}%`,
+                      transform: "translate(-50%, -50%)",
+                      animation: "counter-orbit-cw 14s linear infinite",
+                      willChange: "transform",
+                    }}
+                  >
+                    <cfg.Icon className="w-4 h-4" style={{ color: cfg.color }} />
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Ring 2 — CCW, radius ~108px */}
+            <div
+              className="absolute rounded-full border border-white/20 border-dashed"
+              style={{ width: 216, height: 216, animation: "orbit-ccw 22s linear infinite", willChange: "transform" }}
+            >
+              {[
+                { Icon: FaAws, color: "#FF9900" }, { Icon: FaLinkedin, color: "#0077B5" },
+                { Icon: SiNextdotjs, color: "#FFFFFF" }, { Icon: FaGithub, color: "#FFFFFF" },
+              ].map((cfg, i) => {
+                const angle = (i / 4) * 2 * Math.PI;
+                return (
+                  <div
+                    key={i}
+                    className="absolute bg-white/10 rounded-full p-1.5 border border-white/15"
+                    style={{
+                      left: `${50 + 50 * Math.cos(angle)}%`,
+                      top: `${50 + 50 * Math.sin(angle)}%`,
+                      transform: "translate(-50%, -50%)",
+                      animation: "counter-orbit-ccw 22s linear infinite",
+                      willChange: "transform",
+                    }}
+                  >
+                    <cfg.Icon className="w-4 h-4" style={{ color: cfg.color }} />
+                  </div>
+                );
+              })}
+            </div>
+
+          </div>
+        </div>
+
+        {/* ─── DESKTOP ORBIT ── full framer-motion version, unchanged ──────── */}
+        <div className="hidden md:flex w-full lg:w-1/2 items-center justify-center relative min-h-[400px] lg:min-h-[600px]">
           <div className="relative w-full max-w-[500px] aspect-square flex items-center justify-center scale-75 sm:scale-100">
             {/* Center Node */}
             <motion.div
@@ -130,7 +213,7 @@ export default function ShaderShowcase() {
 
             {/* Generate Orbits */}
             {[...Array(orbitCount)].map((_, orbitIdx) => {
-              const radius = 100 + orbitIdx * 60; // Responsive radius
+              const radius = 100 + orbitIdx * 60;
               const duration = 15 + orbitIdx * 10;
               const angleStep = (2 * Math.PI) / iconsPerOrbit;
 
@@ -138,42 +221,24 @@ export default function ShaderShowcase() {
                 <motion.div
                   key={orbitIdx}
                   className="absolute rounded-full border border-white/40 border-dashed"
-                  style={{
-                    width: radius * 2,
-                    height: radius * 2,
-                  }}
+                  style={{ width: radius * 2, height: radius * 2 }}
                   animate={{ rotate: orbitIdx % 2 ? -360 : 360 }}
-                  transition={{
-                    duration: duration,
-                    repeat: Infinity,
-                    ease: "linear",
-                  }}
+                  transition={{ duration: duration, repeat: Infinity, ease: "linear" }}
                 >
                   {iconConfigs
-                    .slice(
-                      orbitIdx * iconsPerOrbit,
-                      (orbitIdx + 1) * iconsPerOrbit,
-                    )
+                    .slice(orbitIdx * iconsPerOrbit, (orbitIdx + 1) * iconsPerOrbit)
                     .map((cfg, iconIdx) => {
                       const angle = iconIdx * angleStep;
                       const x = 50 + 50 * Math.cos(angle);
                       const y = 50 + 50 * Math.sin(angle);
-
                       return (
                         <div
                           key={iconIdx}
                           className="absolute bg-white/5 backdrop-blur-lg border border-white/10 rounded-full p-2 shadow-xl hover:scale-125 transition-transform duration-300"
-                          style={{
-                            left: `${x}%`,
-                            top: `${y}%`,
-                            transform: "translate(-50%, -50%)",
-                          }}
+                          style={{ left: `${x}%`, top: `${y}%`, transform: "translate(-50%, -50%)" }}
                         >
                           {cfg.Icon && (
-                            <cfg.Icon
-                              className="w-6 h-6 sm:w-8 sm:h-8"
-                              style={{ color: cfg.color }}
-                            />
+                            <cfg.Icon className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: cfg.color }} />
                           )}
                         </div>
                       );
@@ -184,6 +249,7 @@ export default function ShaderShowcase() {
           </div>
         </div>
       </main>
+
 
       {/* Decorative Rotating Orbital Logo at bottom right - Simplified for Performance */}
       <div className="absolute bottom-10 right-10 z-30 opacity-40 hidden md:flex pointer-events-none">

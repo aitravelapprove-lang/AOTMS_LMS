@@ -336,6 +336,28 @@
   100% { background-position: 0% 0%; }
 }
 
+/* ── Mobile Hero Orbit Animations ───────────────────────────────────
+   Pure CSS compositor animations — zero JS thread cost on mobile.
+   Icons counter-rotate to stay upright while the ring spins.
+────────────────────────────────────────────────────────────────── */
+@keyframes orbit-cw {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes orbit-ccw {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(-360deg); }
+}
+/* Counter-rotations keep icons perpendicular (face-up) */
+@keyframes counter-orbit-cw {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(-360deg); }
+}
+@keyframes counter-orbit-ccw {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
 
 /* ZOOM MEETING SDK STYLES */
 #zmmtg-root {

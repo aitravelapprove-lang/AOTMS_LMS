@@ -348,17 +348,17 @@ export function CouponManager() {
                     <motion.div
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="p-8 bg-white text-slate-900 rounded-[2rem] space-y-4 relative shadow-2xl shadow-primary/20"
+                        className="py-10 px-6 bg-white text-slate-900 rounded-[2.5rem] flex flex-col items-center justify-center relative shadow-2xl shadow-primary/10 border border-slate-100"
                     >
-                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-primary text-white text-[10px] font-black rounded-lg uppercase tracking-widest shadow-lg">
+                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-5 py-2 bg-slate-900 text-white text-[10px] font-black rounded-xl uppercase tracking-[0.2em] shadow-xl">
                             Active Reward
                         </div>
-                        <h2 className="text-4xl font-black text-slate-900 tracking-[0.2em] pt-4">
+                        <h2 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-wider mb-2">
                         {generatedCode}
                         </h2>
-                        <div className="flex items-center justify-center gap-2 text-[11px] font-black text-emerald-600 uppercase tracking-tight">
-                        <CheckCircle2 className="h-4 w-4" />
-                        Credentials Dispatched
+                        <div className="flex items-center justify-center gap-2 text-[10px] font-bold text-emerald-500 uppercase tracking-widest">
+                            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            Credentials Dispatched
                         </div>
                     </motion.div>
                     ) : (

@@ -71,6 +71,8 @@ import {
   ArrowRight,
   ArrowLeft,
   Target,
+  AlertCircle,
+  Trophy,
   Activity,
   ShieldAlert,
   GraduationCap,
@@ -95,7 +97,8 @@ import { motion, AnimatePresence } from "framer-motion";
 const examSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
   description: z.string().optional(),
-  exam_type: z.string().min(1, "Please select or enter an exam type"),
+  exam_type: z.string().min(1, "Please select an exam category"),
+  custom_type: z.string().optional(),
   assigned_image: z.string().optional(),
   scheduled_date: z.string().optional(),
   duration_minutes: z.coerce
@@ -119,6 +122,12 @@ const examSchema = z.object({
   marking_scheme: z.enum(["standard", "weighted", "fixed"]).default("standard"),
   exam_mode: z.enum(["automated", "manual"]).default("automated"),
   custom_fields: z.array(z.object({ label: z.string(), value: z.string() })).default([]),
+}).refine((data) => {
+  if (data.exam_type === 'others' && !data.custom_type) return false;
+  return true;
+}, {
+  message: "Please specify the custom category",
+  path: ["custom_type"]
 });
 
 type ExamFormValues = z.infer<typeof examSchema>;
@@ -437,8 +446,13 @@ export function ExamScheduler({ onNavigateToRepository }: { onNavigateToReposito
       const passing_marks = Math.round(
         (data.total_marks * data.passing_percentage) / 100,
       );
+      
+      const { custom_type, ...restData } = data;
+      const final_exam_type = data.exam_type === 'others' ? custom_type : data.exam_type;
+
       await createExam.mutateAsync({
-        ...(data as Omit<Exam, "id" | "created_at">),
+        ...(restData as Omit<Exam, "id" | "created_at">),
+        exam_type: final_exam_type || restData.exam_type,
         course_id: null,
         passing_marks,
         status: "draft",
@@ -488,375 +502,293 @@ export function ExamScheduler({ onNavigateToRepository }: { onNavigateToReposito
             </Button>
           </DialogTrigger>
           <DialogContent className="w-[95vw] sm:max-w-[640px] p-0 overflow-hidden border-none shadow-[0_0_80px_rgba(0,0,0,0.15)] rounded-[2rem] bg-white flex flex-col max-h-[95vh] sm:max-h-[90vh]">
-            <div className="flex flex-col h-full overflow-hidden">
-               {/* Image-Style Stepper Header */}
-                <div className="px-8 pt-8 pb-4 border-b border-slate-50 shrink-0 bg-white">
-                  <div className="max-w-md mx-auto flex items-center justify-between relative mb-6">
-                     <div className="absolute top-1/2 left-0 w-full h-px bg-slate-100 -translate-y-1/2 z-0" />
-                        {[
-                          { n: "1", label: "Protocol" },
-                          { n: "2", label: "Constraints" },
-                          { n: "3", label: "Final" }
-                        ].map((step, idx) => (
-                          <div key={idx} className="relative z-10 flex flex-col items-center gap-1 sm:gap-2 group/step">
-                             <div className={`h-6 w-6 sm:h-8 sm:w-8 rounded-full flex items-center justify-center font-black text-[10px] sm:text-xs transition-all duration-500 border-2 ${idx === 0 ? 'bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/20' : 'bg-white border-slate-100 text-slate-300 group-hover/step:border-slate-200'}`}>
-                                {step.n}
-                             </div>
-                             <span className={`text-[7px] sm:text-[8px] font-black uppercase tracking-widest transition-colors ${idx === 0 ? 'text-black' : 'text-slate-300'}`}>{step.label}</span>
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <DialogHeader className="pt-12 sm:pt-10 px-6 sm:px-8 pb-6 border-b border-slate-50 bg-white/50 backdrop-blur-sm sticky top-0 z-20">
+                {/* Image-Style Stepper Header */}
+                <div className="w-full max-w-[400px] mx-auto flex items-center justify-around relative mb-8 px-4">
+                  <div className="absolute top-1/2 left-0 w-full h-px bg-slate-100 -translate-y-1/2 z-0" />
+                  {[
+                    { n: "1", label: "Details" },
+                    { n: "2", label: "Settings" },
+                    { n: "3", label: "Finish" }
+                  ].map((step, idx) => (
+                    <div key={idx} className="relative z-10 flex flex-col items-center gap-1 sm:gap-1.5 group/step">
+                      <div className={`h-5 w-5 sm:h-8 sm:w-8 rounded-full flex items-center justify-center font-black text-[8px] sm:text-xs transition-all duration-500 border-2 ${idx === 0 ? 'bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/20' : 'bg-white border-slate-100 text-slate-300 group-hover/step:border-slate-200'}`}>
+                        {step.n}
+                      </div>
+                      <span className={`text-[6px] sm:text-[8px] font-black uppercase tracking-widest transition-colors ${idx === 0 ? 'text-black' : 'text-slate-300'}`}>{step.label}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="space-y-1 text-left">
+                  <DialogTitle className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                     <span className="bg-gradient-to-r from-slate-900 to-primary bg-clip-text text-transparent">Setup</span>
+                     <span className="text-primary italic">New Exam</span>
+                  </DialogTitle>
+                  <DialogDescription className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
+                    Configure your assessment settings
+                  </DialogDescription>
+                </div>
+              </DialogHeader>
+
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-0 bg-white">
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmitProfile)} className="p-6 sm:p-8 space-y-10">
+                      
+                      {/* Image Upload Section */}
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-[11px] font-black uppercase tracking-widest text-slate-900">Exam Banner Image</Label>
+                          {form.watch("assigned_image") && (
+                            <Badge className="bg-emerald-50 text-emerald-600 border-none text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full">Image Selected</Badge>
+                          )}
+                        </div>
+                        <div
+                          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                          onDrop={onDropPoster}
+                          className={cn(
+                            "relative aspect-video sm:aspect-[21/9] rounded-[2rem] border-2 border-dashed transition-all duration-500 overflow-hidden flex flex-col items-center justify-center gap-4 group",
+                            form.watch("assigned_image")
+                              ? "border-emerald-500/50 bg-emerald-50/10"
+                              : "border-slate-300 bg-slate-50/50 hover:bg-slate-50 hover:border-primary/50"
+                          )}
+                        >
+                          {form.watch("assigned_image") ? (
+                            <div className="absolute inset-0 group/img">
+                              <img
+                                src={getImageSrc(form.watch("assigned_image")) || ""}
+                                className="w-full h-full object-cover"
+                                alt="Exam Poster"
+                              />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
+                                <Button
+                                  type="button"
+                                  variant="secondary"
+                                  className="rounded-xl font-bold uppercase text-[10px] tracking-widest h-10 px-6"
+                                  onClick={() => form.setValue("assigned_image", "")}
+                                >
+                                  Remove Artwork
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="h-12 w-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-slate-300 group-hover:text-primary transition-colors">
+                                <ImageIcon className="h-6 w-6" />
+                              </div>
+                              <div className="text-center">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">DRAG & DROP OR</p>
+                                <input type="file" id="exam-poster" className="hidden" accept="image/*" onChange={handleFileUpload} />
+                                <button
+                                  type="button"
+                                  onClick={() => document.getElementById("exam-poster")?.click()}
+                                  className="text-primary font-black uppercase text-[10px] tracking-widest hover:underline mt-1"
+                                >
+                                  Choose Image
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Basic configuration */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <FormField
+                          control={form.control}
+                          name="title"
+                          render={({ field }) => (
+                            <FormItem className="space-y-2">
+                              <FormLabel className="text-[11px] font-black uppercase tracking-widest text-slate-800">Exam Title</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  placeholder="e.g. AWS Solution Architect Mock" 
+                                  className="h-14 rounded-2xl border-slate-300 bg-white focus:bg-white focus:ring-primary/10 transition-all font-bold text-sm text-slate-900 shadow-sm"
+                                  {...field} 
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="exam_type"
+                          render={({ field }) => (
+                            <FormItem className="space-y-2">
+                              <FormLabel className="text-[11px] font-black uppercase tracking-widest text-slate-800">Exam Category</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger className="h-14 rounded-2xl border-slate-300 bg-white font-bold text-sm text-slate-900 shadow-sm">
+                                    <SelectValue placeholder="Select Category" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent className="rounded-2xl border-slate-100 shadow-2xl">
+                                  <SelectItem value="mock" className="font-bold py-3 uppercase text-[10px] tracking-widest">Mock Portal</SelectItem>
+                                  <SelectItem value="certification" className="font-bold py-3 uppercase text-[10px] tracking-widest">Certification Portal</SelectItem>
+                                  <SelectItem value="live" className="font-bold py-3 uppercase text-[10px] tracking-widest">Live Assessment</SelectItem>
+                                  <SelectItem value="others" className="font-bold py-3 uppercase text-[10px] tracking-widest">Others</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              
+                              <AnimatePresence>
+                                {form.watch("exam_type") === "others" && (
+                                  <motion.div
+                                    initial={{ opacity: 0, y: -10, height: 0 }}
+                                    animate={{ opacity: 1, y: 0, height: "auto" }}
+                                    exit={{ opacity: 0, y: -10, height: 0 }}
+                                    className="pt-4 px-1 pb-2 overflow-hidden"
+                                  >
+                                    <FormField
+                                      control={form.control}
+                                      name="custom_type"
+                                      render={({ field }) => (
+                                        <FormItem className="space-y-2">
+                                          <FormLabel className="text-[10px] font-black uppercase tracking-widest text-primary italic">Specify Custom Category</FormLabel>
+                                          <FormControl>
+                                            <Input 
+                                              placeholder="Enter custom category name..." 
+                                              className="h-12 px-4 rounded-xl border-primary/20 bg-primary/5 focus:bg-white focus:ring-primary/10 transition-all font-bold text-sm text-slate-900 shadow-inner"
+                                              {...field} 
+                                            />
+                                          </FormControl>
+                                          <FormMessage className="text-[9px] font-bold uppercase tracking-widest" />
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      {/* Technical Parameters */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                        <FormField
+                          control={form.control}
+                          name="duration_minutes"
+                          render={({ field }) => (
+                            <FormItem className="space-y-2">
+                              <FormLabel className="text-[11px] font-black uppercase tracking-widest text-slate-800">Duration (Minutes)</FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <Clock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                                  <Input type="number" className="h-14 rounded-2xl border-slate-300 bg-white pl-11 font-bold text-slate-900 shadow-sm" {...field} />
+                                </div>
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="negative_marking"
+                          render={({ field }) => (
+                            <FormItem className="space-y-2">
+                              <FormLabel className="text-[11px] font-black uppercase tracking-widest text-slate-800">Negative Marks</FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <AlertCircle className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-rose-500" />
+                                  <Input type="number" step="0.25" className="h-14 rounded-2xl border-slate-300 bg-white pl-11 font-bold text-slate-900 shadow-sm" {...field} />
+                                </div>
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="total_marks"
+                          render={({ field }) => (
+                            <FormItem className="space-y-2">
+                              <FormLabel className="text-[11px] font-black uppercase tracking-widest text-slate-800">Final Marks</FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <Trophy className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500" />
+                                  <Input type="number" className="h-14 rounded-2xl border-slate-300 bg-white pl-11 font-bold text-slate-900 shadow-sm" {...field} />
+                                </div>
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      {/* Shuffle & Security */}
+                      <div className="p-5 sm:p-6 rounded-[2rem] bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group hover:border-primary/40 transition-all shadow-sm">
+                        <div className="flex items-center gap-4">
+                          <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-600 group-hover:text-primary transition-colors focus-within:ring-2 focus-within:ring-primary/20">
+                            <Shuffle className="h-4 w-4 sm:h-5 sm:w-5" />
                           </div>
-                        ))}
-                  </div>
+                          <div>
+                            <h4 className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-slate-900">Shuffle Questions</h4>
+                            <p className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-widest">Randomize the order for each student</p>
+                          </div>
+                        </div>
+                        <FormField
+                          control={form.control}
+                          name="shuffle_questions"
+                          render={({ field }) => (
+                            <div className="w-full sm:w-auto flex justify-end">
+                              <Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" />
+                            </div>
+                          )}
+                        />
+                      </div>
+
+                      {/* Guidelines Section (Optional but kept for description) */}
+                      <FormField
+                        control={form.control}
+                        name="description"
+                        render={({ field }) => (
+                          <FormItem className="space-y-2">
+                            <FormLabel className="text-[11px] font-black uppercase tracking-widest text-slate-800">Exam Instructions</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Core logic for candidates..." 
+                                className="min-h-[120px] rounded-2xl border-slate-300 bg-white p-6 font-medium text-slate-900 text-xs italic resize-none shadow-sm"
+                                {...field} 
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+
+                      {/* Command Actions */}
+                      <div className="flex items-center gap-4 pt-4 border-t border-slate-50">
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          className="h-14 flex-1 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all"
+                          onClick={() => setIsAddOpen(false)}
+                        >
+                          Abort
+                        </Button>
+                        <Button 
+                          type="submit" 
+                          disabled={createExam.isPending}
+                          className="h-14 flex-[2] rounded-2xl bg-slate-900 hover:bg-black text-white font-black uppercase text-[11px] tracking-[0.3em] flex items-center justify-center gap-2 group"
+                        >
+                          {createExam.isPending ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <span>Processing...</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>Create Exam</span>
+                              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
                 </div>
               </div>
-
-              <div className="flex-1 flex flex-col min-h-0">
-                <DialogHeader className="p-5 sm:p-8 relative space-y-1 bg-white border-b border-slate-50 shrink-0">
-                  <DialogTitle className="text-xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2 sm:gap-3">
-                    <span className="bg-gradient-to-r from-slate-900 to-primary bg-clip-text text-transparent">Initialize</span> 
-                    <span className="text-[#FD5A1A] italic">Workspace</span>
-                  </DialogTitle>
-                  <DialogDescription className="text-[7px] sm:text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] sm:tracking-[0.3em]">
-                    Master Assessment Configuration Framework
-                  </DialogDescription>
-                </DialogHeader>
-
-                <div className="p-6 sm:p-8 flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-white relative group/form-scroll" id="exam-form-scroll-container">
-                  {/* Floating Scroll Assistant */}
-                  <div className="absolute right-6 top-1/2 -translate-y-1/2 z-[60] flex flex-col gap-3 pointer-events-none opacity-0 group-hover/form-scroll:opacity-100 transition-all duration-700 translate-x-4 group-hover/form-scroll:translate-x-0">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-12 w-12 rounded-full bg-slate-900 shadow-2xl text-white hover:bg-[#FD5A1A] transition-all hover:scale-110 active:scale-95 pointer-events-auto border border-slate-700/50"
-                      onClick={() => {
-                        const container = document.getElementById('exam-form-scroll-container');
-                        if (container) {
-                          container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
-                        }
-                      }}
-                    >
-                      <ChevronDown className="h-6 w-6" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-12 w-12 rounded-full bg-white shadow-xl text-slate-400 hover:text-primary transition-all hover:scale-110 active:scale-95 pointer-events-auto border border-slate-100"
-                      onClick={() => {
-                        const container = document.getElementById('exam-form-scroll-container');
-                        if (container) {
-                          container.scrollTo({ top: 0, behavior: 'smooth' });
-                        }
-                      }}
-                    >
-                      <ChevronUp className="h-6 w-6" />
-                    </Button>
-                  </div>
-
-                  <div className="flex-1 overflow-y-auto admin-scrollbar p-0 sm:p-2 bg-white">
-                    <Form {...form}>
-                      <form
-                        onSubmit={form.handleSubmit(onSubmitProfile)}
-                        className="p-6 sm:p-10 space-y-14"
-                      >
-                        {/* Visual Identity Section */}
-                        <div className="space-y-6">
-                            <div className="flex items-center justify-between">
-                              <div className="space-y-1">
-                                <FormLabel className="text-[10px] font-black uppercase tracking-[0.3em] text-primary block">
-                                  Visual Identity Matrix
-                                </FormLabel>
-                                <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">Architectural branding & poster assets</p>
-                              </div>
-                              {form.watch("assigned_image") && (
-                                <Badge className="bg-emerald-500/10 text-emerald-600 border-none text-[8px] font-black uppercase px-3 rounded-full">Asset Secured</Badge>
-                              )}
-                            </div>
-                            
-                            <div
-                              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                              onDrop={onDropPoster}
-                              className={cn(
-                                "relative group flex flex-col items-center justify-center border-2 border-dashed rounded-[2rem] sm:rounded-[3rem] transition-all duration-1000 overflow-hidden min-h-[240px] sm:min-h-[320px] shadow-sm",
-                                form.watch("assigned_image") 
-                                  ? "border-emerald-500/50 bg-emerald-50/10" 
-                                  : "border-slate-200 bg-slate-50/20 hover:bg-white hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/5"
-                              )}
-                            >
-                              {form.watch("assigned_image") ? (
-                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 group/preview">
-                                  <img
-                                    src={getImageSrc(form.watch("assigned_image")) || ""}
-                                    className="w-full h-full object-cover transition-transform duration-[2000ms] group-hover/preview:scale-110"
-                                    alt="Identity Poster"
-                                  />
-                                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent opacity-0 group-hover/preview:opacity-100 transition-all duration-500 flex flex-col items-center justify-end pb-12 gap-4 backdrop-blur-[2px]">
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      onClick={() => form.setValue("assigned_image", "")}
-                                      className="rounded-2xl bg-white/20 hover:bg-rose-500 text-white font-black uppercase text-[10px] tracking-widest h-14 px-12 backdrop-blur-md border border-white/20 shadow-2xl transition-all hover:scale-105 active:scale-95"
-                                    >
-                                      Reset Identity
-                                    </Button>
-                                  </div>
-                                </motion.div>
-                              ) : (
-                                <div className="flex flex-col items-center gap-6 p-8 text-center relative z-10">
-                                  <div className="h-24 w-24 rounded-[2.5rem] bg-white shadow-xl flex items-center justify-center text-slate-300 group-hover:text-primary group-hover:scale-110 transition-all duration-700 border border-slate-100">
-                                    <ImageIcon className="h-10 w-10" />
-                                  </div>
-                                  <div className="space-y-3">
-                                    <h4 className="text-lg font-black text-slate-900 uppercase tracking-tighter">
-                                      Drop <span className="text-primary italic">Artwork</span>
-                                    </h4>
-                                    <input
-                                      type="file"
-                                      id="poster-upload"
-                                      className="hidden"
-                                      accept="image/*"
-                                      onChange={handleFileUpload}
-                                    />
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      onClick={() => document.getElementById("poster-upload")?.click()}
-                                      className="rounded-[1.5rem] border-slate-200 font-black uppercase text-[10px] tracking-widest h-14 px-10 hover:bg-slate-900 hover:text-white hover:border-slate-900 bg-white shadow-xl shadow-slate-200/20 transition-all"
-                                    >
-                                      Browse File
-                                    </Button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                        </div>
-
-                        {/* Question Strategy */}
-                        <div className="bg-slate-50/50 border border-slate-200 rounded-[2.5rem] p-8 sm:p-10 space-y-8 relative overflow-hidden shadow-inner">
-                          <div className="flex items-center gap-4 relative z-10">
-                            <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center border border-slate-200 shadow-sm">
-                              <BrainCircuit className="h-5 w-5 text-primary" />
-                            </div>
-                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900">Logic Acquisition Strategy</h4>
-                          </div>
-
-                          <div className="grid grid-cols-1 2xl:grid-cols-2 gap-10 relative z-10">
-                            <FormField
-                              control={form.control}
-                              name="exam_mode"
-                              render={({ field }) => (
-                                <FormItem className="space-y-4">
-                                  <FormLabel className="text-[10px] font-black uppercase tracking-widest text-slate-600 font-bold">Creation Mode</FormLabel>
-                                  <FormControl>
-                                    <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-2 gap-4">
-                                      <FormItem>
-                                        <FormControl><RadioGroupItem value="automated" className="hidden" id="mode-auto" /></FormControl>
-                                        <Label htmlFor="mode-auto" className={cn("flex flex-col items-center justify-center p-6 rounded-[2rem] border-2 transition-all cursor-pointer text-center gap-4 min-h-[140px]", field.value === "automated" ? "bg-white border-primary text-primary shadow-lg" : "bg-white border-slate-200 text-slate-600 font-bold hover:border-primary/20")}>
-                                          <Zap className={cn("h-8 w-8", field.value === "automated" ? "text-primary" : "text-slate-200")} />
-                                          <span className="text-[11px] font-black uppercase tracking-[0.2em]">Automated</span>
-                                        </Label>
-                                      </FormItem>
-                                      <FormItem>
-                                        <FormControl><RadioGroupItem value="manual" className="hidden" id="mode-manual" /></FormControl>
-                                        <Label htmlFor="mode-manual" className={cn("flex flex-col items-center justify-center p-6 rounded-[2rem] border-2 transition-all cursor-pointer text-center gap-4 min-h-[140px]", field.value === "manual" ? "bg-white border-primary text-primary shadow-lg" : "bg-white border-slate-200 text-slate-600 font-bold hover:border-primary/20")}>
-                                          <Plus className={cn("h-8 w-8", field.value === "manual" ? "text-primary" : "text-slate-200")} />
-                                          <span className="text-[11px] font-black uppercase tracking-[0.2em]">Manual</span>
-                                        </Label>
-                                      </FormItem>
-                                    </RadioGroup>
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-
-                            {form.watch("exam_mode") === "automated" ? (
-                              <div className="space-y-6">
-                                <FormField
-                                  control={form.control}
-                                  name="source_topic"
-                                  render={({ field }) => (
-                                    <FormItem className="space-y-3">
-                                      <FormLabel className="text-[10px] font-black uppercase tracking-widest text-slate-600 font-bold">Target Repository Node</FormLabel>
-                                      <Select onValueChange={field.onChange} value={field.value}>
-                                        <FormControl>
-                                          <SelectTrigger className="h-16 rounded-[1.5rem] bg-white border-slate-200 text-slate-900 font-bold px-6 shadow-sm">
-                                            <SelectValue placeholder="Select Topic" />
-                                          </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent className="rounded-2xl border-slate-200 shadow-3xl">
-                                          {[...new Set(questions.map(q => q.topic))].map((t) => (
-                                            <SelectItem key={t} value={t} className="font-bold py-3 uppercase text-[10px] tracking-widest">
-                                              {t}
-                                            </SelectItem>
-                                          ))}
-                                        </SelectContent>
-                                      </Select>
-                                    </FormItem>
-                                  )}
-                                />
-                                <FormField
-                                  control={form.control}
-                                  name="question_count"
-                                  render={({ field }) => (
-                                    <FormItem className="space-y-3">
-                                      <div className="flex justify-between items-center">
-                                        <FormLabel className="text-[10px] font-black uppercase tracking-widest text-slate-600">Total Selection</FormLabel>
-                                        <span className="text-xs font-black text-slate-900">{field.value} Q's</span>
-                                      </div>
-                                      <FormControl>
-                                        <Input type="number" className="h-16 rounded-[1.5rem] bg-white border-slate-200 text-slate-900 font-black px-6 shadow-sm" {...field} />
-                                      </FormControl>
-                                    </FormItem>
-                                  )}
-                                />
-                              </div>
-                            ) : (
-                              <div className="flex flex-col items-center justify-center p-10 border-2 border-dashed border-slate-200 rounded-[2.5rem] text-center gap-4 bg-white/50">
-                                <Plus className="h-8 w-8 text-slate-200" />
-                                <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest max-w-[200px]">Manual Mode Activated.</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                          <FormField
-                            control={form.control}
-                            name="title"
-                            render={({ field }) => (
-                              <FormItem className="space-y-3">
-                                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-slate-600">Assessment Title</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="Final Protocol" className="h-18 rounded-3xl border-2 border-slate-200 bg-slate-50/50 font-bold px-8 focus:border-primary focus:bg-white text-slate-900 shadow-sm" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="exam_type"
-                            render={({ field }) => (
-                              <FormItem className="space-y-3">
-                                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-slate-600">Portal Category</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <FormControl>
-                                    <SelectTrigger className="h-18 rounded-3xl border-2 border-slate-200 bg-slate-50/50 font-bold px-8 focus:border-primary transition-all text-slate-900 outline-none">
-                                      <SelectValue placeholder="Select Category" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent className="rounded-3xl border-slate-200 shadow-2xl">
-                                    {["mock", "certification", "live"].map((t) => (
-                                      <SelectItem key={t} value={t} className="font-bold py-4 uppercase text-[10px] tracking-widest">{t.toUpperCase()} PORTAL</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-
-                        {/* Numeric Parameters Grid */}
-                        <div className="bg-gradient-to-br from-slate-50 via-white to-primary/5 rounded-3xl border-2 border-slate-200 p-6 sm:p-10 shadow-md relative overflow-hidden">
-                          <div className="grid grid-cols-1 2xl:grid-cols-2 gap-12 relative z-10 w-full">
-                            <FormField control={form.control} name="scheduled_date" render={({ field }) => (
-                              <FormItem className="space-y-3">
-                                <FormLabel className="text-xs font-black uppercase tracking-[0.2em] text-[#FD5A1A]">Start Timeline</FormLabel>
-                                <FormControl><Input type="datetime-local" className="h-16 rounded-2xl border-2 border-slate-200 bg-white font-bold px-6 text-slate-900 focus:border-primary shadow-sm" {...field} /></FormControl>
-                              </FormItem>
-                            )} />
-                            <FormField control={form.control} name="duration_minutes" render={({ field }) => (
-                              <FormItem className="space-y-3">
-                                <FormLabel className="text-xs font-black uppercase tracking-widest text-slate-600 font-bold">Duration (Min)</FormLabel>
-                                <div className="relative group"><Clock className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><Input type="number" className="h-16 rounded-2xl border-2 border-slate-200 bg-white font-bold pl-14 text-slate-900 focus:border-primary shadow-sm" {...field} /></div>
-                              </FormItem>
-                            )} />
-                            <FormField control={form.control} name="total_marks" render={({ field }) => (
-                              <FormItem className="space-y-3">
-                                <FormLabel className="text-xs font-black uppercase tracking-widest text-slate-600 font-bold">Final Marks</FormLabel>
-                                <div className="relative group"><Target className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><Input type="number" className="h-16 rounded-2xl border-2 border-slate-200 bg-white font-bold pl-14 text-slate-900 focus:border-primary shadow-sm" {...field} /></div>
-                              </FormItem>
-                            )} />
-                            <FormField control={form.control} name="negative_marking" render={({ field }) => (
-                              <FormItem className="space-y-3">
-                                <FormLabel className="text-xs font-black uppercase tracking-widest text-slate-600 font-bold">Neg. Marks</FormLabel>
-                                <Input type="number" step="0.25" className="h-16 rounded-2xl border-2 border-slate-200 bg-white font-bold px-8 text-slate-900 focus:border-primary shadow-sm" {...field} />
-                              </FormItem>
-                            )} />
-                          </div>
-
-                          <div className="mt-14 pt-12 border-t border-slate-200 space-y-12">
-                            <div className="grid grid-cols-1 2xl:grid-cols-2 gap-12">
-                              <FormField control={form.control} name="passing_percentage" render={({ field }) => (
-                                <FormItem className="space-y-3">
-                                  <div className="flex items-center justify-between">
-                                    <FormLabel className="text-xs font-black uppercase tracking-widest text-slate-600 font-bold">Success Threshold (%)</FormLabel>
-                                    <span className="text-xs font-black text-primary">{field.value}%</span>
-                                  </div>
-                                  <input type="range" min="0" max="100" step="5" value={field.value} onChange={(e) => field.onChange(parseInt(e.target.value))} className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary" />
-                                </FormItem>
-                              )} />
-                              <FormField control={form.control} name="max_attempts" render={({ field }) => (
-                                <FormItem className="space-y-3">
-                                  <FormLabel className="text-xs font-black uppercase tracking-widest text-slate-600 font-bold">Iteration Limit</FormLabel>
-                                  <Input type="number" className="h-16 rounded-2xl border-2 border-slate-200 bg-white font-bold px-8 text-slate-900 focus:border-primary shadow-sm" {...field} />
-                                </FormItem>
-                              )} />
-                            </div>
-
-                            <div className="grid grid-cols-1 2xl:grid-cols-2 gap-10">
-                              <FormField control={form.control} name="browser_security" render={({ field }) => (
-                                <div className={cn("p-10 rounded-[2.5rem] border-2 transition-all cursor-pointer flex items-center justify-between group shadow-sm", field.value ? "bg-slate-900 border-slate-900 text-white" : "bg-white border-slate-200")} onClick={() => field.onChange(!field.value)}>
-                                  <div className="flex items-center gap-6">
-                                    <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center transition-all", field.value ? "bg-white text-slate-900" : "bg-slate-100 text-slate-400")}><ShieldCheck className="h-6 w-6" /></div>
-                                    <div className="text-left"><h4 className="text-[10px] font-black uppercase tracking-widest">Secure Node</h4><p className="text-[9px] font-bold text-slate-500 uppercase mt-1">Lock Focus</p></div>
-                                  </div>
-                                  <Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" />
-                                </div>
-                              )} />
-                              <FormField control={form.control} name="proctoring_enabled" render={({ field }) => (
-                                <div className={cn("p-10 rounded-[2.5rem] border-2 transition-all cursor-pointer flex items-center justify-between group shadow-sm", field.value ? "bg-emerald-600 border-emerald-600 text-white" : "bg-white border-slate-200")} onClick={() => field.onChange(!field.value)}>
-                                  <div className="flex items-center gap-6">
-                                    <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center transition-all", field.value ? "bg-white text-emerald-600" : "bg-slate-100 text-slate-400")}><Activity className="h-6 w-6" /></div>
-                                    <div className="text-left"><h4 className="text-[10px] font-black uppercase tracking-widest">AI Proctoring</h4><p className="text-[9px] font-bold text-slate-500 uppercase mt-1">Telemetry</p></div>
-                                  </div>
-                                  <Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" />
-                                </div>
-                              )} />
-                            </div>
-
-                            <FormField control={form.control} name="shuffle_questions" render={({ field }) => (
-                              <div className={cn("p-8 sm:p-10 rounded-[2.5rem] border-2 transition-all cursor-pointer flex flex-col sm:flex-row items-center justify-between group gap-6 shadow-sm", field.value ? "bg-primary/5 border-primary" : "bg-white border-slate-200")} onClick={() => field.onChange(!field.value)}>
-                                <div className="flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
-                                  <div className={cn("h-16 w-16 rounded-[1.25rem] flex items-center justify-center transition-all", field.value ? "bg-primary text-white scale-110 shadow-lg" : "bg-slate-100 text-slate-400")}><Shuffle className="h-7 w-7" /></div>
-                                  <div className="space-y-1"><h4 className={cn("text-sm font-black uppercase tracking-widest", field.value ? "text-primary" : "text-slate-600")}>Randomization Protocol</h4><p className="text-[10px] font-semibold text-slate-500 max-w-sm uppercase">Unique sorting vectors for each session.</p></div>
-                                </div>
-                                <Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" />
-                              </div>
-                            )} />
-                          </div>
-                        </div>
-
-                        <FormField control={form.control} name="description" render={({ field }) => (
-                          <FormItem className="space-y-6">
-                            <div className="flex items-center gap-4"><div className="h-1 w-10 bg-slate-200 rounded-full" /><FormLabel className="text-[10px] font-black uppercase tracking-widest text-slate-600">Guideline Repository</FormLabel></div>
-                            <FormControl><Textarea placeholder="Core logic for candidates..." className="min-h-[180px] rounded-3xl border-2 border-slate-200 bg-slate-50/20 p-10 font-bold text-slate-700 focus:bg-white focus:border-primary transition-all text-sm italic" {...field} /></FormControl>
-                          </FormItem>
-                        )} />
-
-                        <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 pt-8 pb-10">
-                          <Button type="button" variant="ghost" className="h-20 flex-1 rounded-[2rem] font-black uppercase text-[11px] tracking-[0.4em] text-slate-400 hover:text-rose-500 transition-all" onClick={() => setIsAddOpen(false)}>Abort</Button>
-                          <Button type="submit" disabled={createExam.isPending} className="h-20 flex-[2.5] rounded-[2rem] bg-slate-900 text-white font-black uppercase tracking-[0.4em] text-[13px] shadow-2xl flex items-center justify-center gap-6 active:scale-95 group relative overflow-hidden">
-                            {createExam.isPending ? (<><Loader2 className="h-7 w-7 animate-spin" /><span>PROCESSING...</span></>) : (<><span>Initialize Exam</span><div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center group-hover:bg-[#FD5A1A] transition-colors"><ArrowRight className="h-6 w-6 group-hover:translate-x-1" /></div></>)}
-                          </Button>
-                        </div>
-                      </form>
-                    </Form>
-                  </div>
-
-              </div>
-            </div>
           </DialogContent>
         </Dialog>
       </div>

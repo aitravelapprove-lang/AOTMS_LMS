@@ -24,9 +24,9 @@ const WhyBg = () => (
       }}
     />
 
-    {/* Subtle Tech Glows */}
-    <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[#0075CF]/5 blur-[120px] rounded-full" />
-    <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-[#FD5A1A]/5 blur-[120px] rounded-full" />
+    {/* Subtle Tech Glows - only on md+ to avoid mobile compositing cost */}
+    <div className="hidden md:block absolute top-0 left-1/4 w-[400px] h-[400px] bg-[#0075CF]/5 blur-[80px] rounded-full" />
+    <div className="hidden md:block absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-[#FD5A1A]/5 blur-[80px] rounded-full" />
   </div>
 );
 

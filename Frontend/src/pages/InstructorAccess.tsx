@@ -267,33 +267,33 @@ export default function InstructorAccess() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
           {
-            label: "Total Requests",
+            label: "Course Submissions",
             count: stats.total,
             color: "bg-slate-900",
             icon: Layers,
-            desc: "Platform curriculum nodes",
+            desc: "Total courses submitted by faculty",
           },
           {
-            label: "Awaiting Sync",
+            label: "Pending Review",
             count: stats.pending,
             color: "bg-amber-500",
             icon: Clock,
-            desc: "Verification required",
+            desc: "Needs administrative approval",
             active: stats.pending > 0,
           },
           {
-            label: "Authorized",
+            label: "Verified Courses",
             count: stats.approved,
             color: "bg-emerald-600",
             icon: CheckCircle,
-            desc: "Active publishers",
+            desc: "Ready for platform students",
           },
           {
-            label: "Root Access",
+            label: "Admin Overview",
             count: stats.total,
             color: "bg-rose-500",
             icon: ShieldCheck,
-            desc: "System orchestrators",
+            desc: "Combined course inventory",
             isHigh: true,
           },
         ].map((role) => (
@@ -329,10 +329,10 @@ export default function InstructorAccess() {
                   >
                     {role.count}
                   </span>
-                  <span
+                    <span
                     className={`text-[11px] font-bold ${role.isHigh ? "text-white/40" : "text-slate-300"}`}
                   >
-                    Nodes
+                    Courses
                   </span>
                 </div>
                 <p
@@ -356,10 +356,10 @@ export default function InstructorAccess() {
               </div>
               <div className="space-y-1">
                 <h3 className="text-xl font-black text-slate-800 tracking-tight">
-                  Access Registry
+                  Instructor Proposals
                 </h3>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">
-                  Management Ledger
+                  Submission Register
                 </p>
               </div>
             </div>

@@ -286,103 +286,118 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
   return (
     <div className="space-y-6">
       {/* Upload Form Section */}
-      <div className="pro-card bg-white rounded-2xl sm:rounded-[2.5rem] border-slate-100 p-5 sm:p-8 shadow-sm">
-        <div className="mb-5 sm:mb-6">
-          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-800">Upload Course Video</h2>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium italic opacity-70">
-            Choose a module and title to add a new video asset to your course library.
-          </p>
+      <div className="pro-card bg-white rounded-3xl border border-slate-100 p-4 sm:p-6 lg:p-10 shadow-xl shadow-slate-200/50 w-full overflow-hidden">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 sm:mb-10">
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">Upload Course Video</h2>
+            <p className="text-sm text-slate-500 mt-2 font-medium max-w-xl">
+              Add high-quality instructional assets to your learning library. Choose a target module and define accessibility parameters.
+            </p>
+          </div>
+          <div className="hidden lg:flex h-16 w-16 bg-primary/10 rounded-2xl items-center justify-center border border-primary/10">
+            <Video className="h-8 w-8 text-primary" />
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="space-y-6">
-            {/* Video Title */}
-            <div className="space-y-3">
-              <Label className="text-sm font-semibold text-slate-700 ml-1">Video Title</Label>
-              <Input
-                placeholder="E.g., Introduction to the Course"
-                value={newVideo.title}
-                onChange={(e) => setNewVideo({ ...newVideo, title: e.target.value })}
-                className="h-12 rounded-xl border-slate-200 bg-slate-50/50 focus:ring-primary/20 transition-all"
-              />
+        <div className="flex flex-col space-y-10 lg:space-y-12 w-full max-w-4xl mx-auto">
+            {/* 1. Video Title Input Group */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 ml-1">
+                <div className="h-2 w-2 rounded-full bg-primary" />
+                <Label className="text-xs font-bold uppercase tracking-wider text-slate-600">Video Title</Label>
+              </div>
+              <div className="relative">
+                <Input
+                  placeholder="Enter the title for this lesson..."
+                  value={newVideo.title}
+                  onChange={(e) => setNewVideo({ ...newVideo, title: e.target.value })}
+                  className="h-14 rounded-2xl border-slate-300 border-2 bg-white focus:ring-4 focus:ring-primary/5 pl-12 text-base font-semibold transition-all shadow-sm w-full"
+                />
+                <Plus className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+              </div>
             </div>
 
-            {/* Module Selector / Creator */}
-            <div className="space-y-3">
+            {/* 2. Module Mapping Group */}
+            <div className="space-y-4">
               <div className="flex items-center justify-between px-1">
-                 <Label className="text-xs sm:text-sm font-black text-slate-700 uppercase tracking-widest">Target Module</Label>
-                 <Button 
-                    variant="link" 
-                    size="sm" 
-                    className="h-auto p-0 text-primary font-black text-[10px] sm:text-xs uppercase"
-                    onClick={() => setIsCreatingModule(!isCreatingModule)}
-                 >
-                    {isCreatingModule ? "Existing" : "+ New Module"}
-                 </Button>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-blue-500" />
+                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-600">Select Module</Label>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-auto p-0 text-primary font-bold text-[10px] uppercase hover:bg-transparent"
+                  onClick={() => setIsCreatingModule(!isCreatingModule)}
+                >
+                  {isCreatingModule ? "Cancel" : "+ Create New Module"}
+                </Button>
               </div>
               
               <AnimatePresence mode="wait">
-                  {isCreatingModule ? (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        key="create-input"
-                      >
-                          <div className="flex gap-2">
-                             <div className="h-12 w-12 bg-blue-50 rounded-xl flex items-center justify-center border border-blue-100 shrink-0">
-                                <Layers className="h-5 w-5 text-blue-600" />
-                             </div>
-                             <Input
-                                placeholder="Enter new module name..."
-                                value={newModuleName}
-                                onChange={(e) => setNewModuleName(e.target.value)}
-                                className="h-12 rounded-xl border-blue-200 bg-blue-50/30 focus:ring-blue-500/20"
-                                autoFocus
-                            />
-                          </div>
-                      </motion.div>
-                  ) : (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        key="select-input"
-                      >
-                          <Select
-                            value={newVideo.module_id}
-                            onValueChange={(value) => setNewVideo({ ...newVideo, module_id: value })}
-                            disabled={modulesLoading}
-                          >
-                            <SelectTrigger className="h-12 rounded-xl border-slate-200 bg-slate-50/50 cursor-pointer">
-                              <SelectValue placeholder={modulesLoading ? "Loading modules..." : (modules?.length === 0 ? "No modules available" : "Choose a module")} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {(modules as CourseModule[])?.map((module) => (
-                                <SelectItem key={module.id} value={module.id}>
-                                  {module.title}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                      </motion.div>
-                  )}
+                {isCreatingModule ? (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.98, y: 10 }}
+                    key="create-input"
+                    className="flex gap-3"
+                  >
+                    <div className="h-14 w-14 bg-blue-50 rounded-2xl flex items-center justify-center border-2 border-blue-200 shrink-0">
+                      <Layers className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <Input
+                      placeholder="Name your new category or module..."
+                      value={newModuleName}
+                      onChange={(e) => setNewModuleName(e.target.value)}
+                      className="h-14 rounded-2xl border-blue-300 border-2 bg-blue-50/20 focus:ring-4 focus:ring-blue-500/5 text-base font-semibold w-full"
+                      autoFocus
+                    />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.98, y: -10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.98, y: -10 }}
+                    key="select-input"
+                  >
+                    <Select
+                      value={newVideo.module_id}
+                      onValueChange={(value) => setNewVideo({ ...newVideo, module_id: value })}
+                      disabled={modulesLoading}
+                    >
+                      <SelectTrigger className="h-14 rounded-2xl border-slate-300 border-2 bg-white transition-all hover:bg-slate-50 font-semibold overflow-hidden w-full">
+                        <SelectValue placeholder={modulesLoading ? "Loading modules..." : "Choose where this video belongs"} />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-2xl border-slate-200 shadow-2xl">
+                        {(modules as CourseModule[])?.map((module) => (
+                          <SelectItem key={module.id} value={module.id} className="text-sm font-medium p-3">
+                            {module.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </motion.div>
+                )}
               </AnimatePresence>
             </div>
 
-            {/* Batch Selection */}
+            {/* 3. Restricted Access Chips */}
             {batches.length > 0 && (
-              <div className="space-y-3">
-                <Label className="text-xs sm:text-sm font-black text-slate-700 uppercase tracking-widest ml-1">Restricted Access (Optional)</Label>
-                <div className="flex flex-wrap gap-2">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 ml-1">
+                  <div className="h-2 w-2 rounded-full bg-amber-500" />
+                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-600">Access Control (Select Batches)</Label>
+                </div>
+                <div className="flex flex-wrap gap-2 p-4 bg-slate-50/50 border-2 border-slate-200 rounded-2xl">
                   {batches.map((batch) => {
                     const isSelected = newVideo.allowed_batches.includes(batch.id);
                     return (
                       <Badge
                         key={batch.id}
                         variant={isSelected ? "default" : "outline"}
-                        className={`cursor-pointer h-10 px-4 rounded-xl font-bold uppercase text-[10px] sm:text-xs transition-all ${
-                          isSelected ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-slate-50 text-slate-500 border-slate-200'
+                        className={`cursor-pointer h-10 px-5 rounded-xl font-bold uppercase text-[9px] tracking-widest transition-all duration-300 flex items-center gap-2 ${
+                          isSelected ? 'bg-primary text-white scale-105 shadow-lg shadow-primary/20' : 'bg-white text-slate-500 border-slate-300 hover:border-primary hover:text-primary'
                         }`}
                         onClick={() => {
                           if (isSelected) {
@@ -392,154 +407,181 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
                           }
                         }}
                       >
-                        {batch.batch_name}
+                        {isSelected && <CheckCircle className="h-3 w-3 shrink-0" />}
+                        <span className="truncate">{batch.batch_name}</span>
                       </Badge>
                     );
                   })}
+                  {newVideo.allowed_batches.length === 0 && (
+                    <p className="w-full text-center text-[10px] text-slate-500 font-bold uppercase tracking-tighter">Visible to everyone by default</p>
+                  )}
                 </div>
-                <p className="text-[10px] text-slate-400 italic">No batches selected = visible to all students.</p>
               </div>
             )}
 
-            <div className="flex flex-row gap-3 pt-3">
-              <Button 
-                variant="ghost" 
-                onClick={() => {
-                  clearFile();
-                  setNewVideo({ title: "", description: "", module_id: "", is_published: true, allowed_batches: [] });
-                  setNewModuleName("");
-                }} 
-                disabled={uploading}
-                className="flex-1 sm:flex-none rounded-xl h-11 sm:h-12 px-4 sm:px-6 border border-slate-100 hover:bg-slate-50 font-black text-xs uppercase tracking-widest"
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={() => handleUpload()}
-                disabled={uploading || !selectedFile || !newVideo.title || (!isCreatingModule && !newVideo.module_id) || (isCreatingModule && !newModuleName)}
-                className={`flex-[2] sm:flex-1 rounded-xl h-11 sm:h-12 font-black text-xs uppercase tracking-widest shadow-lg transition-all ${uploadSuccess ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200' : 'pro-button-primary shadow-primary/20'}`}
-              >
-                {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Video className="h-4 w-4 mr-2" />}
-                {uploadSuccess ? (
-                  <span className="flex items-center gap-2"><CheckCircle className="h-4 w-4" /> {isCreatingModule ? "Created!" : "Uploaded!"}</span>
-                ) : (isCreatingModule ? 'Create & Upload' : 'Confirm Upload')}
-              </Button>
-            </div>
-          </div>
-          
-          {/* Right Column (File Upload) remains unchanged */}
-          <div className="space-y-6">
-            {/* Video File Upload */}
-            <div className="space-y-3">
-              <Label className="text-xs sm:text-sm font-black text-slate-700 uppercase tracking-widest ml-1">Video File</Label>
-              <div 
-                className={`border-2 border-dashed rounded-2xl p-6 sm:p-8 text-center transition-all cursor-pointer group min-h-[160px] sm:min-h-[200px] flex flex-col items-center justify-center
-                  ${selectedFile ? 'border-primary/30 bg-primary/5' : 'border-slate-200 bg-slate-50/50 hover:border-primary/40 hover:bg-slate-50'}`}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="video/*"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-                {videoPreviewUrl ? (
-                  <div className="space-y-4 w-full">
-                    <div className="relative mx-auto max-w-[240px] sm:max-w-[280px] aspect-video rounded-xl overflow-hidden shadow-md">
-                      <video src={videoPreviewUrl} className="h-full w-full object-cover" />
-                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <PlayCircle className="h-8 w-8 text-white" />
+            {/* 4. Asset Selection Side (Media) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full border-t-2 border-slate-100 pt-10">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 ml-1">
+                  <div className="h-2 w-2 rounded-full bg-rose-500" />
+                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-600">Video File</Label>
+                </div>
+                <div 
+                  className={`border-2 border-dashed rounded-3xl p-8 text-center transition-all cursor-pointer group relative overflow-hidden flex flex-col items-center justify-center min-h-[220px] lg:min-h-[260px]
+                    ${selectedFile ? 'border-primary bg-primary/5' : 'border-slate-300 bg-slate-50/50 hover:border-primary'}`}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="video/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  
+                  {videoPreviewUrl ? (
+                    <div className="space-y-6 w-full animate-in fade-in zoom-in-95 duration-500">
+                      <div className="relative mx-auto w-full aspect-video rounded-2xl overflow-hidden shadow-2xl ring-4 ring-white max-w-[280px]">
+                        <video src={videoPreviewUrl} className="h-full w-full object-cover" />
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <PlayCircle className="h-12 w-12 text-white" />
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-center gap-2">
+                         <div className="flex items-center gap-3 px-4 py-2 bg-white rounded-xl shadow-sm border-2 border-slate-200">
+                            <Video className="h-5 w-5 text-primary" />
+                            <span className="text-xs font-bold text-slate-700 truncate max-w-[150px]">{selectedFile?.name}</span>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 rounded-lg hover:bg-rose-50 hover:text-rose-500 transition-colors shrink-0" 
+                              onClick={(e) => { e.stopPropagation(); clearFile(); }}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                         </div>
+                         <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mt-1">File ready</p>
                       </div>
                     </div>
-                    <div className="flex items-center justify-center gap-2 text-primary font-black text-[10px] sm:text-xs tracking-widest uppercase">
-                      <Video className="h-3 w-3 sm:h-4 sm:w-4" />
-                      <span className="truncate max-w-[140px] sm:max-w-[200px]">{selectedFile?.name}</span>
+                  ) : (
+                    <div className="space-y-4 py-6 group-hover:scale-105 transition-transform duration-500">
+                      <div className="h-16 w-16 bg-white rounded-2xl shadow-xl flex items-center justify-center mx-auto text-slate-400 group-hover:text-primary transition-all border border-slate-200">
+                        <Plus className="h-8 w-8" />
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-bold text-slate-800 tracking-tight">Select Video</h4>
+                        <p className="text-[9px] text-slate-500 mt-2 font-bold uppercase tracking-wider max-w-[180px] mx-auto leading-relaxed">Click or drag to upload (Max 500MB)</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 ml-1">
+                  <div className="h-2 w-2 rounded-full bg-indigo-500" />
+                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-600">Thumbnail Image</Label>
+                </div>
+                <div 
+                  className={`border-2 border-dashed rounded-3xl p-6 text-center transition-all cursor-pointer group min-h-[220px] lg:min-h-[260px] flex flex-col items-center justify-center
+                    ${thumbnailFile ? 'border-primary bg-primary/5' : 'border-slate-300 bg-slate-50/50 hover:border-primary'}`}
+                  onClick={(e) => {
+                    if (thumbnailFile) {
+                      e.stopPropagation();
+                      return;
+                    }
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'image/*';
+                    input.onchange = (e: Event) => {
+                      const target = e.target as HTMLInputElement;
+                      if (target.files && target.files[0]) {
+                        const file = target.files[0];
+                        if (thumbnailPreviewUrl) {
+                          URL.revokeObjectURL(thumbnailPreviewUrl);
+                        }
+                        setThumbnailFile(file);
+                        setThumbnailPreviewUrl(URL.createObjectURL(file));
+                      }
+                    };
+                    input.click();
+                  }}
+                >
+                  {thumbnailPreviewUrl ? (
+                    <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-xl ring-2 ring-white group mx-auto max-w-[280px] animate-in fade-in zoom-in-95">
+                      <img src={thumbnailPreviewUrl} className="h-full w-full object-cover" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                         <Camera className="h-6 w-6 text-white" />
+                      </div>
                       <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-6 w-6 rounded-full hover:bg-rose-50 hover:text-rose-500" 
-                        onClick={(e) => { e.stopPropagation(); clearFile(); }}
-                      >
-                        <X className="h-3 w-3" />
+                          variant="destructive" 
+                          size="icon" 
+                          className="absolute top-2 right-2 h-8 w-8 rounded-xl scale-0 group-hover:scale-100 transition-all shadow-lg" 
+                          onClick={(e) => { e.stopPropagation(); clearThumbnail(); }}
+                        >
+                          <X className="h-4 w-4" />
                       </Button>
                     </div>
-                  </div>
-                ) : (
-                  <div className="space-y-3 py-2">
-                    <div className="h-12 w-12 sm:h-16 sm:w-16 bg-white rounded-2xl sm:rounded-3xl shadow-sm flex items-center justify-center mx-auto text-slate-400 group-hover:text-primary transition-all group-hover:scale-110">
-                      <Plus className="h-6 w-6 sm:h-8 sm:w-8" />
+                  ) : (
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="h-14 w-14 bg-white rounded-2xl shadow-md flex items-center justify-center text-slate-400 group-hover:text-primary transition-all border border-slate-200">
+                         <ImageIcon className="h-7 w-7" />
+                      </div>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest group-hover:text-primary">Add thumbnail</p>
                     </div>
-                    <div>
-                      <p className="text-sm sm:text-base font-black text-slate-700 tracking-tight">Drop video here</p>
-                      <p className="text-[10px] text-slate-400 mt-1 uppercase font-black tracking-tighter">MP4, WebM (Max 500MB)</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            {/* Thumbnail Upload */}
-            <div className="space-y-3">
-              <Label className="text-xs sm:text-sm font-black text-slate-700 uppercase tracking-widest ml-1">Thumbnail</Label>
-              <div 
-                className={`border-2 border-dashed rounded-2xl p-4 text-center transition-all cursor-pointer group min-h-[110px] sm:min-h-[140px] flex flex-col items-center justify-center
-                  ${thumbnailFile ? 'border-primary/30 bg-primary/5' : 'border-slate-200 bg-slate-50/50 hover:border-primary/40 hover:bg-slate-50'}`}
-                onClick={() => {
-                  const input = document.createElement('input');
-                  input.type = 'file';
-                  input.accept = 'image/*';
-                  input.onchange = (e: Event) => {
-                    const target = e.target as HTMLInputElement;
-                    if (target.files && target.files[0]) {
-                      const file = target.files[0];
-                      if (thumbnailPreviewUrl) {
-                        URL.revokeObjectURL(thumbnailPreviewUrl);
-                      }
-                      setThumbnailFile(file);
-                      setThumbnailPreviewUrl(URL.createObjectURL(file));
-                    }
-                  };
-                  input.click();
-                }}
-              >
-                {thumbnailPreviewUrl ? (
-                  <div className="relative w-full aspect-video rounded-xl overflow-hidden shadow-sm group mx-auto max-w-[200px]">
-                    <img src={thumbnailPreviewUrl} className="h-full w-full object-cover" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                       <Camera className="h-5 w-5 text-white" />
-                    </div>
-                    <Button 
-                        variant="destructive" 
-                        size="icon" 
-                        className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full scale-0 group-hover:scale-100 transition-transform" 
-                        onClick={(e) => { e.stopPropagation(); clearThumbnail(); }}
-                      >
-                        <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center gap-1.5">
-                    <div className="h-8 w-8 sm:h-10 sm:w-10 bg-white rounded-full shadow-sm flex items-center justify-center text-slate-400 group-hover:text-primary transition-all">
-                       <ImageIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-                    </div>
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-tighter group-hover:text-primary transition-colors">Select Image</p>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
 
-            {uploading && (
-              <div className="space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                <div className="flex justify-between text-xs font-semibold text-slate-600 mb-1">
-                  <span>{isCreatingModule ? "Creating Module & Uploading..." : "Uploading Video..."}</span>
-                  <span>{uploadProgress}%</span>
-                </div>
-                <Progress value={uploadProgress} className="h-2 rounded-full bg-slate-200" />
-                <p className="text-[10px] text-center text-slate-400 italic">Please do not close this window</p>
+            {/* 5. Progress & Action Group */}
+            <div className="space-y-6 pt-4">
+              <AnimatePresence>
+                  {uploading && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      className="space-y-4 p-6 bg-primary/5 backdrop-blur-md rounded-3xl border border-primary/10 shadow-lg shadow-primary/5 w-full"
+                    >
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-primary flex items-center gap-2">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Uploading Video...
+                        </span>
+                        <span className="text-[10px] font-bold text-primary">{uploadProgress}% Complete</span>
+                      </div>
+                      <Progress value={uploadProgress} className="h-3 rounded-full bg-slate-200/50 [&>div]:bg-primary shadow-inner" />
+                      <p className="text-[9px] text-center text-slate-500 font-bold uppercase tracking-tight">Uploading file, please do not close this window.</p>
+                    </motion.div>
+                  )}
+              </AnimatePresence>
+
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    clearFile();
+                    setNewVideo({ title: "", description: "", module_id: "", is_published: true, allowed_batches: [] });
+                    setNewModuleName("");
+                  }} 
+                  disabled={uploading}
+                  className="w-full sm:w-1/3 h-14 rounded-2xl border-2 border-slate-300 hover:bg-slate-50 font-bold text-xs uppercase tracking-widest text-slate-500 hover:text-slate-700 transition-all"
+                >
+                  Clear All
+                </Button>
+                <Button 
+                  onClick={() => handleUpload()}
+                  disabled={uploading || !selectedFile || !newVideo.title || (!isCreatingModule && !newVideo.module_id) || (isCreatingModule && !newModuleName)}
+                  className={`w-full sm:w-2/3 h-14 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-2xl transition-all active:scale-[0.98] ${uploadSuccess ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-200' : 'bg-primary hover:bg-primary/90 shadow-primary/30'}`}
+                >
+                  {uploading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Video className="h-5 w-5 mr-3" />}
+                  {uploadSuccess ? (
+                    <span className="flex items-center gap-2"><CheckCircle className="h-5 w-5" /> Video Saved!</span>
+                  ) : (isCreatingModule ? 'Create & Upload' : 'Upload Video')}
+                </Button>
               </div>
-            )}
-          </div>
+            </div>
         </div>
       </div>
       

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit, ArrowLeft, Trash2, UploadCloud, GripVertical, Loader2, CheckCircle2, XCircle, Copy, Check, AlertTriangle, Clock, CheckCircle, FileVideo, X, Layers, ChevronUp, ChevronDown, Users } from 'lucide-react';
+import { Plus, Edit, ArrowLeft, Trash2, UploadCloud, GripVertical, Loader2, CheckCircle2, XCircle, Copy, Check, AlertTriangle, Clock, CheckCircle, FileVideo, X, Layers, ChevronUp, ChevronDown, Users, Sparkles, TrendingUp, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -379,8 +379,8 @@ export function CourseBuilder({ course, onBack }: CourseBuilderProps) {
                     </motion.div>
                 ) : (
                     <motion.div key="syllabus" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                        <div className="grid gap-6 md:grid-cols-3">
-                            <div className="md:col-span-2 space-y-6">
+                        <div className="grid gap-6 lg:grid-cols-3">
+                            <div className="lg:col-span-2 space-y-6 flex-1 min-w-0">
                                 <Collapsible open={isUploaderOpen} onOpenChange={setIsUploaderOpen} className="space-y-4">
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                         <div className="flex items-center gap-3">
@@ -438,27 +438,79 @@ export function CourseBuilder({ course, onBack }: CourseBuilderProps) {
                                     </div>
                                 )}
                             </div>
-
                             <div className="space-y-6">
-                                <Card>
-                                    <CardHeader><CardTitle>Course Details</CardTitle></CardHeader>
-                                    <CardContent className="space-y-4 text-sm">
-                                        {course.thumbnail_url && (
-                                            <div className="aspect-video w-full rounded-md overflow-hidden bg-muted">
-                                                <img src={course.thumbnail_url.startsWith('http') ? course.thumbnail_url : `/s3/public/${course.thumbnail_url}`} className="w-full h-full object-cover" alt="Thumbnail" />
+                                <Card className="overflow-hidden rounded-[2rem] border-slate-200/60 shadow-xl bg-white/70 backdrop-blur-xl group sidebar-details-card">
+                                    <div className="p-1">
+                                        {course.thumbnail_url ? (
+                                            <div className="aspect-[16/10] w-full rounded-[1.75rem] overflow-hidden bg-slate-100 shadow-inner group-hover:shadow-2xl transition-all duration-700">
+                                                <img 
+                                                    src={course.thumbnail_url.startsWith('http') ? course.thumbnail_url : `/s3/public/${course.thumbnail_url}`} 
+                                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[2000ms]" 
+                                                    alt="Course Thumbnail" 
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="aspect-[16/10] w-full rounded-[1.75rem] bg-slate-50 flex items-center justify-center text-slate-200 border border-dashed border-slate-200">
+                                                <Layers className="h-10 w-10 opacity-20" />
                                             </div>
                                         )}
-                                        <div><span className="font-semibold">Category:</span> {course.category || 'N/A'}</div>
-                                        <div><span className="font-semibold">Level:</span> {course.level || 'N/A'}</div>
-                                        <div className="flex items-center justify-between">
-                                            <span className="font-semibold">Status:</span>
-                                            <Badge variant={ (course.status === 'approved' || course.status === 'published') ? 'default' : 'outline' }>
-                                                {course.status === 'approved' || course.status === 'published' ? 'Live' : (course.status || 'Draft')}
-                                            </Badge>
+                                    </div>
+                                    <CardHeader className="p-6 pb-2">
+                                        <CardTitle className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                                            <Sparkles className="h-5 w-5 text-primary" />
+                                            Course Details
+                                        </CardTitle>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Administrative Overview</p>
+                                    </CardHeader>
+                                    <CardContent className="p-6 space-y-6">
+                                        <div className="space-y-4">
+                                            <div className="flex flex-col gap-1.5">
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Category</span>
+                                                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100/50 flex items-center justify-between group-hover:bg-white group-hover:shadow-md group-hover:border-transparent transition-all duration-500">
+                                                    <span className="text-sm font-bold text-slate-700">{course.category || 'Uncategorized'}</span>
+                                                    <Badge variant="outline" className="h-5 text-[9px] font-black border-slate-200">AOTMS</Badge>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-col gap-1.5">
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Curriculum Level</span>
+                                                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100/50 flex items-center justify-between group-hover:bg-white group-hover:shadow-md group-hover:border-transparent transition-all duration-500">
+                                                    <span className="text-sm font-bold text-slate-700">{course.level || 'Standard'}</span>
+                                                    <TrendingUp className="h-3.5 w-3.5 text-primary/40" />
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-3 pt-4">
+                                                <div className="flex items-center justify-between px-2">
+                                                    <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Status</span>
+                                                    <span className="text-[9px] font-bold text-slate-400 uppercase">Live Update</span>
+                                                </div>
+                                                <div className="p-4 rounded-3xl bg-slate-900 shadow-xl shadow-slate-900/10 flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`h-2.5 w-2.5 rounded-full animate-pulse ${ (course.status === 'approved' || course.status === 'published') ? 'bg-emerald-400' : 'bg-primary' }`} />
+                                                        <span className="text-xs font-black text-white uppercase tracking-widest">
+                                                            {course.status === 'approved' || course.status === 'published' ? 'Active Live' : (course.status || 'Draft Stage')}
+                                                        </span>
+                                                    </div>
+                                                    <Badge className={`border-none h-6 px-3 rounded-full text-[9px] font-black uppercase tracking-tighter ${ (course.status === 'approved' || course.status === 'published') ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-white' }`}>
+                                                        { (course.status === 'approved' || course.status === 'published') ? 'Verified' : 'Local' }
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-6 border-t border-dashed border-slate-200 mt-2">
+                                             <div className="flex items-center gap-3 p-4 rounded-2xl bg-blue-50/50 border border-blue-100/50 text-blue-600">
+                                                <Activity className="h-5 w-5 shrink-0" />
+                                                <p className="text-[10px] font-bold leading-relaxed">
+                                                    System synchronized. All changes are being monitored for platform integrity.
+                                                </p>
+                                             </div>
                                         </div>
                                     </CardContent>
                                 </Card>
                             </div>
+
                         </div>
                     </motion.div>
                 )}

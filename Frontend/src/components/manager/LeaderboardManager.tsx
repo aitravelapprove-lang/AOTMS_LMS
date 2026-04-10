@@ -106,8 +106,8 @@ export function LeaderboardManager() {
           ) : (
             <div className="space-y-2">
               {leaderboard.map((entry, idx) => {
-                const userData = typeof entry.user_id === 'object' ? entry.user_id : (typeof entry.student_id === 'object' ? entry.student_id : null);
-                const displayName = userData?.full_name || entry.student_name || 'Student';
+                const userData = typeof entry.user_id === 'object' ? entry.user_id : null;
+                const displayName = userData?.full_name || 'Student';
                 const avatarUrl = userData?.avatar_url 
                   ? (userData.avatar_url.startsWith('http') ? userData.avatar_url : `${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/s3/public/${userData.avatar_url}`)
                   : `https://api.dicebear.com/9.x/avataaars/svg?seed=${userData?.id || entry.id}`;

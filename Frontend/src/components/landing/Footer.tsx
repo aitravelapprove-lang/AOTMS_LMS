@@ -23,7 +23,7 @@ const Footer = () => {
       "Leaderboard",
       "ATS Resume Score",
     ],
-    Company: ["About Us", "Our Trainers", "Blog", "Careers", "Press"],
+    Company: ["About Us", "Our Trainers", "Careers", "Press"],
     Support: [
       "FAQ",
       "Documentation",
@@ -44,7 +44,6 @@ const Footer = () => {
     // Company
     "About Us": "/#about",
     "Our Trainers": "/trainers",
-    Blog: "/blog",
     Careers: "/careers",
     Press: "/press",
 

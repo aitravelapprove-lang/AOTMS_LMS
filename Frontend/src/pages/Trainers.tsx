@@ -117,14 +117,6 @@ const Trainers = () => {
                                             alt={trainer.name}
                                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                                         />
-                                        <div className="absolute top-6 left-6 flex flex-col gap-2">
-                                            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/90 backdrop-blur-md shadow-lg text-[10px] font-black uppercase tracking-widest text-[#FD5A1A]">
-                                                <Star className="w-3 h-3 fill-current" /> {trainer.rating} Rating
-                                            </div>
-                                            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/90 backdrop-blur-md shadow-lg text-[10px] font-black uppercase tracking-widest text-[#0075CF]">
-                                                <Users className="w-3 h-3" /> {trainer.studentsLabel}
-                                            </div>
-                                        </div>
                                     </div>
                                     <div className="space-y-1">
                                         <h3 className="text-2xl font-black text-slate-900 leading-none group-hover:text-[#0075CF] transition-colors">{trainer.name}</h3>

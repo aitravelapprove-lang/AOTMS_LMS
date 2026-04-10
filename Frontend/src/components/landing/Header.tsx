@@ -35,7 +35,6 @@ const lightBgPages = [
   "/privacy",
   "/terms",
   "/docs",
-  "/blog",
   "/careers",
   "/trainers",
   "/press",

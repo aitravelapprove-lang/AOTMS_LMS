@@ -14,10 +14,10 @@ const CompanyCarousel: React.FC = () => {
 
   return (
     <section className="relative py-20 overflow-hidden bg-white border-t border-b border-slate-100">
-      {/* Ambient glows for depth */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 left-1/4 w-[500px] h-full bg-blue-500/5 blur-[120px] rounded-full" />
-        <div className="absolute bottom-0 right-1/4 w-[500px] h-full bg-orange-500/5 blur-[120px] rounded-full" />
+      {/* Ambient glows for depth - hidden on mobile for performance */}
+      <div className="hidden md:block absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 left-1/4 w-[350px] h-full bg-blue-500/5 blur-[80px] rounded-full" />
+        <div className="absolute bottom-0 right-1/4 w-[350px] h-full bg-orange-500/5 blur-[80px] rounded-full" />
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 mb-16 text-center relative z-10">

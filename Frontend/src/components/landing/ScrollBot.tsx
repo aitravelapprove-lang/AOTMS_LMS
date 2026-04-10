@@ -165,9 +165,10 @@ const ScrollBot = () => {
                     className="relative bg-white/95 backdrop-blur-2xl border-2 border-white/50 shadow-[0_40px_100px_-20px_rgba(0,117,207,0.3)] rounded-[2.5rem] w-[320px] sm:w-[360px] overflow-hidden flex flex-col mb-4"
                     style={{ borderRadius: "2rem 4rem 2rem 4rem" }}
                   >
-                    {/* Header — Quantum Gradient */}
+                    {/* Header Gradient */}
                     <div className="bg-gradient-to-r from-[#0075CF] via-[#0057B7] to-[#FD5A1A] p-6 flex items-center justify-between text-white relative overflow-hidden">
-                      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
+                      {/* Carbon fibre texture - desktop only, avoids extra network request on mobile */}
+                      <div className="hidden md:block absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
                       <div className="flex items-center gap-4 relative z-10">
                         <div className="relative">
                           <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 rotate-3 group-hover:rotate-0 transition-transform">
@@ -274,41 +275,16 @@ const ScrollBot = () => {
                     onClick={() => setIsChatOpen(true)}
                     className="relative w-16 h-16 group outline-none"
                   >
-                    {/* Background Blob 1 */}
-                    <motion.div
-                      animate={{
-                        borderRadius: [
-                          "40% 60% 70% 30% / 40% 50% 60% 50%",
-                          "30% 70% 50% 50% / 50% 40% 60% 50%",
-                          "40% 60% 70% 30% / 40% 50% 60% 50%",
-                        ],
-                        rotate: [0, 90, 0],
-                      }}
-                      transition={{
-                        duration: 8,
-                        repeat: Infinity,
-                        ease: "linear",
-                      }}
-                      className="absolute inset-0 bg-gradient-to-tr from-[#0075CF] via-[#0057B7] to-[#FD5A1A] opacity-20 blur-xl group-hover:opacity-40 transition-opacity"
-                    />
 
-                    {/* Background Blob 2 */}
-                    <motion.div
-                      animate={{
-                        borderRadius: [
-                          "30% 70% 50% 50% / 50% 40% 60% 50%",
-                          "40% 60% 70% 30% / 40% 50% 60% 50%",
-                          "30% 70% 50% 50% / 50% 40% 60% 50%",
-                        ],
-                        rotate: [0, -90, 0],
-                      }}
-                      transition={{
-                        duration: 10,
-                        repeat: Infinity,
-                        ease: "linear",
-                      }}
-                      className="absolute inset-0 bg-gradient-to-bl from-[#FD5A1A] via-[#FF7A00] to-[#0075CF] opacity-20 blur-xl group-hover:opacity-40 transition-opacity"
+                    {/* Background Blobs - static on mobile to avoid continuous GPU repaints */}
+                    <div
+                      className="hidden md:block absolute inset-0 bg-gradient-to-tr from-[#0075CF] via-[#0057B7] to-[#FD5A1A] opacity-20 blur-xl group-hover:opacity-40 transition-opacity rounded-full"
                     />
+                    <div
+                      className="hidden md:block absolute inset-0 bg-gradient-to-bl from-[#FD5A1A] via-[#FF7A00] to-[#0075CF] opacity-20 blur-xl rounded-full"
+                    />
+                    {/* Mobile-only simple glow (no animation) */}
+                    <div className="md:hidden absolute inset-0 bg-[#0075CF] opacity-20 blur-md rounded-full" />
 
                     {/* Main Button Body - Asymmetric Capsule */}
                     <motion.div
@@ -327,15 +303,15 @@ const ScrollBot = () => {
                         </span>
                       </div>
 
-                      {/* Inner Flow Effect */}
+                      {/* Inner Flow Effect - desktop only */}
                       <motion.div
+                        className="hidden md:block absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 pointer-events-none"
                         animate={{ x: ["-100%", "100%"] }}
                         transition={{
                           duration: 3,
                           repeat: Infinity,
                           ease: "easeInOut",
                         }}
-                        className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 pointer-events-none"
                       />
                     </motion.div>
 

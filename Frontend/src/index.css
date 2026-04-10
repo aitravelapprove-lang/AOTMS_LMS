@@ -322,6 +322,15 @@
   .admin-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
   }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
 }
 
 @keyframes rog-scroll {

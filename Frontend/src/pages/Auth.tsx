@@ -119,11 +119,19 @@ export default function Auth() {
     email: string;
   } | null>(null);
   const [otpResendTimer, setOtpResendTimer] = useState(0);
-  const [loginStep, setLoginStep] = useState<'credentials' | 'admin-otp'>('credentials');
-  const [adminLoginEmail, setAdminLoginEmail] = useState('');
+  const [loginStep, setLoginStep] = useState<"credentials" | "admin-otp">(
+    "credentials",
+  );
+  const [adminLoginEmail, setAdminLoginEmail] = useState("");
   const [adminOtpResendTimer, setAdminOtpResendTimer] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
-  const { signIn, signUp, user, loading: authLoading, verifyAdminOtp } = useAuth();
+  const {
+    signIn,
+    signUp,
+    user,
+    loading: authLoading,
+    verifyAdminOtp,
+  } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -180,7 +188,10 @@ export default function Auth() {
 
   useEffect(() => {
     if (adminOtpResendTimer > 0) {
-      const timer = setTimeout(() => setAdminOtpResendTimer(adminOtpResendTimer - 1), 1000);
+      const timer = setTimeout(
+        () => setAdminOtpResendTimer(adminOtpResendTimer - 1),
+        1000,
+      );
       return () => clearTimeout(timer);
     }
   }, [adminOtpResendTimer]);
@@ -379,12 +390,12 @@ export default function Auth() {
     } else if (result.requiresAdminOtp) {
       setLoading(false);
       setAdminLoginEmail(data.email);
-      setLoginStep('admin-otp');
+      setLoginStep("admin-otp");
       setAdminOtpResendTimer(120);
       otpForm.reset();
       toast({
-        title: 'OTP Required',
-        description: 'A verification code has been sent to your admin email.',
+        title: "OTP Required",
+        description: "A verification code has been sent to your admin email.",
       });
     } else {
       setLoading(false);
@@ -413,14 +424,17 @@ export default function Auth() {
     if (error) {
       setLoading(false);
       toast({
-        title: 'Verification Failed',
+        title: "Verification Failed",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     } else {
       setLoading(false);
-      toast({ title: 'Admin Login Verified', description: 'Welcome to the admin panel.' });
-      navigate('/');
+      toast({
+        title: "Admin Login Verified",
+        description: "Welcome to the admin panel.",
+      });
+      navigate("/");
     }
   };
 
@@ -429,19 +443,30 @@ export default function Auth() {
     setLoading(true);
     try {
       const response = await fetch(`${API_URL}/auth/admin-resend-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: adminLoginEmail }),
       });
       if (response.ok) {
         setAdminOtpResendTimer(120);
-        toast({ title: 'OTP Resent', description: 'A new OTP has been sent to your email.' });
+        toast({
+          title: "OTP Resent",
+          description: "A new OTP has been sent to your email.",
+        });
       } else {
         const result = await response.json();
-        toast({ title: 'Error', description: result.error || 'Failed to resend OTP.', variant: 'destructive' });
+        toast({
+          title: "Error",
+          description: result.error || "Failed to resend OTP.",
+          variant: "destructive",
+        });
       }
     } catch {
-      toast({ title: 'Error', description: 'Failed to resend OTP.', variant: 'destructive' });
+      toast({
+        title: "Error",
+        description: "Failed to resend OTP.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -457,8 +482,8 @@ export default function Auth() {
     detailsForm.reset();
     setRegistrationStep("email");
     setTempUserData(null);
-    setLoginStep('credentials');
-    setAdminLoginEmail('');
+    setLoginStep("credentials");
+    setAdminLoginEmail("");
   };
 
   const PasswordRequirement = ({
@@ -509,7 +534,9 @@ export default function Auth() {
           )}
           <h2 className="text-3xl font-black text-slate-950 mb-2 tracking-tight">
             {isLogin
-              ? loginStep === 'admin-otp' ? 'Admin Verification' : 'Welcome back'
+              ? loginStep === "admin-otp"
+                ? "Admin Verification"
+                : "Welcome back"
               : registrationStep === "email"
                 ? "Create account"
                 : registrationStep === "otp"
@@ -518,7 +545,7 @@ export default function Auth() {
           </h2>
           <p className="text-muted-foreground text-sm font-medium">
             {isLogin
-              ? loginStep === 'admin-otp'
+              ? loginStep === "admin-otp"
                 ? `Enter the OTP sent to ${adminLoginEmail}`
                 : "Sign in to continue your learning journey."
               : registrationStep === "email"
@@ -533,21 +560,26 @@ export default function Auth() {
           {/* Login Form */}
           {isLogin ? (
             <motion.div
-              key={loginStep === 'admin-otp' ? 'admin-otp' : 'login'}
+              key={loginStep === "admin-otp" ? "admin-otp" : "login"}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.3 }}
             >
-              {loginStep === 'admin-otp' ? (
+              {loginStep === "admin-otp" ? (
                 /* Admin OTP Verification Step */
                 <Form {...otpForm}>
-                  <form onSubmit={otpForm.handleSubmit(handleAdminOtpVerify)} className="space-y-6">
+                  <form
+                    onSubmit={otpForm.handleSubmit(handleAdminOtpVerify)}
+                    className="space-y-6"
+                  >
                     <div className="text-center mb-6">
                       <div className="w-16 h-16 bg-[#0075CF]/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-[#0075CF]/20">
                         <ShieldCheck className="h-8 w-8 text-[#0075CF]" />
                       </div>
-                      <h3 className="text-xl font-black text-slate-900 tracking-tight">Admin Verification</h3>
+                      <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                        Admin Verification
+                      </h3>
                       <p className="text-sm text-slate-500 font-medium mt-1">
                         Secure access verification required
                       </p>
@@ -557,14 +589,22 @@ export default function Auth() {
                       {[0, 1, 2, 3, 4, 5].map((index) => (
                         <input
                           key={index}
-                          ref={(el) => { otpInputRefs.current[index] = el; }}
+                          ref={(el) => {
+                            otpInputRefs.current[index] = el;
+                          }}
                           type="text"
                           inputMode="numeric"
                           maxLength={1}
                           className="w-12 h-14 text-center text-xl font-bold bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-[#0075CF] focus:ring-4 focus:ring-[#0075CF]/10 outline-none transition-all"
-                          onChange={(e) => handleOtpInputChange(index, e.target.value, otpForm.setValue.bind(null, 'otp'))}
+                          onChange={(e) =>
+                            handleOtpInputChange(
+                              index,
+                              e.target.value,
+                              otpForm.setValue.bind(null, "otp"),
+                            )
+                          }
                           onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                          value={otpForm.getValues('otp')[index] || ''}
+                          value={otpForm.getValues("otp")[index] || ""}
                           onFocus={() => setIsTyping(true)}
                           onBlur={() => setIsTyping(false)}
                         />
@@ -576,19 +616,21 @@ export default function Auth() {
                       disabled={loading}
                       className="w-full h-14 bg-[#0075CF] hover:bg-[#0075CF]/90 text-white font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-[#0075CF]/20 transition-all active:scale-[0.98]"
                     >
-                      {loading ? 'Verifying...' : 'Unlock Admin Portal'}
+                      {loading ? "Verifying..." : "Unlock Admin Portal"}
                     </Button>
 
                     <div className="text-center">
                       <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">
-                        No code?{' '}
+                        No code?{" "}
                         <button
                           type="button"
                           onClick={handleAdminOtpResend}
                           disabled={adminOtpResendTimer > 0 || loading}
                           className="text-[#0075CF] hover:underline disabled:opacity-50"
                         >
-                          {adminOtpResendTimer > 0 ? `Retry in ${adminOtpResendTimer}s` : 'Resend Code'}
+                          {adminOtpResendTimer > 0
+                            ? `Retry in ${adminOtpResendTimer}s`
+                            : "Resend Code"}
                         </button>
                       </p>
                     </div>
@@ -596,28 +638,34 @@ export default function Auth() {
                     <button
                       type="button"
                       onClick={() => {
-                        setLoginStep('credentials');
+                        setLoginStep("credentials");
                         otpForm.reset();
-                        setAdminLoginEmail('');
+                        setAdminLoginEmail("");
                       }}
                       className="w-full text-xs text-slate-400 hover:text-slate-600 flex items-center justify-center gap-2 font-black uppercase tracking-widest transition-colors"
                     >
-                      <ArrowLeft className="h-3.5 w-3.5" /> Use Different Account
+                      <ArrowLeft className="h-3.5 w-3.5" /> Use Different
+                      Account
                     </button>
                   </form>
                 </Form>
               ) : (
                 <Form {...loginForm}>
-                  <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-6">
+                  <form
+                    onSubmit={loginForm.handleSubmit(handleLogin)}
+                    className="space-y-6"
+                  >
                     <FormField
                       control={loginForm.control}
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-bold text-slate-700 uppercase tracking-wider ml-1">Email Address</FormLabel>
+                          <FormLabel className="text-sm font-bold text-slate-700 uppercase tracking-wider ml-1">
+                            Email Address
+                          </FormLabel>
                           <FormControl>
                             <Input
-                              placeholder="admin@aotms.in"
+                              placeholder="Enter your email address"
                               className="h-14 bg-slate-50 border-slate-100 rounded-2xl focus:ring-4 focus:ring-[#0075CF]/10 transition-all font-medium text-slate-900"
                               autoComplete="email"
                               onFocus={() => setIsTyping(true)}
@@ -635,7 +683,9 @@ export default function Auth() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-bold text-slate-700 uppercase tracking-wider ml-1">Security Key</FormLabel>
+                          <FormLabel className="text-sm font-bold text-slate-700 uppercase tracking-wider ml-1">
+                            Enter Your Password
+                          </FormLabel>
                           <div className="relative">
                             <FormControl>
                               <Input
@@ -650,11 +700,17 @@ export default function Auth() {
                             </FormControl>
                             <button
                               type="button"
-                              onClick={() => setShowLoginPassword(!showLoginPassword)}
+                              onClick={() =>
+                                setShowLoginPassword(!showLoginPassword)
+                              }
                               className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors"
                               tabIndex={-1}
                             >
-                              {showLoginPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                              {showLoginPassword ? (
+                                <EyeOff className="h-5 w-5" />
+                              ) : (
+                                <Eye className="h-5 w-5" />
+                              )}
                             </button>
                           </div>
                           <FormMessage />

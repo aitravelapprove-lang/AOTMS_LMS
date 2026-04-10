@@ -293,21 +293,26 @@ export function UserProfile() {
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/40 backdrop-blur-md p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden">
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />
                 <div>
-                    <h1 className="text-2xl font-bold">My Profile</h1>
-                    <p className="text-muted-foreground">Manage your personal information</p>
+                    <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight italic uppercase">Profile Command Center</h1>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">Manage your professional identity and system credentials</p>
                 </div>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-12">
-                {/* Profile Card */}
-                <Card className="md:col-span-4 h-fit">
-                    <CardHeader className="text-center">
-                        <div className="mx-auto mb-4 relative group w-24 h-24">
-                            <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
+            <div className="grid gap-8 lg:grid-cols-12">
+                {/* Profile Card - Premium Identity Card */}
+                <Card className="lg:col-span-4 h-fit overflow-hidden rounded-[2.5rem] border-slate-200/60 shadow-2xl bg-white group hover:shadow-primary/5 transition-all duration-700">
+                    <div className="h-24 bg-gradient-to-br from-slate-50 to-slate-100/50 relative">
+                        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:16px_16px]" />
+                    </div>
+                    <CardHeader className="text-center -mt-16 relative z-10">
+                        <div className="mx-auto mb-6 relative group w-32 h-32">
+                            <div className="absolute inset-0 rounded-full bg-primary/10 animate-pulse group-hover:bg-primary/20 transition-colors" />
+                            <Avatar className="h-32 w-32 border-[6px] border-white shadow-2xl relative z-10">
                                 <AvatarImage src={profile.avatar_url?.startsWith('http') ? profile.avatar_url : (profile.avatar_url ? `${API_URL}/s3/public/${profile.avatar_url}` : '')} />
-                                <AvatarFallback className="text-2xl">{profile.full_name?.[0]?.toUpperCase()}</AvatarFallback>
+                                <AvatarFallback className="text-3xl font-black bg-slate-100 text-slate-500 uppercase">{profile.full_name?.[0]?.toUpperCase()}</AvatarFallback>
                             </Avatar>
                             
                             <input 
@@ -324,31 +329,31 @@ export function UserProfile() {
                                 type="button"
                                 disabled={uploadingImage}
                                 onClick={() => fileInputRef.current?.click()}
-                                className="absolute bottom-0 right-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-primary text-primary-foreground hover:bg-primary/90 shadow-md"
+                                className="absolute bottom-1 right-1 h-9 w-9 rounded-full opacity-0 group-hover:opacity-100 transition-all bg-primary text-white hover:bg-primary/90 shadow-xl z-20"
                             >
                                 {uploadingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                             </Button>
                         </div>
-                        <CardTitle>{profile.full_name}</CardTitle>
-                        <CardDescription>{profile.email}</CardDescription>
+                        <CardTitle className="text-2xl font-black text-slate-900 tracking-tight mb-1">{profile.full_name || 'System User'}</CardTitle>
+                        <CardDescription className="text-xs font-bold text-slate-400 group-hover:text-primary transition-colors">{profile.email}</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="text-sm text-muted-foreground text-center font-bold uppercase tracking-widest bg-primary/5 py-2 rounded-lg border border-primary/10">
-                            {userRole ? userRole : 'Student'} • Joined {new Date().getFullYear()}
+                    <CardContent className="space-y-8 p-8">
+                        <div className="p-6 rounded-[2rem] bg-blue-50/50 border border-blue-100 flex flex-col items-center justify-center text-center gap-2 group-hover:bg-primary group-hover:text-white transition-all duration-500 hover:scale-[1.02]">
+                            <span className="text-sm font-black uppercase tracking-[0.25em]">{userRole || 'Student'}</span>
+                            <div className="h-1.5 w-1.5 rounded-full bg-current opacity-50" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">Joined {new Date().getFullYear()}</span>
                         </div>
 
-                        <div className="pt-4 border-t">
-                            <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold mb-3 block">My Identity ID (UUID)</Label>
-                            <div className="flex gap-2">
-                                <Input
-                                    readOnly
-                                    value={profile.id}
-                                    className="bg-muted/50 font-mono text-[10px] h-9"
-                                />
+                        <div className="pt-6 border-t border-dashed border-slate-200 space-y-4">
+                            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 text-center block">System Identity (UUID)</Label>
+                            <div className="flex items-center justify-center gap-3">
+                                <div className="px-5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-mono text-xs font-bold text-slate-600 shadow-inner">
+                                    {profile.id?.slice(0, 4) || '69bc'}...
+                                </div>
                                 <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-9 px-3"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-10 w-10 rounded-xl bg-white border border-slate-200 shadow-sm hover:text-primary hover:border-primary transition-all"
                                     onClick={() => {
                                         navigator.clipboard.writeText(profile.id);
                                         toast({
@@ -357,20 +362,18 @@ export function UserProfile() {
                                         });
                                     }}
                                 >
-                                    <Copy className="h-3.5 w-3.5" />
+                                    <Copy className="h-4 w-4" />
                                 </Button>
                             </div>
-                            <p className="text-[10px] text-muted-foreground mt-2 leading-tight">
-                                {userRole === 'student' 
-                                    ? "Share this UUID with your instructor so they can manually enroll you in courses."
-                                    : "This is your unique system identifier for administrative purposes."}
+                            <p className="text-[10px] font-bold text-slate-400 text-center leading-relaxed max-w-[200px] mx-auto">
+                                This is your unique system identifier for administrative and academic purposes.
                             </p>
                         </div>
                     </CardContent>
                 </Card>
 
                 {/* Edit Form */}
-                <Card className="md:col-span-8">
+                <Card className="lg:col-span-8 overflow-hidden rounded-[2.5rem] border-slate-200/60 shadow-sm bg-white/50 backdrop-blur-sm">
                     <CardHeader>
                         <CardTitle>Personal Details</CardTitle>
                         <CardDescription>Update your personal information</CardDescription>

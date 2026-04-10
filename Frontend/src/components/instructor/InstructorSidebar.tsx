@@ -1,4 +1,5 @@
 import { useLocation, Link, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Sidebar,
   SidebarContent,
@@ -39,6 +40,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { useInstructorStats } from "@/hooks/useInstructorData";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 
 const mainNavItems = [
@@ -85,7 +87,7 @@ export function InstructorSidebar() {
   return (
     <Sidebar
       collapsible="icon"
-      className="border-r border-slate-200/60 !bg-white/70 backdrop-blur-xl font-sans"
+      className="border-r border-slate-200/40 !bg-white/80 backdrop-blur-2xl font-sans shadow-[20px_0_40px_rgba(0,0,0,0.01)]"
     >
       <SidebarHeader className="h-20 flex items-center justify-center px-4 group-data-[collapsible=icon]:px-0 border-b border-slate-200/60">
         <Link
@@ -108,40 +110,70 @@ export function InstructorSidebar() {
       <SidebarContent className="px-3 group-data-[collapsible=icon]:px-2 py-6 space-y-8 custom-scrollbar">
         {/* Hub */}
         <SidebarGroup>
-          <SidebarGroupLabel>Operations Hub</SidebarGroupLabel>
+          <div className="px-4 mb-4">
+             <SidebarGroupLabel className="text-[10px] uppercase font-black tracking-[0.2em] text-slate-400 p-0 h-auto">Operations Hub</SidebarGroupLabel>
+          </div>
           <SidebarGroupContent>
-            <SidebarMenu className="gap-1">
+            <SidebarMenu className="gap-1.5">
               {mainNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
                     isActive={isActive(item.url)}
-                    className="h-11 px-4 rounded-lg transition-all duration-200 group data-[active=true]:bg-primary/5 data-[active=true]:text-primary"
+                    tooltip={item.title}
+                    className={cn(
+                        "h-12 px-4 rounded-xl transition-all duration-300 group relative overflow-hidden",
+                        isActive(item.url) 
+                          ? "bg-primary text-white shadow-[0_10px_20px_rgba(var(--primary),0.2)]" 
+                          : "hover:bg-slate-50 text-slate-500 hover:text-slate-900"
+                    )}
                   >
-                    <Link to={item.url} className="flex items-center gap-3 w-full">
-                      <div className="relative">
+                    <Link to={item.url} className="flex items-center gap-3.5 w-full">
+                      <div className="relative z-10">
                         <item.icon
-                          className={`h-4.5 w-4.5 transition-colors ${isActive(item.url) ? "text-primary" : "text-slate-500 group-hover:text-slate-700"}`}
+                          className={cn(
+                              "h-[1.125rem] w-[1.125rem] transition-all duration-300",
+                              isActive(item.url) ? "text-white scale-110" : "text-slate-400 group-hover:text-primary"
+                          )}
                         />
                         {item.isLive && (
-                          <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-green-500 border-2 border-white animate-pulse" />
+                          <span className={cn(
+                              "absolute -top-1 -right-1 h-2 w-2 rounded-full border-2 animate-pulse",
+                              isActive(item.url) ? "bg-white border-primary" : "bg-emerald-500 border-white"
+                          )} />
                         )}
                       </div>
+                      
                       {!collapsed && (
-                        <div className="flex items-center justify-between flex-1">
-                          <span>{item.title}</span>
+                        <motion.div 
+                          className="flex items-center justify-between flex-1 z-10"
+                          initial={{ opacity: 0, x: -5 }}
+                          animate={{ opacity: 1, x: 0 }}
+                        >
+                          <span className="font-bold text-xs uppercase tracking-wider">{item.title}</span>
                           {item.title === "Student Roster" && stats?.totalStudents !== undefined && (
-                            <Badge variant="secondary" className="h-5 px-1.5 text-[10px] font-bold bg-primary/10 text-primary border-none">
+                            <Badge variant="secondary" className={cn(
+                                "h-5 px-1.5 text-[10px] font-black border-none transition-colors",
+                                isActive(item.url) ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
+                            )}>
                               {stats.totalStudents}
                             </Badge>
                           )}
-                        </div>
+                        </motion.div>
                       )}
 
+                      {/* Premium Active Background Glow */}
+                      {isActive(item.url) && (
+                        <motion.div 
+                          layoutId="active-pill"
+                          className="absolute inset-0 bg-primary z-0"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                        />
+                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
@@ -149,21 +181,51 @@ export function InstructorSidebar() {
 
         {/* Content */}
         <SidebarGroup>
-          <SidebarGroupLabel>Curriculum</SidebarGroupLabel>
+          <div className="px-4 mb-4 mt-2">
+            <SidebarGroupLabel className="text-[10px] uppercase font-black tracking-[0.2em] text-slate-400 p-0 h-auto">Curriculum Management</SidebarGroupLabel>
+          </div>
           <SidebarGroupContent>
-            <SidebarMenu className="gap-1">
+            <SidebarMenu className="gap-1.5">
               {contentNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
                     isActive={isActive(item.url)}
-                    className="h-11 px-4 rounded-lg transition-all duration-200 group data-[active=true]:bg-accent/5 data-[active=true]:text-accent"
+                    tooltip={item.title}
+                    className={cn(
+                        "h-12 px-4 rounded-xl transition-all duration-300 group relative overflow-hidden",
+                        isActive(item.url) 
+                          ? "bg-slate-900 text-white shadow-xl" 
+                          : "hover:bg-slate-50 text-slate-500 hover:text-slate-900"
+                    )}
                   >
-                    <Link to={item.url} className="flex items-center gap-3">
-                      <item.icon
-                        className={`h-4.5 w-4.5 transition-colors ${isActive(item.url) ? "text-accent" : "text-slate-500 group-hover:text-slate-700"}`}
-                      />
-                      {!collapsed && <span>{item.title}</span>}
+                    <Link to={item.url} className="flex items-center gap-3.5">
+                      <div className="relative z-10">
+                        <item.icon
+                           className={cn(
+                                "h-[1.125rem] w-[1.125rem] transition-all duration-300",
+                                isActive(item.url) ? "text-white scale-110" : "text-slate-400 group-hover:text-slate-900"
+                           )}
+                        />
+                      </div>
+                      {!collapsed && (
+                        <motion.span 
+                            className="font-bold text-xs uppercase tracking-wider z-10"
+                            initial={{ opacity: 0, x: -5 }}
+                            animate={{ opacity: 1, x: 0 }}
+                        >
+                            {item.title}
+                        </motion.span>
+                      )}
+                      
+                      {isActive(item.url) && (
+                        <motion.div 
+                          layoutId="active-pill-dark"
+                          className="absolute inset-0 bg-slate-900 z-0"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                        />
+                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

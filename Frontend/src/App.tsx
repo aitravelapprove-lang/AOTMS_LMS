@@ -2,7 +2,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { SocketProvider } from "@/hooks/useSocket";
 import { useEffect, useRef, useState } from "react";
@@ -59,8 +65,10 @@ const BackNavigationHandler = () => {
         admin: "/admin",
         manager: "/manager",
       };
-      
-      const portalPath = user ? (dashboardMap[userRole || "student"] || "/") : "/";
+
+      const portalPath = user
+        ? dashboardMap[userRole || "student"] || "/"
+        : "/";
 
       // If we're not at the main portal entry point, handle the redirect
       if (location.pathname !== portalPath) {
@@ -94,34 +102,39 @@ const RoleRedirector = () => {
       student: "/student-dashboard",
       instructor: "/instructor",
       admin: "/admin",
-      manager: "/manager"
+      manager: "/manager",
     };
 
     const target = dashboardMap[userRole];
-    
+
     // 1. Handle Role Change during session
     if (lastRoleRef.current !== null && lastRoleRef.current !== userRole) {
-      console.log(`[REAL-TIME] Role update detected: ${lastRoleRef.current} -> ${userRole}.`);
+      console.log(
+        `[REAL-TIME] Role update detected: ${lastRoleRef.current} -> ${userRole}.`,
+      );
       if (target && !location.pathname.startsWith(target)) {
         navigate(target);
       }
-    } 
+    }
     // 2. Handle Initial Load / Wrong Page
-    // Only redirect away from /auth if already logged in. 
+    // Only redirect away from /auth if already logged in.
     // We stay on '/' (Home) because the user wants to see the landing page even when logged in.
-    else if (location.pathname === '/auth') {
-       if (target) navigate(target);
+    else if (location.pathname === "/auth") {
+      if (target) navigate(target);
     }
     // Force specific redirection for non-students if they wander into the student area
     // This ensures that when a role changes (e.g. Student -> Instructor), they are bumped to their portal
-    else if (userRole !== 'student' && location.pathname.startsWith('/student-dashboard')) {
-        // Allow admins to view student dashboard if explicitly needed, but for now we redirect
-        // to ensure the "role change" creates a visible "rooting change"
-        if (target && target !== '/student-dashboard') {
-            navigate(target);
-        }
+    else if (
+      userRole !== "student" &&
+      location.pathname.startsWith("/student-dashboard")
+    ) {
+      // Allow admins to view student dashboard if explicitly needed, but for now we redirect
+      // to ensure the "role change" creates a visible "rooting change"
+      if (target && target !== "/student-dashboard") {
+        navigate(target);
+      }
     }
-    
+
     lastRoleRef.current = userRole;
   }, [userRole, user, loading, navigate, location.pathname]);
 
@@ -137,11 +150,11 @@ const RouteChangeLoader = () => {
     if (location.pathname !== prevPathRef.current) {
       setIsLoading(true);
       prevPathRef.current = location.pathname;
-      
+
       const timer = setTimeout(() => {
         setIsLoading(false);
       }, 700);
-      
+
       return () => clearTimeout(timer);
     }
   }, [location.pathname]);
@@ -165,7 +178,9 @@ const App = () => (
           <Toaster />
           <Sonner />
           <CustomCursor />
-          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <BrowserRouter
+            future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+          >
             <RouteChangeLoader />
             <SuspensionOverlay />
             <ScrollToTop />
@@ -188,27 +203,62 @@ const App = () => (
               <Route path="/trainers" element={<Trainers />} />
               <Route path="/press" element={<Press />} />
               <Route path="/features" element={<Features />} />
-              <Route path="/pending-approval" element={<ProtectedRoute><PendingApproval /></ProtectedRoute>} />
-              <Route path="/become-instructor" element={<InstructorRegister />} />
+              <Route
+                path="/pending-approval"
+                element={
+                  <ProtectedRoute>
+                    <PendingApproval />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/become-instructor"
+                element={<InstructorRegister />}
+              />
 
               <Route
                 path="/student-dashboard/*"
-                element={<ProtectedRoute allowedRoles={['student', 'instructor', 'admin']}><Dashboard /></ProtectedRoute>}
+                element={
+                  <ProtectedRoute
+                    allowedRoles={["student", "instructor", "admin"]}
+                  >
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
               />
               <Route
                 path="/instructor/*"
-                element={<ProtectedRoute allowedRoles={['instructor', 'admin']}><InstructorDashboard /></ProtectedRoute>}
+                element={
+                  <ProtectedRoute allowedRoles={["instructor", "admin"]}>
+                    <InstructorDashboard />
+                  </ProtectedRoute>
+                }
               />
               <Route
                 path="/admin/*"
-                element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>}
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
               />
               <Route
                 path="/manager/*"
-                element={<ProtectedRoute allowedRoles={['manager', 'admin']}><ManagerDashboard /></ProtectedRoute>}
+                element={
+                  <ProtectedRoute allowedRoles={["manager", "admin"]}>
+                    <ManagerDashboard />
+                  </ProtectedRoute>
+                }
               />
 
-              <Route path="/live/:meetingId" element={<ProtectedRoute><LiveSession /></ProtectedRoute>} />
+              <Route
+                path="/live/:meetingId"
+                element={
+                  <ProtectedRoute>
+                    <LiveSession />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

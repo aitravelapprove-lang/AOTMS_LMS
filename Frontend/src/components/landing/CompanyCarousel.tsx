@@ -31,7 +31,7 @@ const CompanyCarousel: React.FC = () => {
           Our Placement Ecosystem
         </motion.span>
         <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tighter leading-tight">
-          Our Graduates Shaping <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] to-[#FD5A1A]">Global Success Stories</span>
+          Our Graduates Shaping <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0075CF] to-[#FD5A1A]">Global Success Stories</span>.
         </h2>
       </div>
 

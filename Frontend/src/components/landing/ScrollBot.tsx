@@ -51,26 +51,81 @@ const ScrollBot = () => {
   }, [location.pathname]);
 
   const [messages, setMessages] = useState([
-    { role: "bot", text: "Hi! How can I help you today?" },
+    { role: "bot", text: "Welcome to AOTMS! I'm your learning assistant. How can I help you today?" },
   ]);
   const [inputValue, setInputValue] = useState("");
 
-  const handleSend = () => {
-    if (!inputValue.trim()) return;
-    const newMessages = [...messages, { role: "user", text: inputValue }];
-    setMessages(newMessages);
-    setInputValue("");
+  const KB = [
+    {
+      id: 1,
+      q: "What is an LMS?",
+      keywords: ["lms", "anti", "what is"],
+      a: "A Learning Management System (LMS) is our digital platform designed to deliver, track, and manage your educational journey seamlessly.",
+      telugu: "LMS ante adi oka online platform, ikkada meeru courses nerchukovachu mariyu mee progress track cheyavachu."
+    },
+    {
+      id: 2,
+      q: "How can I enroll in a course?",
+      keywords: ["enroll", "join", "buy", "course"],
+      a: "Simply head to the 'Courses' catalog, select your preferred program, and click 'Enroll Now'. Our team will verify your access immediately after payment.",
+      telugu: "Courses section ki velli, meeku nache course ni select cheskuni 'Enroll Now' click cheyandi."
+    },
+    {
+      id: 3,
+      q: "How do I access my dashboard?",
+      keywords: ["dashboard", "my progress", "profile"],
+      a: "Once logged in, your personal Dashboard is available via the profile menu. It gives you a complete overview of your learning stats.",
+      telugu: "Meeru login ayinaka, profile icon paina click chesthe dashboard kanipisthundi."
+    },
+    {
+      id: 4,
+      q: "How are tests conducted?",
+      keywords: ["test", "exam", "mock", "practice"],
+      a: "Tests are conducted online in our secure Exam Portal. We offer both practice sessions and official certification mock tests.",
+      telugu: "Tests anni online lone untayi. Practice exams mariyu certification tests portal lo availbel ga untayi."
+    },
+    {
+      id: 5,
+      q: "How can I track my progress?",
+      keywords: ["track", "progress", "completion", "mark"],
+      a: "Your dashboard features real-time progress bars for every course. You can see your module completion, quiz scores, and time spent studying.",
+      telugu: "Mee dashboard lo courses progress bars untayi, avi meeru entha varaku nerchukunnaro chupisthayi."
+    }
+  ];
 
-    // Simple bot reply
+  const handleSend = (textOverride?: string) => {
+    const text = textOverride || inputValue;
+    if (!text.trim()) return;
+
+    const newMessages = [...messages, { role: "user", text }];
+    setMessages(newMessages);
+    if (!textOverride) setInputValue("");
+
+    // Thinking state or delay
     setTimeout(() => {
+      const lowerText = text.toLowerCase();
+      const match = KB.find(item => 
+        item.keywords.some(k => lowerText.includes(k)) || 
+        lowerText.includes(item.q.toLowerCase())
+      );
+
+      let reply = "I'm not quite sure about that. Would you like to speak with our support team?";
+      if (match) {
+        reply = match.a;
+        // If they ask in a way that suggests telugu preference (simple heuristic)
+        if (lowerText.includes("anti") || lowerText.includes("ela") || lowerText.includes("yela")) {
+            reply = `${match.a} ${match.telugu}`;
+        }
+      }
+
       setMessages((prev) => [
         ...prev,
         {
           role: "bot",
-          text: "Thanks for your message! Our team will get back to you soon about AOTMS courses.",
+          text: reply,
         },
       ]);
-    }, 1000);
+    }, 800);
   };
 
   return (
@@ -133,7 +188,7 @@ const ScrollBot = () => {
                           <div className="flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 bg-white/60 rounded-full animate-ping" />
                             <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">
-                              System Live
+                              Online & Active
                             </p>
                           </div>
                         </div>
@@ -146,30 +201,49 @@ const ScrollBot = () => {
                       </button>
                     </div>
 
-                    {/* Messages with Custom Scrollbar */}
-                    <div className="h-[320px] overflow-y-auto p-5 flex flex-col gap-5 bg-gradient-to-b from-slate-50/50 to-white">
-                      {messages.map((m, i) => (
-                        <motion.div
-                          key={i}
-                          initial={{
-                            opacity: 0,
-                            x: m.role === "user" ? 20 : -20,
-                          }}
-                          animate={{ opacity: 1, x: 0 }}
-                          className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
-                        >
-                          <div
-                            className={`max-w-[85%] px-5 py-4 text-sm font-medium leading-relaxed ${
-                              m.role === "user"
-                                ? "bg-gradient-to-br from-[#0075CF] to-[#0057B7] text-white rounded-[1.5rem] rounded-br-none shadow-[0_10px_20px_rgba(0,117,207,0.15)]"
-                                : "bg-white border border-slate-100 text-slate-700 rounded-[1.5rem] rounded-bl-none shadow-[0_10px_20px_rgba(0,0,0,0.03)]"
-                            }`}
-                          >
-                            {m.text}
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
+                     <div className="h-[320px] overflow-y-auto p-5 flex flex-col gap-5 bg-gradient-to-b from-slate-50/50 to-white scroll-smooth admin-scrollbar">
+                       {messages.map((m, i) => (
+                         <motion.div
+                           key={i}
+                           initial={{
+                             opacity: 0,
+                             x: m.role === "user" ? 20 : -20,
+                           }}
+                           animate={{ opacity: 1, x: 0 }}
+                           className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+                         >
+                           <div
+                             className={`max-w-[85%] px-5 py-4 text-sm font-medium leading-relaxed ${
+                               m.role === "user"
+                                 ? "bg-gradient-to-br from-[#0075CF] to-[#0057B7] text-white rounded-[1.5rem] rounded-br-none shadow-[0_10px_20px_rgba(0,117,207,0.15)]"
+                                 : "bg-white border border-slate-100 text-slate-700 rounded-[1.5rem] rounded-bl-none shadow-[0_10px_20px_rgba(0,0,0,0.03)]"
+                             }`}
+                           >
+                             {m.text}
+                           </div>
+                         </motion.div>
+                       ))}
+                       
+                       {/* Quick Prompts */}
+                       {messages.length === 1 && (
+                         <div className="flex flex-col gap-2 pt-2">
+                           <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-2">Common Queries</p>
+                           <div className="flex flex-wrap gap-2">
+                             {KB.map((item) => (
+                               <button
+                                 key={item.id}
+                                 onClick={() => handleSend(item.q)}
+                                 className="px-4 py-2 bg-slate-100/80 hover:bg-primary/10 text-slate-600 hover:text-primary rounded-full text-xs font-bold border border-slate-200/50 transition-all text-left max-w-[280px]"
+                               >
+                                 {item.q}
+                               </button>
+                             ))}
+                           </div>
+                         </div>
+                       )}
+                       
+                       <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth' })} />
+                     </div>
 
                     {/* Input — Floating Style */}
                     <div className="p-6 bg-white border-t border-slate-100/50">
@@ -182,7 +256,7 @@ const ScrollBot = () => {
                           className="flex-1 bg-transparent border-none focus-visible:ring-0 text-slate-800 placeholder:text-slate-400 font-medium"
                         />
                         <Button
-                          onClick={handleSend}
+                          onClick={() => handleSend()}
                           size="icon"
                           className="bg-gradient-to-tr from-[#0075CF] to-[#FD5A1A] hover:scale-105 transition-transform rounded-xl shadow-lg"
                         >
@@ -190,7 +264,7 @@ const ScrollBot = () => {
                         </Button>
                       </div>
                       <p className="text-center text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-4">
-                        AOTMS Proprietary AI System
+                        AOTMS Official Support
                       </p>
                     </div>
                   </motion.div>

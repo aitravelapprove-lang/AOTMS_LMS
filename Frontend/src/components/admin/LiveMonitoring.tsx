@@ -73,7 +73,7 @@ export function LiveMonitoring() {
                         <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2 uppercase font-sans leading-none">
                             Live <span className="text-primary font-medium tracking-normal capitalize italic">Monitoring</span>
                         </h1>
-                        <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Real-time learning ecosystem oversight</p>
+                        <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Real-time platform activity and progress tracking</p>
                     </div>
                 </div>
 
@@ -125,11 +125,11 @@ export function LiveMonitoring() {
                                 <table className="w-full text-left">
                                     <thead className="bg-slate-50/50 text-[10px] font-black uppercase tracking-widest text-slate-400">
                                         <tr>
-                                            <th className="px-5 sm:px-8 py-4 whitespace-nowrap">Student Identity</th>
-                                            <th className="px-5 sm:px-8 py-4 whitespace-nowrap">Course Context</th>
-                                            <th className="px-5 sm:px-8 py-4 whitespace-nowrap">Progress Map</th>
-                                            <th className="px-5 sm:px-8 py-4 text-center whitespace-nowrap">Last Interaction</th>
-                                            <th className="px-5 sm:px-8 py-4 text-right whitespace-nowrap">Actions</th>
+                                            <th className="px-5 sm:px-8 py-4 whitespace-nowrap">Student Name</th>
+                                            <th className="px-5 sm:px-8 py-4 whitespace-nowrap">Course Name</th>
+                                            <th className="px-5 sm:px-8 py-4 whitespace-nowrap">Completion Progress</th>
+                                            <th className="px-5 sm:px-8 py-4 text-center whitespace-nowrap">Recent Activity</th>
+                                            <th className="px-5 sm:px-8 py-4 text-right whitespace-nowrap">Dashboard</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
@@ -156,7 +156,7 @@ export function LiveMonitoring() {
                                                     <div className="w-48 space-y-2">
                                                         <div className="flex justify-between items-center text-[10px] font-black uppercase font-sans">
                                                             <span className={en.progress === 100 ? "text-emerald-500" : "text-primary"}>
-                                                                {en.progress === 100 ? "COMPLETED" : "IN PROGRESS"}
+                                                                {en.progress === 100 ? "GRADUATED" : "LEARNING"}
                                                             </span>
                                                             <span className="text-slate-900">{en.progress}%</span>
                                                         </div>
@@ -207,19 +207,19 @@ export function LiveMonitoring() {
                         {/* Results Table - Spans 2 */}
                         <Card className="lg:col-span-2 pro-card border-none shadow-2xl shadow-slate-200/20 rounded-[2.5rem] overflow-hidden">
                             <CardHeader className="p-5 sm:p-8 pb-4">
-                                <CardTitle className="text-xl font-black text-slate-900 tracking-tight">Certification & Performance Log</CardTitle>
-                                <CardDescription className="text-xs sm:text-sm font-medium italic uppercase tracking-widest text-slate-400">Institutional validation and achievement streams</CardDescription>
+                                <CardTitle className="text-xl font-black text-slate-900 tracking-tight">Certification & Assessment History</CardTitle>
+                                <CardDescription className="text-xs sm:text-sm font-medium italic uppercase tracking-widest text-slate-400">Official student test results and performance logs</CardDescription>
                             </CardHeader>
                             <CardContent className="p-0">
                                 <div className="overflow-x-auto scrollbar-thin">
                                     <table className="w-full text-left min-w-[750px]">
                                         <thead className="bg-slate-50/50 text-[10px] font-black uppercase tracking-widest text-slate-400">
                                             <tr>
-                                                <th className="px-8 py-4 text-left whitespace-nowrap">Learner Profile</th>
-                                                <th className="px-8 py-4 text-left whitespace-nowrap">Assessment Topic</th>
-                                                <th className="px-8 py-4 text-left whitespace-nowrap">Performance Matrix</th>
-                                                <th className="px-8 py-4 text-left whitespace-nowrap">Time Record</th>
-                                                <th className="px-8 py-4 text-right whitespace-nowrap">Control</th>
+                                                <th className="px-8 py-4 text-left whitespace-nowrap">Student Information</th>
+                                                <th className="px-8 py-4 text-left whitespace-nowrap">Assessment Title</th>
+                                                <th className="px-8 py-4 text-left whitespace-nowrap">Test Score</th>
+                                                <th className="px-8 py-4 text-left whitespace-nowrap">Submission Date</th>
+                                                <th className="px-8 py-4 text-right whitespace-nowrap">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
@@ -232,7 +232,7 @@ export function LiveMonitoring() {
                                                     <td className="px-8 py-5 align-middle">
                                                         <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider ${r.type === 'live' ? 'bg-rose-50 text-rose-600 border border-rose-100/50' : 'bg-indigo-50 text-indigo-600 border border-indigo-100/50'}`}>
                                                             {r.type === 'live' ? <Activity className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
-                                                            {r.test_title.toUpperCase().includes('SYSTEM GENERATED') ? 'Institutional Assessment' : r.test_title}
+                                                            {r.test_title.toUpperCase().includes('SYSTEM GENERATED') ? 'Official Assessment' : r.test_title}
                                                         </div>
                                                     </td>
                                                     <td className="px-8 py-5 align-middle">

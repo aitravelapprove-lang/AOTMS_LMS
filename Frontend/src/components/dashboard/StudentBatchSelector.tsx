@@ -49,20 +49,20 @@ export function StudentBatchSelector() {
     if (coursesLoading || activeCourses.length === 0) return null;
 
     return (
-        <div className="flex flex-col sm:flex-row items-center gap-2 bg-white/50 backdrop-blur-sm p-1.5 rounded-2xl border border-slate-100 shadow-sm animate-in fade-in zoom-in duration-300">
-            <div className="flex items-center gap-2 px-3 py-1 bg-slate-100/50 rounded-xl border border-slate-200/50">
-                <Layers className="h-3.5 w-3.5 text-primary" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Course Batches</span>
+        <div className="flex flex-col lg:flex-row items-center gap-3 bg-white/50 backdrop-blur-md p-2 rounded-[1.5rem] border border-slate-100 shadow-sm animate-in fade-in zoom-in duration-300 w-full lg:w-auto">
+            <div className="flex items-center gap-2 px-3 py-2 bg-slate-900 rounded-xl shrink-0 group hover:bg-primary transition-colors cursor-help w-full lg:w-auto justify-center lg:justify-start">
+                <Layers className="h-4 w-4 text-white" />
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white">Course Batches</span>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+            <div className="flex flex-col lg:flex-row items-center gap-2 w-full lg:w-auto">
                 <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
-                    <SelectTrigger className="w-full sm:w-[180px] h-9 rounded-xl border-slate-200 bg-white text-[11px] font-bold">
+                    <SelectTrigger className="w-full lg:w-[220px] h-11 rounded-xl border-slate-200 bg-white text-[11px] font-bold shadow-sm">
                         <SelectValue placeholder="Select Course" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border-slate-100">
                         {activeCourses.map(course => (
-                            <SelectItem key={course.id} value={course.id} className="text-[11px] font-medium">
+                            <SelectItem key={course.id} value={course.id} className="text-[11px] font-medium p-3">
                                 {course.title}
                             </SelectItem>
                         ))}
@@ -70,14 +70,14 @@ export function StudentBatchSelector() {
                 </Select>
 
                 {selectedCourseId && (
-                    <div className="flex items-center gap-2 w-full sm:w-auto animate-in slide-in-from-left-2">
+                    <div className="flex items-center gap-2 w-full lg:w-auto animate-in slide-in-from-left-2">
                         <Select value={selectedBatchId} onValueChange={setSelectedBatchId}>
-                            <SelectTrigger className="w-full sm:w-[140px] h-9 rounded-xl border-slate-200 bg-white text-[11px] font-bold">
-                                {batchesLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <SelectValue placeholder="Select Batch" />}
+                            <SelectTrigger className="w-full lg:w-[160px] h-11 rounded-xl border-slate-200 bg-white text-[11px] font-bold shadow-sm">
+                                {batchesLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <SelectValue placeholder="Select Batch" />}
                             </SelectTrigger>
                             <SelectContent className="rounded-xl border-slate-100">
                                 {batches?.map(batch => (
-                                    <SelectItem key={batch.id} value={batch.id} className="text-[11px] font-medium">
+                                    <SelectItem key={batch.id} value={batch.id} className="text-[11px] font-medium p-3">
                                         {batch.batch_name} ({batch.batch_type})
                                     </SelectItem>
                                 ))}
@@ -86,20 +86,25 @@ export function StudentBatchSelector() {
 
                         <Button 
                             size="sm" 
-                            className="h-9 px-4 rounded-xl font-black uppercase tracking-widest text-[9px] shadow-sm shadow-primary/10"
+                            className="h-11 px-6 rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg shadow-primary/10 flex items-center gap-2"
                             disabled={!selectedBatchId || isPending || (currentBatch?.id === selectedBatchId)}
                             onClick={handleConfirm}
                         >
-                            {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : (currentBatch ? 'Transfer' : 'Confirm')}
+                            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                                <>
+                                    <Clock className="h-3 w-3" />
+                                    {currentBatch ? 'Transfer' : 'Confirm'}
+                                </>
+                            )}
                         </Button>
                     </div>
                 )}
             </div>
 
             {currentBatch && !selectedBatchId && (
-                <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-100 rounded-xl animate-in slide-in-from-right-2">
-                    <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                    <span className="text-[10px] font-bold text-emerald-600">Active: {currentBatch.batch_name}</span>
+                <div className="hidden xl:flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-emerald-100 rounded-xl animate-in slide-in-from-right-2">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    <span className="text-[10px] font-black uppercase tracking-tighter text-emerald-600">Locked: {currentBatch.batch_name}</span>
                 </div>
             )}
         </div>

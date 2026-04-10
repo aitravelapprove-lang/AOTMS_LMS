@@ -1214,20 +1214,22 @@ export function DashboardContent() {
             courseTitle={selectedCourseForRating.title}
           />
 
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 border-b border-slate-200 pb-4 sm:pb-6">
-            <div className="h-11 w-11 sm:h-14 sm:w-14 rounded-xl sm:rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 border border-primary/10">
-              <config.icon className="h-5 w-5 sm:h-7 sm:w-7 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-                {config.title}
-              </h1>
-              <p className="text-sm sm:text-base font-medium text-slate-600 mt-1 hidden sm:block">{config.description}</p>
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-slate-200 pb-6 sm:pb-8">
+            <div className="flex items-center gap-4 sm:gap-6">
+              <div className="h-14 w-14 sm:h-20 sm:w-20 rounded-2xl sm:rounded-3xl bg-primary/10 flex items-center justify-center shrink-0 border border-primary/10">
+                <config.icon className="h-7 w-7 sm:h-10 sm:w-10 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+                  {config.title}
+                </h1>
+                <p className="text-xs sm:text-base font-bold text-slate-500 mt-1 line-clamp-1 italic max-w-md">{config.description}</p>
+              </div>
             </div>
             
-            <div className="md:ml-auto flex items-center gap-3 w-full md:w-auto">
+            <div className="lg:ml-auto flex flex-col lg:flex-row items-stretch lg:items-center gap-3 w-full lg:w-auto">
               {currentPath === "/student-dashboard/courses" && (
-                <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
+                <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 w-full lg:w-auto">
                     <StudentBatchSelector />
                     <Button 
                       variant="outline"

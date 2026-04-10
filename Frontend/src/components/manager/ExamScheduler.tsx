@@ -504,22 +504,7 @@ export function ExamScheduler({ onNavigateToRepository }: { onNavigateToReposito
           <DialogContent className="w-[95vw] sm:max-w-[640px] p-0 overflow-hidden border-none shadow-[0_0_80px_rgba(0,0,0,0.15)] rounded-[2rem] bg-white flex flex-col max-h-[95vh] sm:max-h-[90vh]">
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
               <DialogHeader className="pt-12 sm:pt-10 px-6 sm:px-8 pb-6 border-b border-slate-50 bg-white/50 backdrop-blur-sm sticky top-0 z-20">
-                {/* Image-Style Stepper Header */}
-                <div className="w-full max-w-[400px] mx-auto flex items-center justify-around relative mb-8 px-4">
-                  <div className="absolute top-1/2 left-0 w-full h-px bg-slate-100 -translate-y-1/2 z-0" />
-                  {[
-                    { n: "1", label: "Details" },
-                    { n: "2", label: "Settings" },
-                    { n: "3", label: "Finish" }
-                  ].map((step, idx) => (
-                    <div key={idx} className="relative z-10 flex flex-col items-center gap-1 sm:gap-1.5 group/step">
-                      <div className={`h-5 w-5 sm:h-8 sm:w-8 rounded-full flex items-center justify-center font-black text-[8px] sm:text-xs transition-all duration-500 border-2 ${idx === 0 ? 'bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/20' : 'bg-white border-slate-100 text-slate-300 group-hover/step:border-slate-200'}`}>
-                        {step.n}
-                      </div>
-                      <span className={`text-[6px] sm:text-[8px] font-black uppercase tracking-widest transition-colors ${idx === 0 ? 'text-black' : 'text-slate-300'}`}>{step.label}</span>
-                    </div>
-                  ))}
-                </div>
+
 
                 <div className="space-y-1 text-left">
                   <DialogTitle className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
@@ -532,7 +517,7 @@ export function ExamScheduler({ onNavigateToRepository }: { onNavigateToReposito
                 </div>
               </DialogHeader>
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-0 bg-white">
+                <div className="flex-1 overflow-y-auto scrollbar-hide p-0 bg-white">
                   <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmitProfile)} className="p-6 sm:p-8 space-y-10">
                       

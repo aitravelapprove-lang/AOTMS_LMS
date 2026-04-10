@@ -224,7 +224,11 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
  */
 const handleError = (res, err, context = '') => {
     console.error(`[Error ${context}]`, err);
-    res.status(500).json({ error: err.message || 'Internal Server Error', context });
+    res.status(err.status || 500).json({ 
+        error: err.message || 'Internal Server Error', 
+        context,
+        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
 };
 
 // --- Authentication Middleware ---
@@ -3310,6 +3314,23 @@ app.get('/api/admin/resume-scans', authenticateToken, async (req, res) => {
     }
 });
 
+app.post('/api/admin/reset-ats', authenticateToken, requireAdminOrManager, async (req, res) => {
+    try {
+        const { userId } = req.body;
+        if (!userId) return res.status(400).json({ error: 'User ID required' });
+
+        // 1. Reset credits to 3
+        await Profile.findOneAndUpdate({ user_id: userId }, { ats_credits: 3 });
+
+        // 2. Delete scan history
+        await ResumeScan.deleteMany({ user_id: userId });
+
+        res.json({ success: true, message: 'ATS score and credits have been reset successfully.' });
+    } catch (err) {
+        handleError(res, err, 'reset-ats');
+    }
+});
+
 app.post('/api/admin/refill-ats-credits', authenticateToken, requireAdminOrManager, async (req, res) => {
     try {
         const { userId, credits = 3 } = req.body;
@@ -3584,29 +3605,35 @@ app.get('/api/student/accessible-exams', authenticateToken, async (req, res) => 
         // 8. Map Explicit Exams/Mock Papers from StudentExamAccess
         const explicitExams = explicitAccess
             .filter(a => a.access_type !== 'question_bank')
-            .map(access => ({
-                id: access._id,
-                access_type: access.access_type,
-                granted_at: access.granted_at,
-                exam_id: access.exam_id?._id,
-                mock_paper_id: access.mock_paper_id?._id,
-                is_completed: access.access_type === 'mock' 
-                    ? checkCompleted('mock', access.mock_paper_id?._id) 
-                    : checkCompleted('exam', access.exam_id?._id),
-                assigned_image: access.exam_id?.assigned_image || access.mock_paper_id?.assigned_image || null,
-                exam_schedules: access.exam_id ? {
-                    title: access.exam_id.title,
-                    duration_minutes: access.exam_id.duration_minutes,
-                    total_marks: access.exam_id.total_marks,
-                    passing_marks: access.exam_id.passing_marks
-                } : null,
-                mock_papers: access.mock_paper_id ? {
-                    title: access.mock_paper_id.title,
-                    description: access.mock_paper_id.description || '',
-                    duration_minutes: access.mock_paper_id.duration_minutes || 60,
-                    question_count: access.mock_paper_id.questions?.length || 0
-                } : null
-            }));
+            .map(access => {
+                const isExamMock = access.exam_id?.exam_type === 'mock';
+                const finalMockId = access.mock_paper_id?._id || (isExamMock ? access.exam_id?._id : null);
+                
+                return {
+                    id: access._id,
+                    access_type: access.access_type === 'mock' || isExamMock ? 'mock' : access.access_type,
+                    granted_at: access.granted_at,
+                    exam_id: (!isExamMock && access.exam_id) ? access.exam_id._id : null,
+                    mock_paper_id: finalMockId,
+                    is_completed: (access.access_type === 'mock' || isExamMock)
+                        ? checkCompleted('mock', finalMockId) 
+                        : checkCompleted('exam', access.exam_id?._id),
+                    assigned_image: access.exam_id?.assigned_image || access.mock_paper_id?.assigned_image || null,
+                    exam_schedules: (!isExamMock && access.exam_id) ? {
+                        title: access.exam_id.title,
+                        duration_minutes: access.exam_id.duration_minutes,
+                        total_marks: access.exam_id.total_marks,
+                        passing_marks: access.exam_id.passing_marks
+                    } : null,
+                    mock_papers: finalMockId ? {
+                        title: access.mock_paper_id?.title || access.exam_id?.title,
+                        description: access.mock_paper_id?.description || access.exam_id?.description || '',
+                        duration_minutes: access.mock_paper_id?.duration_minutes || access.exam_id?.duration_minutes || 60,
+                        total_marks: access.mock_paper_id?.total_marks || access.exam_id?.total_marks || 0,
+                        question_count: access.mock_paper_id?.questions?.length || access.exam_id?.total_questions || 0
+                    } : null
+                };
+            });
 
         // 9. Combine and deduplicate
         const combined = [...explicitExams, ...Array.from(topicMap.values())];
@@ -3800,7 +3827,7 @@ app.get('/api/manager/approved-question-banks', authenticateToken, requireAdminO
 
 app.get('/api/admin/question-bank-summary', authenticateToken, requireAdminOrManager, async (req, res) => {
     try {
-        const [banks, accessCounts] = await Promise.all([
+        const [banks, accessCounts, approvedExams] = await Promise.all([
             QuestionBank.aggregate([
                 { 
                     $group: {
@@ -3815,25 +3842,21 @@ app.get('/api/admin/question-bank-summary', authenticateToken, requireAdminOrMan
                 { $sort: { created_at: -1 } }
             ]),
             StudentExamAccess.aggregate([
-                { $match: { access_type: 'question_bank' } },
                 { $group: { _id: '$question_bank_topic', count: { $sum: 1 } } }
-            ])
+            ]),
+            Exam.find({ approval_status: 'approved' }).lean()
         ]);
 
         // Map access counts for quick lookup
         const accessMap = {};
         accessCounts.forEach(a => { if (a._id) accessMap[a._id] = a.count; });
 
-        // 3. Find matching exam images for these topics to show as posters
-        const topics = banks.map(b => b.topic);
-        const exams = await Exam.find({ title: { $in: topics } }).lean();
-        
-        // Map exam data for quick lookup
+        // Map exams for quick lookup by title/topic
         const examMap = {};
-        exams.forEach(e => { examMap[e.title] = e; });
+        approvedExams.forEach(e => { examMap[e.title] = e; });
 
-        // Format the summary response
-        const summary = banks.map(b => {
+        // Format the summary response from Question Banks
+        const bankSummary = banks.map(b => {
             const exam = examMap[b.topic];
             return {
                 topic: b.topic,
@@ -3842,18 +3865,35 @@ app.get('/api/admin/question-bank-summary', authenticateToken, requireAdminOrMan
                 created_by: b.created_by,
                 created_at: b.created_at,
                 access_count: accessMap[b.topic] || 0,
-                assigned_image: exam?.assigned_image || null,
-                // New metadata fields
-                duration: exam?.duration_minutes || 0,
-                total_marks: exam?.total_marks || 0,
-                shuffle: exam?.shuffle_questions ?? true,
-                retakes: exam?.max_attempts || 1,
-                exam_type: exam?.exam_type || 'mock',
-                custom_fields: exam?.custom_fields || []
+                assigned_image: exam?.assigned_image || b.assigned_image || null,
+                duration: exam?.duration_minutes || b.duration || 60,
+                total_marks: exam?.total_marks || b.total_marks || 0,
+                shuffle: exam?.shuffle_questions ?? b.shuffle ?? true,
+                retakes: exam?.max_attempts || b.retakes || 1,
+                custom_fields: exam?.custom_fields || b.custom_fields || []
             };
         });
 
-        res.json(summary);
+        // Add Approved Exams that might not have a QuestionBank entry yet (rare but possible)
+        const bankTopics = new Set(bankSummary.map(s => s.topic));
+        const examOnlySummary = approvedExams
+            .filter(e => !bankTopics.has(e.title))
+            .map(e => ({
+                topic: e.title,
+                approval_status: 'approved',
+                count: e.total_questions || 0,
+                created_by: e.created_by,
+                created_at: e.created_at,
+                access_count: accessMap[e.title] || 0,
+                assigned_image: e.assigned_image || null,
+                duration: e.duration_minutes || 60,
+                total_marks: e.total_marks || 0,
+                shuffle: e.shuffle_questions ?? true,
+                retakes: e.max_attempts || 1,
+                custom_fields: []
+            }));
+
+        res.json([...bankSummary, ...examOnlySummary]);
     } catch (err) {
         handleError(res, err, 'question-bank-summary');
     }
@@ -3927,7 +3967,7 @@ app.post('/api/admin/question-bank/grant-access', authenticateToken, requireAdmi
     try {
         let studentIds = [];
         if (type === 'batch' && batchId) {
-            const assignments = await StudentBatch.find({ batch_id: batchId }).select('student_id').lean();
+            const assignments = await StudentBatch.find({ batch_id: new mongoose.Types.ObjectId(batchId) }).select('student_id').lean();
             studentIds = assignments.map(a => a.student_id);
             if (studentIds.length === 0) {
                 return res.status(400).json({ error: 'No students found in the selected batch.' });
@@ -3938,10 +3978,16 @@ app.post('/api/admin/question-bank/grant-access', authenticateToken, requireAdmi
             return res.status(400).json({ error: 'Student ID or Batch ID required' });
         }
 
+        // Find matching exam to link ID if possible
+        const matchingExam = await Exam.findOne({ title: topic }).lean();
+
         const grants = studentIds.map(studentId => ({
             student_id: studentId,
             question_bank_topic: topic,
-            access_type: 'question_bank',
+            exam_id: matchingExam ? matchingExam._id : null,
+            access_type: matchingExam 
+                ? (matchingExam.exam_type === 'live' ? 'exam' : 'mock') 
+                : 'question_bank',
             assigned_by: req.user.id,
             granted_at: new Date()
         }));
@@ -3956,6 +4002,13 @@ app.post('/api/admin/question-bank/grant-access', authenticateToken, requireAdmi
         }));
 
         await StudentExamAccess.bulkWrite(operations);
+        
+        // Auto-approve the questions in the question bank for this topic 
+        // because granting access implies administrative approval.
+        await QuestionBank.updateMany(
+            { topic: topic },
+            { $set: { approval_status: 'approved' } }
+        );
 
         // Send notifications
         for (const studentId of studentIds) {
@@ -4672,25 +4725,30 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
         // Execute query
         console.log(`[DB] Fetching ${table} with query:`, JSON.stringify(query));
         
+        const projection = req.query.select ? req.query.select.split(',').join(' ') : null;
+        
+        let dataQuery = Model.find(query).sort(sort).limit(limit).skip(skip);
+        if (projection) dataQuery = dataQuery.select(projection);
+        
         let data;
         if (table === 'leaderboard_stats' || table === 'leaderboard') {
-            data = await Model.find(query).sort(sort).limit(limit).skip(skip).populate('user_id', 'full_name avatar_url email');
+            data = await dataQuery.populate('user_id', 'full_name avatar_url email');
         } else if (table === 'exam_results') {
-            data = await Model.find(query).sort(sort).limit(limit).skip(skip)
+            data = await dataQuery
                 .populate('exam_id', 'title')
                 .populate('mock_paper_id', 'title');
         } else if (table === 'courses') {
-            data = await Model.find(query).sort(sort).limit(limit).skip(skip)
+            data = await dataQuery
                 .populate('instructor_ids', 'full_name avatar_url');
         } else if (table === 'course_enrollments') {
-            data = await Model.find(query).sort(sort).limit(limit).skip(skip)
+            data = await dataQuery
                 .populate('user_id', 'full_name email avatar_url phone')
                 .populate('course_id', 'title category thumbnail_url');
         } else if (table === 'course_ratings') {
-            data = await Model.find(query).sort(sort).limit(limit).skip(skip)
+            data = await dataQuery
                 .populate('user_id', 'full_name avatar_url');
         } else {
-            data = await Model.find(query).sort(sort).limit(limit).skip(skip);
+            data = await dataQuery;
         }
         res.json(data);
 
@@ -4832,6 +4890,14 @@ app.put('/api/data/:table/:id', authenticateToken, async (req, res) => {
         }
 
         const item = await Model.findByIdAndUpdate(id, req.body, { new: true });
+
+        // Side-effect: If an exam is approved, auto-approve the questions for that topic
+        if (table === 'exams' && req.body.approval_status === 'approved') {
+            await QuestionBank.updateMany(
+                { topic: item.title },
+                { $set: { approval_status: 'approved' } }
+            );
+        }
         
         // Socket Events for Updates
         io.emit(`${table}_changed`, { action: 'update', item, id });

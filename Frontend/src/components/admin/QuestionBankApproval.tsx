@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { fetchWithAuth } from '@/lib/api';
-import { Loader2, CheckCircle, XCircle, FileText, AlertCircle, LayoutGrid, Clock, History, Eye, Users, Trash2, ShieldCheck, BrainCircuit, RefreshCw, Award, Calendar, User, BookOpen } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, FileText, AlertCircle, LayoutGrid, Clock, History, Eye, Users, UserPlus, Trash2, ShieldCheck, BrainCircuit, RefreshCw, Award, Calendar, User, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -123,7 +123,6 @@ export function QuestionBankApproval() {
         // In the student portal it uses /s3/public/
         return `${API_URL}/s3/public/${path}`;
     };
-    const [pendingBanks, setPendingBanks] = useState<PendingQuestionBank[]>([]);
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState<string | null>(null);
     const { toast } = useToast();
@@ -131,10 +130,8 @@ export function QuestionBankApproval() {
     const [showCourseDialog, setShowCourseDialog] = useState(false);
     const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
     const [selectedCourseId, setSelectedCourseId] = useState<string>("");
-    const [viewTab, setViewTab] = useState<'pending' | 'approve' | 'reject'>('pending');
     const { data: courses } = useCourses();
     const [approvedBanks, setApprovedBanks] = useState<PendingQuestionBank[]>([]);
-    const [rejectedBanks, setRejectedBanks] = useState<PendingQuestionBank[]>([]);
 
     const [showAccessDialog, setShowAccessDialog] = useState(false);
     const [accessingTopic, setAccessingTopic] = useState<string | null>(null);
@@ -164,20 +161,18 @@ export function QuestionBankApproval() {
 
     const fetchPendingBanks = async (showLoading = true) => {
         try {
-            if (showLoading && pendingBanks.length === 0 && approvedBanks.length === 0) setLoading(true);
+            if (showLoading && approvedBanks.length === 0) setLoading(true);
 
-            // Optimized summary fetch instead of fetching ALL questions and looping access lists
+            // Optimized summary fetch inclusive of exams
             const summary = await fetchWithAuth('/admin/question-bank-summary') as (PendingQuestionBank & { approval_status: string, access_count: number })[];
 
-            setPendingBanks(summary.filter(s => s.approval_status === 'pending'));
-            setApprovedBanks(summary.filter(s => s.approval_status === 'approved'));
-            setRejectedBanks(summary.filter(s => s.approval_status === 'rejected'));
+            // We only show approved items in this simplified view
+            const approved = summary.filter(s => s.approval_status === 'approved');
+            setApprovedBanks(approved);
 
             const counts: Record<string, number> = {};
-            summary.forEach(s => {
-                if (s.approval_status === 'approved') {
-                    counts[s.topic] = s.access_count || 0;
-                }
+            approved.forEach(s => {
+                counts[s.topic] = s.access_count || 0;
             });
             setAccessCount(counts);
         } catch (err) {
@@ -264,54 +259,6 @@ export function QuestionBankApproval() {
             console.error('Failed to fetch questions preview', err);
         } finally {
             setLoadingQuestions(false);
-        }
-    };
-
-    const handleApproveClick = (topic: string) => {
-        setSelectedTopic(topic);
-        setShowCourseDialog(true);
-    };
-
-    const confirmApproval = async () => {
-        if (!selectedTopic) return;
-
-        await handleAction(selectedTopic, 'approved', selectedCourseId || undefined);
-        setShowCourseDialog(false);
-    };
-
-    const handleAction = async (topic: string, status: 'approved' | 'rejected', courseId?: string) => {
-        try {
-            setProcessing(topic);
-            await fetchWithAuth('/admin/approve-question-bank', {
-                method: 'PUT',
-                body: JSON.stringify({
-                    topic,
-                    status,
-                    course_id: courseId
-                })
-            });
-
-            toast({
-                title: `Question Bank ${status === 'approved' ? 'Approved' : 'Rejected'}`,
-                description: `Successfully updated topic: ${topic}`
-            });
-
-            setPendingBanks(prev => prev.filter(b => b.topic !== topic));
-            if (status === 'approved') {
-                const bank = pendingBanks.find(b => b.topic === topic);
-                if (bank) setApprovedBanks(prev => [...prev, bank]);
-            }
-            fetchPendingBanks(false);
-        } catch (err) {
-            toast({
-                title: 'Action Failed',
-                description: err instanceof Error ? err.message : 'Failed to update status',
-                variant: 'destructive'
-            });
-        } finally {
-            setProcessing(null);
-            setSelectedTopic(null);
-            setSelectedCourseId("");
         }
     };
 
@@ -447,7 +394,7 @@ export function QuestionBankApproval() {
         }
     };
 
-    if (loading && pendingBanks.length === 0 && approvedBanks.length === 0) {
+    if (loading && approvedBanks.length === 0) {
         return (
             <div className="py-24 text-center">
                 <div className="relative inline-block">
@@ -464,482 +411,117 @@ export function QuestionBankApproval() {
     return (
         <div className="space-y-8 pb-12">
             {/* Premium Banner Header */}
-            <div className="relative overflow-hidden rounded-[2.5rem] bg-slate-900 p-8 sm:p-12 mb-8 group shadow-2xl">
-                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/20 blur-[120px] rounded-full translate-x-1/2 -translate-y-1/2 group-hover:bg-primary/30 transition-all duration-1000" />
-                <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/10 blur-[100px] rounded-full -translate-x-1/2 translate-y-1/2" />
-                
-                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
-                    <div className="space-y-4 max-w-2xl">
-                        <div className="flex items-center gap-3">
-                            <div className="h-12 w-12 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center shadow-2xl">
-                                <ShieldCheck className="h-6 w-6 text-white" />
-                            </div>
-                            <Badge className="bg-emerald-500/20 text-emerald-400 border-none px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest animate-pulse">
-                                Verified Access Hub
-                            </Badge>
-                        </div>
-                        
-                        <div className="space-y-2">
-                            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white italic">
-                                Question <span className="text-primary not-italic">Access Center</span>
-                            </h2>
-                            <p className="text-slate-400 text-sm sm:text-lg font-medium max-w-lg leading-relaxed">
-                                Review question repositories and grant student access to mock tests. Ensure logical integrity before final release.
-                            </p>
-                        </div>
 
-                        <div className="flex flex-wrap items-center gap-4 pt-4">
-                            <Tabs value={viewTab} onValueChange={(v) => setViewTab(v as 'pending' | 'approve' | 'reject')} className="bg-white/5 p-1.5 rounded-2xl backdrop-blur-md border border-white/10">
-                                <TabsList className="bg-transparent border-none">
-                                    <TabsTrigger value="pending" className="h-10 rounded-xl text-xs px-6 data-[state=active]:bg-white data-[state=active]:text-slate-900 transition-all font-black uppercase tracking-widest">Pending</TabsTrigger>
-                                    <TabsTrigger value="approve" className="h-10 rounded-xl text-xs px-6 data-[state=active]:bg-white data-[state=active]:text-slate-900 transition-all font-black uppercase tracking-widest">Active</TabsTrigger>
-                                    <TabsTrigger value="reject" className="h-10 rounded-xl text-xs px-6 data-[state=active]:bg-white data-[state=active]:text-slate-900 transition-all font-black uppercase tracking-widest">Archive</TabsTrigger>
-                                </TabsList>
-                            </Tabs>
-                            <div className="h-12 flex items-center px-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
-                                <p className="text-[10px] font-black text-white uppercase tracking-widest leading-none">
-                                    <span className="text-primary text-lg mr-2 italic">{pendingBanks.length}</span> Requests Pipeline
-                                </p>
-                            </div>
+
+            {/* Direct List of Approved Items */}
+            {approvedBanks.length === 0 ? (
+                <Card className="border-2 border-dashed border-slate-300 bg-slate-50/50 rounded-[2rem]">
+                    <CardContent className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+                        <div className="h-20 w-20 rounded-full bg-white flex items-center justify-center shadow-inner border border-slate-100">
+                            <LayoutGrid className="h-10 w-10 text-slate-900/20" />
                         </div>
-                    </div>
-
-                    <Button
-                        onClick={() => fetchPendingBanks(true)}
-                        disabled={loading}
-                        className="h-16 px-10 rounded-[2rem] bg-white text-slate-900 font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl hover:bg-slate-50 transition-all active:scale-95 group/sync shrink-0"
-                    >
-                        <RefreshCw className={cn("h-4 w-4 mr-3 transition-transform duration-1000 group-hover:rotate-180", loading && "animate-spin text-primary")} />
-                        Manual Audit Sync
-                    </Button>
-                </div>
-            </div>
-
-            <Tabs value={viewTab} className="w-full">
-                <TabsContent value="pending" className="mt-0">
-                    {pendingBanks.length === 0 ? (
-                        <Card className="border-2 border-dashed border-slate-300 bg-slate-50/50 rounded-[2rem]">
-                            <CardContent className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-                                <div className="h-20 w-20 rounded-full bg-white flex items-center justify-center shadow-inner border border-slate-100">
-                                    <CheckCircle className="h-10 w-10 text-slate-900/20" />
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-xl font-black text-slate-900 italic uppercase tracking-tighter">Queue is empty!</p>
-                                    <p className="text-sm font-bold text-slate-600 max-w-sm uppercase tracking-widest text-[10px]">There are no pending question banks awaiting review.</p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ) : (
-                        <div className="grid gap-4">
-                            {pendingBanks.map((bank) => (
-                                <Card key={bank.topic} className="overflow-hidden border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-500 rounded-[2.5rem]">
-                                    <CardContent className="p-0">
-                                        <div className="flex flex-col lg:flex-row items-stretch group/card">
-                                            <div className="relative bg-slate-900 min-w-0 lg:min-w-[320px] h-[180px] lg:h-[220px] border-b lg:border-b-0 lg:border-r border-slate-100 overflow-hidden group/poster">
-                                                {getImageSrc(bank.assigned_image) ? (
-                                                    <img src={getImageSrc(bank.assigned_image)!} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover/poster:scale-110" />
-                                                ) : (
-                                                    <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4">
-                                                        <div className="h-16 w-16 rounded-[1.5rem] bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center shadow-2xl">
-                                                            <FileText className="h-8 w-8 text-white" />
-                                                        </div>
-                                                        <div className="text-center">
-                                                            <p className="text-[10px] font-black uppercase text-white/60 tracking-[0.2em]">Question Repository</p>
-                                                            <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest mt-1">Ready for Review Approval</p>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-between">
-                                                    <Badge variant="secondary" className="bg-white/10 backdrop-blur-md text-white border-white/20 font-black px-3 py-1 text-[10px] uppercase tracking-wider">
-                                                        {bank.count} Questions
-                                                    </Badge>
-                                                    <div className="h-6 w-6 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center">
-                                                        <BrainCircuit className="h-3 w-3 text-white" />
-                                                    </div>
+                        <div className="space-y-1">
+                            <p className="text-xl font-bold text-slate-900 italic uppercase">No Content Available</p>
+                            <p className="text-sm font-medium text-slate-500 max-w-sm uppercase tracking-widest text-[10px]">Approve an exam in scheduling to see it here.</p>
+                        </div>
+                    </CardContent>
+                </Card>
+            ) : (
+                <div className="grid gap-4">
+                    {approvedBanks.map((bank) => (
+                        <Card key={bank.topic} className="overflow-hidden border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-500 rounded-[2.5rem]">
+                            <CardContent className="p-0">
+                                <div className="flex flex-col lg:flex-row items-stretch group/card">
+                                    <div className="relative bg-slate-900 min-w-0 lg:min-w-[320px] h-[180px] lg:h-[220px] border-b lg:border-b-0 lg:border-r border-emerald-100 overflow-hidden group/poster">
+                                        {getImageSrc(bank.assigned_image) ? (
+                                            <img src={getImageSrc(bank.assigned_image)!} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover/poster:scale-110" />
+                                        ) : (
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4">
+                                                <div className="h-16 w-16 rounded-[1.5rem] bg-emerald-500/10 backdrop-blur-xl border border-emerald-500/20 flex items-center justify-center shadow-2xl">
+                                                    <CheckCircle className="h-8 w-8 text-emerald-500" />
+                                                </div>
+                                                <div className="text-center">
+                                                    <p className="text-[10px] font-black uppercase text-emerald-500/60 tracking-[0.2em]">Verified Content</p>
+                                                    <p className="text-[8px] font-bold text-emerald-500/30 uppercase tracking-widest mt-1">Ready for Access</p>
                                                 </div>
                                             </div>
-
-                                            <div className="flex-1 p-4 sm:p-8 space-y-2 min-w-0">
-                                                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                                                    <h3 className="font-bold text-base sm:text-xl text-slate-900 break-words">{bank.topic}</h3>
-                                                    <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none px-2 py-0 text-[10px] uppercase tracking-wider font-black">Pending</Badge>
-                                                </div>
-                                                <div className="flex flex-wrap items-center gap-6 text-xs font-semibold text-slate-500 mt-2">
-                                                    <div className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
-                                                        <Clock className="h-3.5 w-3.5 text-primary" />
-                                                        <span>{bank.duration || 0} Minutes</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
-                                                        <Award className="h-3.5 w-3.5 text-primary" />
-                                                        <span>{bank.total_marks || 0} Total Marks</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
-                                                        <RefreshCw className={cn("h-3.5 w-3.5", bank.shuffle ? "text-emerald-500" : "text-slate-300")} />
-                                                        <span>Shuffle: {bank.shuffle ? "ON" : "OFF"}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
-                                                        <History className="h-3.5 w-3.5 text-primary" />
-                                                        <span>{bank.retakes || 1} Retakes</span>
-                                                    </div>
-                                                </div>
-
-                                                {bank.custom_fields && bank.custom_fields.length > 0 && (
-                                                    <div className="pt-4 mt-2 border-t border-slate-50">
-                                                        <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-3">Additional Configuration Details</p>
-                                                        <div className="flex flex-wrap gap-2">
-                                                            {bank.custom_fields.map((field, idx) => (
-                                                                <div key={idx} className="flex items-center gap-2 text-[10px] bg-slate-900 text-white px-3 py-1.5 rounded-lg font-bold shadow-sm">
-                                                                    <span className="opacity-60">{field.label}:</span>
-                                                                    <span>{field.value}</span>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                <div className="flex items-center gap-6 pt-4 border-t border-slate-50 mt-4">
-                                                    <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                                        <Calendar className="h-3.5 w-3.5" />
-                                                        <span>Submitted {new Date(bank.created_at).toLocaleDateString()}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                                        <User className="h-3.5 w-3.5" />
-                                                        <span>Source: {bank.created_by?.substring(0, 8) || 'System'}...</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="p-4 sm:p-8 lg:bg-slate-50/50 flex flex-row lg:flex-col justify-center gap-2 sm:gap-3 border-t lg:border-t-0 lg:border-l border-slate-100 min-w-0 lg:min-w-[220px]">
-                                                <div className="flex gap-2 w-full">
-                                                    <Button
-                                                        variant="outline"
-                                                        onClick={() => handlePreviewQuestions(bank.topic)}
-                                                        className="flex-1 h-11 rounded-xl border-slate-200 text-slate-800 font-bold hover:bg-slate-50"
-                                                    >
-                                                        <Eye className="h-4 w-4 mr-2" />
-                                                        Preview
-                                                    </Button>
-                                                    <Button
-                                                        variant="outline"
-                                                        onClick={() => handleRemoveClick(bank.topic)}
-                                                        disabled={!!processing}
-                                                        className="h-11 w-11 rounded-xl border-slate-200 text-slate-400 hover:text-red-600 hover:bg-red-50 hover:border-red-100 transition-all"
-                                                        title="Nuke Repository Permanently"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-                                                <div className="flex gap-2 w-full mt-1">
-                                                    <Button
-                                                        variant="outline"
-                                                        onClick={() => handleAction(bank.topic, 'rejected')}
-                                                        disabled={!!processing}
-                                                        className="flex-1 h-11 rounded-xl border-slate-200 text-rose-600 hover:bg-rose-50 hover:border-rose-100 transition-all font-bold"
-                                                    >
-                                                        <XCircle className="h-4 w-4 mr-2" />
-                                                        Deny
-                                                    </Button>
-                                                    <Button
-                                                        onClick={() => handleApproveClick(bank.topic)}
-                                                        disabled={!!processing}
-                                                        className="flex-[2] h-11 rounded-xl pro-button-primary shadow-lg shadow-primary/20 font-bold"
-                                                    >
-                                                        {processing === bank.topic ? (
-                                                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                                        ) : (
-                                                            <CheckCircle className="h-4 w-4 mr-2" />
-                                                        )}
-                                                        Authorize
-                                                    </Button>
-                                                </div>
+                                        )}
+                                        <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-emerald-900/80 to-transparent flex items-center justify-between">
+                                            <Badge variant="secondary" className="bg-white/10 backdrop-blur-md text-white border-white/20 font-black px-3 py-1 text-[10px] uppercase tracking-wider">
+                                                {bank.count} Questions
+                                            </Badge>
+                                            <div className="h-6 w-6 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-400/30 flex items-center justify-center">
+                                                <ShieldCheck className="h-3 w-3 text-white" />
                                             </div>
                                         </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
-                    )}
-                </TabsContent>
+                                    </div>
 
-                <TabsContent value="approve" className="mt-0">
-                    {approvedBanks.length === 0 ? (
-                        <Card className="border-2 border-dashed border-slate-300 bg-slate-50/50 rounded-[2rem]">
-                            <CardContent className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-                                <div className="h-20 w-20 rounded-full bg-white flex items-center justify-center shadow-inner border border-slate-100">
-                                    <LayoutGrid className="h-10 w-10 text-slate-900/20" />
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-xl font-bold text-slate-900">Library is empty!</p>
-                                    <p className="text-sm font-medium text-slate-500 max-w-sm">No approved question banks in the library yet.</p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ) : (
-                        <div className="grid gap-4">
-                            {approvedBanks.map((bank) => (
-                                <Card key={bank.topic} className="overflow-hidden border-slate-200/60 shadow-sm hover:shadow-md transition-shadow rounded-[2.5rem]">
-                                    <CardContent className="p-0">
-                                        <div className="flex flex-col lg:flex-row items-stretch group/card">
-                                            <div className="relative bg-slate-900 min-w-0 lg:min-w-[320px] h-[180px] lg:h-[220px] border-b lg:border-b-0 lg:border-r border-emerald-100 overflow-hidden group/poster">
-                                                {bank.assigned_image ? (
-                                                    <img src={bank.assigned_image} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover/poster:scale-110" />
-                                                ) : (
-                                                    <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4">
-                                                        <div className="h-16 w-16 rounded-[1.5rem] bg-emerald-500/10 backdrop-blur-xl border border-emerald-500/20 flex items-center justify-center shadow-2xl">
-                                                            <CheckCircle className="h-8 w-8 text-emerald-500" />
-                                                        </div>
-                                                        <div className="text-center">
-                                                            <p className="text-[10px] font-black uppercase text-emerald-500/60 tracking-[0.2em]">Verified Content</p>
-                                                            <p className="text-[8px] font-bold text-emerald-500/30 uppercase tracking-widest mt-1">Content Verification Successful</p>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-emerald-900/80 to-transparent flex items-center justify-between">
-                                                    <Badge variant="secondary" className="bg-white/10 backdrop-blur-md text-white border-white/20 font-black px-3 py-1 text-[10px] uppercase tracking-wider">
-                                                        {bank.count} Questions
-                                                    </Badge>
-                                                    <div className="h-6 w-6 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-400/30 flex items-center justify-center">
-                                                        <ShieldCheck className="h-3 w-3 text-white" />
-                                                    </div>
-                                                </div>
+                                    <div className="flex-1 p-4 sm:p-8 space-y-2 min-w-0">
+                                        <div className="flex items-center gap-3">
+                                            <h3 className="font-bold text-base sm:text-xl text-slate-900 break-words">{bank.topic}</h3>
+                                            <Badge className="bg-emerald-100/50 text-emerald-700 border-none px-2 py-0.5 text-[10px] uppercase tracking-wider font-black">Verified & Ready</Badge>
+                                        </div>
+                                        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-xs font-semibold text-slate-500 mt-4">
+                                            <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
+                                                <Clock className="h-3.5 w-3.5 text-emerald-600" />
+                                                <span>{bank.duration || 60}m</span>
                                             </div>
-
-                                            <div className="flex-1 p-4 sm:p-6 space-y-2 min-w-0">
-                                                <div className="flex items-center gap-3">
-                                                    <h3 className="font-bold text-base sm:text-lg text-slate-900 break-words">{bank.topic}</h3>
-                                                    <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-none px-2 py-0 text-[10px] uppercase tracking-wider font-black">Approved</Badge>
-                                                </div>
-                                                <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-xs font-semibold text-slate-500 mt-4">
-                                                    <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
-                                                        <Clock className="h-3.5 w-3.5 text-emerald-600" />
-                                                        <span>{bank.duration || 60}m</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
-                                                        <Award className="h-3.5 w-3.5 text-emerald-600" />
-                                                        <span>{bank.total_marks || 0}pts</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
-                                                        <History className="h-3.5 w-3.5 text-emerald-600" />
-                                                        <span>{bank.retakes || 1} Retakes</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 bg-emerald-50/50 px-3 py-2 rounded-xl border border-emerald-100">
-                                                        <RefreshCw className={cn("h-3.5 w-3.5 text-emerald-600", bank.shuffle && "animate-spin-slow")} />
-                                                        <span>Shuffle: {bank.shuffle ? 'ON' : 'OFF'}</span>
-                                                    </div>
-                                                </div>
-
-                                                {bank.custom_fields && bank.custom_fields.length > 0 && (
-                                                    <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-50">
-                                                        {bank.custom_fields.map((field, idx) => (
-                                                            <div key={idx} className="flex items-center gap-1.5 text-[9px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded-md font-black uppercase tracking-tight">
-                                                                <span className="opacity-60">{field.label}:</span>
-                                                                <span>{field.value}</span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-
-                                                <div className="flex items-center gap-4 text-xs font-semibold text-slate-500 mt-4 border-t border-slate-50 pt-4">
-                                                    <div
-                                                        className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-200 transition-colors text-[10px] font-black uppercase tracking-widest"
-                                                        onClick={() => handleViewAccess(bank.topic)}
-                                                    >
-                                                        <Users className="h-3.5 w-3.5 text-primary" />
-                                                        <span>{accessCount[bank.topic] || 0} Students Access</span>
-                                                    </div>
-                                                </div>
+                                            <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
+                                                <Award className="h-3.5 w-3.5 text-emerald-600" />
+                                                <span>{bank.total_marks || 0} Total Marks</span>
                                             </div>
-
-                                            <div className="p-4 sm:p-6 lg:bg-slate-50/50 flex flex-col justify-center gap-2 sm:gap-3 border-t lg:border-t-0 lg:border-l border-slate-100 min-w-0 lg:min-w-[200px]">
-                                                <Button
-                                                    onClick={() => handlePreviewQuestions(bank.topic)}
-                                                    variant="outline"
-                                                    className="w-full h-10 rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50 font-bold"
-                                                >
-                                                    <Eye className="h-4 w-4 mr-2" />
-                                                    View Test
-                                                </Button>
-                                                <Button
-                                                    onClick={() => handleGrantAccessClick(bank.topic)}
-                                                    className="w-full h-10 rounded-xl pro-button-primary shadow-lg shadow-primary/20 font-bold"
-                                                >
-                                                    <Users className="h-4 w-4 mr-2" />
-                                                    + Access
-                                                </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    onClick={() => handleRemoveClick(bank.topic)}
-                                                    disabled={!!processing}
-                                                    className="w-full h-10 rounded-xl border-slate-200 text-red-600 hover:bg-red-50 hover:border-red-100 transition-all font-bold"
-                                                >
-                                                    {processing === bank.topic ? (
-                                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                                    ) : (
-                                                        <Trash2 className="h-4 w-4 mr-2" />
-                                                    )}
-                                                    Remove
-                                                </Button>
+                                            <div className="flex items-center gap-2 bg-emerald-50/50 px-3 py-2 rounded-xl border border-emerald-100">
+                                                <RefreshCw className={cn("h-3.5 w-3.5 text-emerald-600")} />
+                                                <span>Shuffle: {bank.shuffle ? 'ON' : 'OFF'}</span>
                                             </div>
                                         </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
-                    )}
-                </TabsContent>
 
-                <TabsContent value="reject" className="mt-0">
-                    {rejectedBanks.length === 0 ? (
-                        <Card className="border-2 border-dashed border-slate-300 bg-slate-50/50 rounded-[2rem]">
-                            <CardContent className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-                                <div className="h-20 w-20 rounded-full bg-white flex items-center justify-center shadow-inner border border-slate-100">
-                                    <XCircle className="h-10 w-10 text-slate-900/20" />
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-xl font-bold text-slate-900">No rejected banks!</p>
-                                    <p className="text-sm font-medium text-slate-500 max-w-sm">There are no question banks with a rejected status.</p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ) : (
-                        <div className="grid gap-4">
-                            {rejectedBanks.map((bank) => (
-                                <Card key={bank.topic} className="overflow-hidden border-slate-200/60 shadow-sm hover:shadow-md transition-shadow rounded-[2.5rem]">
-                                    <CardContent className="p-0">
-                                        <div className="flex flex-col lg:flex-row items-stretch group/card">
-                                            <div className="relative bg-slate-900 min-w-0 lg:min-w-[320px] h-[180px] lg:h-[220px] border-b lg:border-b-0 lg:border-r border-rose-100 overflow-hidden group/poster">
-                                                {bank.assigned_image ? (
-                                                    <img src={bank.assigned_image} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover/poster:scale-110" />
-                                                ) : (
-                                                    <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4">
-                                                        <div className="h-16 w-16 rounded-[1.5rem] bg-rose-500/10 backdrop-blur-xl border border-rose-500/20 flex items-center justify-center shadow-2xl">
-                                                            <XCircle className="h-8 w-8 text-rose-500" />
-                                                        </div>
-                                                        <div className="text-center">
-                                                            <p className="text-[10px] font-black uppercase text-rose-500/60 tracking-[0.2em]">Rejected Node</p>
-                                                            <p className="text-[8px] font-bold text-rose-500/30 uppercase tracking-widest mt-1">Review & Resubmit</p>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-rose-900/80 to-transparent flex items-center justify-between">
-                                                    <Badge variant="secondary" className="bg-white/10 backdrop-blur-md text-white border-white/20 font-black px-3 py-1 text-[10px] uppercase tracking-wider">
-                                                        {bank.count} Questions
-                                                    </Badge>
-                                                    <div className="h-6 w-6 rounded-full bg-rose-500/20 backdrop-blur-md border border-rose-400/30 flex items-center justify-center">
-                                                        <AlertCircle className="h-3 w-3 text-white" />
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex-1 p-4 sm:p-6 space-y-2 min-w-0">
-                                                <div className="flex items-center gap-3">
-                                                    <h3 className="font-bold text-base sm:text-lg text-slate-900 break-words">{bank.topic}</h3>
-                                                    <Badge className="bg-rose-100 text-rose-700 hover:bg-rose-100 border-none px-2 py-0 text-[10px] uppercase tracking-wider font-black">Rejected</Badge>
-                                                </div>
-                                                <div className="flex items-center gap-4 text-xs font-semibold text-slate-500">
-                                                    <div className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
-                                                        <Clock className="h-3.5 w-3.5 text-primary" />
-                                                        <span>Processed: {new Date(bank.created_at).toLocaleDateString()}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="p-4 sm:p-6 lg:bg-slate-50/50 flex flex-row lg:flex-col justify-center gap-2 sm:gap-3 border-t lg:border-t-0 lg:border-l border-slate-100 min-w-0 lg:min-w-[200px]">
-                                                <Button
-                                                    onClick={() => handleApproveClick(bank.topic)}
-                                                    disabled={!!processing}
-                                                    className="w-full h-11 rounded-xl pro-button-primary shadow-lg shadow-primary/20 font-bold"
-                                                >
-                                                    {processing === bank.topic ? (
-                                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                                    ) : (
-                                                        <CheckCircle className="h-4 w-4 mr-2" />
-                                                    )}
-                                                    Re-Approve
-                                                </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    onClick={() => handleRemoveClick(bank.topic)}
-                                                    disabled={!!processing}
-                                                    className="w-full h-11 rounded-xl border-slate-200 text-red-600 hover:bg-red-50 hover:border-red-100 transition-all font-bold"
-                                                >
-                                                    <Trash2 className="h-4 w-4 mr-2" />
-                                                    Delete permanently
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
-                    )}
-                </TabsContent>
-            </Tabs>
-
-            <Dialog open={showCourseDialog} onOpenChange={setShowCourseDialog}>
-                <DialogContent className="w-[95vw] sm:max-w-md border-none shadow-2xl rounded-[2.5rem] sm:rounded-[2rem] bg-white p-0 overflow-hidden">
-                    <div className="bg-primary p-8 text-white relative">
-                        <div className="h-16 w-16 bg-white/20 backdrop-blur-md rounded-[2.5rem] flex items-center justify-center mb-6 border border-white/30 shadow-xl relative z-10">
-                            <ShieldCheck className="h-8 w-8 text-white" />
-                        </div>
-                        <DialogTitle className="text-2xl font-black tracking-tight relative z-10">Authorize Repository</DialogTitle>
-                        <DialogDescription className="text-white/80 mt-2 font-medium relative z-10">Curriculum Association Required</DialogDescription>
-                    </div>
-
-                    <div className="p-8 space-y-6 bg-white">
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="course-select-dialog" className="text-xs font-black uppercase text-slate-500 tracking-widest pl-1">Target Curriculum</Label>
-                                <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
-                                    <SelectTrigger id="course-select-dialog" className="h-14 rounded-[2.5rem] border-slate-200 bg-slate-50 focus:ring-primary/20 font-bold text-slate-700">
-                                        <SelectValue placeholder="Associate with Course..." />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-[2.5rem] border-slate-200 shadow-xl">
-                                        {(courses as { id: string; title: string }[] | undefined)?.map((course) => (
-                                            <SelectItem
-                                                key={course.id}
-                                                value={course.id}
-                                                className="font-bold py-3 hover:bg-slate-50 rounded-xl"
+                                        <div className="flex items-center gap-4 text-xs font-semibold text-slate-500 mt-6 border-t border-slate-50 pt-4">
+                                            <div
+                                                className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-200 transition-colors text-[10px] font-black uppercase tracking-widest"
+                                                onClick={() => handleViewAccess(bank.topic)}
                                             >
-                                                {course.title}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="p-5 rounded-[2.5rem] bg-slate-50 border border-slate-100 space-y-2">
-                                <div className="flex items-center gap-2">
-                                    <Badge className="bg-primary/10 text-primary border-none font-bold">{selectedTopic}</Badge>
-                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest italic">Authorization Required</span>
+                                                <Users className="h-3.5 w-3.5 text-primary" />
+                                                <span>{accessCount[bank.topic] || 0} Students Access Granted</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-4 sm:p-8 lg:bg-slate-50/50 flex flex-row lg:flex-col justify-center gap-2 sm:gap-3 border-t lg:border-t-0 lg:border-l border-slate-100 min-w-0 lg:min-w-[220px]">
+                                        <Button
+                                            onClick={() => handlePreviewQuestions(bank.topic)}
+                                            variant="outline"
+                                            className="flex-1 lg:w-full h-11 rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50 font-bold"
+                                        >
+                                            <Eye className="h-4 w-4 mr-2" />
+                                            View Test
+                                        </Button>
+                                        <Button
+                                            onClick={() => handleGrantAccessClick(bank.topic)}
+                                            className="flex-[2] lg:w-full h-11 rounded-xl pro-button-primary shadow-lg shadow-primary/20 font-bold"
+                                        >
+                                            <UserPlus className="h-4 w-4 mr-2" />
+                                            Grant Access
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            onClick={() => handleRemoveClick(bank.topic)}
+                                            disabled={!!processing}
+                                            className="h-11 w-11 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50"
+                                            title="Remove"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
                                 </div>
-                                <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                                    Granting authorization will allow this repository to be used in future assessments and live class distributions.
-                                </p>
-                            </div>
-                        </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            )}
 
-                        <div className="flex gap-3 pt-2">
-                            <Button
-                                variant="outline"
-                                onClick={() => setShowCourseDialog(false)}
-                                className="flex-1 h-12 rounded-xl border-slate-200 text-slate-600 font-bold hover:bg-slate-50"
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                onClick={confirmApproval}
-                                disabled={!selectedCourseId || !!processing}
-                                className="flex-[2] h-12 rounded-xl pro-button-primary shadow-xl shadow-primary/30 font-bold"
-                            >
-                                {processing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ShieldCheck className="h-4 w-4 mr-2" />}
-                                Authorize Set
-                            </Button>
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={showAccessDialog} onOpenChange={setShowAccessDialog}>
+            {/* Removal Confirmation Dialog */}
+            <Dialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
                 <DialogContent className="w-[95vw] sm:max-w-[600px] rounded-[2.5rem] sm:rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl">
                     <div className="bg-primary p-8 text-white relative">
                         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }} />
@@ -1101,7 +683,7 @@ export function QuestionBankApproval() {
                         <div className="absolute inset-0 bg-white/10 opacity-20" />
                         <div className="absolute top-0 right-0 -mr-16 -mt-16 h-64 w-64 bg-white/20 rounded-full blur-3xl animate-pulse" />
                         <div className="absolute bottom-0 left-0 -ml-16 -mb-16 h-64 w-64 bg-black/20 rounded-full blur-3xl" />
-                        
+
                         <div className="relative z-10">
                             <div className="h-16 w-16 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center mb-6 shadow-2xl border border-white/30">
                                 <Users className="h-8 w-8 text-white" />
@@ -1120,14 +702,14 @@ export function QuestionBankApproval() {
                         <div className="p-8 space-y-8 bg-white relative">
                             <Tabs value={grantType} onValueChange={(v) => setGrantType(v as 'student' | 'batch')} className="w-full">
                                 <TabsList className="grid grid-cols-2 mb-8 bg-slate-50 p-1.5 rounded-3xl border border-slate-100 h-12">
-                                    <TabsTrigger 
-                                        value="student" 
+                                    <TabsTrigger
+                                        value="student"
                                         className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary font-black text-[10px] uppercase tracking-[0.15em] transition-all"
                                     >
                                         Individual Student
                                     </TabsTrigger>
-                                    <TabsTrigger 
-                                        value="batch" 
+                                    <TabsTrigger
+                                        value="batch"
                                         className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary font-black text-[10px] uppercase tracking-[0.15em] transition-all"
                                     >
                                         Entire Batch

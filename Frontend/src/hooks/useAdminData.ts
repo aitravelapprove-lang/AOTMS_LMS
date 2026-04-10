@@ -452,6 +452,20 @@ export function useAdminData(userRole?: string | null) {
     }
   };
 
+    const resetStudentATS = async (userId: string) => {
+    try {
+      await fetchWithAuth('/admin/reset-ats', {
+        method: 'POST',
+        body: JSON.stringify({ userId })
+      });
+      toast({ title: 'Success', description: 'ATS Score and credits reset successfully' });
+      return true;
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to reset ATS', variant: 'destructive' });
+      return false;
+    }
+  };
+
   return {
     loading,
     profiles,
@@ -474,7 +488,8 @@ export function useAdminData(userRole?: string | null) {
     updateCourseStatus,
     updateCoursePrice,
     deleteExamResult,
-    toggleCourseActive
+    toggleCourseActive,
+    resetStudentATS
   };
 }
 

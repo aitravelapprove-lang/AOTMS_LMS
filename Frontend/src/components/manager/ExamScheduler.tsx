@@ -91,6 +91,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // ─── 1. Validation Schema ────────────────────────────────────────────────────
 
@@ -342,6 +343,37 @@ function ExamCard({
   );
 }
 
+function ExamCardSkeleton() {
+  return (
+    <div className="relative group">
+      <Card className="h-full rounded-[2.5rem] border-slate-100 bg-white/50 backdrop-blur-md shadow-sm overflow-hidden">
+        <div className="aspect-video relative overflow-hidden bg-slate-100">
+          <Skeleton className="h-full w-full" />
+        </div>
+        <CardHeader className="space-y-4 p-6 sm:p-8">
+          <div className="flex justify-between items-start gap-4">
+            <div className="space-y-2 flex-1">
+              <Skeleton className="h-8 w-3/4 rounded-lg" />
+              <Skeleton className="h-4 w-1/2 rounded-md" />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="px-6 sm:px-8 pb-8 space-y-6">
+          <div className="flex flex-wrap gap-2">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-6 w-16 rounded-full" />
+            ))}
+          </div>
+          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-50">
+            <Skeleton className="h-10 w-full rounded-xl" />
+            <Skeleton className="h-10 w-full rounded-xl" />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // ─── 3. Main Horizontal Scheduler ──────────────────────────────────────────
 
 export function ExamScheduler({ onNavigateToRepository }: { onNavigateToRepository?: () => void }) {
@@ -364,6 +396,8 @@ export function ExamScheduler({ onNavigateToRepository }: { onNavigateToReposito
   >([]);
   const [isOtherType, setIsOtherType] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
+  const [activeStatusTab, setActiveStatusTab] = useState("pending");
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const form = useForm<ExamFormValues>({
     resolver: zodResolver(examSchema),
@@ -410,7 +444,7 @@ export function ExamScheduler({ onNavigateToRepository }: { onNavigateToReposito
   };
 
   const onDropPoster = useCallback(
-    (e: React.DragEvent) => {
+    async (e: React.DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
       const url = e.dataTransfer.getData("text/plain");
@@ -421,22 +455,50 @@ export function ExamScheduler({ onNavigateToRepository }: { onNavigateToReposito
       }
       const file = e.dataTransfer.files[0];
       if (file && file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onload = (ev) =>
-          form.setValue("assigned_image", ev.target?.result as string);
-        reader.readAsDataURL(file);
+        try {
+          setIsUploadingImage(true);
+          const formData = new FormData();
+          formData.append("file", file);
+          
+          const res = await fetchWithAuth<{ url: string }>("/upload", {
+            method: "POST",
+            body: formData,
+          });
+          
+          form.setValue("assigned_image", res.url);
+          toast({ title: "Visual Artwork Optimized & Secured" });
+        } catch (error) {
+          console.error("Image upload failed:", error);
+          toast({ title: "Optimization Failed", variant: "destructive" });
+        } finally {
+          setIsUploadingImage(false);
+        }
       }
     },
     [form, toast],
   );
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onload = (ev) =>
-        form.setValue("assigned_image", ev.target?.result as string);
-      reader.readAsDataURL(file);
+      try {
+        setIsUploadingImage(true);
+        const formData = new FormData();
+        formData.append("file", file);
+        
+        const res = await fetchWithAuth<{ url: string }>("/upload", {
+          method: "POST",
+          body: formData,
+        });
+        
+        form.setValue("assigned_image", res.url);
+        toast({ title: "Visual Artwork Optimized & Secured" });
+      } catch (error) {
+        console.error("Image upload failed:", error);
+        toast({ title: "Optimization Failed", variant: "destructive" });
+      } finally {
+        setIsUploadingImage(false);
+      }
     }
   };
 
@@ -462,6 +524,7 @@ export function ExamScheduler({ onNavigateToRepository }: { onNavigateToReposito
       });
       setIsAddOpen(false);
       form.reset();
+      setActiveStatusTab("pending"); // Ensure we show the pending section immediately
       toast({ title: "Architecture Successfully Committed" });
     } catch (error) {
       console.error(error);
@@ -539,7 +602,12 @@ export function ExamScheduler({ onNavigateToRepository }: { onNavigateToReposito
                               : "border-slate-300 bg-slate-50/50 hover:bg-slate-50 hover:border-primary/50"
                           )}
                         >
-                          {form.watch("assigned_image") ? (
+                          {isUploadingImage ? (
+                            <div className="flex flex-col items-center gap-3">
+                              <Loader2 className="h-10 w-10 text-primary animate-spin" />
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Optimizing Media...</p>
+                            </div>
+                          ) : form.watch("assigned_image") ? (
                             <div className="absolute inset-0 group/img">
                               <img
                                 src={getImageSrc(form.watch("assigned_image")) || ""}
@@ -778,7 +846,11 @@ export function ExamScheduler({ onNavigateToRepository }: { onNavigateToReposito
         </Dialog>
       </div>
 
-      <Tabs defaultValue="pending" className="w-full">
+      <Tabs 
+        value={activeStatusTab} 
+        onValueChange={setActiveStatusTab} 
+        className="w-full"
+      >
         <TabsList className="mb-6 sm:mb-12 h-auto sm:h-20 rounded-2xl sm:rounded-[2.5rem] bg-white border border-slate-100 p-1.5 sm:p-2 shadow-sm flex flex-wrap sm:flex-nowrap items-center gap-1 sm:gap-2">
           {["pending", "approved", "rejected"].map((tab) => (
             <TabsTrigger
@@ -789,8 +861,8 @@ export function ExamScheduler({ onNavigateToRepository }: { onNavigateToReposito
               {tab === "pending"
                 ? `Pending (${pendingExams.length})`
                 : tab === "approved"
-                  ? `Approve (${approvedExams.length})`
-                  : `Reject (${rejectedExams.length})`}
+                  ? `Approved (${approvedExams.length})`
+                  : `Rejected (${rejectedExams.length})`}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -812,18 +884,43 @@ export function ExamScheduler({ onNavigateToRepository }: { onNavigateToReposito
                     : tabVal === "approved"
                       ? approvedExams
                       : rejectedExams;
+
+                if (isLoading) {
+                  return Array.from({ length: 6 }).map((_, i) => (
+                    <ExamCardSkeleton key={i} />
+                  ));
+                }
+
                 if (list.length === 0)
                   return (
-                    <div className="col-span-full py-40 text-center border-4 border-dashed border-slate-400/30 rounded-[4rem] bg-slate-50/10 backdrop-blur-[2px]">
-                      <Rocket className="h-12 w-12 text-slate-900/20 mx-auto mb-6" />
-                      <h4 className="text-2xl font-black text-slate-900 uppercase tracking-[0.3em] italic">
-                        Workspace Empty
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="col-span-full py-32 text-center"
+                    >
+                      <div className="relative inline-block">
+                        <motion.div
+                          animate={{ 
+                            scale: [1, 1.2, 1],
+                            opacity: [0.1, 0.3, 0.1] 
+                          }}
+                          transition={{ duration: 4, repeat: Infinity }}
+                          className="absolute inset-0 bg-primary/20 blur-3xl rounded-full"
+                        />
+                        <div className="relative h-24 w-24 bg-white rounded-full flex items-center justify-center shadow-xl border border-slate-100 mx-auto mb-8">
+                           <Loader2 className="h-10 w-10 text-slate-200 animate-[spin_8s_linear_infinite]" />
+                           <Rocket className="absolute h-8 w-8 text-slate-900/10" />
+                        </div>
+                      </div>
+                      <h4 className="text-xl font-bold text-slate-900 uppercase tracking-[0.2em] italic">
+                        No Records Found
                       </h4>
-                      <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mt-2">
-                        Analytical data set is currently zero
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-3">
+                        Catalogue index is currently empty
                       </p>
-                    </div>
+                    </motion.div>
                   );
+
                 return list.map((exam) => (
                   <ExamCard
                     key={exam.id}

@@ -27,7 +27,8 @@ import {
   ShieldCheck,
   Zap,
   TrendingUp,
-  ArrowRight
+  ArrowRight,
+  RotateCcw
 } from "lucide-react";
 import { CourseEnrollment } from "@/hooks/useCourses";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -51,12 +52,14 @@ interface EnrollmentsListProps {
   loading: boolean;
   onUpdateStatus?: (id: string, status: 'active' | 'rejected') => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
+  onResetATS?: (userId: string) => Promise<void>;
 }
 
-export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete }: EnrollmentsListProps) {
+export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete, onResetATS }: EnrollmentsListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCourse, setFilterCourse] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterTimeframe, setFilterTimeframe] = useState("all");
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [selectedEnrollment, setSelectedEnrollment] = useState<CourseEnrollment | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -152,7 +155,35 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
     const matchesCourse = filterCourse === "all" || courseName === filterCourse;
     const matchesStatus = filterStatus === "all" || e.status === filterStatus;
 
-    return matchesSearch && matchesCourse && matchesStatus;
+    // Timeframe logic
+    let matchesTimeframe = true;
+    if (filterTimeframe !== 'all') {
+      const enrollmentDate = new Date(e.enrolled_at || e.enrollment_date || 0);
+      const now = new Date();
+      
+      switch (filterTimeframe) {
+        case 'day':
+          matchesTimeframe = enrollmentDate.toDateString() === now.toDateString();
+          break;
+        case 'week':
+          const weekAgo = new Date();
+          weekAgo.setDate(now.getDate() - 7);
+          matchesTimeframe = enrollmentDate >= weekAgo;
+          break;
+        case 'month':
+          const monthAgo = new Date();
+          monthAgo.setMonth(now.getMonth() - 1);
+          matchesTimeframe = enrollmentDate >= monthAgo;
+          break;
+        case 'year':
+          const yearAgo = new Date();
+          yearAgo.setFullYear(now.getFullYear() - 1);
+          matchesTimeframe = enrollmentDate >= yearAgo;
+          break;
+      }
+    }
+
+    return matchesSearch && matchesCourse && matchesStatus && matchesTimeframe;
   });
 
   const totalValue = filteredEnrollments.reduce((acc, e) => acc + safeParsePrice(e.price), 0);
@@ -268,6 +299,19 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="active">Approved</SelectItem>
                 <SelectItem value="rejected">Rejected</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={filterTimeframe} onValueChange={setFilterTimeframe}>
+              <SelectTrigger className="h-12 w-40 rounded-2xl bg-white border-none shadow-xl shadow-slate-200/20 font-bold">
+                 <SelectValue placeholder="Timeframe" />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl border-none shadow-2xl">
+                <SelectItem value="all">All Time</SelectItem>
+                <SelectItem value="day">Today</SelectItem>
+                <SelectItem value="week">Past Week</SelectItem>
+                <SelectItem value="month">Past Month</SelectItem>
+                <SelectItem value="year">Past Year</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -449,6 +493,13 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                                       <XCircle className="h-4 w-4 mr-3" /> Deny Access
                                     </DropdownMenuItem>
                                     <div className="h-px bg-slate-100 my-2" />
+                                    <DropdownMenuItem 
+                                      onClick={() => enrollment.user_id && onResetATS?.(enrollment.user_id)} 
+                                      className="rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest text-amber-600 focus:bg-amber-600 focus:text-white transition-colors cursor-pointer"
+                                    >
+                                      <RotateCcw className="h-4 w-4 mr-3" /> Reset ATS Score
+                                    </DropdownMenuItem>
+                                    <div className="h-px bg-slate-100 my-2" />
                                     <DropdownMenuItem onClick={() => handleDelete(enrollment.id)} className="rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest text-rose-600 focus:bg-rose-600 focus:text-white transition-colors cursor-pointer">
                                       <Trash2 className="h-4 w-4 mr-3" /> Remove Record
                                     </DropdownMenuItem>
@@ -552,6 +603,12 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                            </DropdownMenuItem>
                            <DropdownMenuItem onClick={() => handleUpdateStatus(enrollment.id, 'rejected')} className="rounded-xl px-4 py-3 text-orange-600 focus:bg-orange-600 focus:text-white transition-colors cursor-pointer">
                               <XCircle className="h-3.5 w-3.5 mr-3" /> Deny Access
+                           </DropdownMenuItem>
+                           <DropdownMenuItem 
+                              onClick={() => enrollment.user_id && onResetATS?.(enrollment.user_id)} 
+                              className="rounded-xl px-4 py-3 text-amber-600 focus:bg-amber-600 focus:text-white transition-colors cursor-pointer"
+                            >
+                              <RotateCcw className="h-3.5 w-3.5 mr-3" /> Reset ATS Score
                            </DropdownMenuItem>
                            <DropdownMenuItem onClick={() => handleDelete(enrollment.id)} className="rounded-xl px-4 py-3 text-rose-600 focus:bg-rose-600 focus:text-white transition-colors cursor-pointer">
                               <Trash2 className="h-3.5 w-3.5 mr-3" /> Remove Record

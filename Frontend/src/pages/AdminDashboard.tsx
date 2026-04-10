@@ -275,6 +275,7 @@ export default function AdminDashboard() {
     updateEnrollmentStatus: _updateEnrollmentStatus,
     deleteEnrollment: _deleteEnrollment,
     deleteCourse: _deleteCourse,
+    resetStudentATS: _resetStudentATS,
   } = adminData;
 
   const { socket } = useSocket();
@@ -776,6 +777,7 @@ export default function AdminDashboard() {
                       loading={enrollmentsLoading}
                       onUpdateStatus={updateEnrollmentStatus}
                       onDelete={deleteEnrollment}
+                      onResetATS={_resetStudentATS}
                     />
                   </motion.div>
                 </TabsContent>

@@ -178,7 +178,7 @@ const safeFetchWithAuth = async <T = unknown[]>(url: string, options: RequestIni
 export function useExams() {
   return useQuery<Exam[]>({
     queryKey: ['exams'],
-    queryFn: () => fetchWithAuth('/data/exams?sort=scheduled_date&order=asc'),
+    queryFn: () => fetchWithAuth('/data/exams?sort=scheduled_date&order=asc&select=title,status,approval_status,scheduled_date,assigned_image,duration_minutes,total_marks,exam_type,created_by,created_at'),
     refetchInterval: 10000, // 10s Background Refresh
     staleTime: 5000, 
   });

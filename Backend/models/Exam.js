@@ -1,7 +1,9 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
+const { v4: uuidv4 } = require('uuid');
 
 const ExamSchema = new Schema({
+    uuid: { type: String, unique: true, index: true },
     title: { type: String, required: true },
     description: { type: String },
     exam_type: { type: String, default: 'mock' },
@@ -17,13 +19,13 @@ const ExamSchema = new Schema({
     proctoring_enabled: { type: Boolean, default: false },
     browser_security: { type: Boolean, default: false },
     assigned_image: { type: String },
-    status: { type: String, default: 'scheduled' }, // scheduled, active, completed, cancelled
-    approval_status: { type: String, default: 'pending' }, // pending, approved, rejected
+    status: { type: String, default: 'scheduled', index: true }, // scheduled, active, completed, cancelled
+    approval_status: { type: String, default: 'pending', index: true }, // pending, approved, rejected
     total_questions: { type: Number, default: 0 },
     topics: [String],
     ai_generated: { type: Boolean, default: false },
     source_topic: { type: String },
-    created_by: { type: Schema.Types.ObjectId, ref: 'User' },
+    created_by: { type: Schema.Types.ObjectId, ref: 'User', index: true },
     is_active: { type: Boolean, default: true },
     custom_fields: [{ label: String, value: String }],
     created_at: { type: Date, default: Date.now, index: true },
@@ -127,8 +129,14 @@ const MockTestConfigSchema = new Schema({
 });
 MockTestConfigSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
 
+ExamSchema.pre('save', async function() {
+    if (!this.uuid) {
+        this.uuid = uuidv4();
+    }
+});
+
 module.exports = {
-    Exam: mongoose.model('Exam', ExamSchema),
+    Exam: mongoose.model('Exam', ExamSchema, 'exam_schedulings'),
     QuestionBank: mongoose.model('QuestionBank', QuestionBankSchema),
     ExamSchedule: mongoose.model('ExamSchedule', ExamScheduleSchema),
     StudentExamAccess: mongoose.model('StudentExamAccess', StudentExamAccessSchema),

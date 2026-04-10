@@ -196,7 +196,7 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
                 }
 
                 return (
-                    <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                         <AnimatePresence mode="popLayout">
                             {filtered.map((course: Course, index: number) => {
                             const instructors = (course.instructor_ids || []) as string[];
@@ -243,31 +243,20 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
                                                 </div>
                                             )}
                                             
-                                            {/* Gradient overlay for badges */}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-5 opacity-80 group-hover:opacity-100 transition-opacity">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <Badge variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-md">
+                                            {/* Badge System */}
+                                            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
+                                                <div className="flex flex-wrap gap-2">
+                                                    <Badge variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-md text-[9px] font-black uppercase tracking-widest">
                                                         {course.category}
                                                     </Badge>
                                                     {isInstructorOwner && (
                                                         <Badge variant="secondary" className={cn(
-                                                            "border-none backdrop-blur-md gap-1 text-[10px]",
-                                                            (course.status?.toLowerCase() === 'approved' || course.status?.toLowerCase() === 'published') ? 'bg-green-500/80 hover:bg-green-500 text-white' :
-                                                                course.status?.toLowerCase() === 'pending' ? 'bg-amber-500/80 hover:bg-amber-500 text-white' :
-                                                                    course.status?.toLowerCase() === 'rejected' ? 'bg-red-500/80 hover:bg-red-500 text-white' : 'bg-slate-500/80 hover:bg-slate-500 text-white'
+                                                            "border-none backdrop-blur-md gap-1 text-[9px] font-black uppercase tracking-widest text-white",
+                                                            (course.status?.toLowerCase() === 'approved' || course.status?.toLowerCase() === 'published') ? 'bg-emerald-500/80 shadow-lg shadow-emerald-500/20' :
+                                                                course.status?.toLowerCase() === 'pending' ? 'bg-amber-500/80' :
+                                                                    course.status?.toLowerCase() === 'rejected' ? 'bg-rose-500/80' : 'bg-slate-500/80'
                                                         )}>
-                                                            {course.status === 'published' ? 'Published' : course.status === 'pending' ? 'Pending Review' : course.status === 'rejected' ? 'Rejected' : course.status === 'draft' ? 'Draft' : course.status || 'Active'}
-                                                        </Badge>
-                                                    )}
-                                                            {instructors.length > 0 && (
-                                                        <Badge variant="secondary" className={`border-none backdrop-blur-md text-[10px] ${
-                                                            course.status === 'rejected' ? 'bg-rose-500/90' : 
-                                                            course.status === 'pending' ? 'bg-amber-500/90' :
-                                                            'bg-emerald-500/80'
-                                                        } text-white`}>
-                                                            {course.status === 'rejected' ? 'Rejected' : 
-                                                             course.status === 'pending' ? 'Pending' : 
-                                                             isInstructorOwner ? 'My Course' : 'Team Course'}
+                                                            {course.status === 'published' ? 'Published' : course.status === 'pending' ? 'Pending' : course.status === 'rejected' ? 'Rejected' : course.status === 'draft' ? 'Draft' : course.status || 'Active'}
                                                         </Badge>
                                                     )}
                                                 </div>
@@ -319,30 +308,33 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
                                                 </p>
                                             </div>
  
-                                            <div className="mt-4 pt-4 border-t flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
+                                            <div className="mt-auto pt-4 border-t flex items-center justify-between gap-2">
+                                                <div className="flex-1 min-w-0">
                                                     {isInstructorOwner ? (
-                                                        <div className="flex items-center gap-2">
-                                                            {course.status?.toLowerCase() === 'pending' && <Clock className="h-3 w-3 text-yellow-600" />}
-                                                            {course.status?.toLowerCase() === 'rejected' && <AlertCircle className="h-3 w-3 text-red-600" />}
-                                                            {(course.status?.toLowerCase() === 'published' || course.status?.toLowerCase() === 'approved') && <CheckCircle className="h-3 w-3 text-green-600" />}
-                                                            <span className="text-xs text-muted-foreground">My Course</span>
+                                                        <div className="flex items-center gap-1.5 overflow-hidden">
+                                                            {(course.status?.toLowerCase() === 'published' || course.status?.toLowerCase() === 'approved') 
+                                                                ? <CheckCircle className="h-3 w-3 text-emerald-500 shrink-0" />
+                                                                : course.status?.toLowerCase() === 'rejected' 
+                                                                    ? <AlertCircle className="h-3 w-3 text-rose-500 shrink-0" />
+                                                                    : <Clock className="h-3 w-3 text-amber-500 shrink-0" />
+                                                            }
+                                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter truncate">Owner Access</span>
                                                         </div>
                                                     ) : instructors.length > 0 ? (
-                                                        <div className="flex items-center gap-1">
-                                                            <Users className="h-3 w-3 text-primary/60" />
-                                                            <span className="text-[10px] font-bold text-primary/60 uppercase tracking-tighter">Team Course</span>
+                                                        <div className="flex items-center gap-1.5 overflow-hidden">
+                                                            <Users className="h-3 w-3 text-primary/40 shrink-0" />
+                                                            <span className="text-[10px] font-black text-primary/40 uppercase tracking-tighter truncate">Team Managed</span>
                                                         </div>
                                                     ) : (
-                                                        <span className="text-xs text-muted-foreground">{course.duration || 'Flexible'}</span>
+                                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter truncate">{course.duration || 'Flexible'}</span>
                                                     )}
                                                 </div>
                                                 
-                                                <div className="flex items-center gap-1">
+                                                <div className="flex items-center gap-1 shrink-0">
                                                     <Button 
                                                         variant="ghost" 
                                                         size="icon" 
-                                                        className="h-8 w-8 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-full"
+                                                        className="h-8 w-8 text-slate-300 hover:text-primary hover:bg-primary/5 rounded-full transition-colors"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             setSelectedProfile(course);
@@ -352,27 +344,25 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
                                                         <Eye className="h-4 w-4" />
                                                     </Button>
                                                     {isInstructorApproved ? (
-                                                        <Button variant="ghost" size="sm" className="group-hover:translate-x-1 transition-transform">
-                                                            Manage <ArrowRight className="ml-1 h-4 w-4" />
+                                                        <Button variant="ghost" size="sm" className="h-8 px-2 sm:px-3 text-xs font-bold gap-1 group/btn hover:bg-primary hover:text-white rounded-lg transition-all">
+                                                            <span className="hidden sm:inline">Manage</span> 
+                                                            <ArrowRight className="h-3.5 w-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
                                                         </Button>
                                                     ) : isInstructorOwner && course.status?.toLowerCase() === 'pending' ? (
-                                                        <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200 gap-1.5 px-3 py-1 animate-pulse">
+                                                        <div className="px-2 py-1 rounded-md bg-amber-50 text-amber-600 border border-amber-100 flex items-center gap-1.5 animate-pulse">
                                                             <Clock className="h-3 w-3" />
-                                                            <span className="text-[10px] uppercase font-bold tracking-wider">Awaiting Approval</span>
-                                                        </Badge>
+                                                            <span className="text-[8px] uppercase font-black tracking-widest">Pending</span>
+                                                        </div>
                                                     ) : (
                                                         <Button 
                                                             variant="outline" 
                                                             size="sm" 
-                                                            className={cn(
-                                                                "gap-2 border-primary/20",
-                                                                "hover:bg-primary/5 text-primary"
-                                                            )}
+                                                            className="h-8 px-2 sm:px-3 text-[10px] font-black uppercase tracking-tighter border-primary/20 hover:bg-primary hover:text-white rounded-lg transition-all gap-1.5"
                                                             onClick={(e) => handleAssignToMe(course.id || course._id, e)}
                                                             disabled={assigning === (course.id || course._id) || isInstructorOwner}
                                                         >
-                                                            {assigning === (course.id || course._id) ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                                                            {instructors.length > 0 ? 'Join Team' : 'Enroll to Teach'}
+                                                            {assigning === (course.id || course._id) ? <RefreshCw className="h-3 w-3 animate-spin text-primary" /> : <Plus className="h-3 w-3" />}
+                                                            <span className="hidden sm:inline">{instructors.length > 0 ? 'Join' : 'Enroll'}</span>
                                                         </Button>
                                                     )}
                                                 </div>

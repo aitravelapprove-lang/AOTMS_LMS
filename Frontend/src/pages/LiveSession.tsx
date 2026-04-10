@@ -5,6 +5,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { fetchWithAuth } from '@/lib/api';
 import { AlertCircle, ArrowLeft, Video, RefreshCcw, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 /**
  * ZOOM SDK Initialization
@@ -22,6 +24,7 @@ export default function LiveSession() {
     const [status, setStatus] = useState('Initializing...');
     const [error, setError] = useState<string | null>(null);
     const [logs, setLogs] = useState<string[]>([]);
+    const [isFinished, setIsFinished] = useState(false);
 
     const hasInitialized = useRef(false);
 
@@ -41,14 +44,41 @@ export default function LiveSession() {
 
         const setupMeeting = async () => {
             try {
-                const meetingNumber = meetingId.replace(/\s/g, '');
                 const sdkKey = import.meta.env.VITE_ZOOM_CLIENT_ID;
 
                 if (!sdkKey) {
                     throw new Error('Frontend VITE_ZOOM_CLIENT_ID is missing. Check your .env file or Render dashboard.');
                 }
 
-                addLog('Verifying meeting credentials...');
+                addLog('Verifying session schedule...');
+
+                // 1. Fetch Class Data to check time
+                const meetingNumber = meetingId.replace(/\s/g, '');
+                const liveClasses = await fetchWithAuth(`/data/live_classes?meeting_id=eq.${meetingNumber}`) as any[];
+                
+                if (!liveClasses || liveClasses.length === 0) {
+                   throw new Error('Session not found in our records.');
+                }
+
+                const liveClass = liveClasses[0];
+                const startTime = new Date(liveClass.scheduled_at).getTime();
+                const duration = (liveClass.duration_minutes || 60) * 60000;
+                const endTime = startTime + duration;
+                const now = new Date().getTime();
+
+                // Check if session has ended (User's requirement #2)
+                // Instructors (role 1) can bypass this to see the session details or manage it
+                if (now > endTime && role !== 1) {
+                    setIsFinished(true);
+                    throw new Error('This live session has already finished.');
+                }
+
+                // Optional: Check if session is too early (Allow 30 mins early for prep)
+                if (now < startTime - (30 * 60000)) {
+                    throw new Error(`This session is scheduled for ${new Date(liveClass.scheduled_at).toLocaleString()}. Please return closer to the start time.`);
+                }
+
+                addLog('Authenticating credentials...');
 
                 // Initialize Zoom only now to prevent global CSS hijacking on other pages
                 ZoomMtg.setZoomJSLib(`https://source.zoom.us/${ZOOM_VERSION}/lib`, '/av');
@@ -69,7 +99,7 @@ export default function LiveSession() {
 
                 // USE THE KEY FROM THE BACKEND IF POSSIBLE to avoid local .env mismatch
                 const signature = response.signature;
-                const activeSdkKey = response.sdkKey || sdkKey; 
+                // const activeSdkKey = response.sdkKey || sdkKey; // Not used in join anymore
 
                 if (!signature) throw new Error('Signature generation failed on backend.');
 
@@ -138,19 +168,26 @@ export default function LiveSession() {
         return (
             <div className="fixed inset-0 bg-slate-950 flex flex-col items-center justify-center p-8 z-[10000]">
                 <div className="max-w-md w-full text-center space-y-8 animate-in fade-in zoom-in duration-300">
-                    <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto ring-1 ring-red-500/20">
-                        <AlertCircle className="w-10 h-10 text-red-500" />
+                    <div className={cn(
+                        "w-20 h-20 rounded-full flex items-center justify-center mx-auto ring-1",
+                        isFinished ? "bg-amber-500/10 ring-amber-500/20" : "bg-red-500/10 ring-red-500/20"
+                    )}>
+                        <AlertCircle className={cn("w-10 h-10", isFinished ? "text-amber-500" : "text-red-500")} />
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">Something went wrong</h2>
+                        <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">
+                            {isFinished ? "Session Ended" : "Something went wrong"}
+                        </h2>
                         <p className="text-slate-400 text-sm leading-relaxed">{error}</p>
                     </div>
                     <div className="flex flex-col gap-3">
-                        <Button className="h-12 bg-blue-600 hover:bg-blue-700 font-bold" onClick={() => window.location.reload()}>
-                            <RefreshCcw className="w-4 h-4 mr-2" /> RE-ENTER SESSION
-                        </Button>
+                        {!isFinished && (
+                            <Button className="h-12 bg-blue-600 hover:bg-blue-700 font-bold" onClick={() => window.location.reload()}>
+                                <RefreshCcw className="w-4 h-4 mr-2" /> RE-ENTER SESSION
+                            </Button>
+                        )}
                         <Button variant="ghost" className="text-slate-400" onClick={() => navigate(-1)}>
-                            <ArrowLeft className="w-4 h-4 mr-2" /> EXIT ROOM
+                            <ArrowLeft className="w-4 h-4 mr-2" /> {isFinished ? "RETURN TO DASHBOARD" : "EXIT ROOM"}
                         </Button>
                     </div>
                 </div>

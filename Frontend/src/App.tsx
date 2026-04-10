@@ -215,12 +215,30 @@ const App = () => (
               />
 
               <Route
+                path="/student-dashboard"
+                element={
+                  <ProtectedRoute
+                    allowedRoles={["student", "instructor", "admin"]}
+                  >
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/student-dashboard/*"
                 element={
                   <ProtectedRoute
                     allowedRoles={["student", "instructor", "admin"]}
                   >
                     <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/instructor"
+                element={
+                  <ProtectedRoute allowedRoles={["instructor", "admin"]}>
+                    <InstructorDashboard />
                   </ProtectedRoute>
                 }
               />
@@ -233,10 +251,26 @@ const App = () => (
                 }
               />
               <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/admin/*"
                 element={
                   <ProtectedRoute allowedRoles={["admin"]}>
                     <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/manager"
+                element={
+                  <ProtectedRoute allowedRoles={["manager", "admin"]}>
+                    <ManagerDashboard />
                   </ProtectedRoute>
                 }
               />

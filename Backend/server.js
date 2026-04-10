@@ -91,8 +91,12 @@ const { Server } = require('socket.io');
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, {
     cors: {
-        origin: "*", // Adjust in production
-        methods: ["GET", "POST"]
+        origin: (origin, callback) => {
+            // Allow all origins in dev, or specific ones in prod
+            callback(null, true); 
+        },
+        methods: ["GET", "POST"],
+        credentials: true
     }
 });
 
@@ -211,7 +215,7 @@ const getZoomAccessToken = async () => {
 
 // Middleware
 app.use(cors({
-    origin: '*',
+    origin: true, // Automatically mirror the request origin to allow credentials
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
     credentials: true
@@ -2852,10 +2856,34 @@ app.post('/api/upload/course-resources', authenticateToken, upload.single('file'
 app.post('/api/upload/live-posters', authenticateToken, upload.single('file'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-        const fileName = `live-posters/${Date.now()}_${req.file.originalname.replace(/\s+/g, '_')}`;
-        const s3Key = await uploadFile(req.file.buffer, fileName, req.file.mimetype);
-        const publicProxyUrl = `${process.env.VITE_API_URL || 'http://localhost:5000/api'}/s3/public/${s3Key}`;
-        res.json({ url: publicProxyUrl, key: s3Key });
+        
+        // Convert buffer to base64 for Cloudinary
+        const b64 = Buffer.from(req.file.buffer).toString('base64');
+        const dataURI = "data:" + req.file.mimetype + ";base64," + b64;
+        
+        console.log(`[System] Instructor ${req.user.id} uploading live poster...`);
+        
+        const result = await cloudinary.uploader.upload(dataURI, {
+            folder: 'live_posters',
+            resource_type: 'image'
+        });
+
+        // Construct optimized URL with 1280x720 fill, auto quality, and auto format
+        const optimizedUrl = cloudinary.url(result.public_id, {
+            width: 1280,
+            height: 720,
+            crop: "fill",
+            gravity: "center",
+            quality: "auto",
+            fetch_format: "auto",
+            secure: true
+        });
+
+        res.json({ 
+            url: optimizedUrl, 
+            public_id: result.public_id,
+            original_url: result.secure_url
+        });
     } catch (err) {
         handleError(res, err, 'upload-live-poster');
     }
@@ -4799,7 +4827,12 @@ app.post('/api/data/:table', authenticateToken, async (req, res) => {
                 
                 if (req.body.course_id) {
                     const course = await Course.findById(req.body.course_id);
-                    if (!course || course.instructor_id?.toString() !== req.user.id) {
+                    if (!course) return res.status(404).json({ error: 'Course not found' });
+                    
+                    const isOwner = course.instructor_id?.toString() === req.user.id;
+                    const isAssigned = course.instructor_ids?.some(id => id.toString() === req.user.id);
+                    
+                    if (!isOwner && !isAssigned) {
                         return res.status(403).json({ error: 'Forbidden: You must be the assigned instructor of this course' });
                     }
                 }
@@ -4868,7 +4901,12 @@ app.put('/api/data/:table/:id', authenticateToken, async (req, res) => {
                         // Priority check: If they are the host of the meeting, allow it
                     } else if (item.course_id) {
                         const course = await Course.findById(item.course_id);
-                        if (!course || course.instructor_id?.toString() !== req.user.id) {
+                        if (!course) return res.status(404).json({ error: 'Course not found' });
+                        
+                        const isOwner = course.instructor_id?.toString() === req.user.id;
+                        const isAssigned = course.instructor_ids?.some(id => id.toString() === req.user.id);
+                        
+                        if (!isOwner && !isAssigned) {
                             return res.status(403).json({ error: 'Forbidden: You must be the assigned instructor of this course' });
                         }
                     } else {

@@ -227,7 +227,7 @@ function WelcomeBanner({
       <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors duration-1000" />
       <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10 transition-colors duration-1000" />
 
-      <div className="relative z-10 p-6 sm:p-10 lg:p-16 flex flex-col lg:flex-row lg:items-center justify-between gap-10 lg:gap-16">
+      <div className="relative z-10 p-6 sm:p-10 lg:p-12 flex flex-col lg:flex-row lg:items-center justify-between gap-6 lg:gap-12">
         <div className="space-y-4">
           <Badge className="bg-primary/10 text-primary border-primary/20 font-black px-4 py-1.5 rounded-full text-[10px] uppercase tracking-[0.25em] shadow-sm backdrop-blur-md inline-flex items-center gap-2">
             <Sparkles className="h-3.5 w-3.5" />
@@ -247,19 +247,26 @@ function WelcomeBanner({
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full lg:w-auto mt-8 lg:mt-0">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto mt-6 lg:mt-0">
           <button 
-            className="h-12 md:h-14 px-8 md:px-10 w-full sm:w-auto rounded-2xl bg-primary hover:bg-primary/95 text-white font-bold text-sm md:text-base shadow-[0_8px_20px_rgba(20,100,250,0.2)] hover:shadow-[0_10px_25px_rgba(20,100,250,0.3)] hover:-translate-y-0.5 transition-all duration-300 border border-transparent flex items-center justify-center gap-3 lg:gap-4"
+            className="h-10 px-5 rounded-xl bg-primary hover:bg-primary/95 text-white font-bold text-xs shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap"
             onClick={() => navigate('/instructor/courses')}
           >
-            <Plus className="h-4 w-4 md:h-5 md:w-5" />
+            <Plus className="h-3.5 w-3.5" />
             <span>Create New Course</span>
           </button>
           <button
-            className="h-12 md:h-14 px-8 md:px-10 w-full sm:w-auto rounded-2xl bg-white/50 backdrop-blur-md border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 font-semibold text-sm md:text-base shadow-sm hover:shadow hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-3 lg:gap-4"
+            className="h-10 px-5 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap"
             onClick={() => navigate('/instructor/live-classes')}
           >
-            <Calendar className="h-4 w-4 md:h-5 md:w-5 text-slate-500" />
+            <Video className="h-3.5 w-3.5 text-emerald-400" />
+            <span>Start Live Broadcast</span>
+          </button>
+          <button
+            className="h-10 px-5 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 font-bold text-xs shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap"
+            onClick={() => navigate('/instructor/live-classes')}
+          >
+            <Calendar className="h-3.5 w-3.5 text-slate-500" />
             <span>View Schedule</span>
           </button>
         </div>

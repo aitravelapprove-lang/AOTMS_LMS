@@ -211,8 +211,11 @@ export function InstructorManagement() {
 
           const batchesWithCounts = batches.map((b) => ({
             ...b,
-            studentCount: studentBatches.filter((sb) => sb.batch_id === b.id)
-              .length,
+            studentCount: new Set(
+              studentBatches
+                .filter((sb) => sb.batch_id === b.id)
+                .map((sb) => sb.student_id),
+            ).size,
           }));
 
           setInstructorBatches(batchesWithCounts);
@@ -790,10 +793,7 @@ export function InstructorManagement() {
                       Total Students
                     </span>
                     <Badge className="bg-indigo-600 text-white border-none text-[10px] font-black rounded-lg h-6 px-3 shadow-lg shadow-indigo-100">
-                      {instructorBatches.reduce(
-                        (acc, b) => acc + (b.studentCount || 0),
-                        0,
-                      )}
+                      {new Set(Object.values(batchStudents).flatMap(list => list.map(s => s.user_id))).size}
                     </Badge>
                   </div>
                 </div>

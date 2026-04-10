@@ -65,6 +65,111 @@ import {
 } from "@/hooks/useManagerData";
 import { cn } from "@/lib/utils";
 
+
+function NotificationSection() {
+  const { notifications, loading, markAllAsRead, unreadCount } =
+    useNotifications();
+
+  return (
+    <div
+      className="space-y-6 animate-in fade-in slide-in-from-bottom-5 duration-700"
+    >
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-3">
+            <Bell className="h-6 w-6 text-primary" />
+            Manager Notifications
+          </h2>
+          <p className="text-slate-500 font-medium">
+            Stay updated with system activities and management alerts
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          {unreadCount > 0 && (
+            <Button
+              variant="outline"
+              onClick={markAllAsRead}
+              className="h-10 gap-2 rounded-xl border-slate-200 bg-white shadow-sm hover:bg-slate-50 font-bold"
+            >
+              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+              <span>Mark all read</span>
+            </Button>
+          )}
+          <Badge
+            variant="secondary"
+            className="h-8 px-4 rounded-lg bg-primary/10 text-primary font-bold border-none"
+          >
+            {notifications.length} Messages
+          </Badge>
+        </div>
+      </div>
+
+      <Card className="rounded-[2.5rem] border-slate-200/60 shadow-xl shadow-slate-200/40 overflow-hidden bg-white/80 backdrop-blur-md">
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="p-8 space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-24 w-full rounded-3xl bg-slate-50 animate-pulse" />
+              ))}
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-32 text-slate-400">
+              <div className="h-20 w-20 bg-slate-50 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                <Bell className="h-10 w-10 text-slate-200" />
+              </div>
+              <h3 className="font-bold text-lg text-slate-900">Quiet for now</h3>
+              <p className="text-sm font-medium">You're all caught up with your notifications.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100/50">
+              {notifications.map((notif, index) => (
+                <div
+                  key={notif.id}
+                  className={cn(
+                    "p-6 flex gap-5 transition-all hover:bg-slate-50/50",
+                    !notif.is_read ? "bg-primary/[0.02]" : ""
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm",
+                      notif.type === "coupon" ? "bg-orange-50 text-orange-500" :
+                      notif.type === "enrollment" ? "bg-emerald-50 text-emerald-500" : "bg-blue-50 text-blue-500"
+                    )}
+                  >
+                    <Bell className="h-7 w-7" />
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className={cn("font-bold tracking-tight text-lg", !notif.is_read ? "text-slate-900" : "text-slate-600")}>
+                        {notif.title}
+                      </h4>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                          {new Date(notif.created_at).toLocaleDateString()}
+                        </span>
+                        {!notif.is_read && <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />}
+                      </div>
+                    </div>
+                    <p className="text-sm text-slate-600 font-medium leading-relaxed max-w-4xl">
+                      {notif.message}
+                    </p>
+                    <div className="pt-2 flex items-center gap-3">
+                      <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest bg-slate-50 border-slate-100 text-slate-400">
+                        {notif.type}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function ManagerDashboard() {
   const { user, userRole, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -323,7 +428,7 @@ export default function ManagerDashboard() {
       case "settings":
         return <div className="p-8"><h2 className="text-2xl font-bold">Settings Under Development</h2></div>;
       case "notifications":
-        return <div className="p-8"><h2 className="text-2xl font-bold">Notifications Under Development</h2></div>;
+        return <NotificationSection />;
       default:
         return renderOverview();
     }

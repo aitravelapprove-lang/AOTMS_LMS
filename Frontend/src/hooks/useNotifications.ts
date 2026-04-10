@@ -3,6 +3,7 @@ import { fetchWithAuth } from '@/lib/api';
 
 export interface Notification {
   id: string;
+  _id?: string;
   type: 'coupon' | 'system' | 'enrollment';
   title: string;
   message: string;
@@ -35,7 +36,7 @@ export function useNotifications() {
 
   const markAllAsRead = async () => {
     try {
-      await fetchWithAuth('/notifications/mark-read', { method: 'POST' });
+      await fetchWithAuth('/notifications/mark-all-read', { method: 'POST' });
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
       setUnreadCount(0);
       return true;
@@ -47,11 +48,8 @@ export function useNotifications() {
 
   const markAsRead = async (id: string) => {
     try {
-      // Assuming individual mark-read exists or we just use mark-read all for now
-      // But user said "click cheste ...", so individual is better.
-      // Let's check if backend supports it.
-      await fetchWithAuth(`/notifications/${id}/mark-read`, { method: 'POST' });
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+      await fetchWithAuth(`/notifications/${id}/read`, { method: 'POST' });
+      setNotifications(prev => prev.map(n => (n.id === id || n._id === id) ? { ...n, is_read: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
       return true;
     } catch (err) {

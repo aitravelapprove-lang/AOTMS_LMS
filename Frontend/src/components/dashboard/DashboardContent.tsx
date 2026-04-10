@@ -847,6 +847,56 @@ function AttendancePulse() {
   );
 }
 
+function LiveSessionBanner() {
+  const { data: classes, isLoading } = useLiveClasses();
+  const navigate = useNavigate();
+
+  // Find if anything is truly live right now
+  const liveSession = classes?.find(c => {
+    const start = new Date(c.scheduled_at).getTime();
+    const now = new Date().getTime();
+    const end = start + (c.duration_minutes || 60) * 60000;
+    return now >= start && now <= end;
+  });
+
+  if (isLoading || !liveSession) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mb-8 p-6 bg-gradient-to-r from-red-600 to-rose-700 rounded-[2rem] text-white shadow-2xl shadow-red-500/20 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden group"
+    >
+      <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:scale-110 transition-transform duration-1000" />
+      
+      <div className="flex items-center gap-5 relative z-10">
+        <div className="h-16 w-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20">
+          <div className="relative">
+             <Video className="h-8 w-8 text-white" />
+             <div className="absolute -top-1 -right-1 h-3 w-3 bg-white rounded-full animate-ping" />
+          </div>
+        </div>
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <Badge className="bg-white text-red-600 border-none font-black text-[10px] px-2 py-0.5 rounded-md animate-pulse">LIVE NOW</Badge>
+            <span className="text-white/80 text-[10px] font-bold uppercase tracking-[0.2em]">Interactive Class</span>
+          </div>
+          <h3 className="text-xl sm:text-2xl font-black tracking-tight">{liveSession.title}</h3>
+          <p className="text-white/70 text-sm font-medium">Your instructor is broadcasting live. Join the conversation!</p>
+        </div>
+      </div>
+
+      <Button
+        onClick={() => navigate(`/live/${liveSession.meeting_id}?role=0&pwd=${liveSession.meeting_password || ''}`)}
+        className="bg-white text-red-600 hover:bg-slate-100 font-black px-8 h-14 rounded-2xl shadow-xl hover:shadow-white/20 transition-all gap-3 relative z-10 group/btn"
+      >
+        <span>ENTER BROADCAST</span>
+        <ArrowRight className="h-5 w-5 transition-transform group-hover/btn:translate-x-1" />
+      </Button>
+    </motion.div>
+  );
+}
+
 function DashboardHome() {
   const { data: stats } = useStudentStats();
   const { data: enrolledCourses } = useEnrolledCourses();
@@ -866,6 +916,7 @@ function DashboardHome() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
+      <LiveSessionBanner />
       {/* Welcome Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 py-4">
         <div>

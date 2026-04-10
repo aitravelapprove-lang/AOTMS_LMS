@@ -87,7 +87,7 @@ export function ManagerVideoLibrary({ showUpload = true }: ManagerVideoLibraryPr
 
   const filteredVideos = videos.filter(v => {
     const matchesSearch = v.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         v.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      v.description?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCourse = filterCourse === "all" || v.course_id === filterCourse;
     return matchesSearch && matchesCourse;
   });
@@ -138,7 +138,7 @@ export function ManagerVideoLibrary({ showUpload = true }: ManagerVideoLibraryPr
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -198,12 +198,7 @@ export function ManagerVideoLibrary({ showUpload = true }: ManagerVideoLibraryPr
 
         {showUpload && (
           <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-            <DialogTrigger asChild>
-              <Button className="pro-button-primary shadow-lg shadow-primary/20 rounded-xl px-6 h-10">
-                <UploadCloud className="h-4 w-4 mr-2" />
-                Upload Video
-              </Button>
-            </DialogTrigger>
+
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl p-0 overflow-hidden border-none glass-morphism shadow-2xl">
               <div className="p-8 space-y-8 bg-white/95 backdrop-blur-xl">
                 <DialogHeader className="p-0 border-b border-indigo-50 pb-6 mb-4">
@@ -212,7 +207,7 @@ export function ManagerVideoLibrary({ showUpload = true }: ManagerVideoLibraryPr
                     <PlusCircle className="h-4 w-4" /> Management Console
                   </div>
                   <DialogTitle className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic">
-                     Deploy <span className="text-primary not-italic">Media Asset</span>
+                    Deploy <span className="text-primary not-italic">Media Asset</span>
                   </DialogTitle>
                   <p className="text-sm text-slate-500 font-medium">Managers can deploy videos to any approved course repository.</p>
                 </DialogHeader>
@@ -236,10 +231,10 @@ export function ManagerVideoLibrary({ showUpload = true }: ManagerVideoLibraryPr
 
                   {uploadCourseId ? (
                     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                      <VideoUploader 
-                        courseId={uploadCourseId} 
-                        courseStatus="published" 
-                        hideVideoList={true} 
+                      <VideoUploader
+                        courseId={uploadCourseId}
+                        courseStatus="published"
+                        hideVideoList={true}
                         onSuccess={() => {
                           setIsUploadOpen(false);
                           loadData();
@@ -278,8 +273,8 @@ export function ManagerVideoLibrary({ showUpload = true }: ManagerVideoLibraryPr
               {/* Thumbnail */}
               <div className="aspect-video relative bg-slate-100">
                 {video.thumbnail_url ? (
-                  <img 
-                    src={video.thumbnail_url.startsWith('http') ? video.thumbnail_url : `/s3/public/${video.thumbnail_url}`} 
+                  <img
+                    src={video.thumbnail_url.startsWith('http') ? video.thumbnail_url : `/s3/public/${video.thumbnail_url}`}
                     alt={video.title}
                     className="w-full h-full object-cover"
                   />
@@ -288,7 +283,7 @@ export function ManagerVideoLibrary({ showUpload = true }: ManagerVideoLibraryPr
                     <VideoIcon className="h-12 w-12 text-slate-300" />
                   </div>
                 )}
-                <div 
+                <div
                   className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
                   onClick={() => {
                     setSelectedVideo(video);
@@ -305,7 +300,7 @@ export function ManagerVideoLibrary({ showUpload = true }: ManagerVideoLibraryPr
                   </div>
                 )}
               </div>
-              
+
               <CardContent className="p-4">
                 <h3 className="font-semibold text-foreground line-clamp-2 mb-2">
                   {video.title || 'Untitled Video'}
@@ -332,8 +327,8 @@ export function ManagerVideoLibrary({ showUpload = true }: ManagerVideoLibraryPr
                     variant="ghost"
                     size="icon"
                     onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(video.id);
+                      e.stopPropagation();
+                      handleDelete(video.id);
                     }}
                     className="ml-auto h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50"
                   >
@@ -350,41 +345,41 @@ export function ManagerVideoLibrary({ showUpload = true }: ManagerVideoLibraryPr
       <Dialog open={isPlayerOpen} onOpenChange={setIsPlayerOpen}>
         <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black border-none shadow-2xl rounded-3xl">
           <DialogHeader className="sr-only">
-             <DialogTitle>{selectedVideo?.title}</DialogTitle>
-             <DialogDescription>Video player for {selectedVideo?.title}</DialogDescription>
+            <DialogTitle>{selectedVideo?.title}</DialogTitle>
+            <DialogDescription>Video player for {selectedVideo?.title}</DialogDescription>
           </DialogHeader>
           <div className="relative aspect-video bg-black flex items-center justify-center">
             {selectedVideo && (
-              <video 
+              <video
                 src={selectedVideo.video_url.startsWith('http') ? selectedVideo.video_url : (selectedVideo.video_url.includes('s3') ? selectedVideo.video_url : `/s3/public/${selectedVideo.video_url}`)}
-                controls 
-                autoPlay 
+                controls
+                autoPlay
                 className="w-full h-full"
               />
             )}
-            <Button 
-                variant="ghost" 
-                size="icon" 
-                className="absolute top-4 right-4 text-white/50 hover:text-white hover:bg-white/10 rounded-full z-50 lg:hidden"
-                onClick={() => setIsPlayerOpen(false)}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-4 right-4 text-white/50 hover:text-white hover:bg-white/10 rounded-full z-50 lg:hidden"
+              onClick={() => setIsPlayerOpen(false)}
             >
-                <X className="h-6 w-6" />
+              <X className="h-6 w-6" />
             </Button>
           </div>
           {selectedVideo && (
             <div className="p-6 bg-slate-900 text-white border-t border-white/5">
-                <h3 className="text-xl font-bold mb-2">{selectedVideo.title}</h3>
-                <p className="text-slate-400 text-sm line-clamp-2">{selectedVideo.description}</p>
-                <div className="mt-4 flex items-center gap-3">
-                   <Badge variant="outline" className="border-white/20 text-white/60">
-                      <BookOpen className="h-3 w-3 mr-1" />
-                      {getCourseTitle(selectedVideo.course_id)}
-                   </Badge>
-                   <Badge variant="outline" className="border-white/20 text-white/60">
-                      <Clock className="h-3 w-3 mr-1" />
-                      {selectedVideo.duration_minutes} min
-                   </Badge>
-                </div>
+              <h3 className="text-xl font-bold mb-2">{selectedVideo.title}</h3>
+              <p className="text-slate-400 text-sm line-clamp-2">{selectedVideo.description}</p>
+              <div className="mt-4 flex items-center gap-3">
+                <Badge variant="outline" className="border-white/20 text-white/60">
+                  <BookOpen className="h-3 w-3 mr-1" />
+                  {getCourseTitle(selectedVideo.course_id)}
+                </Badge>
+                <Badge variant="outline" className="border-white/20 text-white/60">
+                  <Clock className="h-3 w-3 mr-1" />
+                  {selectedVideo.duration_minutes} min
+                </Badge>
+              </div>
             </div>
           )}
         </DialogContent>

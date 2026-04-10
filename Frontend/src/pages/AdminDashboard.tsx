@@ -446,7 +446,7 @@ export default function AdminDashboard() {
             >
               Initializing <br />{" "}
               <span className="text-primary not-italic font-medium text-sm">
-                Integrity Console
+                Management Dashboard
               </span>
             </motion.h4>
             <div className="flex items-center gap-1 justify-center">
@@ -471,7 +471,7 @@ export default function AdminDashboard() {
 
         {/* Footnote */}
         <div className="absolute bottom-12 text-[10px] font-bold text-slate-300 uppercase tracking-[0.5em] animate-pulse">
-          Quantum Authentication Protocol V.4
+          Secure Session V.4
         </div>
       </div>
     );
@@ -504,8 +504,7 @@ export default function AdminDashboard() {
                   Platform Administration
                 </h1>
                 <p className="text-slate-500 font-medium">
-                  Overview of system performance, user activities, and security
-                  protocols.
+                  Overview of system performance, user activities, and platform logs.
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -518,7 +517,7 @@ export default function AdminDashboard() {
                   <RefreshCw
                     className={`h-4 w-4 transition-transform duration-500 ${dataLoading ? "animate-spin text-primary" : "group-hover:rotate-180 text-primary/60"}`}
                   />
-                  <span>System Sync</span>
+                   <span>Refresh Data</span>
                 </Button>
               </div>
             </div>
@@ -565,7 +564,7 @@ export default function AdminDashboard() {
                   icon: Activity,
                   color: "blue",
                   trend: "Optimal",
-                  description: "Across all nodes",
+                  description: "Platform-wide",
                 },
               ].map((stat, i) => (
                 <motion.div
@@ -742,7 +741,7 @@ export default function AdminDashboard() {
                 <div className="hidden lg:flex items-center gap-2 text-slate-400 absolute right-0 top-4">
                   <LayoutGrid className="h-4 w-4" />
                   <span className="text-xs font-semibold uppercase tracking-widest">
-                    Administrative Grid
+                    Admin Control Panel
                   </span>
                 </div>
               </div>

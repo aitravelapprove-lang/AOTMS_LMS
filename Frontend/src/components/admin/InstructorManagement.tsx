@@ -457,7 +457,7 @@ export function InstructorManagement() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56 p-1 rounded-xl shadow-xl border-slate-200/60">
-                       <DropdownMenuLabel className="px-2 py-1.5 text-[10px] font-black uppercase text-slate-400 tracking-widest">Instructor Node</DropdownMenuLabel>
+                       <DropdownMenuLabel className="px-2 py-1.5 text-[10px] font-black uppercase text-slate-400 tracking-widest">Instructor Profile</DropdownMenuLabel>
                        <DropdownMenuSeparator className="bg-slate-100" />
                        
                        <DropdownMenuItem onClick={() => handleOpenAssignModal(instructor)} className="rounded-lg">
@@ -486,7 +486,7 @@ export function InstructorManagement() {
                              }
                            }}
                          >
-                           <UnlockIcon className="h-4 w-4 mr-2" /> Unsuspend Node
+                           <UnlockIcon className="h-4 w-4 mr-2" /> Unsuspend Instructor
                          </DropdownMenuItem>
                        ) : (
                          <DropdownMenuItem 
@@ -513,7 +513,7 @@ export function InstructorManagement() {
                           className="text-rose-600 focus:text-rose-600 font-bold rounded-lg" 
                           onClick={() => handleDeleteInstructor(instructor.user_id, instructor.full_name)}
                        >
-                          <Trash2 className="h-4 w-4 mr-2" /> Purge Entity
+                          <Trash2 className="h-4 w-4 mr-2" /> Delete Instructor Profile
                        </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -535,13 +535,13 @@ export function InstructorManagement() {
                     <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20 shadow-inner group">
                         <Award className="h-6 w-6 text-primary group-hover:rotate-12 transition-transform" />
                     </div>
-                    Instructor Node <span className="text-primary italic">Profile</span>
+                    Instructor <span className="text-primary italic">Profile</span>
                 </DialogTitle>
                 <Badge className="bg-emerald-500/10 text-emerald-600 border-none px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest">
-                    Verified Faculty
+                    Certified Faculty
                 </Badge>
             </div>
-            <DialogDescription className="text-slate-500 font-medium text-sm mt-1">Management matrix for assigned courses and student bandwidth.</DialogDescription>
+            <DialogDescription className="text-slate-500 font-medium text-sm mt-1">Management overview for assigned courses and student enrollment.</DialogDescription>
           </DialogHeader>
           
           {selectedInstructor && (
@@ -573,10 +573,10 @@ export function InstructorManagement() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[
-                  { label: 'Network Alias', value: selectedInstructor.email, icon: Mail },
-                  { label: 'Secure Link', value: selectedInstructor.mobile_number || selectedInstructor.phone || 'Disconnected', icon: Phone },
-                  { label: 'Access Level', value: selectedInstructor.role === 'admin' ? 'Root Administrator' : 'Curriculum Master', icon: Shield },
-                  { label: 'Active Since', value: selectedInstructor.created_at ? new Date(selectedInstructor.created_at).toLocaleDateString(undefined, { month: 'long', year: 'numeric' }) : 'Unknown', icon: Users }
+                  { label: 'Email Address', value: selectedInstructor.email, icon: Mail },
+                  { label: 'Contact Number', value: selectedInstructor.mobile_number || selectedInstructor.phone || 'Not Provided', icon: Phone },
+                  { label: 'System Permissions', value: selectedInstructor.role === 'admin' ? 'Root Administrator' : 'Academic Instructor', icon: Shield },
+                  { label: 'Teaching Since', value: selectedInstructor.created_at ? new Date(selectedInstructor.created_at).toLocaleDateString(undefined, { month: 'long', year: 'numeric' }) : 'Unknown', icon: Users }
                 ].map((item, idx) => (
                   <div key={idx} className="p-4 rounded-2xl bg-slate-50/50 border border-slate-100 space-y-1.5 transition-all hover:border-primary/20 hover:bg-white group">
                     <div className="flex items-center justify-between">
@@ -593,10 +593,10 @@ export function InstructorManagement() {
                     <div className="flex items-center justify-between px-2">
                         <h4 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em] flex items-center gap-2">
                              <Users className="h-4 w-4 text-primary" />
-                             Assigned Roster
+                             Student Enrollment
                         </h4>
                         <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-black text-slate-400 uppercase">Live Index</span>
+                            <span className="text-[10px] font-black text-slate-400 uppercase">Total Students</span>
                             <Badge className="bg-primary/10 text-primary border-none text-xs font-black rounded-lg">
                                 {instructorBatches.reduce((acc, b) => acc + (b.studentCount || 0), 0)}
                             </Badge>
@@ -631,7 +631,7 @@ export function InstructorManagement() {
                                                         {batch.batch_type} Session
                                                     </Badge>
                                                     <span className="text-[9px] font-bold text-slate-300">•</span>
-                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Active Cluster</span>
+                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Active Batch</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -656,7 +656,7 @@ export function InstructorManagement() {
                                                     </Avatar>
                                                     <div>
                                                         <p className="text-[11px] font-black text-slate-900 tracking-tight leading-none">{student.full_name}</p>
-                                                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">Scholar Entity</p>
+                                                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">Enrolled Student</p>
                                                     </div>
                                                 </div>
                                             ))
@@ -674,7 +674,7 @@ export function InstructorManagement() {
 
               <div className="pt-6 border-t flex gap-3">
                 <Button variant="ghost" className="rounded-2xl flex-1 font-black uppercase tracking-widest text-[10px] h-12" onClick={() => setProfileModalOpen(false)}>
-                    Terminate Session
+                    Close Profile Window
                 </Button>
                 {selectedInstructor.status === 'suspended' ? (
                     <Button 
@@ -693,7 +693,7 @@ export function InstructorManagement() {
                         }
                     }}
                     >
-                    Restore Node Access
+                    Restore Instructor Access
                     </Button>
                 ) : (
                     <Button 
@@ -714,7 +714,7 @@ export function InstructorManagement() {
                         }
                     }}
                     >
-                    Suspend Protocol
+                    Suspend Instructor Access
                     </Button>
                 )}
               </div>
@@ -773,10 +773,10 @@ export function InstructorManagement() {
                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
                     <Plus className="h-5 w-5 text-primary" />
                  </div>
-                 <DialogTitle className="text-xl font-black text-slate-900 tracking-tight">Assign Course <span className="text-primary italic">Node</span></DialogTitle>
+                 <DialogTitle className="text-xl font-black text-slate-900 tracking-tight">Assign Course to <span className="text-primary italic">Instructor</span></DialogTitle>
             </div>
             <DialogDescription className="text-xs font-bold text-slate-500 uppercase tracking-widest leading-relaxed">
-              Provisioning <b>{selectedInstructor?.full_name}</b> as primary faculty. Existing mappings will be superseded.
+              Assigning <b>{selectedInstructor?.full_name}</b> as a primary instructor for a selected course.
             </DialogDescription>
           </DialogHeader>
 

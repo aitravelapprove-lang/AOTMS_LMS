@@ -475,7 +475,7 @@ export function QuestionBankApproval() {
                                 <ShieldCheck className="h-6 w-6 text-white" />
                             </div>
                             <Badge className="bg-emerald-500/20 text-emerald-400 border-none px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest animate-pulse">
-                                Active Access Node
+                                Verified Access Hub
                             </Badge>
                         </div>
                         
@@ -544,8 +544,8 @@ export function QuestionBankApproval() {
                                                             <FileText className="h-8 w-8 text-white" />
                                                         </div>
                                                         <div className="text-center">
-                                                            <p className="text-[10px] font-black uppercase text-white/60 tracking-[0.2em]">Logical Cluster</p>
-                                                            <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest mt-1">Repository Node Ready</p>
+                                                            <p className="text-[10px] font-black uppercase text-white/60 tracking-[0.2em]">Question Repository</p>
+                                                            <p className="text-[8px] font-bold text-white/30 uppercase tracking-widest mt-1">Ready for Review Approval</p>
                                                         </div>
                                                     </div>
                                                 )}
@@ -585,7 +585,7 @@ export function QuestionBankApproval() {
 
                                                 {bank.custom_fields && bank.custom_fields.length > 0 && (
                                                     <div className="pt-4 mt-2 border-t border-slate-50">
-                                                        <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-3">Protocol Variations (Custom Nodes)</p>
+                                                        <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-3">Additional Configuration Details</p>
                                                         <div className="flex flex-wrap gap-2">
                                                             {bank.custom_fields.map((field, idx) => (
                                                                 <div key={idx} className="flex items-center gap-2 text-[10px] bg-slate-900 text-white px-3 py-1.5 rounded-lg font-bold shadow-sm">
@@ -689,8 +689,8 @@ export function QuestionBankApproval() {
                                                             <CheckCircle className="h-8 w-8 text-emerald-500" />
                                                         </div>
                                                         <div className="text-center">
-                                                            <p className="text-[10px] font-black uppercase text-emerald-500/60 tracking-[0.2em]">Validated Node</p>
-                                                            <p className="text-[8px] font-bold text-emerald-500/30 uppercase tracking-widest mt-1">Repository Sanity Passed</p>
+                                                            <p className="text-[10px] font-black uppercase text-emerald-500/60 tracking-[0.2em]">Verified Content</p>
+                                                            <p className="text-[8px] font-bold text-emerald-500/30 uppercase tracking-widest mt-1">Content Verification Successful</p>
                                                         </div>
                                                     </div>
                                                 )}

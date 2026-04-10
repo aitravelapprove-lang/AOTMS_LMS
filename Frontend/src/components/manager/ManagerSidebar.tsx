@@ -66,7 +66,6 @@ export function ManagerSidebar() {
         { id: "resume-scans", title: "Resume Scan Logs", url: "/manager/resume-scans", icon: ClipboardList },
         { id: "video-library", title: "Video Library", url: "/manager/video-library", icon: Video },
         { id: "monitoring", title: "Live Monitoring", url: "/manager/monitoring", icon: TrendingUp },
-        { id: "leads", title: "Landing Leads", url: "/manager/leads", icon: Zap },
         { id: "enrollments", title: "Enrollments Hub", url: "/manager/enrollments", icon: Users },
       ],
     },

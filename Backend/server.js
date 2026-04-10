@@ -1152,19 +1152,16 @@ app.post('/api/student/mark-attendance', authenticateToken, async (req, res) => 
             date: dateStr
         });
 
-        // 3. Automated Suspension Logic (10 missing days)
+        // Automated Suspension Logic (Disabled as per user request)
+        /*
         const user = await User.findById(userId);
         const profile = await Profile.findOne({ user_id: userId });
         
         if (user && profile) {
             const startDate = user.created_at || now;
-            // Calculate total days since joining
             const daysSinceStart = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
-            
-            // Count total attendance records
             const totalAttendance = await Attendance.countDocuments({ user_id: userId });
             
-            // If they have missed 10 or more cumulative days since joining
             if (daysSinceStart >= 10) {
                 const missedDays = daysSinceStart - totalAttendance;
                 if (missedDays >= 10) {
@@ -1185,6 +1182,7 @@ app.post('/api/student/mark-attendance', authenticateToken, async (req, res) => 
                 }
             }
         }
+        */
 
         res.json({ success: true, message: 'Attendance marked successfully', attendance });
     } catch (err) {

@@ -74,7 +74,6 @@ const navGroups = [
     label: "Marketing & Growth",
     items: [
       { title: "Coupon Manager", url: "/admin/coupons", icon: Ticket },
-      { title: "Student Inquiries", url: "/admin/leads", icon: Zap },
     ],
   },
 ];

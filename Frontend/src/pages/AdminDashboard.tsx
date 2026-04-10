@@ -37,7 +37,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChatMonitor } from "@/components/admin/ChatMonitor";
-import { LeadManagement } from "@/components/admin/LeadManagement";
 import {
   Users,
   Shield,
@@ -710,12 +709,6 @@ export default function AdminDashboard() {
                         key: "tab-live-monitoring",
                       },
                       {
-                        id: "leads",
-                        label: "Landing Leads",
-                        icon: Zap,
-                        key: "tab-leads",
-                      },
-                      {
                         id: "settings",
                         label: "Settings",
                         icon: Settings,
@@ -1188,20 +1181,6 @@ export default function AdminDashboard() {
                     animate={{ opacity: 1 }}
                   >
                     <LiveMonitoring />
-                  </motion.div>
-                </TabsContent>
-
-                <TabsContent
-                  key="tab-leads"
-                  value="leads"
-                  className="mt-0 outline-none"
-                >
-                  <motion.div
-                    key="motion-leads"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                  >
-                    <LeadManagement />
                   </motion.div>
                 </TabsContent>
 

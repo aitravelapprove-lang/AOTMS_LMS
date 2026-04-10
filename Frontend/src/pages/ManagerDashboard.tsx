@@ -27,7 +27,6 @@ import { ResumeScanHistory } from "@/components/admin/ResumeScanHistory";
 import { QualityAssurance } from "@/components/admin/QualityAssurance";
 import { ChatMonitor } from "@/components/admin/ChatMonitor";
 import { InstructorManagement } from "@/components/admin/InstructorManagement";
-import { LeadManagement } from "@/components/admin/LeadManagement";
 import InstructorAccessAdmin from "@/pages/InstructorAccess";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useCourses } from "@/hooks/useCourses";
@@ -308,8 +307,6 @@ export default function ManagerDashboard() {
         return <ResumeScanHistory />;
       case "instructor-access":
         return <InstructorAccessAdmin />;
-      case "leads":
-        return <LeadManagement />;
       case "enrollments":
         return (
           <EnrollmentsList 

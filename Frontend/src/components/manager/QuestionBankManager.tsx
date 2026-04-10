@@ -945,12 +945,8 @@ export function QuestionBankManager({
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-bold">New Batch ({batchQuestions.length})</h3>
             <div className="flex gap-2">
-              <Button variant="ghost" onClick={() => setBatchQuestions([])} className="text-destructive hover:text-destructive">
-                Discard All
-              </Button>
-              <Button onClick={handleOpenSaveWizard} disabled={isSaving} className="gap-2 shadow-lg shadow-primary/20">
-                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                Finalize Batch
+              <Button variant="ghost" onClick={() => setBatchQuestions([])} className="text-[10px] font-bold uppercase tracking-widest text-destructive hover:bg-rose-50 transition-all">
+                Discard Current Batch
               </Button>
             </div>
           </div>
@@ -1462,18 +1458,7 @@ export function QuestionBankManager({
               )}
             </div>
           )}
-          {/* ─── Batch Floating Controls ─── */}
-          <div className="fixed bottom-8 right-8 z-50 flex flex-col gap-3">
-            {batchQuestions.length > 0 && (
-              <Button
-                onClick={handleOpenSaveWizard}
-                className="h-16 rounded-[2rem] px-10 bg-slate-900 hover:bg-black text-white font-black uppercase text-[11px] tracking-[0.3em] flex items-center gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.3)] hover:scale-105 active:scale-95 transition-all animate-in slide-in-from-right-10 duration-500"
-              >
-                <ClipboardList className="h-5 w-5" />
-                Finalize Batch ({batchQuestions.length})
-              </Button>
-            )}
-          </div>
+          <div />
         </CardContent>
       </Card>
 

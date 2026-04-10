@@ -145,24 +145,24 @@ export function InstructorNotifications() {
 
     return (
         <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in duration-500">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-2">
                 <div>
-                    <h2 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                        <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-                            <Bell className="h-5 w-5" />
+                    <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-4">
+                        <div className="h-12 w-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary shadow-inner">
+                            <Bell className="h-6 w-6" />
                         </div>
                         Notification Center
                     </h2>
-                    <p className="text-slate-500 font-medium mt-1">Manage important updates across your learning ecosystems.</p>
+                    <p className="text-slate-700 font-bold mt-2 text-sm sm:text-base opacity-90">Manage important updates across your learning ecosystems.</p>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    <div className="flex bg-slate-100 p-1 rounded-xl mr-2">
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex bg-slate-100 p-1.5 rounded-2xl shadow-inner">
                         <Button 
                             variant="ghost" 
                             size="sm" 
                             onClick={() => setFilter('all')}
-                            className={`h-9 px-4 rounded-lg font-bold text-xs uppercase tracking-widest ${filter === 'all' ? 'bg-white text-primary shadow-sm' : 'text-slate-500'}`}
+                            className={`h-9 px-6 rounded-xl font-black text-[10px] uppercase tracking-[0.15em] transition-all ${filter === 'all' ? 'bg-white text-primary shadow-md' : 'text-slate-600 hover:text-slate-900'}`}
                         >
                             All
                         </Button>
@@ -170,7 +170,7 @@ export function InstructorNotifications() {
                             variant="ghost" 
                             size="sm" 
                             onClick={() => setFilter('unread')}
-                            className={`h-9 px-4 rounded-lg font-bold text-xs uppercase tracking-widest ${filter === 'unread' ? 'bg-white text-primary shadow-sm' : 'text-slate-500'}`}
+                            className={`h-9 px-6 rounded-xl font-black text-[10px] uppercase tracking-[0.15em] transition-all ${filter === 'unread' ? 'bg-white text-primary shadow-md' : 'text-slate-600 hover:text-slate-900'}`}
                         >
                             Unread
                         </Button>
@@ -180,9 +180,9 @@ export function InstructorNotifications() {
                         variant="outline" 
                         size="sm" 
                         onClick={markAllRead}
-                        className="h-10 px-4 rounded-xl font-bold text-[10px] uppercase tracking-widest gap-2 bg-white border-slate-200"
+                        className="h-12 px-6 rounded-2xl font-black text-[10px] uppercase tracking-[0.15em] gap-2.5 bg-white border-slate-200 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all shadow-sm"
                     >
-                        <CheckCheck className="h-3.5 w-3.5" />
+                        <CheckCheck className="h-4 w-4" />
                         Mark All Read
                     </Button>
                 </div>
@@ -245,7 +245,7 @@ export function InstructorNotifications() {
                                                         <span className="h-2 w-2 rounded-full bg-primary" />
                                                     )}
                                                 </div>
-                                                <p className="text-sm font-medium text-slate-500 leading-relaxed max-w-2xl">
+                                                <p className="text-sm font-bold text-slate-600 leading-relaxed max-w-2xl">
                                                     {notification.message}
                                                 </p>
                                                 
@@ -272,11 +272,11 @@ export function InstructorNotifications() {
                                                 )}
                                                 
                                                 <div className="flex items-center gap-4 mt-3">
-                                                    <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1 uppercase tracking-widest">
-                                                        <Clock className="h-3 w-3" />
+                                                    <span className="text-[10px] font-black text-slate-600 flex items-center gap-1.5 uppercase tracking-widest">
+                                                        <Clock className="h-3 w-3 opacity-60" />
                                                         {formatTime(notification.created_at)}
                                                     </span>
-                                                    <Badge variant="outline" className="text-[9px] font-black uppercase tracking-[0.1em] border-slate-100 text-slate-400 bg-slate-50/50">
+                                                    <Badge variant="outline" className="text-[9px] font-black uppercase tracking-[0.15em] border-slate-100 text-slate-500 bg-slate-100/50 px-2.5">
                                                         {notification.type.replace('_', ' ')}
                                                     </Badge>
                                                 </div>

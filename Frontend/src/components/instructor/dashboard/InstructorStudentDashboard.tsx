@@ -168,20 +168,23 @@ function StudentRow({ student, onSendMessage, onViewDetails }: {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="grid grid-cols-12 gap-4 items-center p-4 rounded-2xl border border-slate-100 hover:border-primary/20 hover:bg-slate-50/30 transition-all duration-300 group"
+      className="grid grid-cols-12 gap-x-6 gap-y-4 p-4 rounded-2xl border border-slate-100 hover:border-primary/20 hover:bg-slate-50/30 transition-all duration-300 group"
     >
-      {/* 1. Student Identity (col-span-3) */}
-      <div className="col-span-12 lg:col-span-3 flex items-center gap-3">
-        <Avatar className="h-10 w-10 border-2 border-white shadow-sm ring-1 ring-slate-100">
-          <AvatarImage src={student.avatarUrl ? (student.avatarUrl.startsWith('http') ? student.avatarUrl : `${import.meta.env.VITE_API_URL || '/api'}/s3/public/${student.avatarUrl}`) : `https://api.dicebear.com/9.x/avataaars/svg?seed=${student.userId}`} />
-          <AvatarFallback className="bg-primary/5 text-primary text-xs font-black">
-            {student.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-          </AvatarFallback>
-        </Avatar>
+      {/* 1. Student Identity (col-span-4) */}
+      <div className="col-span-12 lg:col-span-4 flex items-center gap-4">
+        <div className="relative flex-shrink-0">
+          <Avatar className="h-12 w-12 border-2 border-white shadow-xl ring-1 ring-slate-100">
+            <AvatarImage src={student.avatarUrl ? (student.avatarUrl.startsWith('http') ? student.avatarUrl : `${import.meta.env.VITE_API_URL || '/api'}/s3/public/${student.avatarUrl}`) : `https://api.dicebear.com/9.x/avataaars/svg?seed=${student.userId}`} />
+            <AvatarFallback className="bg-primary/5 text-primary text-sm font-black">
+              {student.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white bg-green-500 shadow-sm" />
+        </div>
         <div className="min-w-0">
-          <p className="font-black text-sm text-slate-900 truncate leading-none mb-1.5">{student.name}</p>
-          <Badge variant="outline" className={cn(
-            "h-5 px-2 text-[9px] font-black border-none uppercase tracking-tighter",
+          <p className="font-black text-[15px] text-slate-900 truncate tracking-tight mb-1">{student.name}</p>
+          <Badge variant="secondary" className={cn(
+            "h-5 px-2 text-[9px] font-black border-none uppercase tracking-[0.05em]",
             status.bg,
             status.text
           )}>
@@ -190,15 +193,15 @@ function StudentRow({ student, onSendMessage, onViewDetails }: {
         </div>
       </div>
 
-      {/* 2. Contact Details (col-span-3) */}
-      <div className="col-span-12 lg:col-span-3 space-y-1">
-        <div className="flex items-center gap-2 text-slate-500 hover:text-primary transition-colors cursor-default">
-          <Mail className="h-3 w-3 opacity-40" />
-          <span className="text-[11px] font-bold truncate">{student.email}</span>
+      {/* 2. Contact Details (col-span-4) */}
+      <div className="col-span-12 sm:col-span-6 lg:col-span-3 space-y-1.5 py-1">
+        <div className="flex items-center gap-2 text-slate-700">
+          <Mail className="h-3 w-3 opacity-60 flex-shrink-0" />
+          <span className="text-[10px] font-bold truncate tracking-tight">{student.email}</span>
         </div>
-        <div className="flex items-center gap-2 text-slate-500">
-          <Phone className="h-3 w-3 opacity-40" />
-          <span className="text-[11px] font-bold">{student.mobileNumber || 'No Mobile'}</span>
+        <div className="flex items-center gap-2 text-slate-600">
+          <Phone className="h-3 w-3 opacity-60 flex-shrink-0" />
+          <span className="text-[10px] font-bold tracking-tight">{student.mobileNumber || 'No Mobile Registered'}</span>
         </div>
       </div>
 
@@ -226,84 +229,63 @@ function StudentRow({ student, onSendMessage, onViewDetails }: {
         </div>
       </div>
 
-      {/* 4. Learning Progress (col-span-2) */}
-      <div className="hidden lg:block col-span-2 space-y-2 px-2">
-        <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-tight">
-          <span className="text-slate-400">Score</span>
+      {/* 4. Learning Progress (col-span-3) */}
+      <div className="hidden lg:block col-span-3 space-y-2 border-l border-slate-100 px-4">
+        <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-slate-600">
+          <span>Progress Score</span>
           <span className="text-primary">{student.overallProgress}%</span>
         </div>
         <Progress 
           value={student.overallProgress} 
-          className="h-1.5 bg-slate-100"
-          indicatorClassName={
-            student.status === 'completed' ? 'bg-green-500' :
+          className="h-1.5 bg-slate-100 rounded-full"
+          indicatorClassName={cn(
+            "rounded-full",
+            student.status === 'completed' ? 'bg-emerald-500' :
             student.status === 'at-risk' ? 'bg-amber-500' : 'bg-primary'
-          }
+          )}
         />
-        {student.atsScore !== undefined && (
-          <div className="flex items-center justify-between mt-2 px-2 py-1 bg-amber-50 rounded-lg border border-amber-100">
-             <span className="text-[8px] font-black text-amber-600 uppercase">ATS Rank</span>
-             <span className="text-[10px] font-black text-amber-700">{student.atsScore}</span>
-             <Zap className="h-2.5 w-2.5 text-amber-500" />
-          </div>
-        )}
         
-        {/* Actions */}
-        <div className="mt-2.5 flex items-center gap-2">
-           <Button variant="outline" size="sm" className="h-7 text-[10px] font-bold py-0 px-2 rounded-lg border-primary/20 hover:bg-primary/5 text-primary">
-              Performance
-           </Button>
-           <Button 
-            variant="ghost" 
-            size="sm" 
-            className="h-7 text-[10px] font-bold py-0 px-2 rounded-lg text-slate-500 hover:text-slate-900"
-            onClick={() => {
-              if (student.email) {
-                window.location.href = `mailto:${student.email}`;
-              }
-            }}
-           >
-              Message
-           </Button>
+        <div className="flex items-center gap-2">
+           <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Enrollments: {student.enrolledCourses}</span>
         </div>
       </div>
 
       {/* 5. Last Session & Actions (col-span-2) */}
-      <div className="col-span-12 lg:col-span-2 flex items-center justify-between lg:justify-end gap-3 text-right">
-        <div className="text-right flex flex-col items-end">
-          <span className="text-[11px] font-black text-slate-600 leading-none mb-1">{formatTimeAgo(student.lastActiveAt)}</span>
-          <span className="text-[9px] font-black uppercase text-slate-300 tracking-widest leading-none">Activity</span>
+      <div className="col-span-12 sm:col-span-6 lg:col-span-2 flex items-center justify-between sm:justify-end gap-6 pt-2 sm:pt-0">
+        <div className="text-right sm:text-right flex flex-col items-end">
+          <span className="text-[11px] font-black text-slate-900 leading-none mb-1">{formatTimeAgo(student.lastActiveAt)}</span>
+          <span className="text-[8px] font-black uppercase text-slate-500 tracking-[0.2em] leading-none">Activity</span>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <Button 
-            variant="ghost" 
+            variant="outline" 
             size="sm" 
-            className="h-8 px-2 rounded-lg text-primary hover:bg-primary/5 font-bold text-[10px] uppercase gap-1"
+            className="h-8 px-3 rounded-lg text-primary border-primary/10 hover:bg-primary hover:text-white font-black text-[9px] uppercase gap-1.5 transition-all"
             onClick={() => onViewDetails(student.userId)}
           >
-            <Eye className="w-3.5 h-3.5" />
+            <Eye className="w-3 h-3" />
             <span className="hidden sm:inline">Profile</span>
           </Button>
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-white hover:shadow-md transition-all border-none bg-transparent">
-                <MoreHorizontal className="w-4 h-4 text-slate-400" />
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-slate-100 transition-all border border-transparent">
+                <MoreHorizontal className="w-4 h-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 rounded-2xl p-2 border-slate-100 shadow-2xl">
-              <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-3 py-2">Management</DropdownMenuLabel>
+            <DropdownMenuContent align="end" className="w-52 rounded-2xl p-2 border-slate-100 shadow-2xl">
+              <DropdownMenuLabel className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 px-3 py-2">Governance</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="rounded-xl px-3 h-10 font-bold focus:bg-slate-900 focus:text-white transition-colors cursor-pointer" onClick={() => onViewDetails(student.userId)}>
-                <User className="w-4 h-4 mr-2 opacity-40 text-blue-600" /> View Profile
+              <DropdownMenuItem className="flex items-center gap-3 rounded-xl px-3 h-10 font-bold focus:bg-primary focus:text-white transition-all cursor-pointer" onClick={() => onViewDetails(student.userId)}>
+                <User className="w-3.5 h-3.5 opacity-50" /> <span className="text-sm">Profile Detail</span>
               </DropdownMenuItem>
-              <DropdownMenuItem className="rounded-xl px-3 h-10 font-bold focus:bg-slate-900 focus:text-white transition-colors cursor-pointer" onClick={() => onSendMessage(student.userId)}>
-                <Mail className="w-4 h-4 mr-2 opacity-40 text-emerald-600" /> Send Message
+              <DropdownMenuItem className="flex items-center gap-3 rounded-xl px-3 h-10 font-bold focus:bg-primary focus:text-white transition-all cursor-pointer" onClick={() => onSendMessage(student.userId)}>
+                <Mail className="w-3.5 h-3.5 opacity-50" /> <span className="text-sm">Send Pulse</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="rounded-xl px-3 h-10 font-bold text-rose-600 focus:bg-slate-900 focus:text-white transition-colors cursor-pointer">
-                <UserMinus className="w-4 h-4 mr-2 opacity-40" /> Drop Student
+              <DropdownMenuItem className="flex items-center gap-3 rounded-xl px-3 h-10 font-bold text-rose-600 focus:bg-rose-600 focus:text-white transition-all cursor-pointer">
+                <UserMinus className="w-3.5 h-3.5 opacity-50" /> <span className="text-sm">Terminate</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -633,43 +615,47 @@ export function InstructorStudentDashboard() {
         <div className="lg:col-span-2 space-y-4">
           <Card>
             <CardHeader className="pb-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <CardTitle className="text-base">All Students ({filteredStudents.length})</CardTitle>
-                <div className="flex items-center gap-2">
-                  <div className="relative">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                <CardTitle className="text-[13px] font-black uppercase tracking-[0.2em] text-slate-700">
+                  Global Roster ({filteredStudents.length})
+                </CardTitle>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="relative flex-1 min-w-[200px]">
+                    <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
                     <Input
-                      placeholder="Search students..."
+                      placeholder="Search identity..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9 h-9 w-full sm:w-[200px]"
+                      className="pl-9 h-10 w-full bg-slate-50/50 border-none rounded-xl text-xs font-bold"
                     />
                   </div>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[130px] h-9 rounded-xl">
-                      <Filter className="w-3 h-3 mr-2" />
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl border-slate-100">
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-2">
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-[120px] h-10 rounded-xl bg-slate-50/50 border-none text-[10px] font-black uppercase tracking-widest">
+                        <Filter className="w-3.5 h-3.5 mr-2 opacity-40" />
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-2xl border-slate-100 p-2">
+                        <SelectItem value="all" className="rounded-xl font-bold">All Status</SelectItem>
+                        <SelectItem value="active" className="rounded-xl font-bold">Active</SelectItem>
+                        <SelectItem value="completed" className="rounded-xl font-bold">Completed</SelectItem>
+                        <SelectItem value="inactive" className="rounded-xl font-bold">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
 
-                  <Select value={batchFilter} onValueChange={setBatchFilter}>
-                    <SelectTrigger className="w-[130px] h-9 rounded-xl">
-                      <Clock className="w-3 h-3 mr-2" />
-                      <SelectValue placeholder="Batch" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl border-slate-100">
-                      <SelectItem value="all">All Batches</SelectItem>
-                      <SelectItem value="morning">Morning</SelectItem>
-                      <SelectItem value="afternoon">Afternoon</SelectItem>
-                      <SelectItem value="evening">Evening</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <Select value={batchFilter} onValueChange={setBatchFilter}>
+                      <SelectTrigger className="w-[120px] h-10 rounded-xl bg-slate-50/50 border-none text-[10px] font-black uppercase tracking-widest">
+                        <Clock className="w-3.5 h-3.5 mr-2 opacity-40" />
+                        <SelectValue placeholder="Batch" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-2xl border-slate-100 p-2">
+                        <SelectItem value="all" className="rounded-xl font-bold">All Batches</SelectItem>
+                        <SelectItem value="morning" className="rounded-xl font-bold">Morning</SelectItem>
+                        <SelectItem value="afternoon" className="rounded-xl font-bold">Afternoon</SelectItem>
+                        <SelectItem value="evening" className="rounded-xl font-bold">Evening</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
             </CardHeader>

@@ -240,7 +240,7 @@ function WelcomeBanner({
             </span>
             .
           </h1>
-          <p className="text-slate-600 max-w-xl font-medium text-base md:text-lg leading-relaxed">
+          <p className="text-slate-800 max-w-xl font-medium text-base md:text-lg leading-relaxed">
             Welcome back to your teaching portal. You have{" "}
             <span className="text-slate-900 font-bold bg-slate-100 px-2 py-0.5 rounded-md">{studentCount} students</span> enrolled in your courses. 
             All systems are ready for your next teaching session.
@@ -387,7 +387,7 @@ export default function InstructorDashboard() {
                            <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
                               Featured & Recent Curricula
                            </h3>
-                           <p className="text-sm font-bold text-slate-400 mt-1">Manage and oversee your latest course developments</p>
+                           <p className="text-sm font-bold text-slate-600 mt-1">Manage and oversee your latest course developments</p>
                            
                            <div className="group relative flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-100 shadow-sm w-fit mt-3 animate-in fade-in slide-in-from-left-2 duration-700">
                              <div className="flex gap-0.5">

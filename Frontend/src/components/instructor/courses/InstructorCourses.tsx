@@ -318,15 +318,15 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
                                                                     ? <AlertCircle className="h-3 w-3 text-rose-500 shrink-0" />
                                                                     : <Clock className="h-3 w-3 text-amber-500 shrink-0" />
                                                             }
-                                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter truncate">Owner Access</span>
+                                                            <span className="text-[10px] font-black text-slate-900 uppercase tracking-tighter truncate">Owner Access</span>
                                                         </div>
                                                     ) : instructors.length > 0 ? (
                                                         <div className="flex items-center gap-1.5 overflow-hidden">
                                                             <Users className="h-3 w-3 text-primary/40 shrink-0" />
-                                                            <span className="text-[10px] font-black text-primary/40 uppercase tracking-tighter truncate">Team Managed</span>
+                                                            <span className="text-[10px] font-black text-slate-800 uppercase tracking-tighter truncate">Team Managed</span>
                                                         </div>
                                                     ) : (
-                                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter truncate">{course.duration || 'Flexible'}</span>
+                                                        <span className="text-[10px] font-black text-slate-800 uppercase tracking-tighter truncate">{course.duration || 'Flexible'}</span>
                                                     )}
                                                 </div>
                                                 

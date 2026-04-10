@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useSocket } from '@/hooks/useSocket';
 import { useAuth } from '@/hooks/useAuth';
@@ -54,10 +54,12 @@ interface Conversation {
     status?: 'online' | 'offline';
   } | null;
   lastMessage: {
+    id: string;
     content: string;
     timestamp: string;
     status: string;
     sender: string;
+    type?: 'text' | 'image' | 'file';
   } | null;
   unreadCount: number;
 }
@@ -111,20 +113,95 @@ export function ChatInterface() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // --- Memoized Actions ---
+  const fetchContacts = useCallback(async () => {
+    try {
+      const data = await fetchWithAuth('/chat/contacts') as UserProfile[];
+      setContacts(data);
+      return data;
+    } catch (err) {
+      console.error('Failed to load contacts:', err);
+      return [];
+    }
+  }, []);
+
+  const loadConversations = useCallback(async () => {
+    try {
+      const data = await fetchWithAuth('/chat/conversations') as Conversation[];
+      setConversations(data);
+      return data;
+    } catch (err) {
+      console.error('Failed to load conversations:', err);
+      return [];
+    }
+  }, []);
+
+  const fetchProfile = useCallback(async (userId: string) => {
+    setLoadingProfile(true);
+    try {
+      const data = await fetchWithAuth(`/users/${userId}/public-profile`) as UserProfile;
+      setContactProfile(data);
+    } catch (err) {
+      console.error("Failed to fetch profile", err);
+    } finally {
+      setLoadingProfile(false);
+    }
+  }, []);
+
+  const selectConversation = useCallback(async (conv: Conversation) => {
+    setSelectedConvId(conv.id);
+    if (isMobileView) setShowChatList(false);
+    
+    // If profile pane is open, update it
+    if (showProfileInfo && conv.user?.id) {
+       fetchProfile(conv.user.id);
+    }
+
+    try {
+      const msgs = await fetchWithAuth(`/chat/messages/${conv.id}`) as Message[];
+      setMessages(msgs);
+      setConversations(prev => prev.map(c => 
+        c.id === conv.id ? { ...c, unreadCount: 0 } : c
+      ));
+      socket?.emit('join_conversation', conv.id);
+    } catch (err) {
+      console.error('Failed to load messages:', err);
+    }
+  }, [isMobileView, showProfileInfo, fetchProfile, socket]);
+
+  const startNewChat = useCallback(async (targetId: string) => {
+    try {
+      const newConv = await fetchWithAuth('/chat/start', {
+         method: 'POST',
+         body: JSON.stringify({ recipientId: targetId })
+      }) as Conversation;
+      
+      setConversations(prev => {
+        const exists = prev.find(c => c.id === newConv.id);
+        if (exists) return prev;
+        return [newConv, ...prev];
+      });
+      
+      selectConversation(newConv);
+      setSearchQuery(''); 
+    } catch (err) {
+      console.error("Failed to start chat", err);
+    }
+  }, [selectConversation]);
+
   // Initial Load
   useEffect(() => {
     const initChat = async () => {
-       const [convs, validContacts] = await Promise.all([
+       const [convs, _] = await Promise.all([
          loadConversations(),
          fetchContacts()
        ]);
        
        if (recipientId) {
-          const existing = convs.find(c => c.user?.id === recipientId);
+          const existing = (convs as Conversation[]).find(c => c.user?.id === recipientId);
           if (existing) {
              selectConversation(existing);
           } else {
-             // If no existing conversation, try to start one if it's a valid contact or just try anyway
              startNewChat(recipientId);
           }
        }
@@ -132,13 +209,13 @@ export function ChatInterface() {
     initChat();
     
     const handleResize = () => {
-      setIsMobileView(window.innerWidth < 768);
-      if (window.innerWidth >= 768) setShowChatList(true);
+      setIsMobileView(window.innerWidth < 1100);
+      if (window.innerWidth >= 1100) setShowChatList(true);
     };
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [recipientId]);
+  }, [recipientId, selectConversation, startNewChat, fetchContacts, loadConversations]);
 
   // Fetch Profile Info when conversation changes
   useEffect(() => {
@@ -148,7 +225,7 @@ export function ChatInterface() {
         fetchProfile(conv.user.id);
       }
     }
-  }, [selectedConvId, showProfileInfo]);
+  }, [selectedConvId, showProfileInfo, conversations, fetchProfile]);
 
   // Socket Events
   useEffect(() => {
@@ -213,89 +290,12 @@ export function ChatInterface() {
       socket.off('user_status');
       socket.off('typing_status');
     };
-  }, [socket, selectedConvId]);
+  }, [socket, selectedConvId, user?.id]);
 
   // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  const fetchContacts = async () => {
-    try {
-      const data = await fetchWithAuth('/chat/contacts');
-      setContacts(data);
-      return data;
-    } catch (err) {
-      console.error('Failed to load contacts:', err);
-      return [];
-    }
-  };
-
-  const startNewChat = async (targetId: string) => {
-    try {
-      const newConv = await fetchWithAuth('/chat/start', {
-         method: 'POST',
-         body: JSON.stringify({ recipientId: targetId })
-      });
-      
-      setConversations(prev => {
-        const exists = prev.find(c => c.id === newConv.id);
-        if (exists) return prev;
-        return [newConv, ...prev];
-      });
-      
-      selectConversation(newConv);
-      setSearchQuery(''); // Clear search after selection
-    } catch (err) {
-      console.error("Failed to start chat", err);
-    }
-  };
-
-  const loadConversations = async () => {
-    try {
-      const data = await fetchWithAuth('/chat/conversations');
-      setConversations(data);
-      // Initialize online status based on fetched data if available, or fetch separate online list
-      // For now, we rely on socket updates.
-      return data;
-    } catch (err) {
-      console.error('Failed to load conversations:', err);
-      return [];
-    }
-  };
-
-  const fetchProfile = async (userId: string) => {
-    setLoadingProfile(true);
-    try {
-      const data = await fetchWithAuth(`/users/${userId}/public-profile`);
-      setContactProfile(data);
-    } catch (err) {
-      console.error("Failed to fetch profile", err);
-    } finally {
-      setLoadingProfile(false);
-    }
-  };
-
-  const selectConversation = async (conv: Conversation) => {
-    setSelectedConvId(conv.id);
-    if (isMobileView) setShowChatList(false);
-    
-    // If profile pane is open, update it
-    if (showProfileInfo && conv.user?.id) {
-       fetchProfile(conv.user.id);
-    }
-
-    try {
-      const msgs = await fetchWithAuth(`/chat/messages/${conv.id}`);
-      setMessages(msgs);
-      setConversations(prev => prev.map(c => 
-        c.id === conv.id ? { ...c, unreadCount: 0 } : c
-      ));
-      socket?.emit('join_conversation', conv.id);
-    } catch (err) {
-      console.error('Failed to load messages:', err);
-    }
-  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -309,12 +309,7 @@ export function ChatInterface() {
           const res = await fetchWithAuth('/chat/upload', {
               method: 'POST',
               body: formData,
-              // fetchWithAuth handles content-type for FormData usually, but verify lib/api
-          }, true); // true for isFormData if implemented, or let fetch handle it.
-
-          // If fetchWithAuth doesn't auto-detect FormData, we might need to adjust.
-          // Assuming standardized fetchWithAuth handles it or we use raw fetch.
-          // Let's assume the API handles it. 
+          }) as { url: string }; 
           
           if (res.url) {
               sendMessage(res.url, 'image');
@@ -350,7 +345,7 @@ export function ChatInterface() {
           content: optimisticMsg.content,
           type: type
         })
-      });
+      }) as { success: boolean; message: Message };
       
       if (response.success && response.message) {
          setMessages(prev => prev.map(m => 
@@ -405,7 +400,7 @@ export function ChatInterface() {
       
       {/* ─── LEFT PANEL: CHAT LIST ────────────────────────────────────────── */}
       <div className={cn(
-        "w-full md:w-[350px] lg:w-[400px] flex flex-col border-r border-[#d1d7db] bg-white transition-all duration-300 z-10",
+        "w-full lg:w-[350px] xl:w-[400px] flex flex-col border-r border-[#d1d7db] bg-white transition-all duration-300 z-10",
         !showChatList && isMobileView ? "hidden" : "flex"
       )}>
         {/* Header */}
@@ -591,35 +586,33 @@ export function ChatInterface() {
                   <AvatarImage src={selectedUser?.avatar || ''} />
                   <AvatarFallback>{selectedUser?.name?.[0]}</AvatarFallback>
                 </Avatar>
-                <div className="flex flex-col">
-                  <h3 className="font-semibold text-[#111b21] leading-tight text-base">{selectedUser?.name}</h3>
-                  <p className="text-xs text-[#667781]">
+                <div className="flex flex-col min-w-0">
+                  <h3 className="font-bold text-slate-900 leading-tight text-sm sm:text-base truncate">{selectedUser?.name}</h3>
+                  <p className="text-[10px] sm:text-xs text-slate-600 font-medium truncate">
                      {typingUsers.has(selectedUser?.id || '') ? (
-                         <span className="text-green-600 font-medium">typing...</span>
+                         <span className="text-emerald-600 font-black uppercase tracking-tighter">typing...</span>
                      ) : (
-                         isSelectedUserOnline ? 'Online' : 'Click for contact info'
+                         isSelectedUserOnline ? 'Online' : <span className="hidden sm:inline">Click for contact info</span>
                      )}
                   </p>
                 </div>
               </div>
               
-              <div className="flex items-center gap-3 text-[#54656f]">
+              <div className="flex items-center gap-1.5 sm:gap-3 text-slate-500 shrink-0">
                 <Search 
-                    className="h-5 w-5 cursor-pointer hover:text-[#00a884] transition-colors" 
+                    className="h-4 w-4 sm:h-5 sm:w-5 cursor-pointer hover:text-primary transition-colors" 
                     onClick={() => setIsMessageSearchOpen(!isMessageSearchOpen)} 
                 />
                 <div className="relative">
-                    <Button variant="ghost" size="icon" onClick={() => setShowChatOptions(!showChatOptions)}>
-                       <MoreVertical className="h-5 w-5" />
+                    <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 rounded-full" onClick={() => setShowChatOptions(!showChatOptions)}>
+                       <MoreVertical className="h-4 w-4 sm:h-5 sm:w-5" />
                     </Button>
                     {showChatOptions && (
-                        <div className="absolute right-0 top-10 bg-white shadow-[0_2px_5px_0_rgba(11,20,26,0.26),0_2px_10px_0_rgba(11,20,26,0.16)] rounded-sm border border-slate-100 py-2 w-48 z-50 animate-in slide-in-from-top-2 fade-in duration-200 origin-top-right">
-                             <div className="px-4 py-3 hover:bg-[#f0f2f5] cursor-pointer text-[14.5px] text-[#111b21]" onClick={() => { setShowProfileInfo(true); setShowChatOptions(false); }}>Contact Info</div>
-                             <div className="px-4 py-3 hover:bg-[#f0f2f5] cursor-pointer text-[14.5px] text-[#111b21]" onClick={() => { setSelectedConvId(null); setShowChatOptions(false); }}>Close Chat</div>
-                             <div className="px-4 py-3 hover:bg-[#f0f2f5] cursor-pointer text-[14.5px] text-[#111b21]" onClick={() => { /* Mute */ setShowChatOptions(false); }}>Mute Notifications</div>
-                             <div className="px-4 py-3 hover:bg-[#f0f2f5] cursor-pointer text-[14.5px] text-[#111b21]" onClick={() => { setMessages([]); setShowChatOptions(false); }}>Clear Messages</div>
-                             <div className="px-4 py-3 hover:bg-[#f0f2f5] cursor-pointer text-[14.5px] text-[#111b21]" onClick={() => { /* Delete Chat */ setShowChatOptions(false); }}>Delete Chat</div>
-                             <div className="px-4 py-3 hover:bg-[#f0f2f5] cursor-pointer text-[14.5px] text-[#111b21]" onClick={() => { /* Block */ setShowChatOptions(false); }}>Block User</div>
+                        <div className="absolute right-0 top-10 bg-white shadow-2xl rounded-xl border border-slate-100 py-2 w-52 z-50 animate-in slide-in-from-top-2 fade-in duration-200 origin-top-right">
+                             <div className="px-4 py-3 hover:bg-slate-50 cursor-pointer text-sm font-bold text-slate-900" onClick={() => { setShowProfileInfo(true); setShowChatOptions(false); }}>Contact Info</div>
+                             <div className="px-4 py-3 hover:bg-slate-50 cursor-pointer text-sm font-bold text-slate-900" onClick={() => { setSelectedConvId(null); setShowChatOptions(false); }}>Close Chat</div>
+                             <div className="border-t border-slate-50 my-1"></div>
+                             <div className="px-4 py-3 hover:bg-rose-50 cursor-pointer text-sm font-bold text-rose-600" onClick={() => { /* Block */ setShowChatOptions(false); }}>Block User</div>
                         </div>
                     )}
                 </div>
@@ -749,20 +742,19 @@ export function ChatInterface() {
             </div>
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-[#41525d] z-10 border-b-[6px] border-[#25d366]">
+          <div className="flex-1 flex flex-col items-center justify-center text-slate-800 z-10 border-b-[6px] border-[#25d366] p-10">
              <div className="mb-8">
-                {/* Placeholder Image would go here */}
-                <div className="w-64 h-64 bg-[#f0f2f5] rounded-full flex items-center justify-center shadow-inner">
-                    <Video className="h-24 w-24 text-[#e9edef]" />
+                <div className="w-48 h-48 md:w-64 md:h-64 bg-[#f0f2f5] rounded-full flex items-center justify-center shadow-inner">
+                    <Video className="h-16 w-16 md:h-24 md:w-24 text-slate-300" />
                 </div>
              </div>
-             <h3 className="text-[32px] font-light text-[#41525d] mb-4">WhatsApp for Education</h3>
-             <p className="text-sm text-[#8696a0] max-w-[460px] text-center leading-6">
-                Send and receive messages without keeping your phone online.<br/>
-                Use WhatsApp on up to 4 linked devices and 1 phone.
+             <h3 className="text-2xl md:text-[32px] font-black text-slate-900 mb-4 tracking-tight">WhatsApp for Education</h3>
+             <p className="text-sm md:text-base text-slate-600 max-w-md text-center font-bold leading-relaxed">
+                Send and receive secure messages with your students and peers.<br className="hidden md:block"/>
+                All communication is encrypted and monitored for safety.
              </p>
-             <div className="mt-8 flex items-center gap-2 text-[#8696a0] text-xs">
-                <Lock className="h-3 w-3" /> End-to-end encrypted
+             <div className="mt-8 flex items-center gap-2 text-slate-400 text-xs font-black uppercase tracking-widest">
+                <Lock className="h-4 w-4" /> End-to-end encrypted
              </div>
           </div>
         )}
@@ -773,16 +765,16 @@ export function ChatInterface() {
         {showProfileInfo && selectedConvId && (
           <motion.div 
             initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 350, opacity: 1 }}
+            animate={{ width: isMobileView ? '100%' : 300, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
-            className="border-l border-[#d1d7db] bg-[#f0f2f5] flex flex-col z-20 overflow-hidden"
+            className="border-l border-slate-200 bg-white flex flex-col z-20 overflow-hidden shadow-2xl"
           >
             {/* Header */}
-            <div className="h-16 px-4 bg-[#f0f2f5] border-b border-[#d1d7db] flex items-center shrink-0">
-               <Button variant="ghost" size="icon" onClick={() => setShowProfileInfo(false)} className="text-[#54656f]">
+            <div className="h-16 px-4 bg-slate-50 border-b border-slate-100 flex items-center shrink-0">
+               <Button variant="ghost" size="icon" onClick={() => setShowProfileInfo(false)} className="text-slate-500 rounded-full">
                   <X className="h-5 w-5" />
                </Button>
-               <span className="ml-4 font-semibold text-[#111b21]">Contact Info</span>
+               <span className="ml-4 font-black text-slate-900 uppercase tracking-widest text-[11px]">Contact Intelligence</span>
             </div>
 
             <ScrollArea className="flex-1">

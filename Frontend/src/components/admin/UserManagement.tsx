@@ -273,7 +273,7 @@ export function UserManagement({
                 User Management
               </CardTitle>
               <CardDescription className="text-sm font-medium text-slate-500 max-w-md">
-                Manage across {users.length} authenticated nodes and platform entities.
+                Manage all registered users and platform role assignments.
               </CardDescription>
             </div>
             
@@ -337,7 +337,7 @@ export function UserManagement({
 
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <p className="text-sm sm:text-base font-black text-slate-900 leading-tight truncate">{user.full_name || "Nexus User"}</p>
+                        <p className="text-sm sm:text-base font-black text-slate-900 leading-tight truncate">{user.full_name || "Platform User"}</p>
                         <Badge 
                             variant="outline" 
                             className={`text-[9px] h-4 px-1.5 rounded-md uppercase font-black tracking-tighter border-none shadow-none shrink-0 ${
@@ -375,7 +375,7 @@ export function UserManagement({
                         }}
                         className="w-full sm:w-auto h-9 px-4 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all font-black text-[11px] uppercase tracking-wider"
                       >
-                        Review Node
+                        Review Profile
                       </Button>
                     ) : (
                       <DropdownMenu>
@@ -388,9 +388,9 @@ export function UserManagement({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56 rounded-2xl p-2 border-slate-200 shadow-2xl animate-in zoom-in-95 duration-200">
-                          <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 p-2 border-b mb-1">Node Operations</DropdownMenuLabel>
+                          <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 p-2 border-b mb-1">Account Actions</DropdownMenuLabel>
                           <DropdownMenuItem onClick={() => handleViewProfile(user)} className="rounded-xl font-bold text-[13px] py-2.5 cursor-pointer hover:bg-slate-50">
-                            <Eye className="mr-3 h-4 w-4 text-primary" /> View Intelligence
+                            <Eye className="mr-3 h-4 w-4 text-primary" /> View Full Profile
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleViewAttendance(user)} className="rounded-xl font-bold text-[13px] py-2.5 cursor-pointer hover:bg-slate-50">
                             <Fingerprint className="mr-3 h-4 w-4 text-blue-500" /> Attendance Records
@@ -405,7 +405,7 @@ export function UserManagement({
                             ) : (
                               <Mail className="mr-3 h-4 w-4 text-amber-500" />
                             )}
-                            Mail Intelligence
+                            Send Notification Mail
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => {
                             setSelectedUser(user);
@@ -448,17 +448,17 @@ export function UserManagement({
         <div className="px-4">
           <div className="flex items-center gap-4 mb-2">
             <Shield className="h-7 w-7 text-primary" />
-            <h3 className="text-2xl font-black text-slate-900 tracking-tight">System Permission Hierarchy</h3>
+            <h3 className="text-2xl font-black text-slate-900 tracking-tight">User Roles & Distribution</h3>
           </div>
-          <p className="text-[13px] font-medium text-slate-500 ml-11 uppercase tracking-[0.2em]">Node distribution across authority levels</p>
+          <p className="text-[13px] font-medium text-slate-500 ml-11 uppercase tracking-[0.2em]">Overview of all registered accounts on the platform</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
-            { label: "Public Students", count: roleCounts.student || 0, color: "bg-slate-900", icon: Users, desc: "Restricted knowledge nodes" },
-            { label: "Academic Instructors", count: roleCounts.instructor || 0, color: "bg-blue-600", icon: Presentation, desc: "Curriculum publishers" },
-            { label: "Operations Managers", count: roleCounts.manager || 0, color: "bg-amber-500", icon: UserCog, desc: "System orchestrators" },
-            { label: "Core Administrators", count: roleCounts.admin || 0, color: "bg-rose-500", icon: Shield, desc: "Root authority cluster", isHigh: true },
+            { label: "Community Students", count: roleCounts.student || 0, color: "bg-slate-900", icon: Users, desc: "Registered student profiles" },
+            { label: "Academic Faculty", count: roleCounts.instructor || 0, color: "bg-blue-600", icon: Presentation, desc: "Course & content management" },
+            { label: "Platform Managers", count: roleCounts.manager || 0, color: "bg-amber-500", icon: UserCog, desc: "Operational management team" },
+            { label: "System Administrators", count: roleCounts.admin || 0, color: "bg-rose-500", icon: Shield, desc: "Full system security clearance", isHigh: true },
           ].map((role) => (
             <Card key={role.label} className={`border-none shadow-xl shadow-slate-200/50 rounded-[2rem] overflow-hidden group transition-all duration-500 hover:-translate-y-2 ${role.isHigh ? 'bg-primary shadow-primary/30' : 'bg-white'}`}>
               <CardContent className="p-8">
@@ -477,7 +477,7 @@ export function UserManagement({
                     <span className={`text-3xl font-black tracking-tighter ${role.isHigh ? 'text-white' : 'text-slate-900'}`}>
                       {role.count}
                     </span>
-                    <span className={`text-[11px] font-bold ${role.isHigh ? 'text-white/40' : 'text-slate-300'}`}>Nodes</span>
+                    <span className={`text-[11px] font-bold ${role.isHigh ? 'text-white/40' : 'text-slate-300'}`}>Users</span>
                   </div>
                   <p className={`text-[11px] font-medium pt-3 border-t mt-4 border-white/10 ${role.isHigh ? 'text-white/60' : 'text-slate-400 border-slate-50'}`}>
                     {role.desc}

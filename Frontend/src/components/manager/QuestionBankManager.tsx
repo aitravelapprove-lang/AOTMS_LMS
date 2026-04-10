@@ -776,9 +776,9 @@ export function QuestionBankManager({
       {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-8">
         <div className="space-y-1">
-          <h2 className="text-xl sm:text-3xl font-bold tracking-tighter uppercase italic text-slate-900">Repository <span className="text-slate-300 not-italic font-medium">Core</span></h2>
+          <h2 className="text-xl sm:text-3xl font-bold tracking-tighter uppercase italic text-slate-900">Question <span className="text-slate-300 not-italic font-medium">Bank</span></h2>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em]">
-            {stats.total} Analytical Items / {topics.length} Logic Clusters
+            {stats.total} Questions / {topics.length} Topics
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
@@ -786,7 +786,7 @@ export function QuestionBankManager({
              variant="outline" 
               className="rounded-xl h-10 sm:h-12 px-4 sm:px-6 border-slate-100 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 hover:border-slate-900 transition-all"
            >
-             Filter Repository
+             Filter Questions
            </Button>
            <Button 
               className="rounded-xl h-10 sm:h-12 px-4 sm:px-8 bg-slate-900 hover:bg-black text-white text-[10px] font-bold uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-xl shadow-slate-100"
@@ -803,7 +803,7 @@ export function QuestionBankManager({
           <div className="flex items-center justify-between">
             <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400 flex items-center gap-2">
               <Sparkles className="h-3 w-3 text-violet-400" />
-              Initialize Logic Batch
+              Draft New Questions
             </h3>
           </div>
 
@@ -971,7 +971,7 @@ export function QuestionBankManager({
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className="h-6 text-[10px] px-2">{idx + 1}</Badge>
                       <span className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">
-                        Question Model
+                        Question Details
                       </span>
                     </div>
                   </div>
@@ -1082,7 +1082,7 @@ export function QuestionBankManager({
                               "min-h-[140px] font-mono leading-relaxed",
                               q.type === 'coding' ? "bg-slate-900 text-emerald-400 border-slate-800" : "bg-slate-50 border-slate-200"
                             )}
-                            placeholder={q.type === 'coding' ? "// Paste solution here..." : "Describe the answer..."}
+                            placeholder={q.type === 'coding' ? "// Paste solution here..." : "Enter the correct answer..."}
                           />
                         </div>
                       </div>
@@ -1108,7 +1108,7 @@ export function QuestionBankManager({
             <div className="flex flex-col gap-4 w-full lg:w-auto">
               <div className="flex items-center gap-2">
                 <Plus className="h-4 w-4 text-primary" />
-                <span className="text-[10px] font-black text-slate-800 uppercase tracking-[0.2em]">Quick Addition Matrix</span>
+                <span className="text-[10px] font-black text-slate-800 uppercase tracking-[0.2em]">Quick Add Questions</span>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Button 
@@ -1162,7 +1162,7 @@ export function QuestionBankManager({
           <div className="space-y-1">
             <h3 className="text-xl font-bold flex items-center gap-2">
               <Layers className="h-5 w-5 text-indigo-500" />
-              Quiz Portfolio
+              Question Repository
             </h3>
             <p className="text-sm text-muted-foreground">Select a batch to explore questions and solutions</p>
           </div>
@@ -1218,12 +1218,12 @@ export function QuestionBankManager({
                 </div>
                 <div className="flex flex-col">
                   <CardTitle className="text-xl sm:text-2xl font-black italic tracking-tighter leading-none">
-                    EXPLORER
+                    BROWSER
                   </CardTitle>
                   <div className="flex items-center gap-2 mt-1">
                     <Badge variant="secondary" className="text-[9px] sm:text-[10px] font-mono h-4 sm:h-5 px-1.5 sm:px-2">{filteredQuestions.length} Questions</Badge>
                     <div className="h-1 w-1 rounded-full bg-slate-200" />
-                    <span className="text-[9px] sm:text-[10px] uppercase font-bold text-slate-400 tracking-widest">Repository Base</span>
+                    <span className="text-[9px] sm:text-[10px] uppercase font-bold text-slate-400 tracking-widest">Question Base</span>
                   </div>
                 </div>
               </div>
@@ -1491,7 +1491,7 @@ export function QuestionBankManager({
                     Finalize Batch
                   </DialogTitle>
                   <DialogDescription className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">
-                    Attach logic particles to an active scheduling poster
+                    Attach draft questions to an active exam schedule
                   </DialogDescription>
                 </div>
               </DialogHeader>

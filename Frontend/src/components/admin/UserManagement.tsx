@@ -137,10 +137,10 @@ export function UserManagement({
         method: "POST",
         body: JSON.stringify({ userId: user.id }),
       });
-      toast.success(`Mail protocol triggered for ${user.full_name}`);
+      toast.success(`Notification sent to ${user.full_name}`);
     } catch (err) {
       console.error("Failed to send email:", err);
-      toast.error("Mail sequence failed to initialize");
+      toast.error("Could not send notification email");
     } finally {
       setSendingEmailId(null);
     }
@@ -292,7 +292,7 @@ export function UserManagement({
                   <SelectValue placeholder="All Roles" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-slate-200">
-                  <SelectItem value="all" className="text-xs font-bold py-2">ALL ENTITIES</SelectItem>
+                  <SelectItem value="all" className="text-xs font-bold py-2">ALL USERS</SelectItem>
                   <SelectItem value="admin" className="text-xs font-bold py-2">ADMINS</SelectItem>
                   <SelectItem value="manager" className="text-xs font-bold py-2">MANAGERS</SelectItem>
                   <SelectItem value="instructor" className="text-xs font-bold py-2">INSTRUCTORS</SelectItem>
@@ -455,10 +455,10 @@ export function UserManagement({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
-            { label: "Community Students", count: roleCounts.student || 0, color: "bg-slate-900", icon: Users, desc: "Registered student profiles" },
-            { label: "Academic Faculty", count: roleCounts.instructor || 0, color: "bg-blue-600", icon: Presentation, desc: "Course & content management" },
-            { label: "Platform Managers", count: roleCounts.manager || 0, color: "bg-amber-500", icon: UserCog, desc: "Operational management team" },
-            { label: "System Administrators", count: roleCounts.admin || 0, color: "bg-rose-500", icon: Shield, desc: "Full system security clearance", isHigh: true },
+            { label: "Students", count: roleCounts.student || 0, color: "bg-slate-900", icon: Users, desc: "Registered student profiles" },
+            { label: "Instructors", count: roleCounts.instructor || 0, color: "bg-blue-600", icon: Presentation, desc: "Course & content management" },
+            { label: "Managers", count: roleCounts.manager || 0, color: "bg-amber-500", icon: UserCog, desc: "Operational management team" },
+            { label: "Admins", count: roleCounts.admin || 0, color: "bg-rose-500", icon: Shield, desc: "Full system security access", isHigh: true },
           ].map((role) => (
             <Card key={role.label} className={`border-none shadow-xl shadow-slate-200/50 rounded-[2rem] overflow-hidden group transition-all duration-500 hover:-translate-y-2 ${role.isHigh ? 'bg-primary shadow-primary/30' : 'bg-white'}`}>
               <CardContent className="p-8">
@@ -550,7 +550,7 @@ export function UserManagement({
               className="rounded-xl font-semibold bg-accent hover:bg-accent/90 text-white shadow-sm shadow-accent/20 h-11 px-6 active:scale-95 transition-all"
               onClick={handleRoleChange}
             >
-              Grant Access
+              Update Role
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -584,7 +584,7 @@ export function UserManagement({
                 </div>
                 <div className="space-y-1 text-right">
                   <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">
-                    Role Status
+                    Assigned Role
                   </p>
                   <div>
                     <Badge
@@ -611,7 +611,7 @@ export function UserManagement({
 
               <div className="pb-4 border-b border-slate-200/50 space-y-1.5">
                 <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">
-                  UUID
+                  User ID
                 </p>
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-mono text-slate-600 break-all leading-tight flex-1">
@@ -634,7 +634,7 @@ export function UserManagement({
 
               <div className="pt-2 flex justify-between items-center">
                 <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">
-                  Membership Date
+                  Registration Date
                 </p>
                 <p className="text-sm font-bold text-slate-800">
                   {selectedUser?.created_at
@@ -650,7 +650,7 @@ export function UserManagement({
               </div>
               <div className="space-y-0.5">
                 <p className="text-[10px] font-bold text-amber-900 uppercase tracking-tight">
-                  Automated Workflow
+                  System Action
                 </p>
                 <p className="text-[10px] font-medium text-amber-800/70 leading-normal">
                   Confirming approval will instantly trigger the onboarding

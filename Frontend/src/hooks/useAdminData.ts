@@ -15,6 +15,7 @@ export interface Profile {
   created_at: string;
   role?: string;
   suspended_until?: string | null;
+  user_id?: string;
 }
 
 export interface UserRole {

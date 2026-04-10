@@ -46,44 +46,35 @@ export function StudentSettings() {
 
     return (
         <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-                <div className="flex items-center gap-4 sm:gap-5">
-                    <div className="h-12 w-12 sm:h-16 sm:w-16 shrink-0 rounded-[1.2rem] sm:rounded-[1.5rem] bg-primary text-white flex items-center justify-center shadow-2xl shadow-primary/30">
-                        <Settings className="h-6 w-6 sm:h-8 sm:w-8 animate-[spin_10s_linear_infinite]" />
-                    </div>
-                    <div className="min-w-0">
-                        <h2 className="text-xl sm:text-3xl font-black text-slate-900 tracking-tight truncate">System Preferences</h2>
-                        <p className="text-xs sm:text-base text-slate-500 font-medium line-clamp-2">Control your digital learning experience and privacy.</p>
-                    </div>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="min-w-0">
+                    <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Deployment Config</h3>
+                    <p className="text-[10px] md:text-sm text-slate-500 font-bold italic">Adjust your interaction and security parameters below.</p>
                 </div>
                 <Button 
                     onClick={handleSave} 
                     disabled={loading}
-                    className="w-full sm:w-auto h-12 px-6 rounded-2xl pro-button-primary shadow-xl shadow-primary/20 font-bold shrink-0"
+                    className="w-full md:w-auto h-12 md:h-14 px-10 rounded-[1.5rem] bg-slate-900 hover:bg-black text-white shadow-2xl shadow-slate-900/10 font-black italic tracking-tighter shrink-0 flex items-center gap-3"
                 >
-                    {loading ? <Save className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-                    Save Changes
+                    {loading ? <Save className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+                    SAVE PREFERENCES
                 </Button>
             </div>
 
-            <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/5 overflow-hidden p-6 sm:p-10">
+            <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/5 overflow-hidden p-6 md:p-10">
                 <div className="space-y-10 max-w-2xl mx-auto">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 p-5 sm:p-8 bg-slate-50/80 rounded-3xl border border-slate-100 shadow-inner">
-                        <div className="flex items-center gap-4 w-full sm:w-auto">
-                            <div className="h-12 w-12 sm:h-16 sm:w-16 shrink-0 rounded-2xl bg-white shadow-sm flex items-center justify-center border border-slate-200 text-primary">
-                                <Bell className="h-6 w-6 sm:h-8 sm:w-8" />
+                    <div className="flex items-center justify-between gap-4 md:gap-8 p-6 md:p-10 bg-slate-50/80 rounded-[2.5rem] border border-slate-100 shadow-inner">
+                        <div className="flex items-center gap-4 md:gap-6 min-w-0">
+                            <div className="h-14 w-14 md:h-24 md:w-24 shrink-0 rounded-[1.5rem] md:rounded-[2rem] bg-white shadow-xl shadow-slate-200/50 flex items-center justify-center border border-slate-100 text-primary">
+                                <Bell className="h-7 w-7 md:h-12 md:w-12 animate-[bounce_3s_infinite]" />
                             </div>
-                            <div className="flex-1 sm:flex-none min-w-0">
-                                <h4 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight truncate">Alert Center</h4>
-                                <p className="hidden sm:block text-sm text-slate-500 font-medium">Master control for all real-time communications and learning updates.</p>
-                            </div>
-                            <div className="sm:hidden ml-auto">
-                               <Switch defaultChecked className="scale-110 data-[state=checked]:bg-primary shadow-lg shadow-primary/20" />
+                            <div className="min-w-0">
+                                <h4 className="text-lg sm:text-2xl md:text-4xl font-black text-slate-900 tracking-tight truncate leading-none mb-1 md:mb-2">Alert Center</h4>
+                                <p className="text-[10px] md:text-sm text-slate-500 font-black italic line-clamp-1 md:line-clamp-2 leading-tight">Master control for all academy communications and real-time learning updates.</p>
                             </div>
                         </div>
-                        <p className="sm:hidden text-[11px] leading-relaxed text-slate-500 font-medium">Master control for all real-time communications and learning updates.</p>
-                        <div className="hidden sm:block ml-auto shrink-0">
-                           <Switch defaultChecked className="scale-125 data-[state=checked]:bg-primary shadow-lg shadow-primary/20" />
+                        <div className="shrink-0 pl-2">
+                           <Switch defaultChecked className="scale-110 sm:scale-125 md:scale-[2] data-[state=checked]:bg-primary shadow-xl shadow-primary/20 transition-transform" />
                         </div>
                     </div>
 

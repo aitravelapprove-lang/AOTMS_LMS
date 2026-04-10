@@ -158,37 +158,46 @@ export function InstructorVideoLibrary() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3 bg-slate-50/50 p-2 rounded-2xl border border-slate-100/50">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-slate-50/50 p-3 rounded-2xl border border-slate-100/50">
+        <div className="relative flex-1">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
             placeholder="Search your library..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 h-10 bg-white border-slate-200 rounded-xl focus:ring-primary/20"
+            className="pl-10 h-11 bg-white border-slate-200 rounded-xl focus:ring-primary/20 transition-all font-medium"
           />
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <select
-            value={filterCourse}
-            onChange={(e) => setFilterCourse(e.target.value)}
-            className="h-10 px-4 pr-10 rounded-xl border border-slate-200 bg-white text-xs font-bold uppercase tracking-widest text-slate-600 focus:ring-2 focus:ring-primary/10 appearance-none cursor-pointer hover:border-slate-300 transition-all outline-none"
-            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center', backgroundSize: '1rem' }}
+        
+        <div className="flex flex-row items-center gap-2">
+          <Select value={filterCourse} onValueChange={setFilterCourse}>
+            <SelectTrigger className="h-11 flex-1 sm:w-[180px] rounded-xl border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600 focus:ring-primary/10 transition-all">
+              <SelectValue placeholder="Course Filter" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
+              <SelectItem value="all" className="text-[10px] font-bold uppercase tracking-widest py-3">All My Courses</SelectItem>
+              {courses.map(course => (
+                <SelectItem key={course.id} value={course.id} className="text-[10px] font-bold uppercase tracking-widest py-3">
+                  {course.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Button 
+            variant="outline" 
+            onClick={loadVideos} 
+            className="h-11 w-11 sm:w-auto sm:px-4 bg-white border-slate-200 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-primary shrink-0"
+            title="Refresh Library"
           >
-            <option value="all">All My Courses</option>
-            {courses.map(course => (
-              <option key={course.id} value={course.id}>{course.title}</option>
-            ))}
-          </select>
-          <Button variant="outline" onClick={loadVideos} className="h-10 bg-white border-slate-200 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-primary">
-            <RefreshCw className="h-3.5 w-3.5 mr-2" />
+            <RefreshCw className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Refresh</span>
           </Button>
         </div>
 
         <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
           <DialogTrigger asChild>
-            <Button className="pro-button-primary shadow-xl shadow-primary/20 rounded-xl px-4 sm:px-6 h-10 text-[10px] sm:text-xs font-black uppercase tracking-widest">
+            <Button className="pro-button-primary shadow-xl shadow-primary/20 rounded-xl px-6 h-12 sm:h-11 text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] w-full sm:w-auto">
               <UploadCloud className="h-4 w-4 mr-2" />
               <span className="hidden md:inline">Upload New Video</span>
               <span className="md:hidden">Upload Video</span>

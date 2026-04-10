@@ -158,36 +158,40 @@ export function InstructorVideoLibrary() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 bg-slate-50/50 p-2 rounded-2xl border border-slate-100/50">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
-            placeholder="Search your videos..."
+            placeholder="Search your library..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 h-10 bg-white"
+            className="pl-10 h-10 bg-white border-slate-200 rounded-xl focus:ring-primary/20"
           />
         </div>
-        <select
-          value={filterCourse}
-          onChange={(e) => setFilterCourse(e.target.value)}
-          className="h-10 px-3 rounded-md border border-input bg-white text-sm focus:ring-2 focus:ring-ring"
-        >
-          <option value="all">All My Courses</option>
-          {courses.map(course => (
-            <option key={course.id} value={course.id}>{course.title}</option>
-          ))}
-        </select>
-        <Button variant="outline" onClick={loadVideos} className="bg-white">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <select
+            value={filterCourse}
+            onChange={(e) => setFilterCourse(e.target.value)}
+            className="h-10 px-4 pr-10 rounded-xl border border-slate-200 bg-white text-xs font-bold uppercase tracking-widest text-slate-600 focus:ring-2 focus:ring-primary/10 appearance-none cursor-pointer hover:border-slate-300 transition-all outline-none"
+            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center', backgroundSize: '1rem' }}
+          >
+            <option value="all">All My Courses</option>
+            {courses.map(course => (
+              <option key={course.id} value={course.id}>{course.title}</option>
+            ))}
+          </select>
+          <Button variant="outline" onClick={loadVideos} className="h-10 bg-white border-slate-200 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-primary">
+            <RefreshCw className="h-3.5 w-3.5 mr-2" />
+            <span className="hidden sm:inline">Refresh</span>
+          </Button>
+        </div>
 
         <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
           <DialogTrigger asChild>
-            <Button className="pro-button-primary shadow-lg shadow-primary/20 rounded-xl px-6 h-10">
+            <Button className="pro-button-primary shadow-xl shadow-primary/20 rounded-xl px-4 sm:px-6 h-10 text-[10px] sm:text-xs font-black uppercase tracking-widest">
               <UploadCloud className="h-4 w-4 mr-2" />
-              Upload New Video
+              <span className="hidden md:inline">Upload New Video</span>
+              <span className="md:hidden">Upload Video</span>
             </Button>
           </DialogTrigger>
           <DialogContent className="w-[calc(100%-2rem)] sm:w-full max-w-4xl max-h-[85vh] overflow-y-auto rounded-2xl sm:rounded-3xl p-0 border-none glass-morphism shadow-2xl">

@@ -125,7 +125,7 @@ export function InstructorSidebar() {
                         "h-12 px-4 rounded-xl transition-all duration-300 group relative overflow-hidden",
                         isActive(item.url) 
                           ? "bg-primary text-white shadow-[0_10px_20px_rgba(var(--primary),0.2)]" 
-                          : "hover:bg-slate-50 text-slate-500 hover:text-slate-900"
+                          : "hover:bg-primary/5 text-slate-600 hover:text-primary"
                     )}
                   >
                     <Link to={item.url} className="flex items-center gap-3.5 w-full">
@@ -150,7 +150,12 @@ export function InstructorSidebar() {
                           initial={{ opacity: 0, x: -5 }}
                           animate={{ opacity: 1, x: 0 }}
                         >
-                          <span className="font-bold text-xs uppercase tracking-wider">{item.title}</span>
+                          <span className={cn(
+                            "font-black text-xs uppercase tracking-wider",
+                            isActive(item.url) ? "text-white" : "group-hover:text-primary"
+                          )}>
+                            {item.title}
+                          </span>
                           {item.title === "Student Roster" && stats?.totalStudents !== undefined && (
                             <Badge variant="secondary" className={cn(
                                 "h-5 px-1.5 text-[10px] font-black border-none transition-colors",
@@ -196,7 +201,7 @@ export function InstructorSidebar() {
                         "h-12 px-4 rounded-xl transition-all duration-300 group relative overflow-hidden",
                         isActive(item.url) 
                           ? "bg-slate-900 text-white shadow-xl" 
-                          : "hover:bg-slate-50 text-slate-500 hover:text-slate-900"
+                          : "hover:bg-slate-900/5 text-slate-600 hover:text-slate-900"
                     )}
                   >
                     <Link to={item.url} className="flex items-center gap-3.5">
@@ -210,7 +215,10 @@ export function InstructorSidebar() {
                       </div>
                       {!collapsed && (
                         <motion.span 
-                            className="font-bold text-xs uppercase tracking-wider z-10"
+                            className={cn(
+                                "font-black text-xs uppercase tracking-wider z-10",
+                                isActive(item.url) ? "text-white" : "group-hover:text-slate-900"
+                            )}
                             initial={{ opacity: 0, x: -5 }}
                             animate={{ opacity: 1, x: 0 }}
                         >

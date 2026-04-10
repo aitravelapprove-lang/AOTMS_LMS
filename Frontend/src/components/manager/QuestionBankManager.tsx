@@ -776,8 +776,8 @@ export function QuestionBankManager({
       {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-8">
         <div className="space-y-1">
-          <h2 className="text-xl sm:text-3xl font-bold tracking-tighter uppercase italic text-slate-900">Question <span className="text-slate-300 not-italic font-medium">Bank</span></h2>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em]">
+          <h2 className="text-xl sm:text-3xl font-bold tracking-tighter uppercase italic text-slate-900">Question <span className="text-slate-900 not-italic font-black">Bank</span></h2>
+          <p className="text-[10px] font-bold text-slate-700 uppercase tracking-[0.4em]">
             {stats.total} Questions / {topics.length} Topics
           </p>
         </div>
@@ -1213,21 +1213,21 @@ export function QuestionBankManager({
                   <Brain className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
                 </div>
                 <div className="flex flex-col">
-                  <CardTitle className="text-xl sm:text-2xl font-black italic tracking-tighter leading-none">
+                  <CardTitle className="text-xl sm:text-2xl font-black italic tracking-tighter leading-none text-slate-900">
                     BROWSER
                   </CardTitle>
                   <div className="flex items-center gap-2 mt-1">
-                    <Badge variant="secondary" className="text-[9px] sm:text-[10px] font-mono h-4 sm:h-5 px-1.5 sm:px-2">{filteredQuestions.length} Questions</Badge>
+                    <Badge variant="secondary" className="text-[9px] sm:text-[10px] font-mono h-4 sm:h-5 px-1.5 sm:px-2 bg-slate-900 text-white border-none">{filteredQuestions.length} Questions</Badge>
                     <div className="h-1 w-1 rounded-full bg-slate-200" />
-                    <span className="text-[9px] sm:text-[10px] uppercase font-bold text-slate-400 tracking-widest">Question Base</span>
+                    <span className="text-[9px] sm:text-[10px] uppercase font-bold text-slate-800 tracking-widest">Question Base</span>
                   </div>
                 </div>
               </div>
 
               {/* Filters Container */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full xl:w-auto">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full xl:w-auto">
                 {/* Search Input */}
-                <div className="relative w-full sm:min-w-[240px] lg:min-w-[300px]">
+                <div className="relative flex-1 min-w-[200px] sm:min-w-[240px] lg:min-w-[300px]">
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input
                     placeholder="Search context or keywords..."
@@ -1238,9 +1238,9 @@ export function QuestionBankManager({
                 </div>
 
                 {/* Select Controls Group */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <Select value={filterType} onValueChange={setFilterType}>
-                    <SelectTrigger className="h-10 sm:h-11 flex-1 sm:w-[130px] rounded-xl bg-slate-50 border-slate-100 font-bold text-[9px] sm:text-[10px] uppercase tracking-widest">
+                    <SelectTrigger className="h-10 sm:h-11 w-[110px] sm:w-[130px] rounded-xl bg-slate-50 border-slate-100 font-bold text-[9px] sm:text-[10px] uppercase tracking-widest">
                       <SelectValue placeholder="Type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1252,7 +1252,7 @@ export function QuestionBankManager({
                   </Select>
 
                   <Select value={filterDifficulty} onValueChange={setFilterDifficulty}>
-                    <SelectTrigger className="h-10 sm:h-11 flex-1 sm:w-[130px] rounded-xl bg-slate-50 border-slate-100 font-bold text-[9px] sm:text-[10px] uppercase tracking-widest">
+                    <SelectTrigger className="h-10 sm:h-11 w-[110px] sm:w-[130px] rounded-xl bg-slate-50 border-slate-100 font-bold text-[9px] sm:text-[10px] uppercase tracking-widest">
                       <SelectValue placeholder="Level" />
                     </SelectTrigger>
                     <SelectContent>

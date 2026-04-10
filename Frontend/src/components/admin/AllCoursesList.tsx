@@ -96,7 +96,7 @@ export function AllCoursesList({
             Curriculum Catalog
           </h2>
           <p className="text-slate-500 font-medium text-xs tracking-widest uppercase">
-            Platform Curriculum Nodes
+            Available Courses
           </p>
         </div>
       </div>
@@ -160,7 +160,7 @@ export function AllCoursesList({
                     <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 text-slate-300">
                       <BookOpen className="h-10 w-10 mb-2" />
                       <span className="text-[10px] font-black uppercase tracking-widest">
-                        Library Node
+                        Course Preview
                       </span>
                     </div>
                   )}
@@ -196,7 +196,7 @@ export function AllCoursesList({
                       {course.title}
                     </h3>
                     <p className="text-[10px] uppercase font-bold text-primary/60 tracking-[0.2em]">
-                      {course.category || "Strategic Training"}
+                      {course.category || "Professional Training"}
                     </p>
                   </div>
 

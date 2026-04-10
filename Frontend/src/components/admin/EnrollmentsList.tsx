@@ -68,7 +68,7 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
     return parseFloat(cleaned) || 0;
   };
 
-  const EnrollmentAvatar = ({ enrollment }: { enrollment: any }) => {
+  const EnrollmentAvatar = ({ enrollment }: { enrollment: CourseEnrollment }) => {
     const avatar = enrollment.user_avatar || enrollment.profile?.avatar_url;
     const name = enrollment.user_name || enrollment.profile?.full_name || 'U';
 
@@ -132,10 +132,10 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
     }
   };
 
-  const getEnrollmentName = (e: any) => e.user_name || e.profile?.full_name || 'Unknown Student';
-  const getEnrollmentEmail = (e: any) => e.user_email || e.profile?.email || 'N/A';
-  const getCourseName = (e: any) => e.course_name || e.course?.title || 'Unknown Course';
-  const getAvatarUrl = (e: any) => e.user_avatar || e.profile?.avatar_url || null;
+  const getEnrollmentName = (e: CourseEnrollment) => e.user_name || e.profile?.full_name || 'Unknown Student';
+  const getEnrollmentEmail = (e: CourseEnrollment) => e.user_email || e.profile?.email || 'N/A';
+  const getCourseName = (e: CourseEnrollment) => e.course_name || e.course?.title || 'Unknown Course';
+  const getAvatarUrl = (e: CourseEnrollment) => e.user_avatar || e.profile?.avatar_url || null;
 
   const courses = [...new Set((enrollments || []).map(e => getCourseName(e)).filter(Boolean))];
 
@@ -198,10 +198,10 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
     <div className="space-y-10">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { icon: Users, label: "Total Filtered", value: filteredEnrollments.length, color: "text-indigo-600", bg: "bg-indigo-50" },
-          { icon: BookOpen, label: "Unique Courses", value: courses.length, color: "text-blue-600", bg: "bg-blue-50" },
-          { icon: TrendingUp, label: "Unique Students", value: new Set(filteredEnrollments.map(e => e.user_id)).size, color: "text-emerald-600", bg: "bg-emerald-50" },
-          { icon: CreditCard, label: "Current Value", value: `₹${totalValue.toLocaleString('en-IN')}`, color: "text-orange-600", bg: "bg-orange-50" },
+          { icon: Users, label: "Total Enrollments", value: filteredEnrollments.length, color: "text-indigo-600", bg: "bg-indigo-50" },
+          { icon: BookOpen, label: "Active Courses", value: courses.length, color: "text-blue-600", bg: "bg-blue-50" },
+          { icon: TrendingUp, label: "Active Students", value: new Set(filteredEnrollments.map(e => e.user_id)).size, color: "text-emerald-600", bg: "bg-emerald-50" },
+          { icon: CreditCard, label: "Total Revenue", value: `₹${totalValue.toLocaleString('en-IN')}`, color: "text-orange-600", bg: "bg-orange-50" },
         ].map((stat, i) => (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -293,11 +293,11 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-50/50 border-b border-slate-100">
-                      <th className="px-8 py-8 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] w-[30%]">Student Identity</th>
-                      <th className="px-6 py-8 text-[11px] font-black text-indigo-600 uppercase tracking-[0.2em] w-[18%]">Strategic Course</th>
+                      <th className="px-8 py-8 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] w-[30%]">Student Profile</th>
+                      <th className="px-6 py-8 text-[11px] font-black text-indigo-600 uppercase tracking-[0.2em] w-[18%]">Enrolled Course</th>
                       <th className="px-4 py-8 text-[11px] font-black text-indigo-600 uppercase tracking-[0.2em] text-center w-[12%]">Term 1</th>
                       <th className="px-4 py-8 text-[11px] font-black text-amber-600 uppercase tracking-[0.2em] text-center w-[12%]">Term 2</th>
-                      <th className="px-8 py-8 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] w-[18%]">Progress Flow</th>
+                      <th className="px-8 py-8 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] w-[18%]">Payment Summary</th>
                       <th className="px-8 py-8 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] text-right w-[10%]">Actions</th>
                     </tr>
                   </thead>
@@ -361,7 +361,7 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                                 </p>
                                 <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 w-fit">
                                   <Globe className="h-2.5 w-2.5 text-slate-400" />
-                                  <span className="text-[8px] font-black uppercase text-slate-400 tracking-wider">Strategic Node</span>
+                                  <span className="text-[8px] font-black uppercase text-slate-400 tracking-wider">Course Bundle</span>
                                 </div>
                               </div>
                             </td>
@@ -450,7 +450,7 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                                     </DropdownMenuItem>
                                     <div className="h-px bg-slate-100 my-2" />
                                     <DropdownMenuItem onClick={() => handleDelete(enrollment.id)} className="rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest text-rose-600 focus:bg-rose-600 focus:text-white transition-colors cursor-pointer">
-                                      <Trash2 className="h-4 w-4 mr-3" /> Purge Entry
+                                      <Trash2 className="h-4 w-4 mr-3" /> Remove Record
                                     </DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
@@ -507,7 +507,7 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                           </p>
                         </div>
                         <div className="space-y-1 text-right">
-                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">System UUID</p>
+                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Enrollment ID</p>
                           <div className="flex items-center justify-end gap-1 font-mono text-[9px] font-bold text-indigo-500">
                              <span>{enrollment.user_id?.slice(0, 8)}...</span>
                              <button onClick={() => copyToClipboard(enrollment.user_id || '', enrollment.id + '-mob')} className="p-1">
@@ -554,7 +554,7 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                               <XCircle className="h-3.5 w-3.5 mr-3" /> Deny Access
                            </DropdownMenuItem>
                            <DropdownMenuItem onClick={() => handleDelete(enrollment.id)} className="rounded-xl px-4 py-3 text-rose-600 focus:bg-rose-600 focus:text-white transition-colors cursor-pointer">
-                              <Trash2 className="h-3.5 w-3.5 mr-3" /> Terminate Node
+                              <Trash2 className="h-3.5 w-3.5 mr-3" /> Remove Record
                            </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -573,17 +573,17 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
               <div className="w-full md:w-80 bg-white p-12 md:border-r border-slate-100 flex flex-col shrink-0">
                   <div className="space-y-12">
                     <div className="space-y-4">
-                        <Badge className="bg-indigo-600 text-white rounded-lg px-3 py-1 text-[9px] uppercase font-black tracking-widest border-none shadow-lg shadow-indigo-200">System Terminal</Badge>
-                        <h3 className="text-4xl font-black text-slate-900 tracking-tighter leading-[0.9]">Admission<br/><span className="text-indigo-600">Protocol</span></h3>
+                        <Badge className="bg-indigo-600 text-white rounded-lg px-3 py-1 text-[9px] uppercase font-black tracking-widest border-none shadow-lg shadow-indigo-200">Management Panel</Badge>
+                        <h3 className="text-4xl font-black text-slate-900 tracking-tighter leading-[0.9]">Enrollment<br/><span className="text-indigo-600">Details</span></h3>
                     </div>
                     
                     <div className="space-y-8">
                         <div className="space-y-3">
                             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-3">
-                               <div className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" /> UTR Node Hash
+                               <div className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" /> Transaction (UTR) ID
                             </label>
                             <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100 shadow-inner">
-                                <span className="text-sm font-mono font-black text-slate-900 tracking-wider break-all leading-relaxed">{selectedEnrollment?.utr_number || "NO_TRANSMISSION_DATA"}</span>
+                                <span className="text-sm font-mono font-black text-slate-900 tracking-wider break-all leading-relaxed">{selectedEnrollment?.utr_number || "NO_UTR_DATA"}</span>
                             </div>
                         </div>
 
@@ -593,7 +593,7 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                                     <Users className="h-6 w-6 text-white" />
                                 </div>
                                 <div className="space-y-0.5">
-                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Student Subject</p>
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Student Name</p>
                                     <p className="text-base font-black text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight">{selectedEnrollment?.user_name}</p>
                                 </div>
                             </div>
@@ -602,7 +602,7 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                                   <GraduationCap className="h-6 w-6 text-indigo-600" />
                                 </div>
                                 <div className="space-y-0.5">
-                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Admission Node</p>
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Enrolled Course</p>
                                     <p className="text-base font-black text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight">{selectedEnrollment?.course_name}</p>
                                 </div>
                             </div>
@@ -624,7 +624,7 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                               <div className="relative group/proof cursor-zoom-in max-w-full">
                                   <img 
                                     src={selectedEnrollment.payment_proof_url} 
-                                    alt="Payment Evidence" 
+                                    alt="Payment Proof" 
                                     className="max-h-[45vh] lg:max-h-[55vh] rounded-[2rem] object-contain shadow-[0_30px_60px_rgba(0,0,0,0.12)] transition-all duration-700 group-hover/proof:scale-[1.03]" 
                                   />
                                   <div className="absolute inset-0 bg-indigo-600/0 group-hover/proof:bg-indigo-600/5 transition-all duration-700 rounded-[2rem]" />
@@ -634,7 +634,7 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                                    <div className="h-32 w-32 mx-auto rounded-full bg-slate-100 flex items-center justify-center border-4 border-dashed border-slate-200">
                                       <RefreshCw className="h-10 w-10 text-slate-400" />
                                    </div>
-                                   <p className="font-black text-slate-400 uppercase tracking-[0.3em] text-[10px]">Transmission Buffer Empty</p>
+                                   <p className="font-black text-slate-400 uppercase tracking-[0.3em] text-[10px]">No Payment Document</p>
                               </div>
                           )}
                       </div>
@@ -642,9 +642,9 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                       <div className="mt-10 p-6 bg-slate-50/50 rounded-3xl border border-slate-100 flex items-center justify-between">
                          <div className="flex items-center gap-3">
                             <Zap className="h-5 w-5 text-amber-500 fill-amber-500" />
-                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Evidence Authenticity Auto-Scanned</p>
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Payment Proof Verified</p>
                          </div>
-                         <Badge className="bg-emerald-50 text-emerald-600 border-none px-3 font-black text-[9px] uppercase tracking-tighter">Verified Integrity</Badge>
+                         <Badge className="bg-emerald-50 text-emerald-600 border-none px-3 font-black text-[9px] uppercase tracking-tighter">Verified</Badge>
                       </div>
                   </div>
               </div>
@@ -652,19 +652,19 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
           </div>
 
           <div className="absolute bottom-0 left-0 right-0 p-8 bg-white/80 backdrop-blur-xl border-t border-slate-100 flex flex-wrap justify-end gap-5 rounded-b-[3rem] z-20">
-              <Button variant="ghost" onClick={() => setSelectedEnrollment(null)} className="text-slate-400 font-black uppercase tracking-widest text-[10px] h-14 px-8 rounded-2xl hover:bg-slate-50 transition-all">Close Protocol</Button>
+              <Button variant="ghost" onClick={() => setSelectedEnrollment(null)} className="text-slate-400 font-black uppercase tracking-widest text-[10px] h-14 px-8 rounded-2xl hover:bg-slate-50 transition-all">Close Viewer</Button>
               <Button 
                 variant="destructive"
                 className="rounded-2xl h-14 px-8 font-black uppercase tracking-widest text-[10px] shadow-xl shadow-rose-100 border-none transition-all hover:translate-y-[-4px]" 
                 onClick={() => { if(selectedEnrollment) handleUpdateStatus(selectedEnrollment.id, 'rejected'); setSelectedEnrollment(null); }}
               >
-                Deny Entry
+                Reject Admission
               </Button>
               <Button 
                 className="bg-indigo-600 hover:bg-slate-900 text-white rounded-2xl h-14 px-12 font-black uppercase tracking-widest text-[10px] transition-all shadow-2xl shadow-indigo-200 hover:translate-y-[-4px] active:translate-y-0" 
                 onClick={() => { if(selectedEnrollment) handleUpdateStatus(selectedEnrollment.id, 'active'); setSelectedEnrollment(null); }}
               >
-                Authorize Admission
+                Approve Enrollment
                 <ArrowRight className="h-4 w-4 ml-3" />
               </Button>
           </div>

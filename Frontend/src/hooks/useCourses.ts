@@ -60,6 +60,31 @@ export interface CourseEnrollment {
   remaining_balance?: number;
   user_avatar?: string;
   enrolled_at?: string;
+  profile?: {
+    full_name?: string;
+    email?: string;
+    avatar_url?: string;
+    mobile_number?: string;
+    photo_url?: string;
+  };
+  course?: {
+    title?: string;
+    price?: number | string;
+  };
+}
+
+interface DatabaseEnrollment extends CourseEnrollment {
+  profile?: {
+    full_name?: string;
+    email?: string;
+    avatar_url?: string;
+    mobile_number?: string;
+    photo_url?: string;
+  };
+  course?: {
+    title?: string;
+    price?: number | string;
+  };
 }
 
 export function useCourses() {
@@ -138,9 +163,9 @@ export function useCourses() {
     if (categories.length > 0) return; // Cache: Don't fetch if we already have them
 
     try {
-      const data = await fetchWithAuth('/public/courses');
+      const data = await fetchWithAuth('/public/courses') as DatabaseCourse[];
       if (data) {
-        const cats = Array.from(new Set(data.map((c: DatabaseCourse) => c.category))).filter(Boolean);
+        const cats = Array.from(new Set(data.map((c) => c.category))).filter(Boolean);
         setCategories(cats as string[]);
       }
     } catch (err) {
@@ -176,8 +201,8 @@ export function useCourses() {
     
     if (userRole === 'admin' || userRole === 'manager') {
       try {
-        const rawData = await fetchWithAuth('/courses/enrollments');
-        enrollmentsData = rawData.map((item: any) => ({
+        const rawData = await fetchWithAuth('/courses/enrollments') as DatabaseEnrollment[];
+        enrollmentsData = (rawData || []).map((item) => ({
           ...item,
           user_name: item.profile?.full_name || 'Unknown',
           user_email: item.profile?.email || 'No Email',
@@ -194,7 +219,7 @@ export function useCourses() {
       }
     } else {
       // Use the generic data API which we've migrated to Firestore
-      enrollmentsData = await fetchWithAuth('/data/course_enrollments?order=enrollment_date.desc');
+      enrollmentsData = (await fetchWithAuth('/data/course_enrollments?order=enrollment_date.desc')) as CourseEnrollment[];
     }
 
     return enrollmentsData || [];
@@ -202,13 +227,13 @@ export function useCourses() {
 
   const fetchMyEnrollments = useCallback(async (): Promise<CourseEnrollment[]> => {
     // Backend handles filtering by current user based on token
-    const enrollments = await fetchWithAuth('/data/course_enrollments?order=enrollment_date.desc');
+    const enrollments = (await fetchWithAuth('/data/course_enrollments?order=enrollment_date.desc')) as CourseEnrollment[];
     return enrollments || [];
   }, []);
 
   const checkEnrollment = useCallback(async (courseId: string): Promise<boolean> => {
     try {
-      const data = await fetchWithAuth(`/courses/enrollment/${courseId}`);
+      const data = (await fetchWithAuth(`/courses/enrollment/${courseId}`)) as { enrolled: boolean };
       return !!data?.enrolled;
     } catch (err) {
       return false;

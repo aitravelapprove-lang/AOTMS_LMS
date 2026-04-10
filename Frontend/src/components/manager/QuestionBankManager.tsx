@@ -776,9 +776,9 @@ export function QuestionBankManager({
       {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-8">
         <div className="space-y-1">
-          <h2 className="text-xl sm:text-3xl font-bold tracking-tighter uppercase italic text-slate-900">Repository <span className="text-slate-300 not-italic font-medium">Core</span></h2>
+          <h2 className="text-xl sm:text-3xl font-bold tracking-tighter uppercase italic text-slate-900">Question <span className="text-slate-300 not-italic font-medium">Bank</span></h2>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em]">
-            {stats.total} Analytical Items / {topics.length} Logic Clusters
+            {stats.total} Questions / {topics.length} Topics
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
@@ -786,7 +786,7 @@ export function QuestionBankManager({
              variant="outline" 
               className="rounded-xl h-10 sm:h-12 px-4 sm:px-6 border-slate-100 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 hover:border-slate-900 transition-all"
            >
-             Filter Repository
+             Filter Questions
            </Button>
            <Button 
               className="rounded-xl h-10 sm:h-12 px-4 sm:px-8 bg-slate-900 hover:bg-black text-white text-[10px] font-bold uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-xl shadow-slate-100"
@@ -803,7 +803,7 @@ export function QuestionBankManager({
           <div className="flex items-center justify-between">
             <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400 flex items-center gap-2">
               <Sparkles className="h-3 w-3 text-violet-400" />
-              Initialize Logic Batch
+              Draft New Questions
             </h3>
           </div>
 
@@ -971,7 +971,7 @@ export function QuestionBankManager({
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className="h-6 text-[10px] px-2">{idx + 1}</Badge>
                       <span className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">
-                        Question Model
+                        Question Details
                       </span>
                     </div>
                   </div>
@@ -1082,7 +1082,7 @@ export function QuestionBankManager({
                               "min-h-[140px] font-mono leading-relaxed",
                               q.type === 'coding' ? "bg-slate-900 text-emerald-400 border-slate-800" : "bg-slate-50 border-slate-200"
                             )}
-                            placeholder={q.type === 'coding' ? "// Paste solution here..." : "Describe the answer..."}
+                            placeholder={q.type === 'coding' ? "// Paste solution here..." : "Enter the correct answer..."}
                           />
                         </div>
                       </div>
@@ -1108,7 +1108,7 @@ export function QuestionBankManager({
             <div className="flex flex-col gap-4 w-full lg:w-auto">
               <div className="flex items-center gap-2">
                 <Plus className="h-4 w-4 text-primary" />
-                <span className="text-[10px] font-black text-slate-800 uppercase tracking-[0.2em]">Quick Addition Matrix</span>
+                <span className="text-[10px] font-black text-slate-800 uppercase tracking-[0.2em]">Quick Add Questions</span>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Button 
@@ -1162,7 +1162,7 @@ export function QuestionBankManager({
           <div className="space-y-1">
             <h3 className="text-xl font-bold flex items-center gap-2">
               <Layers className="h-5 w-5 text-indigo-500" />
-              Quiz Portfolio
+              Question Repository
             </h3>
             <p className="text-sm text-muted-foreground">Select a batch to explore questions and solutions</p>
           </div>
@@ -1212,51 +1212,51 @@ export function QuestionBankManager({
         <CardHeader className="px-6 pt-5 pb-4 border-b">
           <div className="flex flex-col gap-6">
             <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-5">
-              <div className="flex items-center gap-4 shrink-0">
-                <div className="p-2.5 bg-primary/10 rounded-2xl">
-                  <Brain className="h-7 w-7 text-primary" />
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 shrink-0">
+                <div className="p-2 bg-primary/10 rounded-[1.25rem] w-fit">
+                  <Brain className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
                 </div>
                 <div className="flex flex-col">
-                  <CardTitle className="text-2xl font-black italic tracking-tighter leading-none">
-                    EXPLORER
+                  <CardTitle className="text-xl sm:text-2xl font-black italic tracking-tighter leading-none">
+                    BROWSER
                   </CardTitle>
                   <div className="flex items-center gap-2 mt-1">
-                    <Badge variant="secondary" className="text-[10px] font-mono h-5 px-2">{filteredQuestions.length} Questions</Badge>
+                    <Badge variant="secondary" className="text-[9px] sm:text-[10px] font-mono h-4 sm:h-5 px-1.5 sm:px-2">{filteredQuestions.length} Questions</Badge>
                     <div className="h-1 w-1 rounded-full bg-slate-200" />
-                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Repository Base</span>
+                    <span className="text-[9px] sm:text-[10px] uppercase font-bold text-slate-400 tracking-widest">Question Base</span>
                   </div>
                 </div>
               </div>
 
               {/* Filters Container */}
-              <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full xl:w-auto">
                 {/* Search Input */}
-                <div className="relative flex-1 sm:flex-none sm:min-w-[280px]">
+                <div className="relative w-full sm:min-w-[240px] lg:min-w-[300px]">
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input
                     placeholder="Search context or keywords..."
-                    className="pl-10 h-12 w-full rounded-xl bg-slate-50 border-slate-100 hover:border-slate-200 focus:bg-white transition-all text-sm font-medium"
+                    className="pl-10 h-10 sm:h-11 w-full rounded-xl bg-slate-50 border-slate-100 hover:border-slate-200 focus:bg-white transition-all text-xs sm:text-sm font-medium"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
 
                 {/* Select Controls Group */}
-                <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="flex items-center gap-2">
                   <Select value={filterType} onValueChange={setFilterType}>
-                    <SelectTrigger className="h-12 flex-1 sm:w-[150px] rounded-xl bg-slate-50 border-slate-100 font-bold text-[10px] uppercase tracking-widest">
+                    <SelectTrigger className="h-10 sm:h-11 flex-1 sm:w-[130px] rounded-xl bg-slate-50 border-slate-100 font-bold text-[9px] sm:text-[10px] uppercase tracking-widest">
                       <SelectValue placeholder="Type" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All types</SelectItem>
                       {QUESTION_TYPES.map(t => (
-                        <SelectItem key={t.value} value={t.value} className="text-xs uppercase font-bold tracking-wider">{t.label.split('(')[0]}</SelectItem>
+                        <SelectItem key={t.value} value={t.value} className="text-[10px] uppercase font-bold tracking-wider">{t.label.split('(')[0]}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
 
                   <Select value={filterDifficulty} onValueChange={setFilterDifficulty}>
-                    <SelectTrigger className="h-12 flex-1 sm:w-[140px] rounded-xl bg-slate-50 border-slate-100 font-bold text-[10px] uppercase tracking-widest">
+                    <SelectTrigger className="h-10 sm:h-11 flex-1 sm:w-[130px] rounded-xl bg-slate-50 border-slate-100 font-bold text-[9px] sm:text-[10px] uppercase tracking-widest">
                       <SelectValue placeholder="Level" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1318,74 +1318,74 @@ export function QuestionBankManager({
                   >
                     {/* Row */}
                     <div
-                      className="flex items-start gap-4 p-4 cursor-pointer"
+                      className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 cursor-pointer"
                       onClick={() => setExpandedId(isExpanded ? null : q.id)}
                     >
                       {/* Index */}
-                      <span className="text-xs text-muted-foreground font-mono mt-0.5 w-6 text-right shrink-0">
+                      <span className="text-[10px] sm:text-xs text-muted-foreground font-mono mt-0.5 w-5 sm:w-6 text-right shrink-0">
                         {idx + 1}
                       </span>
 
                       {/* Content */}
-                      <div className="flex-1 space-y-2 min-w-0">
-                        <div className="flex items-center gap-2">
+                      <div className="flex-1 space-y-1.5 min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                           <QuestionTypeIcon type={q.type} />
                           <Badge
                             variant={DIFFICULTY_BADGE_VARIANT[q.difficulty as keyof typeof DIFFICULTY_BADGE_VARIANT] ?? 'secondary'}
-                            className="text-[9px] uppercase tracking-tighter h-4 px-1"
+                            className="text-[8px] sm:text-[9px] uppercase tracking-tighter h-3.5 sm:h-4 px-1"
                           >
                             {q.difficulty}
                           </Badge>
-                          <span className="text-[10px] text-muted-foreground bg-muted/50 px-1.5 rounded">
+                          <span className="text-[9px] sm:text-[10px] text-muted-foreground bg-muted/50 px-1.5 rounded font-bold uppercase">
                             {q.marks ?? 1} Marks
                           </span>
                         </div>
-                        <p className={cn('text-lg font-semibold leading-relaxed tracking-tight text-foreground/90 transition-all', !isExpanded && 'line-clamp-1')}>
+                        <p className={cn('text-sm sm:text-lg font-semibold leading-snug sm:leading-relaxed tracking-tight text-foreground/90 transition-all', !isExpanded && 'line-clamp-2 sm:line-clamp-1')}>
                           {q.question_text}
                         </p>
                         {!isExpanded && (
-                          <div className="flex items-center gap-3">
-                            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">Category: {q.topic}</span>
-                            <div className="h-1 w-1 rounded-full bg-muted-foreground/30" />
-                            <span className="text-[10px] text-primary/70 font-semibold uppercase tracking-tighter">Expand to Preview</span>
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                            <span className="text-[9px] sm:text-[10px] text-muted-foreground font-black uppercase tracking-widest truncate max-w-[120px] sm:max-w-none">CAT: {q.topic}</span>
+                            <div className="h-0.5 w-0.5 sm:h-1 sm:w-1 rounded-full bg-muted-foreground/30" />
+                            <span className="text-[9px] sm:text-[10px] text-primary/70 font-black uppercase tracking-tighter">Expand</span>
                           </div>
                         )}
                       </div>
 
                       {/* Actions */}
                       <div
-                        className="flex items-center gap-1 shrink-0"
+                        className="flex items-center gap-1 sm:gap-1.5 shrink-0 ml-auto"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
+                          className="h-7 w-7 sm:h-8 sm:w-8"
                           onClick={() => setExpandedId(isExpanded ? null : q.id)}
                         >
                           {isExpanded
-                            ? <ChevronUp className="h-4 w-4" />
-                            : <ChevronDown className="h-4 w-4" />}
+                            ? <ChevronUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                            : <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 hover:bg-destructive/10"
+                          className="h-7 w-7 sm:h-8 sm:w-8 hover:bg-destructive/10"
                           onClick={() => deleteQuestion.mutate(q.id)}
                         >
-                          <Trash2 className="h-4 w-4 text-destructive" />
+                          <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-destructive" />
                         </Button>
                       </div>
                     </div>
 
                     {/* Expanded Detail */}
                     {isExpanded && (
-                      <div className="px-6 pb-5 pt-0 border-t mt-0 space-y-3">
+                      <div className="px-4 sm:px-6 pb-4 sm:pb-5 pt-0 border-t mt-0 space-y-3">
                         {/* MCQ Options - Student Interface Look */}
                         {opts.length > 0 && (
                           <div className="space-y-2 mt-4">
-                            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest pl-1">Options Preview</p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <p className="text-[9px] sm:text-[10px] uppercase font-bold text-muted-foreground tracking-widest pl-1">Options Preview</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                               {opts.map((opt, i) => {
                                 const isCorrect = opt ? (typeof opt === 'object' ? (opt as Record<string, unknown>).is_correct === true : String(opt).trim() === String(q.correct_answer).trim()) : false;
                                 const optText = opt ? (typeof opt === 'object' ? String((opt as Record<string, unknown>).text || '') : String(opt)) : '';
@@ -1394,23 +1394,23 @@ export function QuestionBankManager({
                                   <div
                                     key={i}
                                     className={cn(
-                                      "flex items-center gap-3 px-4 py-3 rounded-xl text-sm border-2 transition-all",
+                                      "flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-xl text-xs sm:text-sm border-2 transition-all",
                                       isCorrect
                                         ? "bg-emerald-50 border-emerald-500/30 text-emerald-900 shadow-sm shadow-emerald-500/10"
                                         : "bg-background border-muted hover:border-muted-foreground/20"
                                     )}
                                   >
                                     <div className={cn(
-                                      "h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold border",
+                                      "h-5 w-5 sm:h-6 sm:w-6 rounded-full flex items-center justify-center text-[9px] sm:text-[10px] font-bold border",
                                       isCorrect ? "bg-emerald-500 text-white border-emerald-500" : "bg-muted border-muted-foreground/20"
                                     )}>
                                       {String.fromCharCode(65 + i)}
                                     </div>
-                                    <span className="flex-1 font-medium">{optText}</span>
+                                    <span className="flex-1 font-medium truncate">{optText}</span>
                                     {isCorrect && (
-                                      <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600">
-                                        <span>CORRECT</span>
-                                        <CheckCircle className="h-4 w-4" />
+                                      <div className="flex items-center gap-1 text-[9px] sm:text-[10px] font-bold text-emerald-600">
+                                        <span className="hidden xs:inline">CORRECT</span>
+                                        <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                       </div>
                                     )}
                                   </div>
@@ -1491,7 +1491,7 @@ export function QuestionBankManager({
                     Finalize Batch
                   </DialogTitle>
                   <DialogDescription className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">
-                    Attach logic particles to an active scheduling poster
+                    Attach draft questions to an active exam schedule
                   </DialogDescription>
                 </div>
               </DialogHeader>

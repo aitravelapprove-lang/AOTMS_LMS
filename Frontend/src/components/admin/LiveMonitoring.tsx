@@ -31,6 +31,25 @@ import {
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from '@/components/ui/scroll-area';
 
+interface Batch {
+    id: string;
+    batch_name: string;
+    course_id: string;
+    instructor_id: string;
+}
+
+interface RichCourse {
+    id: string;
+    title: string;
+    instructor_ids?: string[];
+    instructor_id?: string;
+    instructors?: { id: string; user_id?: string }[];
+}
+
+interface DetailedMonitoringResult extends MonitoringResult {
+    batchName?: string;
+}
+
 export function LiveMonitoring() {
     const { userRole } = useAuth();
     const { data, loading: monitorLoading, refresh, deleteEnrollment, deleteExamResult } = useLiveMonitoring();
@@ -39,12 +58,12 @@ export function LiveMonitoring() {
     const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState('instructors'); // Default to instructors
     const [expandedInst, setExpandedInst] = useState<string[]>([]);
-    const [selectedBatchResults, setSelectedBatchResults] = useState<any[] | null>(null);
+    const [selectedBatchResults, setSelectedBatchResults] = useState<DetailedMonitoringResult[] | null>(null);
     const [isResultsModalOpen, setIsResultsModalOpen] = useState(false);
     
     // Additional data for robust matching
-    const [batches, setBatches] = useState<any[]>([]);
-    const [richCourses, setRichCourses] = useState<any[]>([]);
+    const [batches, setBatches] = useState<Batch[]>([]);
+    const [richCourses, setRichCourses] = useState<RichCourse[]>([]);
     const [additionalDataLoading, setAdditionalDataLoading] = useState(true);
 
     useEffect(() => {
@@ -54,8 +73,8 @@ export function LiveMonitoring() {
                     fetchWithAuth('/data/batches'),
                     fetchWithAuth('/admin/courses-with-instructors')
                 ]);
-                setBatches(batchesData as any[] || []);
-                setRichCourses(richCoursesData as any[] || []);
+                setBatches((batchesData as Batch[]) || []);
+                setRichCourses((richCoursesData as RichCourse[]) || []);
             } catch (err) {
                 console.error("Failed to load matching data", err);
             } finally {
@@ -102,7 +121,7 @@ export function LiveMonitoring() {
         const assignedCoursesFromRich = richCourses.filter(c => 
             c.instructor_ids?.includes(inst.id) ||
             c.instructor_id === inst.id ||
-            c.instructors?.some((i: any) => i.id === inst.id || i.user_id === inst.id)
+            c.instructors?.some((i: { id: string; user_id?: string }) => i.id === inst.id || i.user_id === inst.id)
         );
 
         // Find all batches assigned to this instructor
@@ -185,7 +204,7 @@ export function LiveMonitoring() {
         );
     };
 
-    const handleViewResults = (results: any[], batchName: string) => {
+    const handleViewResults = (results: MonitoringResult[], batchName: string) => {
         setSelectedBatchResults(results.map(r => ({ ...r, batchName })));
         setIsResultsModalOpen(true);
     };
@@ -210,9 +229,9 @@ export function LiveMonitoring() {
                     </div>
                     <div>
                         <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2 uppercase font-sans leading-none">
-                            Live <span className="text-primary font-medium tracking-normal capitalize italic">Monitoring</span>
+                            Platform <span className="text-primary font-medium tracking-normal capitalize italic">Insights</span>
                         </h1>
-                        <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Real-time platform activity and progress tracking</p>
+                        <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Real-time engagement and progress tracking</p>
                     </div>
                 </div>
 
@@ -234,10 +253,10 @@ export function LiveMonitoring() {
 
             {/* Quick Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                <StatsCard title="Global Progress" value={`${avgProgress}%`} icon={<BookOpen className="h-5 w-5" />} color="blue" description="Average course completion" />
-                <StatsCard title="Active Learners" value={totalEnrollments} icon={<Users className="h-5 w-5" />} color="indigo" description="Enrolled & active students" />
-                <StatsCard title="Exam Velocity" value={results.filter(r => new Date(r.submitted_at) > new Date(Date.now() - 24*60*60*1000)).length} icon={<Trophy className="h-5 w-5" />} color="amber" description="Tests taken in 24 hours" />
-                <StatsCard title="Platform Score" value={`${avgScore}%`} icon={<TrendingUp className="h-5 w-5" />} color="emerald" description="Average across all assessments" />
+                <StatsCard title="Overall Progress" value={`${avgProgress}%`} icon={<BookOpen className="h-5 w-5" />} color="blue" description="Average course completion" />
+                <StatsCard title="Active Students" value={totalEnrollments} icon={<Users className="h-5 w-5" />} color="indigo" description="Enrolled & active learners" />
+                <StatsCard title="Tests Taken" value={results.filter(r => new Date(r.submitted_at) > new Date(Date.now() - 24*60*60*1000)).length} icon={<Trophy className="h-5 w-5" />} color="amber" description="Exams in the last 24 hours" />
+                <StatsCard title="Average Score" value={`${avgScore}%`} icon={<TrendingUp className="h-5 w-5" />} color="emerald" description="Average across all assessments" />
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -261,9 +280,9 @@ export function LiveMonitoring() {
                         <CardHeader className="p-5 sm:p-8 pb-4">
                             <CardTitle className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
                                 <Users className="h-5 w-5 text-primary" />
-                                Faculty Performance Matrix
+                                Instructor Analytics
                             </CardTitle>
-                            <CardDescription className="text-xs sm:text-sm font-medium italic uppercase tracking-widest text-slate-400">Instructor-led batch progress and mock test oversight</CardDescription>
+                            <CardDescription className="text-xs sm:text-sm font-medium italic uppercase tracking-widest text-slate-400">Instructor progress and assessment overview</CardDescription>
                         </CardHeader>
                         <CardContent className="p-0">
                             <div className="overflow-x-auto">
@@ -271,11 +290,11 @@ export function LiveMonitoring() {
                                     <thead className="bg-slate-50/50 text-[10px] font-black uppercase tracking-widest text-slate-400">
                                         <tr>
                                             <th className="px-5 sm:px-8 py-4 whitespace-nowrap w-10"></th>
-                                            <th className="px-5 sm:px-8 py-4 whitespace-nowrap">Instructor Personnel</th>
-                                            <th className="px-5 sm:px-8 py-4 whitespace-nowrap">Batch Count</th>
+                                            <th className="px-5 sm:px-8 py-4 whitespace-nowrap">Instructor Name</th>
+                                            <th className="px-5 sm:px-8 py-4 whitespace-nowrap">Active Batches</th>
                                             <th className="px-5 sm:px-8 py-4 whitespace-nowrap">Total Students</th>
-                                            <th className="px-5 sm:px-8 py-4 whitespace-nowrap">Avg Progress</th>
-                                            <th className="px-5 sm:px-8 py-4 text-right whitespace-nowrap">Overall Perf</th>
+                                            <th className="px-5 sm:px-8 py-4 whitespace-nowrap">Course Progress</th>
+                                            <th className="px-5 sm:px-8 py-4 text-right whitespace-nowrap">Avg Score</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
@@ -336,7 +355,7 @@ export function LiveMonitoring() {
                                                                             <Layout className="h-4 w-4 text-primary" />
                                                                         </div>
                                                                         <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                                                            Instructional Nodes & Student Bandwidth
+                                                                            Batch Details & Student Enrollment
                                                                         </div>
                                                                     </div>
                                                                     <Badge className="bg-white text-slate-400 border-slate-200 text-[9px] font-black uppercase">
@@ -358,7 +377,7 @@ export function LiveMonitoring() {
                                                                                         <h4 className="text-xs font-black text-slate-900 uppercase tracking-tight truncate w-40">{batch.name}</h4>
                                                                                         <div className="flex items-center gap-2">
                                                                                             <Users className="h-3 w-3 text-slate-300" />
-                                                                                            <p className="text-[9px] text-slate-400 font-bold uppercase">{batch.studentCount} Active Personnel</p>
+                                                                                            <p className="text-[9px] text-slate-400 font-bold uppercase">{batch.studentCount} Students</p>
                                                                                         </div>
                                                                                     </div>
                                                                                     <Button 
@@ -460,7 +479,7 @@ export function LiveMonitoring() {
                                                     <div className="w-48 space-y-2">
                                                         <div className="flex justify-between items-center text-[10px] font-black uppercase font-sans">
                                                             <span className={en.progress === 100 ? "text-emerald-500" : "text-primary"}>
-                                                                {en.progress === 100 ? "GRADUATED" : "LEARNING"}
+                                                                {en.progress === 100 ? "COMPLETED" : "IN PROGRESS"}
                                                             </span>
                                                             <span className="text-slate-900">{en.progress}%</span>
                                                         </div>
@@ -511,8 +530,8 @@ export function LiveMonitoring() {
                         {/* Results Table - Spans 2 */}
                         <Card className="lg:col-span-2 pro-card border-none shadow-2xl shadow-slate-200/20 rounded-[2.5rem] overflow-hidden">
                             <CardHeader className="p-5 sm:p-8 pb-4">
-                                <CardTitle className="text-xl font-black text-slate-900 tracking-tight">Certification & Assessment History</CardTitle>
-                                <CardDescription className="text-xs sm:text-sm font-medium italic uppercase tracking-widest text-slate-400">Official student test results and performance logs</CardDescription>
+                                <CardTitle className="text-xl font-black text-slate-900 tracking-tight">Test Submission History</CardTitle>
+                                <CardDescription className="text-xs sm:text-sm font-medium italic uppercase tracking-widest text-slate-400">Complete student assessment and score logs</CardDescription>
                             </CardHeader>
                             <CardContent className="p-0">
                                 <div className="overflow-x-auto scrollbar-thin">
@@ -536,7 +555,7 @@ export function LiveMonitoring() {
                                                     <td className="px-8 py-5 align-middle">
                                                         <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider ${r.type === 'live' ? 'bg-rose-50 text-rose-600 border border-rose-100/50' : 'bg-indigo-50 text-indigo-600 border border-indigo-100/50'}`}>
                                                             {r.type === 'live' ? <Activity className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
-                                                            {r.test_title.toUpperCase().includes('SYSTEM GENERATED') ? 'Official Assessment' : r.test_title}
+                                                            {r.test_title.toUpperCase().includes('SYSTEM GENERATED') ? 'Main Test' : r.test_title}
                                                         </div>
                                                     </td>
                                                     <td className="px-8 py-5 align-middle">
@@ -625,7 +644,7 @@ export function LiveMonitoring() {
                                                 <div>
                                                     <div className="text-sm font-black text-slate-900 truncate w-32">{top.student}</div>
                                                     <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest leading-none mt-1">
-                                                        {top.test_title.toUpperCase().includes('SYSTEM GENERATED') ? 'Intelligent Assessment' : top.test_title}
+                                                        {top.test_title.toUpperCase().includes('SYSTEM GENERATED') ? 'Main Assessment' : top.test_title}
                                                     </div>
                                                 </div>
                                             </div>

@@ -189,7 +189,7 @@ const ScrollBot = () => {
                           <div className="flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 bg-white/60 rounded-full animate-ping" />
                             <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">
-                              Online & Active
+                              Support Active
                             </p>
                           </div>
                         </div>
@@ -228,7 +228,7 @@ const ScrollBot = () => {
                        {/* Quick Prompts */}
                        {messages.length === 1 && (
                          <div className="flex flex-col gap-2 pt-2">
-                           <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-2">Common Queries</p>
+                           <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-2">Common Enquiries</p>
                            <div className="flex flex-wrap gap-2">
                              {KB.map((item) => (
                                <button
@@ -265,7 +265,7 @@ const ScrollBot = () => {
                         </Button>
                       </div>
                       <p className="text-center text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-4">
-                        AOTMS Official Support
+                        AOTMS Help Desk
                       </p>
                     </div>
                   </motion.div>

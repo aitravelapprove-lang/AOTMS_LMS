@@ -298,47 +298,47 @@ function CoursesTab() {
 
                {/* Inputs Column (Compressed) */}
                <div className="col-span-1 sm:col-span-3 space-y-4">
-                  {/* Coupon (Low Height) */}
-                  <div className="space-y-1.5">
-                    <div className="flex gap-2 h-9">
-                      <input 
-                        placeholder="Coupon Code"
+                  {/* Coupon (Enhanced UX) */}
+                  <div className="space-y-2">
+                    <div className="flex gap-2 group">
+                      <Input 
+                        placeholder="COUPON CODE"
                         value={couponCode}
                         onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                         disabled={appliedPrice !== null}
-                        className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-bold focus:border-primary focus:outline-none transition-all"
+                        className="flex-1 h-11 rounded-xl border-slate-200 bg-slate-50 px-4 text-xs font-black tracking-widest placeholder:text-slate-300 placeholder:font-bold focus:ring-4 focus:ring-primary/5 transition-all"
                       />
                       <Button 
                         size="sm"
                         onClick={handleApplyCoupon}
                         disabled={!couponCode || isValidating || appliedPrice !== null}
-                        className="h-9 px-4 rounded-lg font-bold text-[10px]"
+                        className="h-11 px-6 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-primary/10 transition-all hover:scale-[1.02] active:scale-95 shrink-0"
                       >
-                        {isValidating ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Apply'}
+                        {isValidating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Apply'}
                       </Button>
                     </div>
                   </div>
 
-                  {/* UTR (Low Height) */}
+                  {/* UTR (Enhanced UX) */}
                   <div className="space-y-1.5">
-                    <div className="relative">
-                      <input 
-                        placeholder="12-digit UTR Number"
+                    <div className="relative group/utr">
+                      <Input 
+                        placeholder="12-DIGIT UTR NUMBER"
                         value={utrNumber}
                         onChange={(e) => setUtrNumber(e.target.value.replace(/\D/g, '').slice(0, 12))}
-                        className="w-full h-9 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-bold focus:border-primary focus:outline-none transition-all"
+                        className="w-full h-11 rounded-xl border-slate-200 bg-slate-50 px-4 pr-10 text-xs font-black tracking-widest placeholder:text-slate-300 placeholder:font-bold focus:ring-4 focus:ring-primary/5 transition-all"
                       />
-                      <Hash className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-300" />
+                      <Hash className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within/utr:text-primary transition-colors" />
                     </div>
                   </div>
 
-                  {/* Upload (Compact Row) */}
+                  {/* Upload (Enhanced UX) */}
                   <div 
-                    className={`h-9 flex items-center justify-center gap-2 border border-dashed rounded-lg cursor-pointer transition-all ${paymentProof ? 'border-primary bg-primary/5' : 'border-slate-200 hover:bg-slate-50'}`}
+                    className={`h-11 flex items-center justify-center gap-2 border border-dashed rounded-xl cursor-pointer transition-all ${paymentProof ? 'border-primary bg-primary/5' : 'border-slate-200 hover:bg-slate-50 shadow-sm'}`}
                     onClick={() => document.getElementById('payment-proof')?.click()}
                   >
-                    <Upload className="h-3 w-3 text-slate-400" />
-                    <span className="text-[10px] font-bold text-slate-600 truncate max-w-[120px]">
+                    <Upload className={`h-4 w-4 ${paymentProof ? 'text-primary' : 'text-slate-400'}`} />
+                    <span className={`text-[10px] font-black uppercase tracking-widest truncate max-w-[150px] ${paymentProof ? 'text-primary' : 'text-slate-500'}`}>
                       {paymentProof ? paymentProof.name : 'Proof Screenshot'}
                     </span>
                     <input id="payment-proof" type="file" className="hidden" accept="image/*" onChange={(e) => setPaymentProof(e.target.files?.[0] || null)} />

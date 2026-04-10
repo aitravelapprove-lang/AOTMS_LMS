@@ -285,8 +285,8 @@ export function LiveMonitoring() {
                             <CardDescription className="text-xs sm:text-sm font-medium italic uppercase tracking-widest text-slate-400">Instructor progress and assessment overview</CardDescription>
                         </CardHeader>
                         <CardContent className="p-0">
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left">
+                            <div className="overflow-x-auto scrollbar-thin">
+                                <table className="w-full text-left min-w-[900px]">
                                     <thead className="bg-slate-50/50 text-[10px] font-black uppercase tracking-widest text-slate-400">
                                         <tr>
                                             <th className="px-5 sm:px-8 py-4 whitespace-nowrap w-10"></th>
@@ -444,8 +444,8 @@ export function LiveMonitoring() {
                             <CardDescription className="text-xs sm:text-sm font-medium italic uppercase tracking-widest text-slate-400">Tracking completion depth across the curriculum</CardDescription>
                         </CardHeader>
                         <CardContent className="p-0">
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left">
+                            <div className="overflow-x-auto scrollbar-thin">
+                                <table className="w-full text-left min-w-[900px]">
                                     <thead className="bg-slate-50/50 text-[10px] font-black uppercase tracking-widest text-slate-400">
                                         <tr>
                                             <th className="px-5 sm:px-8 py-4 whitespace-nowrap">Student Name</th>

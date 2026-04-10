@@ -35,6 +35,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
+import logo from "@/assets/logo.png";
 
 export function ManagerSidebar() {
   const { state } = useSidebar();
@@ -88,27 +89,15 @@ export function ManagerSidebar() {
     <Sidebar collapsible="icon" className="border-r border-slate-200 bg-white">
       <SidebarHeader className="h-20 flex items-center px-6 border-b border-slate-50">
         {!collapsed ? (
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold shadow-lg shadow-primary/20">
-                A
-              </div>
-              <div className="flex flex-col">
-                <span className="font-black text-[12px] tracking-tight text-slate-900 leading-none">
-                  ACADEMY OF TECH MASTERS
-                </span>
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
-                  Learn Today, Lead Tomorrow
-                </span>
-              </div>
-            </div>
-            <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] mt-3 pl-10">
+          <div className="flex flex-col items-start gap-1.5">
+            <img src={logo} alt="AOTMS Logo" className="h-10 w-auto" />
+            <span className="text-[9px] font-black text-primary uppercase tracking-[0.2em] ml-1">
                 MANAGER PANEL
             </span>
           </div>
         ) : (
-          <div className="h-10 w-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold mx-auto shadow-lg shadow-primary/20">
-            A
+          <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center mx-auto shadow-sm shadow-slate-200">
+            <img src={logo} alt="AOTMS Logo" className="h-6 w-auto" />
           </div>
         )}
       </SidebarHeader>
@@ -142,19 +131,16 @@ export function ManagerSidebar() {
                     <SidebarMenuButton
                       asChild
                       isActive={isActive(item.url)}
-                      className="h-10 px-3 rounded-lg transition-all duration-200 group relative data-[active=true]:bg-slate-50 data-[active=true]:text-slate-900 group-data-[collapsible=icon]:!px-0 group-data-[collapsible=icon]:!justify-center"
+                      className="h-11 px-4 rounded-xl transition-all duration-300 group relative data-[active=true]:bg-[#0075CF] data-[active=true]:text-white data-[active=true]:shadow-lg data-[active=true]:shadow-[#0075CF]/20 hover:bg-[#0075CF]/10 hover:text-[#0075CF] text-slate-500 group-data-[collapsible=icon]:!px-0 group-data-[collapsible=icon]:!justify-center"
                     >
-                      <Link to={item.url} className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0">
+                      <Link to={item.url} className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0">
                         <item.icon
-                          className={`h-4.5 w-4.5 transition-colors shrink-0 ${isActive(item.url) ? "text-primary fill-primary/10" : "text-slate-500 group-hover:text-slate-700"}`}
+                          className="h-5 w-5 transition-all duration-300 shrink-0 group-data-[active=true]:text-white group-hover:text-[#0075CF] text-slate-400 group-data-[active=true]:scale-110"
                         />
                         {!collapsed && (
-                          <span className="text-[12px] font-medium tracking-tight">
+                          <span className="font-black text-xs uppercase tracking-wider z-10 transition-colors group-data-[active=true]:text-white group-hover:text-[#0075CF] text-slate-600">
                             {item.title}
                           </span>
-                        )}
-                        {isActive(item.url) && !collapsed && (
-                           <div className="absolute right-2 h-1.5 w-1.5 rounded-full bg-primary" />
                         )}
                       </Link>
                     </SidebarMenuButton>

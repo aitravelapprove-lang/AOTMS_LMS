@@ -917,25 +917,25 @@ function DashboardHome() {
         <div className="lg:col-span-2 space-y-6">
           {/* Main Content: Continue Learning */}
           <Card className="pro-card border-none shadow-xl shadow-slate-200/50 overflow-hidden">
-            <div className="p-6 md:p-8 bg-gradient-to-br from-slate-900 to-slate-800 text-white relative">
-               <div className="absolute top-0 right-0 p-8 opacity-10">
-                 <Cpu className="h-32 w-32" />
+            <div className="p-6 md:p-8 bg-white text-slate-900 relative">
+               <div className="absolute top-0 right-0 p-8 opacity-[0.03]">
+                 <Cpu className="h-32 w-32 text-primary" />
                </div>
                
                {!latestCourse ? (
                 <div className="relative z-10 py-4 flex flex-col items-center justify-center text-center">
-                  <Badge className="bg-white/10 text-white border-white/20 mb-4 px-4 py-1">New Opportunity</Badge>
-                  <h3 className="text-2xl font-bold mb-4">Start Your Learning Journey</h3>
-                  <p className="text-slate-300 max-w-md mb-8">
+                  <Badge className="bg-primary/10 text-primary border-primary/20 mb-4 px-4 py-1 font-black">New Opportunity</Badge>
+                  <h3 className="text-2xl font-black mb-4 text-slate-900 tracking-tight">Start Your Learning Journey</h3>
+                  <p className="text-slate-500 max-w-md mb-8 font-medium italic">
                     Discover professional courses curated by industry experts.
                   </p>
-                  <Button className="bg-white text-slate-900 hover:bg-slate-100 h-12 px-8 font-bold rounded-full" asChild>
+                  <Button className="bg-slate-900 text-white hover:bg-primary h-12 px-8 font-black rounded-full shadow-xl shadow-slate-900/10" asChild>
                     <a href="/student-dashboard/courses">View Catalog</a>
                   </Button>
                 </div>
               ) : (
                 <div className="relative z-10 flex flex-col md:flex-row gap-8 items-center">
-                  <div className="w-full md:w-56 aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl shadow-black/40 border-2 border-white/10">
+                  <div className="w-full md:w-56 aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl shadow-slate-200/50 border-2 border-slate-50">
                     <img
                       src={latestCourse.thumbnail_url?.startsWith("http") ? latestCourse.thumbnail_url : `${API_URL}/s3/public/${latestCourse.thumbnail_url}`}
                       alt={latestCourse.title}
@@ -944,26 +944,26 @@ function DashboardHome() {
                     />
                   </div>
                   
-                  <div className="flex-1 space-y-4">
+                  <div className="flex-1 space-y-5">
                     <div className="flex items-center gap-2 mb-2">
-                       <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                       <span className="text-xs font-bold text-slate-300 uppercase tracking-widest">Currently Playing</span>
+                       <span className="h-2 w-2 rounded-full bg-primary animate-pulse"></span>
+                       <span className="text-[11px] font-black text-primary uppercase tracking-[0.4em]">Currently Playing</span>
                     </div>
-                    <h2 className="text-2xl md:text-3xl font-black leading-tight line-clamp-2">
+                    <h2 className="text-2xl md:text-4xl font-black leading-tight tracking-tighter text-slate-900">
                       {latestCourse.title}
                     </h2>
                     
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                        <div className="flex justify-between items-end">
-                         <span className="text-xs font-bold text-slate-400">COURSE OVERALL PROGRESS</span>
-                         <span className="text-xl font-black text-white">{latestCourse.progress}%</span>
+                         <span className="text-[11px] font-black text-slate-700 uppercase tracking-widest leading-none">Overall Program Progress</span>
+                         <span className="text-2xl font-black text-slate-900 tracking-tighter italic">{latestCourse.progress}%</span>
                        </div>
-                       <Progress value={latestCourse.progress} className="h-2.5 bg-white/10 [&>div]:bg-white" />
+                       <Progress value={latestCourse.progress} className="h-3 bg-slate-100 rounded-full [&>div]:bg-primary shadow-inner" />
                     </div>
 
-                    <Button className="bg-white text-slate-900 hover:bg-slate-100 hover:scale-105 transition-all h-12 px-8 font-bold rounded-full mt-4" asChild>
+                    <Button className="bg-slate-900 text-white hover:bg-black hover:scale-105 transition-all h-14 px-10 font-black italic tracking-tighter rounded-2xl mt-4 shadow-[0_20px_40px_rgba(0,0,0,0.1)] flex items-center gap-3" asChild>
                       <a href={`/student-dashboard/courses?courseId=${latestCourse.id}`}>
-                        Resume Lesson <ArrowRight className="ml-2 h-4 w-4" />
+                        RESUME LESSON <ArrowRight className="h-5 w-5" />
                       </a>
                     </Button>
                   </div>

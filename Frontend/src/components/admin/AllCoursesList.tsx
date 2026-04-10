@@ -241,6 +241,31 @@ export function AllCoursesList({
                     </div>
                   </div>
 
+                  {/* Active/Deactive Toggle */}
+                  <div className="flex items-center gap-4 mt-auto mb-4 p-3 bg-slate-50/50 rounded-2xl border border-slate-100 group-hover:bg-white transition-colors">
+                    <label className="flex-1 flex items-center justify-center gap-2 cursor-pointer group/active py-1">
+                      <input 
+                        type="radio" 
+                        name={`status-${course.id}`}
+                        checked={course.is_active !== false} 
+                        onChange={() => onToggleActive?.(course.id, true)}
+                        className="w-3.5 h-3.5 accent-emerald-500 cursor-pointer"
+                      />
+                      <span className={`text-[10px] font-black uppercase tracking-widest transition-colors ${course.is_active !== false ? 'text-emerald-600' : 'text-slate-400'}`}>Active</span>
+                    </label>
+                    <div className="w-px h-4 bg-slate-200" />
+                    <label className="flex-1 flex items-center justify-center gap-2 cursor-pointer group/deactive py-1">
+                      <input 
+                        type="radio" 
+                        name={`status-${course.id}`}
+                        checked={course.is_active === false} 
+                        onChange={() => onToggleActive?.(course.id, false)}
+                        className="w-3.5 h-3.5 accent-rose-500 cursor-pointer"
+                      />
+                      <span className={`text-[10px] font-black uppercase tracking-widest transition-colors ${course.is_active === false ? 'text-rose-600' : 'text-slate-400'}`}>Deactive</span>
+                    </label>
+                  </div>
+
                   <div className="flex flex-col sm:flex-row xl:flex-row gap-2 pt-2">
                     <Button
                       variant="outline"

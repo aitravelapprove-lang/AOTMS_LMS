@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Play, BookOpen, Clock, Sparkles, ChevronRight, LayoutGrid, CreditCard, Layers } from "lucide-react";
+import { Play, BookOpen, Clock, Sparkles, ChevronRight, LayoutGrid, CreditCard, Layers, CheckCircle } from "lucide-react";
 import { useEnrolledCourses, useAvailableCourses, StudentCourse, useStudentBatch } from "@/hooks/useStudentData";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -34,8 +34,14 @@ export function CourseList({ type = 'enrolled', onSelectCourse }: CourseListProp
     const enrolledQuery = useEnrolledCourses();
     const availableQuery = useAvailableCourses();
 
-    const query = type === 'enrolled' ? enrolledQuery : availableQuery;
-    const { data: courses, isLoading } = query;
+    let query = type === 'enrolled' ? enrolledQuery : availableQuery;
+    let { data: courses, isLoading } = query;
+
+    // Filter available courses to hide already enrolled ones
+    if (type === 'available' && courses && enrolledQuery.data) {
+        const enrolledIds = new Set(enrolledQuery.data.map(c => c.id || c._id));
+        courses = courses.filter(c => !enrolledIds.has(c.id || c._id));
+    }
 
     if (isLoading) {
         return (
@@ -176,18 +182,30 @@ export function CourseList({ type = 'enrolled', onSelectCourse }: CourseListProp
                                         ) : (
                                             <>
                                                 {course.remaining_balance ? (
-                                                    <>
-                                                        <div className="flex justify-between text-[11px] font-bold mb-1">
-                                                            <span className="text-slate-500 uppercase tracking-tighter">Payment Status</span>
-                                                            <span className="text-primary font-black uppercase">
-                                                                {course.payment_term === 'term1' ? '1st Term' : course.payment_term === 'term2' ? '2nd Term' : 'Paid in Full'}
-                                                            </span>
+                                                    <div className="space-y-4 mb-3">
+                                                        <div className="flex justify-between text-[11px] font-bold">
+                                                            <span className="text-slate-500 uppercase tracking-tighter">Payment Strategy</span>
+                                                            <span className="text-primary font-black uppercase tracking-widest text-[9px]">Term-Based (60/40)</span>
                                                         </div>
-                                                        <div className="text-[10px] text-amber-600 bg-amber-50 px-2 py-1 rounded-md border border-amber-100 flex justify-between items-center mb-3">
-                                                           <span className="font-bold flex items-center gap-1"><CreditCard className="h-3 w-3" /> Remaining:</span>
-                                                           <span className="font-black">₹{course.remaining_balance.toLocaleString('en-IN')}</span>
+                                                        
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-100/50 flex flex-col items-center">
+                                                                <span className="text-[7px] font-black uppercase tracking-widest text-emerald-500">1st Term (60%)</span>
+                                                                <span className="text-xs font-black text-emerald-700">₹{Math.round((course.price || 0) * 0.6).toLocaleString('en-IN')}</span>
+                                                                <span className="text-[6px] font-bold text-emerald-600 uppercase mt-0.5 tracking-tighter flex items-center gap-1"><CheckCircle className="h-2 w-2" /> Cleared</span>
+                                                            </div>
+                                                            <div className="p-2 rounded-xl bg-amber-50 border border-amber-100/50 flex flex-col items-center">
+                                                                <span className="text-[7px] font-black uppercase tracking-widest text-amber-500">2nd Term (40%)</span>
+                                                                <span className="text-xs font-black text-amber-700">₹{Math.round((course.price || 0) * 0.4).toLocaleString('en-IN')}</span>
+                                                                <span className="text-[6px] font-bold text-amber-600 uppercase mt-0.5 tracking-tighter animate-pulse">Pending View</span>
+                                                            </div>
                                                         </div>
-                                                    </>
+                                                        
+                                                        <div className="text-[10px] text-amber-600 bg-amber-50/50 p-2 rounded-xl border border-amber-100 flex justify-between items-center">
+                                                           <span className="font-bold flex items-center gap-1"><CreditCard className="h-3 w-3" /> Due Amount:</span>
+                                                           <span className="font-black">₹{(course.remaining_balance || 0).toLocaleString('en-IN')}</span>
+                                                        </div>
+                                                    </div>
                                                 ) : null}
 
                                                 <div className="flex justify-between text-sm font-bold">

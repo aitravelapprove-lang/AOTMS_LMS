@@ -246,7 +246,11 @@ function CoursesTab() {
                   <div>
                     <h3 className="font-bold text-sm leading-none">{paymentCourse.title}</h3>
                     <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest font-black">
-                      Total: ₹{getEffectivePrice().toLocaleString('en-IN')}
+                      {paymentTerm === 'term2' ? (
+                        <span className="text-amber-400">Balance: ₹{term2Amount.toLocaleString('en-IN')}</span>
+                      ) : (
+                        <span>Total: ₹{getEffectivePrice().toLocaleString('en-IN')}</span>
+                      )}
                     </p>
                   </div>
                </div>
@@ -265,12 +269,15 @@ function CoursesTab() {
             {/* Term Selection (Drastically Reduced Height) */}
             <div className="space-y-2">
                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Select Payment Plan</div>
-               <div className="grid grid-cols-3 gap-2">
+               <div className="grid grid-cols-2 gap-2">
                  {[ 
                    { id: 'full', label: 'Full', pct: 100, amount: getEffectivePrice() },
                    { id: 'term1', label: 'Term 1', pct: 60, amount: term1Amount },
                    { id: 'term2', label: 'Term 2', pct: 40, amount: term2Amount }
-                 ].map((plan) => (
+                 ].filter(plan => {
+                   if (paymentCourse?.payment_term === 'term1') return plan.id === 'term2';
+                   return plan.id === 'full' || plan.id === 'term1';
+                 }).map((plan) => (
                     <button 
                       key={plan.id}
                       onClick={() => setPaymentTerm(plan.id as 'full' | 'term1' | 'term2')}
@@ -394,6 +401,22 @@ function CoursesTab() {
                 });
                 return;
               }
+
+              // Check for Term 2 Payment if active but has balance
+              if (c.enrollmentStatus === 'active' && c.remaining_balance > 0) {
+                 toast({
+                   title: "Balance Dues Found",
+                   description: "Opening payment gateway for your remaining balance.",
+                   className: "bg-amber-50 border-amber-200"
+                 });
+                 setPaymentCourse(c);
+                 setPaymentTerm('term2');
+                 setCouponCode("");
+                 setAppliedPrice(null);
+                 setShowPaymentModal(true);
+                 return;
+              }
+              
               setViewingCourse(c);
             }}
           />

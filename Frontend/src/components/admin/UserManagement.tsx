@@ -470,16 +470,16 @@ export function UserManagement({
                 </div>
                 
                 <div className="space-y-1">
-                  <h5 className={`text-[10px] font-black uppercase tracking-[0.2em] ${role.isHigh ? 'text-white/60' : 'text-slate-400'}`}>
+                  <h5 className={`text-[10px] font-black uppercase tracking-[0.2em] ${role.isHigh ? 'text-white/90' : 'text-slate-900'}`}>
                     {role.label}
                   </h5>
                   <div className="flex items-baseline gap-2">
                     <span className={`text-3xl font-black tracking-tighter ${role.isHigh ? 'text-white' : 'text-slate-900'}`}>
                       {role.count}
                     </span>
-                    <span className={`text-[11px] font-bold ${role.isHigh ? 'text-white/40' : 'text-slate-300'}`}>Users</span>
+                    <span className={`text-[11px] font-bold ${role.isHigh ? 'text-white/70' : 'text-slate-900'}`}>Users</span>
                   </div>
-                  <p className={`text-[11px] font-medium pt-3 border-t mt-4 border-white/10 ${role.isHigh ? 'text-white/60' : 'text-slate-400 border-slate-50'}`}>
+                  <p className={`text-[11px] font-medium pt-3 border-t mt-4 border-white/10 ${role.isHigh ? 'text-white/90' : 'text-slate-900 border-slate-50'}`}>
                     {role.desc}
                   </p>
                 </div>

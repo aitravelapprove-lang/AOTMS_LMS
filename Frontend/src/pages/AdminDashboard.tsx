@@ -592,7 +592,7 @@ export default function AdminDashboard() {
                     </span>
                   </div>
                   <div className="mt-4 space-y-1">
-                    <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">
+                    <p className="text-sm font-semibold text-slate-900 uppercase tracking-wider">
                       {stat.label}
                     </p>
                     <div className="flex items-baseline gap-2">
@@ -600,7 +600,7 @@ export default function AdminDashboard() {
                         {dataLoading ? "..." : stat.value}
                       </h2>
                     </div>
-                    <p className="text-xs text-slate-400 font-medium">
+                    <p className="text-xs text-slate-900 font-medium">
                       {stat.description}
                     </p>
                   </div>

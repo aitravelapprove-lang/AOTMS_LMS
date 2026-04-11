@@ -467,20 +467,20 @@ export default function InstructorAccess() {
                               : "INSTRUCTOR"}
                           </Badge>
                         </div>
-                        <p className="text-[12px] font-semibold text-slate-500 line-clamp-1 opacity-70">
+                        <p className="text-[12px] font-semibold text-slate-900 line-clamp-1 opacity-100">
                           {course.instructor_email}
                         </p>
                         <div className="flex flex-wrap items-center gap-2 pt-1">
                           <div className="px-3 py-1 bg-slate-50 rounded-lg border border-slate-100 flex items-center gap-2 max-w-full">
                             <BookOpen className="h-3 w-3 text-primary/40 shrink-0" />
-                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight line-clamp-1">
+                            <span className="text-[10px] font-bold text-slate-900 uppercase tracking-tight line-clamp-1">
                               {course.title}
                             </span>
                           </div>
                           {course.created_at && (
                             <div className="px-3 py-1 bg-slate-50/50 rounded-lg border border-slate-100/50 flex items-center gap-2">
                               <Clock className="h-3 w-3 text-slate-300 shrink-0" />
-                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
+                              <span className="text-[10px] font-bold text-slate-900 uppercase tracking-tight">
                                 {new Date(course.created_at).toLocaleDateString(
                                   "en-GB",
                                 )}

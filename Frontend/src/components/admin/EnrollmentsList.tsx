@@ -379,7 +379,7 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                                     </h4>
                                     {getStatusBadge(enrollment.status || 'pending')}
                                   </div>
-                                  <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 bg-slate-50/80 px-2 py-1 rounded-lg w-fit">
+                                  <div className="flex items-center gap-2 text-[10px] font-bold text-slate-900 bg-slate-50/80 px-2 py-1 rounded-lg w-fit">
                                     <Calendar className="h-3 w-3 text-indigo-500" />
                                     <span>
                                       {(enrollment.enrollment_date || enrollment.enrolled_at) 
@@ -388,7 +388,7 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                                       }
                                     </span>
                                   </div>
-                                  <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400 group-hover:text-slate-600 transition-colors">
+                                  <div className="flex items-center gap-2 text-[10px] font-mono text-slate-900 group-hover:text-slate-600 transition-colors">
                                     <Fingerprint className="h-3 w-3" />
                                     <span className="truncate max-w-[120px]">{enrollment.user_id}</span>
                                     <button 

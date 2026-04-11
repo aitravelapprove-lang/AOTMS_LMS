@@ -48,12 +48,12 @@ export function useInstructorS3Courses(showAll?: boolean) {
 }
 
 export function useCourseModules(courseId: string | null) {
-    const result = useQuery({
+    const result = useQuery<CourseModule[]>({
         queryKey: ['course-modules', courseId],
         queryFn: async () => {
             if (!courseId) return [];
             // Use the specific sub-resource endpoint which handles sorting on the backend
-            return fetchWithAuth(`/courses/${courseId}/modules`);
+            return fetchWithAuth<CourseModule[]>(`/courses/${courseId}/modules`);
         },
         enabled: !!courseId
     });
@@ -67,20 +67,20 @@ export function useCourseModules(courseId: string | null) {
 }
 
 export function useModuleVideos(moduleId: string | null, courseId?: string) {
-    return useQuery({
+    return useQuery<S3CourseVideo[]>({
         queryKey: ['module-videos', moduleId, courseId],
         queryFn: async () => {
             // If we have courseId but no moduleId, fetch all videos for the course
             if (courseId && !moduleId) {
-                return fetchWithAuth(`/courses/${courseId}/videos`);
+                return fetchWithAuth<S3CourseVideo[]>(`/courses/${courseId}/videos`);
             }
             if (!moduleId) return [];
             // If we have courseId and moduleId, use the dedicated sub-resource route
             if (courseId) {
-                return fetchWithAuth(`/courses/${courseId}/videos?module_id=eq.${moduleId}`);
+                return fetchWithAuth<S3CourseVideo[]>(`/courses/${courseId}/videos?module_id=eq.${moduleId}`);
             }
             // Fallback to generic table data
-            return fetchWithAuth(`/data/course_videos?module_id=eq.${moduleId}&sort=order_index&order=asc`);
+            return fetchWithAuth<S3CourseVideo[]>(`/data/course_videos?module_id=eq.${moduleId}&sort=order_index&order=asc`);
         },
         enabled: !!moduleId || !!courseId,
     });

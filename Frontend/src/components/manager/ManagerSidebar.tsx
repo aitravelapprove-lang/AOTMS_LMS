@@ -93,7 +93,7 @@ export function ManagerSidebar() {
         {!collapsed ? (
           <div className="flex flex-col items-center gap-1">
             <img src={logo} alt="AOTMS Logo" className="h-10 w-auto" />
-            <span className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">
+            <span className="text-[9px] font-bold text-primary uppercase tracking-[0.2em]">
                 MANAGER PANEL
             </span>
           </div>
@@ -125,7 +125,7 @@ export function ManagerSidebar() {
         {filteredGroups.map((group) => (
           <SidebarGroup key={group.label} className="p-0">
             {!collapsed && (
-              <SidebarGroupLabel className="px-4 text-[10px] uppercase font-black tracking-[0.2em] text-slate-400 p-0 h-auto mb-3">
+              <SidebarGroupLabel className="px-4 text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 p-0 h-auto mb-3">
                 {group.label}
               </SidebarGroupLabel>
             )}
@@ -157,7 +157,7 @@ export function ManagerSidebar() {
                         {!collapsed && (
                           <motion.span 
                             className={cn(
-                              "font-black text-xs uppercase tracking-wider z-10",
+                              "font-bold text-xs uppercase tracking-wider z-10",
                               isActive(item.url) ? "text-white" : "group-hover:text-primary"
                             )}
                             initial={{ opacity: 0, x: -5 }}

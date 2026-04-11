@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation, Link } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Sidebar,
   SidebarContent,
@@ -26,7 +27,6 @@ import {
   Database,
   TrendingUp,
   Ticket,
-  Zap,
   User,
   Search,
   X,
@@ -36,6 +36,7 @@ import logo from "@/assets/logo.png";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 const navGroups = [
   {
@@ -97,9 +98,9 @@ export function AdminSidebar() {
   return (
     <Sidebar
       collapsible="icon"
-      className="border-r-4 border-white bg-white font-sans"
+      className="border-r border-slate-200/40 !bg-white/80 backdrop-blur-2xl font-sans shadow-[20px_0_40px_rgba(0,0,0,0.01)]"
     >
-      <SidebarHeader className="h-auto flex flex-col items-center justify-center px-4 py-4 group-data-[collapsible=icon]:px-0 border-b border-slate-200/60 gap-4">
+      <SidebarHeader className="h-24 flex flex-col items-center justify-center px-4 py-4 group-data-[collapsible=icon]:px-0 border-b border-slate-200/60 gap-4">
         <Link
           to="/"
           className="flex flex-col gap-1 items-center active:scale-95 transition-transform"
@@ -115,49 +116,88 @@ export function AdminSidebar() {
             </span>
           )}
         </Link>
+      </SidebarHeader>
 
-        {!collapsed && (
-          <div className="relative w-full px-2">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+      {!collapsed && (
+        <div className="px-5 py-4">
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
             <Input
               placeholder="Search tools..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-9 pl-9 pr-8 text-[11px] bg-slate-50 border-none rounded-xl focus-visible:ring-1 focus-visible:ring-primary/20"
+              className="h-9 pl-9 pr-8 text-[11px] bg-slate-50/50 border-none rounded-xl focus-visible:ring-1 focus-visible:ring-primary/20"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="absolute right-4 top-1/2 -translate-y-1/2"
+                className="absolute right-3 top-1/2 -translate-y-1/2 border-none bg-transparent"
               >
                 <X className="h-3 w-3 text-slate-400 hover:text-slate-600" />
               </button>
             )}
           </div>
-        )}
-      </SidebarHeader>
+        </div>
+      )}
 
-      <SidebarContent className="px-3 group-data-[collapsible=icon]:px-2 py-6 space-y-4 admin-scrollbar">
+      <SidebarContent className={cn(
+        "px-3 group-data-[collapsible=icon]:px-2 space-y-6 custom-scrollbar",
+        collapsed ? "py-6" : "py-2"
+      )}>
         {filteredGroups.length > 0 ? (
           filteredGroups.map((group) => (
-            <SidebarGroup key={group.label} className="py-0">
-              <SidebarGroupLabel className="px-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 group-data-[collapsible=icon]:hidden">
-                {group.label}
-              </SidebarGroupLabel>
+            <SidebarGroup key={group.label} className="p-0">
+              {!collapsed && (
+                <SidebarGroupLabel className="px-4 text-[10px] uppercase font-black tracking-[0.2em] text-slate-400 p-0 h-auto mb-3">
+                  {group.label}
+                </SidebarGroupLabel>
+              )}
               <SidebarGroupContent>
-                <SidebarMenu className="gap-1">
+                <SidebarMenu className="gap-1.5">
                   {group.items.map((item) => (
                     <SidebarMenuItem key={item.url}>
                       <SidebarMenuButton
                         asChild
                         isActive={isActive(item.url)}
-                        className="h-11 px-4 rounded-xl transition-all duration-200 group relative data-[active=true]:bg-primary/10 data-[active=true]:text-primary group-data-[collapsible=icon]:!px-0 group-data-[collapsible=icon]:!justify-center"
+                        tooltip={item.title}
+                        className={cn(
+                          "h-12 px-4 rounded-xl transition-all duration-300 group relative overflow-hidden",
+                          isActive(item.url) 
+                            ? "bg-primary text-white shadow-[0_10px_20px_rgba(var(--primary),0.2)]" 
+                            : "hover:bg-primary/5 text-slate-600 hover:text-primary"
+                        )}
                       >
-                        <Link to={item.url} className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0">
-                          <item.icon
-                            className={`h-5 w-5 transition-colors shrink-0 ${isActive(item.url) ? "text-primary" : "text-slate-500 group-hover:text-slate-700"}`}
-                          />
-                          {!collapsed && <span className="text-[11px] font-black uppercase tracking-[0.05em]">{item.title}</span>}
+                        <Link to={item.url} className="flex items-center gap-3.5 w-full">
+                          <div className="relative z-10">
+                            <item.icon
+                              className={cn(
+                                "h-[1.125rem] w-[1.125rem] transition-all duration-300",
+                                isActive(item.url) ? "text-white scale-110" : "text-slate-400 group-hover:text-primary"
+                              )}
+                            />
+                          </div>
+                          
+                          {!collapsed && (
+                            <motion.span 
+                              className={cn(
+                                "font-black text-xs uppercase tracking-wider z-10",
+                                isActive(item.url) ? "text-white" : "group-hover:text-primary"
+                              )}
+                              initial={{ opacity: 0, x: -5 }}
+                              animate={{ opacity: 1, x: 0 }}
+                            >
+                              {item.title}
+                            </motion.span>
+                          )}
+
+                          {isActive(item.url) && (
+                            <motion.div 
+                              layoutId="active-pill-admin"
+                              className="absolute inset-0 bg-primary z-0"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                            />
+                          )}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -173,11 +213,11 @@ export function AdminSidebar() {
         )}
       </SidebarContent>
 
-      <SidebarFooter className="p-4 group-data-[collapsible=icon]:p-2 border-t border-slate-50 bg-slate-50/50">
+      <SidebarFooter className="p-4 group-data-[collapsible=icon]:p-2 border-t border-slate-50 bg-slate-50/50 mt-auto">
         <div className="space-y-2">
           <Button
             variant="ghost"
-            className="w-full justify-start group-data-[collapsible=icon]:justify-center gap-3 h-11 px-4 group-data-[collapsible=icon]:px-0 rounded-lg text-rose-600 hover:bg-rose-50 hover:text-rose-700 font-semibold"
+            className="w-full justify-start group-data-[collapsible=icon]:justify-center gap-3 h-11 px-4 group-data-[collapsible=icon]:px-0 rounded-lg text-rose-600 hover:bg-rose-50 hover:text-rose-700 font-semibold transition-all"
             onClick={signOut}
           >
             <LogOut className="h-5 w-5 shrink-0" />
@@ -188,4 +228,5 @@ export function AdminSidebar() {
     </Sidebar>
   );
 }
+
 

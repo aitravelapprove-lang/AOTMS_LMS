@@ -135,6 +135,24 @@ export default function Auth() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Reset gaze when clicking anywhere outside input fields
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // If the clicked element is not an input and not inside the form controls, reset characters' gaze
+      if (target.tagName !== "INPUT" && target.tagName !== "TEXTAREA" && !target.closest("button")) {
+        setIsTyping(false);
+        // Explicitly blur any focused input to sync UI state
+        if (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement) {
+          document.activeElement.blur();
+        }
+      }
+    };
+
+    window.addEventListener("mousedown", handleGlobalClick);
+    return () => window.removeEventListener("mousedown", handleGlobalClick);
+  }, []);
+
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Redirect if already logged in

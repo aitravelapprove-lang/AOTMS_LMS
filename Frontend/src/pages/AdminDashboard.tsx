@@ -482,7 +482,7 @@ export default function AdminDashboard() {
       <div className="min-h-screen bg-slate-50 relative">
         <div className="p-8 max-w-7xl mx-auto">
           <CourseBuilder
-            course={buildingCourse as InstructorCourse}
+            course={buildingCourse as unknown as InstructorCourse}
             onBack={() => setBuildingCourse(null)}
           />
         </div>
@@ -615,7 +615,7 @@ export default function AdminDashboard() {
               className="space-y-6"
             >
               <div className="flex flex-col gap-4 border-b border-slate-200">
-                <div className="w-full overflow-x-auto admin-scrollbar-horizontal pb-2">
+                <div className="w-full overflow-x-auto scrollbar-hide pb-2">
                   <TabsList className="bg-transparent h-auto p-0 gap-6 sm:gap-8 flex min-w-max">
                     {[
                       {
@@ -724,7 +724,7 @@ export default function AdminDashboard() {
                       <TabsTrigger
                         key={tab.key}
                         value={tab.id}
-                        className="px-0 py-4 h-auto border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none text-slate-500 font-semibold text-sm data-[state=active]:text-primary transition-all flex items-center gap-2"
+                        className="px-0 py-4 h-auto border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none text-slate-950 font-bold text-sm data-[state=active]:text-primary transition-all flex items-center gap-2"
                       >
                         <tab.icon className="h-4 w-4" />
                         {tab.label}
@@ -777,7 +777,7 @@ export default function AdminDashboard() {
                       loading={enrollmentsLoading}
                       onUpdateStatus={updateEnrollmentStatus}
                       onDelete={deleteEnrollment}
-                      onResetATS={_resetStudentATS}
+                      onResetATS={async (userId) => { await _resetStudentATS(userId); }}
                     />
                   </motion.div>
                 </TabsContent>

@@ -105,7 +105,7 @@ export function ManagerSidebar() {
       </SidebarHeader>
 
       <SidebarContent className={cn(
-        "px-3 group-data-[collapsible=icon]:px-2 space-y-8 custom-scrollbar",
+        "px-3 group-data-[collapsible=icon]:px-2 space-y-8 scrollbar-hide",
         collapsed ? "py-6" : "py-4"
       )}>
         {!collapsed && (

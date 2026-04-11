@@ -141,7 +141,7 @@ export function AdminSidebar() {
       )}
 
       <SidebarContent className={cn(
-        "px-3 group-data-[collapsible=icon]:px-2 space-y-6 custom-scrollbar",
+        "px-3 group-data-[collapsible=icon]:px-2 space-y-6 scrollbar-hide",
         collapsed ? "py-6" : "py-2"
       )}>
         {filteredGroups.length > 0 ? (

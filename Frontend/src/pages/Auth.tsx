@@ -33,6 +33,74 @@ import {
 import logo from "@/assets/logo.png";
 import { motion, AnimatePresence } from "framer-motion";
 import { AnimatedCharactersLogin } from "@/components/ui/animated-characters-login-page";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { ChevronsUpDown } from "lucide-react";
+
+const COLLEGES = [
+  "Velagapudi Ramakrishna Siddhartha Engineering College",
+  "Prasad V Potluri Siddhartha Institute of Technology",
+  "Andhra Loyola Institute of Engineering and Technology",
+  "Dhanekula Institute of Engineering and Technology",
+  "SRK Institute of Technology",
+  "NRI Institute of Technology",
+  "RK College of Engineering",
+  "Lingayas Institute of Management and Technology",
+  "PSCMR College of Engineering",
+  "Nimra College of Engineering & Technology",
+  "Nova College of Engineering & Technology",
+  "VIT-AP University",
+  "KL University",
+  "RVR & JC College of Engineering",
+  "Vignan’s Foundation for Science, Technology & Research",
+  "Vignan Institute of Technology and Science",
+  "St. Mary’s Engineering College",
+  "Malineni Lakshmaiah Engineering College",
+  "Potti Sriramulu Chalavadi Mallikarjuna Rao College",
+  "Gudlavalleru Engineering College",
+  "Usha Rama College of Engineering & Technology",
+  "Amrita Sai Institute of Science and Technology",
+  "Chalapathi Institute of Engineering and Technology",
+  "Kallam Haranadhareddy Institute of Technology",
+  "Narasaraopeta Engineering College",
+  "VKR VNB & AGK College of Engineering",
+  "Sri Sunflower College of Engineering and Technology",
+  "DJR College of Engineering and Technology",
+  "Vikas College of Engineering & Technology",
+  "Sai Tirumala NVR Engineering College",
+  "Sri Mittapalli College of Engineering",
+  "Guntur Engineering College",
+  "Chebrolu Engineering College",
+  "Eswar College of Engineering",
+  "Bapatla Engineering College",
+  "Vignan’s Lara Institute of Technology and Science",
+  "Sri Venkateswara College of Engineering & Technology",
+  "Paladugu Parvathi Devi College of Engineering",
+  "St. Ann’s College of Engineering & Technology",
+  "Vasireddy Venkatadri Institute of Technology",
+  "Chaitanya Engineering College",
+  "Sri Chaitanya College of Engineering",
+  "KKR & KSR Institute of Technology and Sciences",
+  "Sri Subbaraya and Narayana College",
+  "Sri Prakash College of Engineering",
+  "Sri Vasavi Institute of Engineering & Technology",
+  "Vikas Group of Institutions",
+  "Sri Sarathi Institute of Engineering & Technology",
+  "Sri Siddhartha Institute of Technology & Sciences",
+  "Aditya Engineering College (nearby region)"
+];
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -135,6 +203,8 @@ export default function Auth() {
   );
   const [adminLoginEmail, setAdminLoginEmail] = useState("");
   const [adminOtpResendTimer, setAdminOtpResendTimer] = useState(0);
+  const [openCollege, setOpenCollege] = useState(false);
+  const [openInstitute, setOpenInstitute] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const {
     signIn,
@@ -361,7 +431,7 @@ export default function Auth() {
     
     // Function to get location with high precision priority
     const fetchLocation = async () => {
-      return new Promise<any>((resolve) => {
+      return new Promise<unknown>((resolve) => {
         if (!("geolocation" in navigator)) {
           resolve(null);
           return;
@@ -642,7 +712,7 @@ export default function Auth() {
               />
             </div>
           )}
-          <h2 className="text-3xl font-black text-slate-950 mb-2 tracking-tight">
+          <h2 className="text-3xl font-semibold text-slate-950 mb-2 tracking-tight">
             {isLogin
               ? loginStep === "admin-otp"
                 ? "Admin Verification"
@@ -653,7 +723,7 @@ export default function Auth() {
                   ? "Verify"
                   : "Complete"}
           </h2>
-          <p className="text-muted-foreground text-sm font-medium">
+          <p className="text-muted-foreground text-sm font-normal">
             {isLogin
               ? loginStep === "admin-otp"
                 ? `Enter the OTP sent to ${adminLoginEmail}`
@@ -687,10 +757,10 @@ export default function Auth() {
                       <div className="w-16 h-16 bg-[#0075CF]/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-[#0075CF]/20">
                         <ShieldCheck className="h-8 w-8 text-[#0075CF]" />
                       </div>
-                      <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                      <h3 className="text-xl font-semibold text-slate-900 tracking-tight">
                         Admin Verification
                       </h3>
-                      <p className="text-sm text-slate-500 font-medium mt-1">
+                      <p className="text-sm text-slate-500 font-normal mt-1">
                         Secure access verification required
                       </p>
                     </div>
@@ -724,7 +794,7 @@ export default function Auth() {
                     <Button
                       type="submit"
                       disabled={loading}
-                      className="w-full h-14 bg-[#0075CF] hover:bg-[#0075CF]/90 text-white font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-[#0075CF]/20 transition-all active:scale-[0.98]"
+                      className="w-full h-14 bg-[#0075CF] hover:bg-[#0075CF]/90 text-white font-semibold uppercase tracking-widest rounded-2xl shadow-xl shadow-[#0075CF]/20 transition-all active:scale-[0.98]"
                     >
                       {loading ? "Verifying..." : "Unlock Admin Portal"}
                     </Button>
@@ -831,7 +901,7 @@ export default function Auth() {
                     <Button
                       type="submit"
                       disabled={loading}
-                      className="w-full h-14 bg-[#0075CF] hover:bg-[#0075CF]/90 text-white font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-[#0075CF]/20 transition-all active:scale-[0.98]"
+                      className="w-full h-14 bg-[#0075CF] hover:bg-[#0075CF]/90 text-white font-semibold uppercase tracking-widest rounded-2xl shadow-xl shadow-[#0075CF]/20 transition-all active:scale-[0.98]"
                     >
                       {loading ? "Authenticating..." : "Sign In to Portal"}
                     </Button>
@@ -859,7 +929,7 @@ export default function Auth() {
                     >
                       1
                     </div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider">
                       Start
                     </span>
                   </div>
@@ -872,7 +942,7 @@ export default function Auth() {
                     >
                       2
                     </div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider">
                       Verify
                     </span>
                   </div>
@@ -885,7 +955,7 @@ export default function Auth() {
                     >
                       3
                     </div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider">
                       Finish
                     </span>
                   </div>
@@ -952,7 +1022,7 @@ export default function Auth() {
                       <Button
                         type="submit"
                         disabled={loading}
-                        className="w-full h-12 bg-[#0075CF] hover:bg-[#0075CF]/90 text-white font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2"
+                        className="w-full h-12 bg-[#0075CF] hover:bg-[#0075CF]/90 text-white font-semibold uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2"
                       >
                         {loading ? "Sending..." : "Verify Email"}
                         <ArrowRight className="h-4 w-4" />
@@ -1004,7 +1074,7 @@ export default function Auth() {
                       <Button
                         type="submit"
                         disabled={loading}
-                        className="w-full h-12 bg-[#0075CF] hover:bg-[#0075CF]/90 text-white font-black uppercase tracking-widest rounded-xl transition-all"
+                        className="w-full h-12 bg-[#0075CF] hover:bg-[#0075CF]/90 text-white font-semibold uppercase tracking-widest rounded-xl transition-all"
                       >
                         {loading ? "Verifying..." : "Verify OTP"}
                       </Button>
@@ -1056,47 +1126,134 @@ export default function Auth() {
                         )}
                       />
 
-                      {/* College & Institute - Side by side (Pakka Pakkana) */}
-                      <div className="grid grid-cols-2 gap-4">
+                      {/* College & Institute - Responsive Layout with (OR) */}
+                      <div className="flex flex-col sm:flex-row items-end gap-3 sm:gap-2 min-w-0 w-full">
                         <FormField
                           control={detailsForm.control}
                           name="collegeName"
                           render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs font-bold text-slate-700 uppercase tracking-widest ml-1">
+                            <FormItem className="flex flex-col flex-1 min-w-0">
+                              <FormLabel className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest ml-1 mb-1">
                                 College Name
                               </FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="e.g. MIT"
-                                  className="h-11 bg-slate-50 border-slate-100 rounded-xl focus:ring-4 focus:ring-[#0075CF]/10 transition-all text-xs font-black"
-                                  onFocus={() => setIsTyping(true)}
-                                  onBlur={() => setIsTyping(false)}
-                                  {...field}
-                                />
-                              </FormControl>
+                              <Popover open={openCollege} onOpenChange={setOpenCollege}>
+                                <PopoverTrigger asChild>
+                                  <FormControl>
+                                    <Button
+                                      variant="outline"
+                                      role="combobox"
+                                      className={cn(
+                                        "w-full h-11 justify-start bg-slate-50 border-slate-100 rounded-xl focus:ring-4 focus:ring-[#0075CF]/10 transition-all text-xs font-medium px-3 overflow-hidden min-w-0",
+                                        !field.value && "text-muted-foreground font-normal"
+                                      )}
+                                      onFocus={() => setIsTyping(true)}
+                                      onBlur={() => setIsTyping(false)}
+                                    >
+                                      <span className="truncate min-w-0 block">
+                                        {field.value
+                                          ? COLLEGES.find(
+                                              (college) => college === field.value
+                                            )
+                                          : "Please select your college .."}
+                                      </span>
+                                    </Button>
+                                  </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[300px] p-0" align="start">
+                                  <Command>
+                                    <CommandInput placeholder="Search college..." />
+                                     <CommandList className="max-h-[200px] overflow-y-auto">
+                                      <CommandEmpty>No college found.</CommandEmpty>
+                                       <CommandGroup>
+                                        {COLLEGES.map((college) => (
+                                          <CommandItem
+                                            value={college}
+                                            key={college}
+                                            className="text-xs py-2 px-3 hover:bg-white hover:text-black data-[selected=true]:bg-white data-[selected=true]:text-black font-medium cursor-pointer transition-colors"
+                                            onSelect={() => {
+                                              detailsForm.setValue("collegeName", college);
+                                              setOpenCollege(false);
+                                            }}
+                                          >
+                                            <Check
+                                              className={cn(
+                                                "mr-2 h-3.5 w-3.5",
+                                                college === field.value
+                                                  ? "opacity-100"
+                                                  : "opacity-0"
+                                              )}
+                                            />
+                                            {college}
+                                          </CommandItem>
+                                        ))}
+                                       </CommandGroup>
+                                     </CommandList>
+                                  </Command>
+                                </PopoverContent>
+                              </Popover>
                               <FormMessage className="text-[10px]" />
                             </FormItem>
                           )}
                         />
 
+                        <div className="flex items-center justify-center shrink-0 pb-3">
+                          <span className="text-[10px] font-black text-red-500 uppercase opacity-80">(OR)</span>
+                        </div>
+
                         <FormField
                           control={detailsForm.control}
                           name="instituteName"
                           render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs font-bold text-slate-700 uppercase tracking-widest ml-1">
+                            <FormItem className="flex flex-col flex-1 min-w-0">
+                              <FormLabel className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest ml-1 mb-1">
                                 Institute Name
                               </FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="e.g. AOTMS"
-                                  className="h-11 bg-slate-50 border-slate-100 rounded-xl focus:ring-4 focus:ring-[#0075CF]/10 transition-all text-xs font-black"
-                                  onFocus={() => setIsTyping(true)}
-                                  onBlur={() => setIsTyping(false)}
-                                  {...field}
-                                />
-                              </FormControl>
+                              <Popover open={openInstitute} onOpenChange={setOpenInstitute}>
+                                <PopoverTrigger asChild>
+                                  <FormControl>
+                                    <Button
+                                      variant="outline"
+                                      role="combobox"
+                                      className={cn(
+                                        "w-full h-11 justify-start bg-slate-50 border-slate-100 rounded-xl focus:ring-4 focus:ring-[#0075CF]/10 transition-all text-xs font-medium px-3 overflow-hidden min-w-0",
+                                        !field.value && "text-muted-foreground font-normal"
+                                      )}
+                                      onFocus={() => setIsTyping(true)}
+                                      onBlur={() => setIsTyping(false)}
+                                    >
+                                      <span className="truncate">
+                                        {field.value ? field.value : "Institute Name .."}
+                                      </span>
+                                    </Button>
+                                  </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[200px] p-0" align="start">
+                                  <Command>
+                                    <CommandList>
+                                      <CommandGroup>
+                                        <CommandItem
+                                          value="AOTMS"
+                                          className="text-xs py-2 px-3 hover:bg-white hover:text-black data-[selected=true]:bg-white data-[selected=true]:text-black font-medium cursor-pointer transition-colors"
+                                          onSelect={() => {
+                                            detailsForm.setValue("instituteName", "AOTMS");
+                                            setOpenInstitute(false);
+                                          }}
+                                        >
+                                          <Check
+                                            className={cn(
+                                              "mr-2 h-3.5 w-3.5",
+                                              field.value === "AOTMS"
+                                                ? "opacity-100"
+                                                : "opacity-0"
+                                            )}
+                                          />
+                                          AOTMS
+                                        </CommandItem>
+                                      </CommandGroup>
+                                    </CommandList>
+                                  </Command>
+                                </PopoverContent>
+                              </Popover>
                               <FormMessage className="text-[10px]" />
                             </FormItem>
                           )}
@@ -1248,7 +1405,7 @@ export default function Auth() {
                       <Button
                         type="submit"
                         disabled={loading}
-                        className="w-full h-12 bg-[#0075CF] hover:bg-[#0075CF]/90 text-white font-black uppercase tracking-widest rounded-xl transition-all"
+                        className="w-full h-12 bg-[#0075CF] hover:bg-[#0075CF]/90 text-white font-semibold uppercase tracking-widest rounded-xl transition-all"
                       >
                         {loading ? "Registering..." : "Complete Account"}
                       </Button>
@@ -1266,7 +1423,7 @@ export default function Auth() {
             {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
             <button
               onClick={toggleMode}
-              className="text-[#0075CF] hover:underline font-bold"
+              className="text-[#0075CF] hover:underline font-semibold"
             >
               {isLogin ? "Create Account" : "Sign In"}
             </button>

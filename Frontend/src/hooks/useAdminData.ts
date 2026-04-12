@@ -22,6 +22,8 @@ export interface Profile {
   full_address?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  college_name?: string | null;
+  institute_name?: string | null;
 }
 
 export interface UserRole {

@@ -145,14 +145,16 @@ export function UserManagement({
   const [loadingAttendance, setLoadingAttendance] = useState(false);
 
   const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
-  const emailTimeouts = useRef<Record<string, any>>({});
-  const emailIntervals = useRef<Record<string, any>>({});
+  const emailTimeouts = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const emailIntervals = useRef<Record<string, ReturnType<typeof setInterval>>>({});
 
   // Cleanup timeouts on unmount
   useEffect(() => {
+    const timeouts = emailTimeouts.current;
+    const intervals = emailIntervals.current;
     return () => {
-      Object.values(emailTimeouts.current).forEach(timeout => clearTimeout(timeout));
-      Object.values(emailIntervals.current).forEach(interval => clearInterval(interval));
+      Object.values(timeouts).forEach(timeout => clearTimeout(timeout));
+      Object.values(intervals).forEach(interval => clearInterval(interval));
     };
   }, []);
 
@@ -848,6 +850,16 @@ export function UserManagement({
                 <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                   <span className="text-sm text-muted-foreground">Mobile Number</span>
                   <span className="text-sm font-medium">{selectedUser.mobile_number || 'Not provided'}</span>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                  <span className="text-sm text-muted-foreground">College</span>
+                  <span className="text-sm font-medium truncate max-w-[200px]" title={selectedUser.college_name}>{selectedUser.college_name || 'N/A'}</span>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                  <span className="text-sm text-muted-foreground">Institute</span>
+                  <span className="text-sm font-medium truncate max-w-[200px]" title={selectedUser.institute_name}>{selectedUser.institute_name || 'N/A'}</span>
                 </div>
                 
                 <div className="flex items-center justify-between p-3 bg-muted rounded-lg">

@@ -400,7 +400,7 @@ export function LiveClassManager() {
                                 {/* Target Selection: Course + Batch */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
-                                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest text-[#0075CF]">Select Course</label>
+                                        <label className="text-[11px] font-bold uppercase tracking-widest text-[#0075CF]">Select Course</label>
                                         <select
                                             title="Target Course"
                                             required
@@ -409,13 +409,13 @@ export function LiveClassManager() {
                                             className="w-full h-11 px-4 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all appearance-none"
                                         >
                                             <option value="">Select at least one course</option>
-                                            {(courses as any[]).map((course: Course) => (
+                                            {(courses as Course[]).map((course: Course) => (
                                                 <option key={course.id} value={course.id}>{course.title}</option>
                                             ))}
                                         </select>
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest text-[#0075CF]">Select Batch</label>
+                                        <label className="text-[11px] font-bold uppercase tracking-widest text-[#0075CF]">Select Batch</label>
                                         <select
                                             title="Target Batch"
                                             value={formData.targetBatch}

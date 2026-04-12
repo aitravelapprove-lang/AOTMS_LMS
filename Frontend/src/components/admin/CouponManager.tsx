@@ -211,13 +211,42 @@ export function CouponManager() {
       s.email?.toLowerCase().includes(searchQuery.toLowerCase());
     
     if (filterType === "all") return matchesSearch;
-    if (filterType === "college") return matchesSearch && s.college_name === filterValue;
-    if (filterType === "institute") return matchesSearch && s.institute_name === filterValue;
+
+    const getCollegeName = (val: string | { name?: string; title?: string } | null | undefined) => {
+      if (typeof val === 'object' && val !== null) return val.name || val.title;
+      return val;
+    };
+
+    if (filterType === "college") {
+      return matchesSearch && getCollegeName(s.college_name) === filterValue;
+    }
+    if (filterType === "institute") {
+      return matchesSearch && getCollegeName(s.institute_name) === filterValue;
+    }
     return matchesSearch;
   });
 
-  const uniqueColleges = Array.from(new Set(students.map(s => s.college_name).filter(Boolean))) as string[];
-  const uniqueInstitutes = Array.from(new Set(students.map(s => s.institute_name).filter(Boolean))) as string[];
+
+  const uniqueColleges = Array.from(new Set(
+    students.map(s => {
+      // Handle potential object structure for college if it exists
+      if (typeof s.college_name === 'object' && s.college_name !== null) {
+        const c = s.college_name as { name?: string; title?: string };
+        return c.name || c.title;
+      }
+      return s.college_name;
+    }).filter(Boolean)
+  )).sort() as string[];
+
+  const uniqueInstitutes = Array.from(new Set(
+    students.map(s => {
+      if (typeof s.institute_name === 'object' && s.institute_name !== null) {
+        const i = s.institute_name as { name?: string; title?: string };
+        return i.name || i.title;
+      }
+      return s.institute_name;
+    }).filter(Boolean)
+  )).sort() as string[];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -290,7 +319,7 @@ export function CouponManager() {
                              <select 
                                 value={filterType}
                                 onChange={(e) => {
-                                    setFilterType(e.target.value as any);
+                                    setFilterType(e.target.value as "all" | "college" | "institute");
                                     setFilterValue("");
                                     setSelectedStudent(null);
                                     setSelectedBulkUserIds([]);
@@ -313,8 +342,9 @@ export function CouponManager() {
                                         setSelectedStudent(null);
                                         // Auto-select all when a filter is applied
                                         if (e.target.value) {
+                                            const getVal = (v: string | { name?: string; title?: string } | null | undefined) => (typeof v === 'object' && v !== null) ? (v.name || v.title) : v;
                                             const newFiltered = students.filter(s => 
-                                                filterType === 'college' ? s.college_name === e.target.value : s.institute_name === e.target.value
+                                                filterType === 'college' ? getVal(s.college_name) === e.target.value : getVal(s.institute_name) === e.target.value
                                             );
                                             setSelectedBulkUserIds(newFiltered.map(s => s.id));
                                         } else {
@@ -327,6 +357,9 @@ export function CouponManager() {
                                     {(filterType === "college" ? uniqueColleges : uniqueInstitutes).map(val => (
                                         <option key={val} value={val}>{val}</option>
                                     ))}
+                                    {(filterType === "college" ? uniqueColleges : uniqueInstitutes).length === 0 && (
+                                        <option disabled value="">No {filterType} data found in records</option>
+                                    )}
                                 </select>
                             </div>
                         )}
@@ -649,110 +682,6 @@ export function CouponManager() {
           </Card>
         </div>
 
-        <div className="lg:col-span-3">
-          <Card className="border-none shadow-2xl shadow-slate-200/50 overflow-hidden rounded-[2.5rem] bg-white">
-            <CardHeader className="bg-slate-50/50 p-8 border-b border-slate-100">
-               <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-                        <ArrowRight className="h-5 w-5 text-primary rotate-45" />
-                        Platform Rewards Ledger
-                    </CardTitle>
-                    <CardDescription className="text-xs font-bold text-slate-400 uppercase tracking-widest leading-none">
-                        Real-time audit of all generated and redeemed coupons
-                    </CardDescription>
-                  </div>
-                  <div className="flex items-center gap-6">
-                      <div className="text-right">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Rewards</p>
-                          <p className="text-xl font-black text-slate-900">{coupons.length}</p>
-                      </div>
-                      <div className="h-8 w-px bg-slate-200" />
-                      <div className="text-right">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Redeemed</p>
-                          <p className="text-xl font-black text-emerald-500">{coupons.filter(c => c.is_used).length}</p>
-                      </div>
-                  </div>
-               </div>
-            </CardHeader>
-            <CardContent className="p-0">
-               <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-slate-50/30 border-b border-slate-100 italic">
-                        <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Code</th>
-                        <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Student Assignee</th>
-                        <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Price Point</th>
-                        <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Created At</th>
-                        <th className="px-8 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                      {coupons.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="px-8 py-20 text-center">
-                              <div className="flex flex-col items-center gap-4 opacity-30">
-                                  <Ticket className="h-10 w-10 text-slate-300" />
-                                  <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">No active rewards found</p>
-                              </div>
-                          </td>
-                        </tr>
-                      ) : (
-                        coupons.map((coupon) => (
-                          <motion.tr 
-                            key={coupon.id}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="hover:bg-slate-50/50 transition-colors group"
-                          >
-                            <td className="px-8 py-5">
-                                <div className="flex items-center gap-3">
-                                    <div className="h-8 w-8 rounded-lg bg-primary/5 flex items-center justify-center">
-                                        <Zap className="h-3.5 w-3.5 text-primary" />
-                                    </div>
-                                    <span className="font-black text-slate-900 tracking-wider font-mono bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
-                                        {coupon.code}
-                                    </span>
-                                </div>
-                            </td>
-                            <td className="px-8 py-5">
-                                <div className="flex items-center gap-3">
-                                    <Avatar className="h-8 w-8 rounded-full border border-white shadow-sm">
-                                        <AvatarImage src={coupon.user_id?.avatar_url || ""} />
-                                        <AvatarFallback className="text-[10px] font-black uppercase">{coupon.user_id?.full_name?.[0]}</AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                        <p className="text-[12px] font-black text-slate-800 leading-none mb-0.5">{coupon.user_id?.full_name || "Unknown Student"}</p>
-                                        <p className="text-[10px] font-bold text-slate-400 opacity-70 tracking-tight">{coupon.user_id?.email || "n/a"}</p>
-                                    </div>
-                                </div>
-                            </td>
-                            <td className="px-8 py-5 font-black text-sm text-slate-900">
-                                ₹{coupon.discounted_price}
-                            </td>
-                            <td className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                {new Date(coupon.created_at).toLocaleDateString()} at {new Date(coupon.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                            </td>
-                            <td className="px-8 py-5 text-right">
-                                {coupon.is_used ? (
-                                  <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 rounded-lg font-black text-[9px] uppercase tracking-widest px-3 py-1 animate-pulse shadow-sm shadow-emerald-100">
-                                      Redeemed
-                                  </Badge>
-                                ) : (
-                                  <Badge className="bg-amber-50 text-amber-600 border-amber-100 rounded-lg font-black text-[9px] uppercase tracking-widest px-3 py-1 shadow-sm shadow-amber-100">
-                                      Pending
-                                  </Badge>
-                                )}
-                            </td>
-                          </motion.tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-               </div>
-            </CardContent>
-          </Card>
-        </div>
       </div>
     </div>
   );

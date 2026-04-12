@@ -52,7 +52,11 @@ export function QualityAssurance() {
         questionBanks: 0,
         exams: 0,
         conversations: 0,
-        messages: 0
+        messages: 0,
+        pendingCourses: 0,
+        pendingEnrollments: 0,
+        pendingExams: 0,
+        highPriorityEvents: 0
     });
     const { toast } = useToast();
 
@@ -315,7 +319,7 @@ export function QualityAssurance() {
                                             <Icon className={`h-6 w-6 ${type.color.replace('bg-', 'text-')}`} />
                                         </div>
                                         <Badge variant="secondary" className="bg-slate-100 text-slate-700 font-bold">
-                                            {count} records
+                                            {count as number} records
                                         </Badge>
                                     </div>
                                     
@@ -364,7 +368,7 @@ export function QualityAssurance() {
                             <div key={type.id} className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-slate-200 shadow-sm">
                                 <type.icon className={`h-4 w-4 ${type.color.replace('bg-', 'text-')}`} />
                                 <span className="text-sm font-semibold text-slate-700">
-                                    {summary[type.id as keyof DataSummary] || 0}
+                                    {(summary[type.id as keyof DataSummary] || 0) as number}
                                 </span>
                                 <span className="text-xs text-slate-400">{type.label}</span>
                             </div>
@@ -397,7 +401,7 @@ export function QualityAssurance() {
                                 <span>Records to be deleted:</span>
                             </div>
                             <p className="text-red-700 font-semibold text-lg">
-                                {summary[selectedDataType as keyof DataSummary] || 0} {dataTypeLabels[selectedDataType || '']}
+                                {(summary[selectedDataType as keyof DataSummary] || 0) as number} {dataTypeLabels[selectedDataType || '']}
                             </p>
                         </div>
 
@@ -451,7 +455,7 @@ export function QualityAssurance() {
                             {dataTypeLabels[viewingDataType || '']} Data
                         </DialogTitle>
                         <DialogDescription className="text-white/80 mt-2 font-medium relative z-10">
-                            Showing first 50 records. Total: {summary[viewingDataType as keyof DataSummary] || 0}
+                            Showing first 50 records. Total: {(summary[viewingDataType as keyof DataSummary] || 0) as number}
                         </DialogDescription>
                     </div>
 

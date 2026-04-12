@@ -1474,6 +1474,7 @@ app.delete('/api/admin/question-bank/:topic', authenticateToken, requireAdmin, a
         
         // Also permanently remove any scheduled exams for this topic
         await Exam.deleteMany({ title: topic });
+        await MockPaper.deleteMany({ title: topic });
 
         // Also remove all granted access for this topic to ensure clean slate
         await StudentExamAccess.deleteMany({ question_bank_topic: topic });
@@ -3603,13 +3604,38 @@ app.get('/api/student/accessible-exams', authenticateToken, async (req, res) => 
         console.log(`[ACL] Found ${qbs.length} matching Question Banks.`);
 
         // 5.5. Find matching exam images and metadata for these topics to show as posters
-        const qbTopics = [...new Set(qbs.map(qb => qb.topic))];
+        const qbTopics = [...new Set([...qbs.map(qb => qb.topic), ...normalizedTopics])];
         const matchingExams = await Exam.find({ title: { $in: qbTopics } }).lean();
         const qbExamMap = {};
         matchingExams.forEach(e => { qbExamMap[e.title] = e; });
 
         // 6. Map Question Banks into the "topicMap" for frontend mock test interface
         const topicMap = new Map();
+        
+        // Force explicitly-granted topics into the list regardless of whether questions exist yet
+        normalizedTopics.forEach(topicKey => {
+            const explicitGrant = explicitAccess.find(a => 
+                a.question_bank_topic && a.question_bank_topic.trim().toLowerCase() === topicKey.toLowerCase()
+            );
+            const matchingExam = qbExamMap[topicKey] || null;
+            
+            topicMap.set(topicKey, {
+                id: `qb_${topicKey}`,
+                access_type: 'mock', 
+                granted_at: explicitGrant ? explicitGrant.granted_at : new Date(),
+                mock_paper_id: `qb_${topicKey}`, 
+                is_completed: checkCompleted('qb', topicKey),
+                assigned_image: matchingExam?.assigned_image || null,
+                mock_papers: {
+                    title: matchingExam ? matchingExam.title : `${topicKey} Practice Set${explicitGrant ? ' (Unlocked)' : ''}`,
+                    description: matchingExam?.description || `Topic-wise questions for ${topicKey}`,
+                    duration_minutes: matchingExam?.duration_minutes || 60,
+                    total_marks: matchingExam?.total_marks || 0, 
+                    question_count: matchingExam?.total_questions || 0
+                }
+            });
+        });
+
         qbs.forEach(qb => {
             const topicKey = qb.topic.trim();
             if (!topicMap.has(topicKey)) {
@@ -3617,7 +3643,7 @@ app.get('/api/student/accessible-exams', authenticateToken, async (req, res) => 
                 const explicitGrant = explicitAccess.find(a => 
                     a.question_bank_topic && a.question_bank_topic.trim().toLowerCase() === topicKey.toLowerCase()
                 );
-                const matchingExam = qbExamMap[qb.topic] || qbExamMap[topicKey];
+                const matchingExam = qbExamMap[qb.topic] || qbExamMap[topicKey] || null;
                 
                 topicMap.set(topicKey, {
                     id: `qb_${topicKey}`,
@@ -3627,24 +3653,33 @@ app.get('/api/student/accessible-exams', authenticateToken, async (req, res) => 
                     is_completed: checkCompleted('qb', topicKey),
                     assigned_image: matchingExam?.assigned_image || null,
                     mock_papers: {
-                        title: `${topicKey} Practice Set${explicitGrant ? ' (Unlocked)' : ''}`,
+                        title: matchingExam ? matchingExam.title : `${topicKey} Practice Set${explicitGrant ? ' (Unlocked)' : ''}`,
                         description: matchingExam?.description || `Topic-wise questions for ${topicKey}`,
                         duration_minutes: matchingExam?.duration_minutes || 60,
                         total_marks: matchingExam?.total_marks || 0, 
-                        question_count: 0
+                        question_count: matchingExam?.total_questions || 0
                     }
                 });
             }
             const item = topicMap.get(topicKey);
-            item.mock_papers.question_count++;
+            // Increment actual loaded questions if any
+            if (!item._hasCountedQuestions) {
+                item._qCount = 0;
+                item._hasCountedQuestions = true;
+            }
+            item._qCount++;
+            
+            // Prefer actual counted lengths vs Exam settings if available
+            item.mock_papers.question_count = Math.max(item.mock_papers.question_count || 0, item._qCount);
             if (!item.mock_papers.total_marks) {
-                  item.mock_papers.total_marks = (qbExamMap[qb.topic] || qbExamMap[topicKey])?.total_marks || 0;
+                item.mock_papers.total_marks = (qbExamMap[qb.topic] || qbExamMap[topicKey])?.total_marks || 0;
             }
         });
 
+
         // 7. Map Course-based Exams into consistent format
         const implicitExams = courseExams.map(exam => {
-            const isMock = exam.exam_type === 'mock';
+            const isMock = exam.exam_type !== 'live';
             return {
                 id: `implicit_${exam._id}`,
                 access_type: isMock ? 'mock' : 'exam',
@@ -3674,16 +3709,17 @@ app.get('/api/student/accessible-exams', authenticateToken, async (req, res) => 
         const explicitExams = explicitAccess
             .filter(a => a.access_type !== 'question_bank')
             .map(access => {
-                const isExamMock = access.exam_id?.exam_type === 'mock';
-                const finalMockId = access.mock_paper_id?._id || (isExamMock ? access.exam_id?._id : null);
+                const isExamMock = access.exam_id?.exam_type !== 'live';
+                const isMockAccess = access.access_type === 'mock' || isExamMock;
+                const finalMockId = access.mock_paper_id?._id || (isMockAccess ? access.exam_id?._id : null);
                 
                 return {
                     id: access._id,
-                    access_type: access.access_type === 'mock' || isExamMock ? 'mock' : access.access_type,
+                    access_type: isMockAccess ? 'mock' : 'exam',
                     granted_at: access.granted_at,
-                    exam_id: (!isExamMock && access.exam_id) ? access.exam_id._id : null,
+                    exam_id: (!isMockAccess && access.exam_id) ? access.exam_id._id : null,
                     mock_paper_id: finalMockId,
-                    is_completed: (access.access_type === 'mock' || isExamMock)
+                    is_completed: isMockAccess
                         ? checkCompleted('mock', finalMockId) 
                         : checkCompleted('exam', access.exam_id?._id),
                     assigned_image: access.exam_id?.assigned_image || access.mock_paper_id?.assigned_image || null,
@@ -3918,7 +3954,7 @@ app.get('/api/manager/approved-question-banks', authenticateToken, requireAdminO
 
 app.get('/api/admin/question-bank-summary', authenticateToken, requireAdminOrManager, async (req, res) => {
     try {
-        const [banks, accessCounts, approvedExams] = await Promise.all([
+        const [banks, accessCounts, allExams] = await Promise.all([
             QuestionBank.aggregate([
                 { 
                     $group: {
@@ -3935,7 +3971,7 @@ app.get('/api/admin/question-bank-summary', authenticateToken, requireAdminOrMan
             StudentExamAccess.aggregate([
                 { $group: { _id: '$question_bank_topic', count: { $sum: 1 } } }
             ]),
-            Exam.find({ approval_status: 'approved' }).lean()
+            Exam.find({}).lean()
         ]);
 
         // Map access counts for quick lookup
@@ -3944,14 +3980,14 @@ app.get('/api/admin/question-bank-summary', authenticateToken, requireAdminOrMan
 
         // Map exams for quick lookup by title/topic
         const examMap = {};
-        approvedExams.forEach(e => { examMap[e.title] = e; });
+        allExams.forEach(e => { examMap[e.title] = e; });
 
         // Format the summary response from Question Banks
         const bankSummary = banks.map(b => {
             const exam = examMap[b.topic];
             return {
                 topic: b.topic,
-                approval_status: b.status,
+                approval_status: 'approved', // Automatically treat as approved
                 count: b.count,
                 created_by: b.created_by,
                 created_at: b.created_at,
@@ -3965,13 +4001,13 @@ app.get('/api/admin/question-bank-summary', authenticateToken, requireAdminOrMan
             };
         });
 
-        // Add Approved Exams that might not have a QuestionBank entry yet (rare but possible)
+        // Add All Exams that might not have a QuestionBank entry yet
         const bankTopics = new Set(bankSummary.map(s => s.topic));
-        const examOnlySummary = approvedExams
+        const examOnlySummary = allExams
             .filter(e => !bankTopics.has(e.title))
             .map(e => ({
                 topic: e.title,
-                approval_status: 'approved',
+                approval_status: 'approved', // Automatically treat as approved
                 count: e.total_questions || 0,
                 created_by: e.created_by,
                 created_at: e.created_at,
@@ -4614,6 +4650,49 @@ app.post('/api/admin/coupons/generate', authenticateToken, requireAdminOrManager
     }
 });
 
+app.post('/api/admin/coupons/bulk-generate', authenticateToken, requireAdminOrManager, async (req, res) => {
+    const { userIds, amount } = req.body;
+    if (!userIds || !Array.isArray(userIds) || userIds.length === 0 || !amount) {
+        return res.status(400).json({ error: 'User IDs array and discounted amount required' });
+    }
+
+    const randomDigits = Math.floor(10000 + Math.random() * 90000);
+    const code = `BATCH${randomDigits}`;
+
+    try {
+        const coupons = userIds.map(userId => ({
+            code,
+            user_id: userId,
+            discounted_price: amount
+        }));
+        await Coupon.insertMany(coupons);
+
+        const notifications = userIds.map(userId => ({
+            user_id: userId,
+            type: 'coupon',
+            title: `Special Gift Coupon: ${code} 🎁`,
+            message: `Admin has assigned you a special course price: ₹${amount}. Use code ${code} at checkout to apply this offer!`,
+            data: { code, amount },
+            created_at: new Date()
+        }));
+        await Notification.insertMany(notifications);
+
+        userIds.forEach(userId => {
+            sendNotification(userId, {
+                type: 'coupon',
+                title: 'New Coupon Received! 🎁',
+                message: `You received a batch coupon for ₹${amount}: ${code}`,
+                code,
+                amount
+            });
+        });
+
+        res.json({ success: true, code });
+    } catch (err) {
+        handleError(res, err, 'bulk-generate-coupon');
+    }
+});
+
 app.post('/api/coupons/validate', authenticateToken, async (req, res) => {
     const { code } = req.body;
     if (!code) return res.status(400).json({ error: 'Coupon code required' });
@@ -4680,7 +4759,33 @@ app.get('/api/admin/students', authenticateToken, requireAdminOrManager, async (
     try {
         const studentRoles = await UserRole.find({ role: 'student' }).select('user_id');
         const studentIds = studentRoles.map(r => r.user_id);
-        const students = await User.find({ _id: { $in: studentIds } }).select('full_name email phone avatar_url');
+        
+        const students = await User.aggregate([
+            { $match: { _id: { $in: studentIds } } },
+            {
+                $lookup: {
+                    from: 'profiles',
+                    localField: '_id',
+                    foreignField: 'user_id',
+                    as: 'profile'
+                }
+            },
+            { $unwind: { path: '$profile', preserveNullAndEmptyArrays: true } },
+            {
+                $project: {
+                    id: '$_id',
+                    full_name: 1,
+                    email: 1,
+                    mobile_number: '$profile.mobile_number',
+                    phone: 1,
+                    avatar_url: 1,
+                    college_name: '$profile.college_name',
+                    institute_name: '$profile.institute_name',
+                    role: { $literal: 'student' }
+                }
+            }
+        ]);
+        
         res.json(students);
     } catch (err) {
         handleError(res, err, 'get-admin-students');

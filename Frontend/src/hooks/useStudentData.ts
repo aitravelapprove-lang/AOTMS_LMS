@@ -104,12 +104,21 @@ export function useStudentMockPapers() {
     });
 }
 
+export interface Question {
+    id: string;
+    type?: string;
+    question_type?: string;
+    question_text?: string;
+    text?: string;
+    options?: (string | { id?: string; text: string })[];
+}
+
 export function useExamQuestions(id: string | null) {
-    return useQuery({
+    return useQuery<Question[]>({
         queryKey: ['exam-questions', id],
         queryFn: async () => {
             if (!id) return [];
-            return await fetchWithAuth(`/student/exam-questions/${id}`) as Record<string, unknown>[];
+            return await fetchWithAuth<Question[]>(`/student/exam-questions/${id}`);
         },
         enabled: !!id,
         staleTime: Infinity, // Keep questions during exam session

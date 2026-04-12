@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchWithAuth } from '@/lib/api';
+import { useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CheckCircle2, 
@@ -55,6 +56,7 @@ import {
 import { format } from 'date-fns';
 
 export function ExamApproval() {
+  const queryClient = useQueryClient();
   const [exams, setExams] = useState<Exam[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { data: courses = [] } = useCourses();
@@ -90,24 +92,38 @@ export function ExamApproval() {
     return matchesSearch && matchesFilter;
   });
 
-  const handleAction = async (id: string, approval_status: 'approved' | 'rejected') => {
+  const handleUpdateStatus = async (id: string, approval_status: string) => {
     try {
+      const selectedExam = (exams || []).find(e => e.id === id);
+      
       await updateExam.mutateAsync({ 
         id, 
         approval_status, 
         course_id: approval_status === 'approved' ? (selectedCourseId || selectedExam?.course_id) : undefined,
-        status: approval_status === 'approved' ? 'active' : 'cancelled' 
+        status: approval_status === 'approved' ? 'ready' : 'cancelled' 
       });
-      toast({
-        title: approval_status === 'approved' ? 'Exam Published' : 'Exam Rejected',
-        description: `The assessment has been successfully ${approval_status}.`,
-        variant: approval_status === 'approved' ? 'default' : 'destructive'
-      });
-      setIsDetailOpen(false);
-      setSelectedCourseId('');
+
+      // If approved, also try to approve all questions with this topic
+      if (approval_status === 'approved' && selectedExam?.title) {
+        try {
+          await fetchWithAuth(`/admin/question-bank/${encodeURIComponent(selectedExam.title)}/approve`, {
+            method: 'PUT'
+          });
+        } catch (qErr) {
+          console.warn('Failed to auto-approve questions for this exam:', qErr);
+        }
+      }
+
+      toast({ title: 'Protocol Updated', description: `Exam has been ${approval_status}` });
+      queryClient.invalidateQueries({ queryKey: ['exams'] });
+      queryClient.invalidateQueries({ queryKey: ['question-bank-summary'] });
       fetchExams();
-    } catch (error) {
-       toast({ title: 'System Error', description: 'Failed to update approval status.', variant: 'destructive' });
+    } catch (err) {
+      toast({
+        title: 'Operation Failed',
+        description: err instanceof Error ? err.message : 'Something went wrong',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -233,17 +249,21 @@ export function ExamApproval() {
                     <div className="flex gap-2">
                        {exam.approval_status === 'pending' && (
                          <>
-                           <Button 
-                             className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border-none shadow-none transition-all"
-                             onClick={() => handleAction(exam.id, 'approved')}
+                           <Button
+                             size="sm"
+                             variant="outline"
+                             className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border-emerald-200"
+                             onClick={() => handleUpdateStatus(exam.id, 'approved')}
                            >
-                             <CheckCircle2 className="h-5 w-5" />
+                             <CheckCircle2 className="h-4 w-4 mr-1" /> Approve
                            </Button>
-                           <Button 
-                             className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white border-none shadow-none transition-all"
-                             onClick={() => handleAction(exam.id, 'rejected')}
+                           <Button
+                             size="sm"
+                             variant="outline"
+                             className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                             onClick={() => handleUpdateStatus(exam.id, 'rejected')}
                            >
-                             <XCircle className="h-5 w-5" />
+                             <XCircle className="h-4 w-4 mr-1" /> Reject
                            </Button>
                          </>
                        )}
@@ -386,13 +406,13 @@ export function ExamApproval() {
                          <>
                            <Button 
                              className="h-10 sm:h-14 px-4 sm:px-10 rounded-xl sm:rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-black uppercase tracking-widest text-[10px] sm:text-xs gap-2 sm:gap-3 shadow-xl shadow-rose-100"
-                             onClick={() => handleAction(selectedExam.id, 'rejected')}
+                             onClick={() => handleUpdateStatus(selectedExam.id, 'rejected')}
                            >
                              <XCircle className="h-4 w-4" /> Deny Logic
                            </Button>
                            <Button 
                              className="h-10 sm:h-14 px-4 sm:px-10 rounded-xl sm:rounded-2xl pro-button-primary font-black uppercase tracking-widest text-[10px] sm:text-xs gap-2 sm:gap-3 shadow-xl shadow-blue-200"
-                             onClick={() => handleAction(selectedExam.id, 'approved')}
+                             onClick={() => handleUpdateStatus(selectedExam.id, 'approved')}
                            >
                              <CheckCircle2 className="h-4 w-4" /> Authorize Session
                            </Button>

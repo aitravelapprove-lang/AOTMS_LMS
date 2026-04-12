@@ -1361,6 +1361,15 @@ export function QuestionBankManager({
                           >
                             {q.difficulty}
                           </Badge>
+                          <Badge 
+                            variant="outline" 
+                            className={cn(
+                              "text-[8px] sm:text-[9px] uppercase tracking-tighter h-3.5 sm:h-4 px-1 border-none",
+                              q.approval_status === 'approved' ? "bg-emerald-50 text-emerald-600" : q.approval_status === 'rejected' ? "bg-rose-50 text-rose-600" : "bg-amber-50 text-amber-600"
+                            )}
+                          >
+                            {q.approval_status || 'pending'}
+                          </Badge>
                           <span className="text-[9px] sm:text-[10px] text-muted-foreground bg-muted/50 px-1.5 rounded font-bold uppercase">
                             {q.marks ?? 1} Marks
                           </span>

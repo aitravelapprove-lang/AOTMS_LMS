@@ -25,7 +25,7 @@ import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useExamQuestions } from '@/hooks/useStudentData';
+import { useExamQuestions, Question } from '@/hooks/useStudentData';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { fetchWithAuth } from '@/lib/api';
@@ -34,7 +34,12 @@ interface ExamSessionProps {
   examId: string;
   examTitle: string;
   durationMinutes: number;
-  onFinish: (results: any) => void;
+  onFinish: (results: {
+    examId: string;
+    totalQuestions: number;
+    answers: Record<string, string>;
+    timeSpent: number;
+  }) => void;
   onExit: () => void;
   type: 'mock' | 'live';
 }
@@ -62,6 +67,28 @@ export function ExamSession({ examId, examTitle, durationMinutes, onFinish, onEx
     return () => window.removeEventListener('keydown', handleEsc);
   }, []);
 
+  const handleComplete = React.useCallback(() => {
+    if (type === 'mock' && Object.keys(answers).length < (questions?.length || 0)) {
+      toast({
+        title: "Incomplete Assessment",
+        description: `You have answered ${Object.keys(answers).length} of ${questions?.length} questions.`,
+        variant: "destructive",
+      });
+      // Allow submission anyway if time is up, but warn if manual
+      if (timeLeft > 0) return; 
+    }
+
+    const results = {
+        examId,
+        totalQuestions: questions?.length || 0,
+        answers: answers,
+        timeSpent: (durationMinutes * 60) - timeLeft,
+        // Score calculation should ideally happen on backend to be secure
+        // But we pass answers for processing
+    };
+    onFinish(results);
+  }, [answers, durationMinutes, examId, onFinish, questions?.length, timeLeft, type, toast]);
+
   // Timer logic
   useEffect(() => {
     if (timeLeft <= 0) {
@@ -70,7 +97,7 @@ export function ExamSession({ examId, examTitle, durationMinutes, onFinish, onEx
     }
     const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
     return () => clearInterval(timer);
-  }, [timeLeft]);
+  }, [timeLeft, handleComplete]);
 
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
@@ -79,8 +106,8 @@ export function ExamSession({ examId, examTitle, durationMinutes, onFinish, onEx
     return `${h > 0 ? h + ':' : ''}${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
   };
 
-  const currentQuestion = questions?.[currentIdx];
-  const progress = questions ? ((Object.keys(answers).length / questions.length) * 100) : 0;
+  const currentQuestion = questions?.[currentIdx] as Question | undefined;
+  const progress = (questions && questions.length > 0) ? ((Object.keys(answers).length / questions.length) * 100) : 0;
 
   const handleAnswerChange = (val: string) => {
     if (!currentQuestion) return;
@@ -99,7 +126,10 @@ export function ExamSession({ examId, examTitle, durationMinutes, onFinish, onEx
     setConsoleOutput(prev => ({ ...prev, [currentQuestion.id]: 'Running...' }));
 
     try {
-        const res = await fetchWithAuth('/run-code', {
+        const res = await fetchWithAuth<{
+            run?: { stdout?: string; stderr?: string };
+            message?: string;
+        }>('/run-code', {
             method: 'POST',
             body: JSON.stringify({
                 language: 'js', // Force JS for local execution as per backend fix
@@ -127,27 +157,6 @@ export function ExamSession({ examId, examTitle, durationMinutes, onFinish, onEx
     }
   };
 
-  const handleComplete = () => {
-    if (type === 'mock' && Object.keys(answers).length < (questions?.length || 0)) {
-      toast({
-        title: "Incomplete Assessment",
-        description: `You have answered ${Object.keys(answers).length} of ${questions?.length} questions.`,
-        variant: "destructive",
-      });
-      // Allow submission anyway if time is up, but warn if manual
-      if (timeLeft > 0) return; 
-    }
-
-    const results = {
-        examId,
-        totalQuestions: questions?.length || 0,
-        answers: answers,
-        timeSpent: (durationMinutes * 60) - timeLeft,
-        // Score calculation should ideally happen on backend to be secure
-        // But we pass answers for processing
-    };
-    onFinish(results);
-  };
 
   if (isLoading) return (
     <div className="fixed inset-0 bg-slate-900 z-50 flex flex-col items-center justify-center text-white space-y-4">
@@ -255,7 +264,7 @@ export function ExamSession({ examId, examTitle, durationMinutes, onFinish, onEx
 
                             return (
                                 <button
-                                    key={q.id}
+                                    key={q.id as string}
                                     onClick={() => setCurrentIdx(idx)}
                                     className={cn(
                                         "h-10 w-12 sm:w-full sm:h-12 rounded-xl text-xs font-black transition-all flex items-center justify-center relative group shrink-0",
@@ -292,15 +301,15 @@ export function ExamSession({ examId, examTitle, durationMinutes, onFinish, onEx
                                     <div className="flex items-center gap-3">
                                         <span className="h-8 px-3 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-black text-xs">Q{currentIdx + 1}</span>
                                         <Badge variant="secondary" className="uppercase text-[10px] tracking-widest font-bold">
-                                            {qType.replace('_', ' ')}
+                                            {(qType as string).replace('_', ' ')}
                                         </Badge>
                                         <Button 
                                             variant="outline" size="sm" 
-                                            className={cn("h-8 ml-auto rounded-lg text-[10px] font-bold uppercase", flagged[currentQuestion.id] && "bg-red-50 text-red-600 border-red-200")}
-                                            onClick={() => setFlagged(prev => ({ ...prev, [currentQuestion.id]: !prev[currentQuestion.id] }))}
+                                            className={cn("h-8 ml-auto rounded-lg text-[10px] font-bold uppercase", flagged[currentQuestion.id as string] && "bg-red-50 text-red-600 border-red-200")}
+                                            onClick={() => setFlagged(prev => ({ ...prev, [currentQuestion!.id as string]: !prev[currentQuestion!.id as string] }))}
                                         >
-                                            <Flag className={cn("h-3.5 w-3.5 sm:mr-1.5", flagged[currentQuestion.id] && "fill-current")} />
-                                            <span className="hidden sm:inline">{flagged[currentQuestion.id] ? "Flagged" : "Flag"}</span>
+                                            <Flag className={cn("h-3.5 w-3.5 sm:mr-1.5", flagged[currentQuestion.id as string] && "fill-current")} />
+                                            <span className="hidden sm:inline">{flagged[currentQuestion.id as string] ? "Flagged" : "Flag"}</span>
                                         </Button>
                                     </div>
                                     <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 leading-snug">
@@ -315,15 +324,15 @@ export function ExamSession({ examId, examTitle, durationMinutes, onFinish, onEx
                                     {/* MCQ */}
                                     {(qType === 'mcq' || qType === 'multiple_choice') && (
                                         <div className="grid grid-cols-1 gap-3">
-                                            {currentQuestion.options?.map((option: any, oIdx: number) => {
-                                                const optId = option.id || option.text || option; // Handle object or string options
-                                                const optText = option.text || option;
-                                                const isSelected = answers[currentQuestion.id] === optId;
+                                            {((currentQuestion.options as Array<{id?: string, text: string}>) || []).map((opt, oIdx) => {
+                                                const optId = opt.id || opt.text;
+                                                const optText = opt.text;
+                                                const isSelected = answers[currentQuestion.id as string] === optId;
                                                 
                                                 return (
                                                     <button
                                                         key={oIdx}
-                                                        onClick={() => handleAnswerChange(optId)}
+                                                        onClick={() => handleAnswerChange(optId as string)}
                                                         className={cn(
                                                             "group relative flex items-center p-3 sm:p-4 rounded-xl border-2 text-left transition-all duration-200",
                                                             isSelected ? "bg-white border-primary shadow-lg shadow-primary/5" : "bg-white/50 border-white hover:border-slate-300"
@@ -335,7 +344,7 @@ export function ExamSession({ examId, examTitle, durationMinutes, onFinish, onEx
                                                         )}>
                                                             {String.fromCharCode(65 + oIdx)}
                                                         </div>
-                                                        <span className={cn("font-medium text-sm sm:text-base leading-snug w-full", isSelected ? "text-slate-900" : "text-slate-600")}>{optText}</span>
+                                                        <span className={cn("font-medium text-sm sm:text-base leading-snug w-full", isSelected ? "text-slate-900" : "text-slate-600")}>{optText as string}</span>
                                                     </button>
                                                 );
                                             })}
@@ -351,13 +360,13 @@ export function ExamSession({ examId, examTitle, durationMinutes, onFinish, onEx
                                                     onClick={() => handleAnswerChange(val)}
                                                     className={cn(
                                                         "h-32 rounded-2xl border-2 flex flex-col items-center justify-center gap-2 transition-all hover:scale-[1.02]",
-                                                        answers[currentQuestion.id] === val 
+                                                        answers[currentQuestion.id as string] === val 
                                                             ? (val === 'True' ? "bg-emerald-50 border-emerald-500 text-emerald-700" : "bg-red-50 border-red-500 text-red-700")
                                                             : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
                                                     )}
                                                 >
                                                     <span className="text-2xl font-black uppercase tracking-widest">{val}</span>
-                                                    {answers[currentQuestion.id] === val && <CheckCircle2 className="h-6 w-6" />}
+                                                    {answers[currentQuestion.id as string] === val && <CheckCircle2 className="h-6 w-6" />}
                                                 </button>
                                             ))}
                                         </div>
@@ -368,12 +377,12 @@ export function ExamSession({ examId, examTitle, durationMinutes, onFinish, onEx
                                         <div className="space-y-2">
                                             <Textarea
                                                 placeholder="Type your answer here..."
-                                                value={answers[currentQuestion.id] || ''}
+                                                value={answers[currentQuestion.id as string] || ''}
                                                 onChange={(e) => handleAnswerChange(e.target.value)}
                                                 className="min-h-[200px] text-base p-4 rounded-xl border-slate-200 focus:border-primary resize-y"
                                             />
                                             <p className="text-xs text-muted-foreground text-right">
-                                                {(answers[currentQuestion.id] || '').length} characters
+                                                {(answers[currentQuestion.id as string] || '').length} characters
                                             </p>
                                         </div>
                                     )}
@@ -384,7 +393,7 @@ export function ExamSession({ examId, examTitle, durationMinutes, onFinish, onEx
                                             <p className="text-sm text-muted-foreground">Type the missing word(s) exactly.</p>
                                             <Input
                                                 placeholder="Your answer..."
-                                                value={answers[currentQuestion.id] || ''}
+                                                value={answers[currentQuestion.id as string] || ''}
                                                 onChange={(e) => handleAnswerChange(e.target.value)}
                                                 className="h-14 text-lg px-4 rounded-xl border-slate-200 focus:border-primary"
                                             />
@@ -409,7 +418,7 @@ export function ExamSession({ examId, examTitle, durationMinutes, onFinish, onEx
                                             
                                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-[400px]">
                                                 <Textarea
-                                                    value={answers[currentQuestion.id] || ''}
+                                                    value={answers[currentQuestion.id as string] || ''}
                                                     onChange={(e) => handleAnswerChange(e.target.value)}
                                                     placeholder="// Write your solution here..."
                                                     className="font-mono text-sm p-4 bg-slate-950 text-slate-50 resize-none h-full rounded-xl border-slate-800 focus:border-emerald-500/50"
@@ -422,7 +431,7 @@ export function ExamSession({ examId, examTitle, durationMinutes, onFinish, onEx
                                                     </div>
                                                     <ScrollArea className="flex-1">
                                                         <pre className="text-xs font-mono text-emerald-400 whitespace-pre-wrap">
-                                                            {consoleOutput[currentQuestion.id] || "> Ready to execute..."}
+                                                            {consoleOutput[currentQuestion.id as string] || "> Ready to execute..."}
                                                         </pre>
                                                     </ScrollArea>
                                                 </div>

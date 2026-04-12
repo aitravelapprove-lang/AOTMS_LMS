@@ -118,6 +118,7 @@ export interface CourseRating {
   course_title?: string;
   user_name?: string;
   user_avatar?: string | null;
+  _id?: string;
 }
 
 export interface InstructorStats {
@@ -156,6 +157,82 @@ export interface PlaylistVideo {
   completion_rate?: number;
   drop_off_time_seconds?: number;
   drop_off_percentage?: number;
+}
+
+export interface PlaylistEnrollment {
+  id: string;
+  playlist_id: string;
+  user_id: string;
+  progress_percentage?: number;
+  completed_videos?: number;
+  last_watched_at?: string;
+  enrolled_at?: string;
+  user_name?: string;
+  user_email?: string;
+  current_video_title?: string;
+}
+
+export interface WatchEvent {
+  id: string;
+  video_id: string;
+  user_id: string;
+  watch_time_seconds?: number;
+  completed?: boolean;
+  created_at?: string;
+  drop_off_seconds?: number;
+}
+
+export interface EnrollmentData {
+    id?: string;
+    _id?: string;
+    user_id: string | { id?: string; _id?: string; full_name?: string; email?: string; avatar_url?: string; phone?: string; };
+    course_id: string | { id?: string; _id?: string; title?: string; };
+    progress_percentage?: number;
+    last_accessed_at?: string;
+    enrolled_at?: string;
+    user_full_name?: string;
+    user_email?: string;
+    user_avatar?: string;
+}
+
+export interface BatchAssignmentData {
+    id?: string;
+    _id?: string;
+    student_id: string;
+    course_id: string;
+    batch_id: {
+        id?: string;
+        _id?: string;
+        batch_type?: string;
+        batch_name?: string;
+    };
+}
+
+export interface ResumeScan {
+  id?: string;
+  _id?: string;
+  user_id?: string | { id?: string, _id?: string };
+  score?: number;
+  created_at?: string;
+}
+
+export interface Profile {
+  id: string;
+  user_id: string;
+  full_name?: string;
+  email?: string;
+  avatar_url?: string;
+  mobile_number?: string;
+  college_name?: string;
+  institute_name?: string;
+  ats_credits?: number;
+  approval_status?: string;
+  city?: string;
+  district?: string;
+  country?: string;
+  full_address?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface Assignment {
@@ -766,11 +843,11 @@ export function useCreateTopic() {
     return useQuery({
       queryKey: ["instructor-stats", user?.id, courses?.length],
       queryFn: async () => {
-        if (!courses || (courses as any[]).length === 0) {
+        if (!courses || (courses as Course[]).length === 0) {
           return { totalStudents: 0, contentItems: 0, avgCompletion: 0 };
         }
 
-        const courseIds = (courses as any[]).map((c: Course) => c.id);
+        const courseIds = (courses as Course[]).map((c: Course) => c.id);
         if (courseIds.length === 0)
           return { totalStudents: 0, contentItems: 0, avgCompletion: 0 };
 
@@ -778,15 +855,15 @@ export function useCreateTopic() {
 
         // Fetch only enrollments/videos/resources for THIS instructor's courses
         const [enrollments, allVideos, allResources] = await Promise.all([
-          fetchWithAuth(
+          fetchWithAuth<Record<string, unknown>[]>(
             `/data/course_enrollments?course_id=in.(${courseIdsInFormat})`,
-          ) as Promise<Record<string, any>[]>,
-          fetchWithAuth(
+          ),
+          fetchWithAuth<Record<string, unknown>[]>(
             `/data/course_videos?course_id=in.(${courseIdsInFormat})`,
-          ) as Promise<Record<string, any>[]>,
-          fetchWithAuth(
+          ),
+          fetchWithAuth<Record<string, unknown>[]>(
             `/data/course_resources?course_id=in.(${courseIdsInFormat})`,
-          ) as Promise<Record<string, any>[]>,
+          ),
         ]);
 
         const totalStudents = enrollments.length;
@@ -809,7 +886,7 @@ export function useCreateTopic() {
           avgCompletion,
         };
       },
-      enabled: !!courses && (courses as any[]).length > 0 && !!user?.id,
+      enabled: !!courses && (courses as Course[]).length > 0 && !!user?.id,
       staleTime: 60000 * 5, // 5 minutes cache
     });
   }
@@ -889,10 +966,10 @@ export function useCreateTopic() {
       queryFn: async () => {
         if (!playlistId) return null;
 
-        const videos = await fetchWithAuth<any[]>(
+        const videos = await fetchWithAuth<PlaylistVideo[]>(
           `/data/playlist_videos?playlist_id=${playlistId}`,
         );
-        const enrollments = await fetchWithAuth<any[]>(
+        const enrollments = await fetchWithAuth<PlaylistEnrollment[]>(
           `/data/playlist_enrollments?playlist_id=${playlistId}`,
         );
 
@@ -902,7 +979,7 @@ export function useCreateTopic() {
           enrollments.length > 0
             ? Math.round(
               enrollments.reduce(
-                (acc: number, e: any) => acc + (e.progress_percentage || 0),
+                (acc: number, e: PlaylistEnrollment) => acc + (e.progress_percentage || 0),
                 0,
               ) / enrollments.length,
             )
@@ -949,7 +1026,7 @@ export function useCreateTopic() {
       queryFn: async () => {
         if (!videoId) return null;
 
-        const watchData = await fetchWithAuth<any[]>(
+        const watchData = await fetchWithAuth<WatchEvent[]>(
           `/data/video_watch_events?video_id=${videoId}`,
         );
 
@@ -957,19 +1034,19 @@ export function useCreateTopic() {
         const averageWatchTimeSeconds =
           watchData.length > 0
             ? watchData.reduce(
-              (acc: number, w: { watch_time_seconds?: number }) =>
+              (acc: number, w: WatchEvent) =>
                 acc + (w.watch_time_seconds || 0),
               0,
             ) / watchData.length
             : 0;
         const completedViews = watchData.filter(
-          (w: { completed?: boolean }) => w.completed,
+          (w: WatchEvent) => w.completed,
         ).length;
         const completionRate =
           totalViews > 0 ? Math.round((completedViews / totalViews) * 100) : 0;
 
         const dropOffTimes = watchData.map(
-          (w: { drop_off_seconds?: number }) => w.drop_off_seconds || 0,
+          (w: WatchEvent) => w.drop_off_seconds || 0,
         );
         const dropOffTimeSeconds =
           dropOffTimes.length > 0
@@ -1019,12 +1096,12 @@ export function useCreateTopic() {
       queryFn: async () => {
         if (!playlistId) return [];
 
-        const enrollments = (await fetchWithAuth(
+        const enrollments = await fetchWithAuth<PlaylistEnrollment[]>(
           `/data/playlist_enrollments?playlist_id=${playlistId}`,
-        )) as any[];
-        const videos = (await fetchWithAuth(
+        );
+        const videos = await fetchWithAuth<PlaylistVideo[]>(
           `/data/playlist_videos?playlist_id=${playlistId}`,
-        )) as any[];
+        );
         const totalModules = (videos || []).length;
 
         const students: StudentProgress[] = (enrollments || []).map(
@@ -1200,31 +1277,31 @@ export function useCreateTopic() {
         // 2. Fetch enrollments and batch assignments for these courses
         const [allEnrollments, allBatchAssignments, allResumeScans] =
           await Promise.all([
-            fetchWithAuth<Record<string, any>[]>(
+            fetchWithAuth<EnrollmentData[]>(
               `/data/course_enrollments?course_id=in.(${courseIds.join(",")})`,
             ).catch((e) => {
               console.error(
                 "[useInstructorAllStudents] Enrollments fetch failed:",
                 e,
               );
-              return [] as Record<string, any>[];
+              return [] as EnrollmentData[];
             }),
-            fetchWithAuth<Record<string, any>[]>(
+            fetchWithAuth<BatchAssignmentData[]>(
               `/batches/student-assignments?course_id=in.(${courseIds.join(",")})`,
             ).catch((e) => {
               console.error(
                 "[useInstructorAllStudents] Batch assignments fetch failed:",
                 e,
               );
-              return [] as Record<string, any>[];
+              return [] as BatchAssignmentData[];
             }),
-            fetchWithAuth<Record<string, any>[]>("/admin/resume-scans").catch(
-              (e) => {
+            fetchWithAuth<ResumeScan[]>("/admin/resume-scans").catch(
+              (e: Error) => {
                 console.error(
                   "[useInstructorAllStudents] Resume scans fetch failed:",
                   e,
                 );
-                return [] as Record<string, any>[];
+                return [] as ResumeScan[];
               },
             ),
           ]);
@@ -1335,10 +1412,12 @@ export function useCreateTopic() {
               overallProgress: progress,
               status,
               atsScore: allResumeScans?.find(
-                (rs) =>
-                  rs.user_id?._id === userId ||
-                  rs.user_id?.id === userId ||
-                  rs.user_id === userId,
+                (rs) => {
+                  if (typeof rs.user_id === "object" && rs.user_id !== null) {
+                    return rs.user_id._id === userId || rs.user_id.id === userId;
+                  }
+                  return rs.user_id === userId;
+                }
               )?.score,
               enrolledAt: enrollment.enrolled_at || new Date().toISOString(),
               certificates: progress === 100 ? 1 : 0,
@@ -1658,7 +1737,7 @@ export function useCreateTopic() {
         studentId: string;
       }) => {
         // First, check if the student profile exists (validation)
-        const profiles = await fetchWithAuth<any[]>(
+        const profiles = await fetchWithAuth<Profile[]>(
           `/data/profiles?id=eq.${studentId}`,
         );
         if (!profiles || profiles.length === 0) {
@@ -1701,7 +1780,7 @@ export function useCreateTopic() {
 
         // Fetch profile and user details via backend
         // We'll use a specific endpoint or generic data endpoint
-        const profiles = await fetchWithAuth<any[]>(
+        const profiles = await fetchWithAuth<Profile[]>(
           `/data/profiles?id=eq.${studentId}`,
         );
         if (!profiles || profiles.length === 0) {
@@ -1857,11 +1936,11 @@ export function useCreateTopic() {
         );
 
         const ratings =
-          (await fetchWithAuth<any[]>(
+          (await fetchWithAuth<CourseRating[]>(
             `/data/course_ratings?course_id=in.(${courseIds})&order=created_at.desc`,
           )) || [];
 
-        const enriched = (ratings as any[]).map((r: any) => {
+        const enriched = ratings.map((r: CourseRating) => {
           const course = (courses as Course[]).find(
             (c: Course) => c.id === r.course_id,
           );
@@ -1880,7 +1959,7 @@ export function useCreateTopic() {
 
         return enriched as CourseRating[];
       },
-      enabled: !!courses && (courses as any[]).length > 0 && !!user?.id,
+      enabled: !!courses && (courses as Course[]).length > 0 && !!user?.id,
       staleTime: 60000 * 5,
     });
   }

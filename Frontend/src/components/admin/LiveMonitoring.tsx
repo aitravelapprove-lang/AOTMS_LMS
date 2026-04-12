@@ -568,7 +568,7 @@ export function LiveMonitoring() {
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td className="px-8 py-5 align-middle text-left align-middle">
+                                                    <td className="px-8 py-5 text-left align-middle">
                                                         <div className="text-xs font-black text-slate-900 uppercase tracking-tighter">{formatDate(r.submitted_at)}</div>
                                                         <div className="text-[8px] font-black text-slate-300 tracking-[0.2em] mt-1 uppercase">REF: {r.id.toString().slice(-6)}</div>
                                                     </td>

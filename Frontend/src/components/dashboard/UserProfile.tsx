@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Save, Upload, Github, Briefcase, Copy, CheckCircle, ExternalLink, Linkedin } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
@@ -30,6 +31,14 @@ interface ProfileData {
     impact?: string | null;
     core_expertise?: string | null;
     resume_url?: string | null;
+    college_name?: string | null;
+    institute_name?: string | null;
+    city?: string | null;
+    district?: string | null;
+    country?: string | null;
+    full_address?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
 }
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
@@ -60,7 +69,15 @@ export function UserProfile() {
         global_experience: '',
         impact: '',
         core_expertise: '',
-        resume_url: ''
+        resume_url: '',
+        college_name: '',
+        institute_name: '',
+        city: '',
+        district: '',
+        country: '',
+        full_address: '',
+        latitude: null,
+        longitude: null
     });
 
     const fetchProfile = useCallback(async () => {
@@ -98,7 +115,15 @@ export function UserProfile() {
                 global_experience: data?.global_experience || '',
                 impact: data?.impact || '',
                 core_expertise: data?.core_expertise || '',
-                resume_url: data?.resume_url || ''
+                resume_url: data?.resume_url || '',
+                college_name: data?.college_name || '',
+                institute_name: data?.institute_name || '',
+                city: data?.city || '',
+                district: data?.district || '',
+                country: data?.country || '',
+                full_address: data?.full_address || '',
+                latitude: data?.latitude || null,
+                longitude: data?.longitude || null
             });
         } catch (error: unknown) {
             console.error('Error fetching profile:', error);
@@ -139,6 +164,8 @@ export function UserProfile() {
                 core_expertise: profile.core_expertise,
                 resume_url: profile.resume_url,
                 bio: profile.bio,
+                college_name: profile.college_name,
+                institute_name: profile.institute_name,
                 // Add extra fields if schema supports them
                 // mobile_number: profile.phone,
             };
@@ -399,6 +426,24 @@ export function UserProfile() {
                                     />
                                 </div>
                                 <div className="space-y-2">
+                                    <Label htmlFor="collegeName">College Name</Label>
+                                    <Input
+                                        id="collegeName"
+                                        placeholder="e.g. DVR & DR.HS MIC COLLEGE OF TECHNOLOGY"
+                                        value={profile.college_name || ''}
+                                        onChange={(e) => setProfile({ ...profile, college_name: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="instituteName">Institute Name</Label>
+                                    <Input
+                                        id="instituteName"
+                                        placeholder="Enter institute name if applicable"
+                                        value={profile.institute_name || ''}
+                                        onChange={(e) => setProfile({ ...profile, institute_name: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
                                     <Label htmlFor="linkedin">LinkedIn Profile URL</Label>
                                     <div className="flex gap-2">
                                         <div className="flex bg-slate-100 border border-slate-200 rounded-lg px-3 items-center justify-center">
@@ -537,7 +582,36 @@ export function UserProfile() {
                                 )}
                             </div>
 
-                            <div className="space-y-2">
+                             <div className="space-y-4 pt-4 border-t border-slate-100">
+                                <h4 className="text-sm font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                                   <ExternalLink className="h-4 w-4" /> System Location Metadata
+                                   {(profile.latitude && profile.longitude) && <Badge className="bg-emerald-500 text-white border-none text-[8px] h-4 animate-pulse">GPS ACTIVE</Badge>}
+                                </h4>
+                                <div className="grid gap-4 md:grid-cols-3">
+                                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">City / District</p>
+                                      <p className="text-xs font-bold text-slate-700">{profile.city || 'N/A'}{profile.district ? `, ${profile.district}` : ''}</p>
+                                   </div>
+                                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Country</p>
+                                      <p className="text-xs font-bold text-slate-700">{profile.country || 'N/A'}</p>
+                                   </div>
+                                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Coordinates</p>
+                                      <p className="text-xs font-bold text-slate-700">
+                                         {profile.latitude && profile.longitude 
+                                            ? `${profile.latitude.toFixed(4)}, ${profile.longitude.toFixed(4)}` 
+                                            : 'N/A'}
+                                      </p>
+                                   </div>
+                                   <div className="md:col-span-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Full System Address Mapping</p>
+                                      <p className="text-xs font-bold text-slate-700">{profile.full_address || 'Identity verification pending geolocation sync.'}</p>
+                                   </div>
+                                </div>
+                             </div>
+
+                             <div className="space-y-2">
                                 <Label htmlFor="bio">Bio</Label>
                                 <Textarea
                                     id="bio"
@@ -545,7 +619,7 @@ export function UserProfile() {
                                     value={profile.bio || ''}
                                     onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
                                 />
-                            </div>
+                             </div>
 
                             <div className="flex justify-end">
                                 <Button type="submit" disabled={saving}>

@@ -38,7 +38,7 @@ export default function StudentResources() {
 
     const { data: resources, isLoading: isLoadingResources, refetch } = useStudentResources(selectedCourseId === 'all' ? null : selectedCourseId);
 
-    const filteredResources = resources?.filter((resource: CourseResource) => {
+    const filteredResources = (resources as CourseResource[] | undefined)?.filter((resource: CourseResource) => {
         const matchesSearch = resource.asset_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                               resource.resource_type.toLowerCase().includes(searchQuery.toLowerCase());
         

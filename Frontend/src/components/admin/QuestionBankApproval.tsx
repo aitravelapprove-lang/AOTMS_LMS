@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { fetchWithAuth } from '@/lib/api';
-import { Loader2, CheckCircle, XCircle, FileText, AlertCircle, LayoutGrid, Clock, History, Eye, Users, UserPlus, Trash2, ShieldCheck, BrainCircuit, RefreshCw, Award, Calendar, User, BookOpen, ArrowRight } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, FileText, AlertCircle, LayoutGrid, Clock, History, Eye, Users, UserPlus, Trash2, ShieldCheck, BrainCircuit, RefreshCw, Award, Calendar, User, BookOpen, ArrowRight, ShieldAlert, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -132,6 +132,7 @@ export function QuestionBankApproval() {
     const [selectedCourseId, setSelectedCourseId] = useState<string>("");
     const { data: courses } = useCourses();
     const [approvedBanks, setApprovedBanks] = useState<PendingQuestionBank[]>([]);
+    const [pendingBanks, setPendingBanks] = useState<PendingQuestionBank[]>([]);
 
     const [showAccessDialog, setShowAccessDialog] = useState(false);
     const [accessingTopic, setAccessingTopic] = useState<string | null>(null);
@@ -163,15 +164,13 @@ export function QuestionBankApproval() {
         try {
             if (showLoading && approvedBanks.length === 0) setLoading(true);
 
-            // Optimized summary fetch inclusive of exams
             const summary = await fetchWithAuth('/admin/question-bank-summary') as (PendingQuestionBank & { approval_status: string, access_count: number })[];
 
-            // We only show approved items in this simplified view
-            const approved = summary.filter(s => s.approval_status === 'approved');
-            setApprovedBanks(approved);
+            setApprovedBanks(summary);
+            setPendingBanks([]);
 
             const counts: Record<string, number> = {};
-            approved.forEach(s => {
+            summary.forEach(s => {
                 counts[s.topic] = s.access_count || 0;
             });
             setAccessCount(counts);
@@ -179,6 +178,25 @@ export function QuestionBankApproval() {
             console.error('Failed to fetch question banks summary', err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleApproveBank = async (topic: string) => {
+        try {
+            setProcessing(topic);
+            await fetchWithAuth(`/admin/question-bank/${encodeURIComponent(topic)}/approve`, {
+                method: 'PUT'
+            });
+            toast({ title: "Protocol Initiated", description: `Topic ${topic} is now verified and ready for distribution.` });
+            fetchPendingBanks(false);
+        } catch (err) {
+            toast({
+                title: 'Approval Error',
+                description: err instanceof Error ? err.message : 'System could not verify repository node',
+                variant: 'destructive'
+            });
+        } finally {
+            setProcessing(null);
         }
     };
 
@@ -451,21 +469,21 @@ export function QuestionBankApproval() {
             </div>
 
 
-            {/* Direct List of Approved Items */}
-            {approvedBanks.length === 0 ? (
-                <Card className="border-2 border-dashed border-slate-300 bg-slate-50/50 rounded-[2rem]">
-                    <CardContent className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-                        <div className="h-20 w-20 rounded-full bg-white flex items-center justify-center shadow-inner border border-slate-100">
-                            <LayoutGrid className="h-10 w-10 text-slate-900/20" />
-                        </div>
-                        <div className="space-y-1">
-                            <p className="text-xl font-bold text-slate-900 italic uppercase">No Content Available</p>
-                            <p className="text-sm font-medium text-slate-500 max-w-sm uppercase tracking-widest text-[10px]">Approve an exam in scheduling to see it here.</p>
-                        </div>
-                    </CardContent>
-                </Card>
-            ) : (
-                <div className="grid gap-4">
+            <div className="mt-12 space-y-6">
+                    {approvedBanks.length === 0 ? (
+                        <Card className="border-2 border-dashed border-slate-300 bg-slate-50/50 rounded-[2rem]">
+                            <CardContent className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+                                <div className="h-20 w-20 rounded-full bg-white flex items-center justify-center shadow-inner border border-slate-100">
+                                    <LayoutGrid className="h-10 w-10 text-slate-900/20" />
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-xl font-bold text-slate-900 italic uppercase">No Content Available</p>
+                                    <p className="text-sm font-medium text-slate-500 max-w-sm uppercase tracking-widest text-[10px]">Approve an exam in scheduling to see it here.</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <div className="grid gap-6">
                     {approvedBanks.map((bank) => (
                         <Card key={bank.topic} className="group overflow-hidden border-none shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-700 rounded-[3rem] bg-white relative">
                             {/* Animated Background Decor */}
@@ -598,9 +616,10 @@ export function QuestionBankApproval() {
                     ))}
                 </div>
             )}
+            </div>
 
-            {/* Removal Confirmation Dialog */}
-            <Dialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
+            {/* Student Access Dialog */}
+            <Dialog open={showAccessDialog} onOpenChange={setShowAccessDialog}>
                 <DialogContent className="w-[95vw] sm:max-w-[600px] rounded-[2.5rem] sm:rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl">
                     <div className="bg-primary p-8 text-white relative">
                         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }} />
@@ -675,8 +694,8 @@ export function QuestionBankApproval() {
                     </div>
 
                     <div className="p-6 bg-white space-y-4">
-                        <p className="text-sm text-slate-600 text-center">
-                            This action will set the question bank status to rejected. Students will lose access immediately.
+                        <p className="text-sm text-center font-bold text-red-600">
+                            This action will PERMANENTLY remove this Repository and all associated Scheduled Exams from the Database. Students will lose access immediately.
                         </p>
                         <div className="flex gap-3">
                             <Button

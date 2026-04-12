@@ -27,8 +27,10 @@ interface ExamModuleProps {
 }
 
 interface SubmissionResults {
-    score: number;
-    totalQuestions: number;
+  examId: string;
+  totalQuestions: number;
+  answers: Record<string, string>;
+  timeSpent: number;
 }
 
 export function ExamModule({ type }: ExamModuleProps) {
@@ -132,15 +134,18 @@ export function ExamModule({ type }: ExamModuleProps) {
                         </div>
                       )}
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[4px]">
-                         <Button className="rounded-full bg-white text-black font-black uppercase text-[10px] tracking-widest h-12 px-8 border-none transform translate-y-4 group-hover:translate-y-0 transition-all duration-500">
-                            {item.is_completed ? "View Analysis" : "Begin Session"}
+                         <Button className={cn(
+                            "rounded-full font-black uppercase text-[10px] tracking-widest h-12 px-8 border-none transform translate-y-4 group-hover:translate-y-0 transition-all duration-500",
+                            item.is_completed ? "bg-red-500 text-white" : "bg-white text-black"
+                         )}>
+                            {item.is_completed ? "🚫 Already Attempted" : "Begin Session"}
                          </Button>
                       </div>
                       <div className="absolute top-4 right-4">
                          <Badge className={cn("text-[8px] font-black uppercase tracking-widest h-6 rounded-full px-3 border-none shadow-lg", 
-                           item.is_completed ? "bg-slate-200 text-slate-400" : "bg-emerald-500 text-white animate-pulse"
+                           item.is_completed ? "bg-red-500 text-white" : "bg-emerald-500 text-white animate-pulse"
                          )}>
-                            {item.is_completed ? "Completed" : "Active Node"}
+                            {item.is_completed ? "🚫 Completed" : "Active Node"}
                          </Badge>
                       </div>
                    </div>

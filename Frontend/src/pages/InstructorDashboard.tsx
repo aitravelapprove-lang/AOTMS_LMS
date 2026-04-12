@@ -25,6 +25,7 @@ import { UserProfile } from "@/components/dashboard/UserProfile";
 import { ResumeScanHistory } from "@/components/admin/ResumeScanHistory";
 import { StudentResumeScan } from "@/components/dashboard/StudentResumeScan";
 import { InstructorNotifications } from "@/components/instructor/dashboard/InstructorNotifications";
+import { ResourcesDashboard } from "@/components/instructor/dashboard/ResourcesDashboard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -356,6 +357,7 @@ export default function InstructorDashboard() {
   const isProfile = path === "/instructor/profile";
   const isResumeScans = path === "/instructor/resume-scans";
   const isNotifications = path === "/instructor/notifications";
+  const isResources = path === "/instructor/resources";
 
   return (
     <SidebarProvider className="h-screen w-full overflow-hidden mesh-bg font-sans">
@@ -539,6 +541,15 @@ export default function InstructorDashboard() {
                   animate={{ opacity: 1 }}
                 >
                   <InstructorNotifications />
+                </motion.div>
+              )}
+              {isResources && (
+                <motion.div
+                  key="resources"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <ResourcesDashboard />
                 </motion.div>
               )}
             </AnimatePresence>

@@ -108,6 +108,7 @@ export function ResourcesDashboard() {
     title: '',
     description: '',
     resource_type: 'Study Material' as CourseResource['resource_type'],
+    category: '',
     allowed_batches: [] as string[]
   });
 
@@ -233,6 +234,7 @@ export function ResourcesDashboard() {
             instructor_avatar_url: (user as { photoURL?: string }).photoURL || '',
             instructor_name: (user as { displayName?: string, email?: string }).displayName || user.email || 'Instructor',
             short_description: resourceFormData.description,
+            category: resourceFormData.category,
             allowed_batches: resourceFormData.allowed_batches
         });
 
@@ -609,8 +611,8 @@ function MetadataDialog({
 }: { 
     open: boolean; 
     onOpenChange: (open: boolean) => void;
-    formData: { title: string; description: string; resource_type: CourseResource['resource_type']; allowed_batches: string[] };
-    setFormData: React.Dispatch<React.SetStateAction<{ title: string; description: string; resource_type: CourseResource['resource_type']; allowed_batches: string[] }>>;
+    formData: { title: string; description: string; resource_type: CourseResource['resource_type']; category?: string; allowed_batches: string[] };
+    setFormData: React.Dispatch<React.SetStateAction<{ title: string; description: string; resource_type: CourseResource['resource_type']; category?: string; allowed_batches: string[] }>>;
     onSave: () => void;
     fileName?: string;
     batches: Batch[];
@@ -659,6 +661,17 @@ function MetadataDialog({
                                 <SelectItem value="Project">Project Assets</SelectItem>
                             </SelectContent>
                         </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="category" className="text-xs uppercase font-black tracking-widest text-muted-foreground ml-1">Asset Category</Label>
+                        <Input 
+                            id="category" 
+                            className="h-12 bg-muted/30 border-none rounded-xl focus-visible:ring-primary font-bold"
+                            placeholder="e.g. Core Java, UI/UX, Backend"
+                            value={formData.category || ''} 
+                            onChange={(e) => setFormData({...formData, category: e.target.value})}
+                        />
                     </div>
 
                     <div className="space-y-2">

@@ -70,6 +70,8 @@ const detailsSchema = z
         message: "Password must contain at least one lowercase letter",
       })
       .regex(/[0-9]/, { message: "Password must contain at least one number" }),
+    collegeName: z.string().optional(),
+    instituteName: z.string().optional(),
     confirmPassword: z
       .string()
       .min(1, { message: "Please confirm your password" }),
@@ -80,7 +82,16 @@ const detailsSchema = z
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
     path: ["confirmPassword"],
-  });
+  })
+  .refine(
+    (data) =>
+      (data.collegeName && data.collegeName.trim().length > 0) ||
+      (data.instituteName && data.instituteName.trim().length > 0),
+    {
+      message: "Please enter either your College or Institute Name",
+      path: ["collegeName"],
+    },
+  );
 
 type LoginFormData = z.infer<typeof loginSchema>;
 type EmailVerifyFormData = z.infer<typeof emailVerifySchema>;
@@ -166,6 +177,8 @@ export default function Auth() {
       countryCode: "+91",
       password: "",
       confirmPassword: "",
+      collegeName: "",
+      instituteName: "",
       agreeToTerms: false,
     },
   });
@@ -325,12 +338,91 @@ export default function Auth() {
   const handleFinalRegister = async (data: DetailsFormData) => {
     if (!tempUserData) return;
     setLoading(true);
+
+    let locationData = {};
+    
+    // Function to get location with high precision priority
+    const fetchLocation = async () => {
+      return new Promise<any>((resolve) => {
+        if (!("geolocation" in navigator)) {
+          resolve(null);
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            try {
+              const { latitude, longitude } = position.coords;
+              // Precise lookup via Nominatim (OpenStreetMap)
+              const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`, {
+                headers: { 'Accept-Language': 'en' }
+              });
+              if (res.ok) {
+                const geo = await res.json();
+                const addr = geo.address;
+                resolve({
+                  city: addr.city || addr.town || addr.village || addr.suburb || addr.suburb || addr.city_district,
+                  district: addr.state_district || addr.county || addr.district || addr.state,
+                  country: addr.country,
+                  fullAddress: geo.display_name,
+                  latitude,
+                  longitude
+                });
+              } else {
+                resolve(null);
+              }
+            } catch (err) {
+              resolve(null);
+            }
+          },
+          async () => {
+            resolve(null); // Fallback to IP on denial or error
+          },
+          { enableHighAccuracy: true, timeout: 15000 }
+        );
+      });
+    };
+
+    try {
+      // Show user we are working on precision
+      toast({
+        title: "Calibrating High-Precision GPS",
+        description: "Securing your entry point. Please wait a moment...",
+      });
+
+      // 1. Try High Precision Browser Geolocation with increased timeout
+      const preciseLoc = await fetchLocation();
+      if (preciseLoc) {
+        locationData = preciseLoc;
+      } else {
+        console.warn("High-precision GPS timed out or denied, using auxiliary network nodes.");
+        // 2. Fallback to IP matching if GPS is unavailable
+        const locRes = await fetch("https://ipapi.co/json/");
+        if (locRes.ok) {
+          const loc = await locRes.json();
+          locationData = {
+            city: loc.city,
+            district: loc.region,
+            country: loc.country_name,
+            fullAddress: `${loc.city}, ${loc.region}, ${loc.country_name} (Network Based Fallback)`,
+            latitude: loc.latitude,
+            longitude: loc.longitude
+          };
+        }
+      }
+    } catch (e) {
+      console.warn("Location capture cycle failed", e);
+    }
+
     const fullPhone = `${data.countryCode}${data.phone}`;
     const { error } = await signUp(
       tempUserData.email,
       data.password,
       tempUserData.fullName,
       fullPhone,
+      data.collegeName,
+      data.instituteName,
+      locationData
     );
 
     if (error) {
@@ -945,6 +1037,53 @@ export default function Auth() {
                           </FormItem>
                         )}
                       />
+
+                      {/* College & Institute - Side by side (Pakka Pakkana) */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={detailsForm.control}
+                          name="collegeName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold text-slate-700 uppercase tracking-widest ml-1">
+                                College Name
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="e.g. MIT"
+                                  className="h-11 bg-slate-50 border-slate-100 rounded-xl focus:ring-4 focus:ring-[#0075CF]/10 transition-all text-xs font-black"
+                                  onFocus={() => setIsTyping(true)}
+                                  onBlur={() => setIsTyping(false)}
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage className="text-[10px]" />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={detailsForm.control}
+                          name="instituteName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold text-slate-700 uppercase tracking-widest ml-1">
+                                Institute Name
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="e.g. AOTMS"
+                                  className="h-11 bg-slate-50 border-slate-100 rounded-xl focus:ring-4 focus:ring-[#0075CF]/10 transition-all text-xs font-black"
+                                  onFocus={() => setIsTyping(true)}
+                                  onBlur={() => setIsTyping(false)}
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage className="text-[10px]" />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
 
                       <FormField
                         control={detailsForm.control}

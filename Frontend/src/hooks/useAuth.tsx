@@ -28,7 +28,7 @@ interface AuthContextType {
   session: Session | null;
   userRole: UserRole | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string, phone?: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName: string, phone?: string, collegeName?: string, instituteName?: string, locationData?: { city?: string; district?: string; country?: string; fullAddress?: string; latitude?: number; longitude?: number }) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null; requiresAdminOtp?: boolean }>;
   verifyAdminOtp: (email: string, otp: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -188,12 +188,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return () => clearInterval(interval);
   }, [user?.id, checkSession]);
 
-  const signUp = useCallback(async (email: string, password: string, fullName: string, phone?: string) => {
+  const signUp = useCallback(async (email: string, password: string, fullName: string, phone?: string, collegeName?: string, instituteName?: string, locationData?: { city?: string; district?: string; country?: string; fullAddress?: string; latitude?: number; longitude?: number }) => {
     try {
       const res = await fetch(`${API_URL}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, fullName, phone }),
+        body: JSON.stringify({ 
+          email, 
+          password, 
+          fullName, 
+          phone, 
+          collegeName, 
+          instituteName,
+          city: locationData?.city,
+          district: locationData?.district,
+          country: locationData?.country,
+          fullAddress: locationData?.fullAddress,
+          latitude: locationData?.latitude,
+          longitude: locationData?.longitude
+        }),
       });
 
       const data = await res.json();

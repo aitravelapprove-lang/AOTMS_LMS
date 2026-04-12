@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { fetchWithAuth } from "@/lib/api";
 import {
   Card,
@@ -53,7 +53,8 @@ import {
   Activity,
   MoreVertical,
   ArrowRight,
-  CheckCircle2
+  CheckCircle2,
+  ExternalLink
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -67,6 +68,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { Profile } from "@/hooks/useAdminData";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+// Fix for leaflet default marker icon issues in React
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+
+const DefaultIcon = L.icon({
+    iconUrl: markerIcon,
+    shadowUrl: markerShadow,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41]
+});
+L.Marker.prototype.options.icon = DefaultIcon;
 
 interface AttendanceRecord {
   id: string;
@@ -129,21 +145,94 @@ export function UserManagement({
   const [loadingAttendance, setLoadingAttendance] = useState(false);
 
   const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
+  const emailTimeouts = useRef<Record<string, any>>({});
+  const emailIntervals = useRef<Record<string, any>>({});
 
-  const handleSendEmail = async (user: Profile) => {
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(emailTimeouts.current).forEach(timeout => clearTimeout(timeout));
+      Object.values(emailIntervals.current).forEach(interval => clearInterval(interval));
+    };
+  }, []);
+
+  const handleSendEmail = (user: Profile) => {
+    if (sendingEmailId === user.id) return;
+
+    let timeLeft = 5;
+    const getToastMessage = (time: number) => `Sending notification to ${user.full_name} in ${time}s...`;
+
+    // Function to handle the UNDO action
+    const handleUndo = (tId: string | number) => {
+      if (emailTimeouts.current[user.id]) {
+        clearTimeout(emailTimeouts.current[user.id]);
+        clearInterval(emailIntervals.current[user.id]);
+        delete emailTimeouts.current[user.id];
+        delete emailIntervals.current[user.id];
+        setSendingEmailId(null);
+        toast.dismiss(tId);
+        toast.info(`Sending cancelled for ${user.full_name}`, {
+          icon: <Clock className="h-4 w-4" />,
+        });
+      }
+    };
+
+    // Show the initial toast with undo action
+    const toastId = toast(getToastMessage(timeLeft), {
+      description: "Action will execute shortly. You can still undo.",
+      action: {
+        label: "Undo",
+        onClick: () => handleUndo(toastId),
+      },
+      duration: 6000, // Slightly longer than 5s to ensure UI stays
+    });
+
     setSendingEmailId(user.id);
-    try {
-      await fetchWithAuth(`/admin/send-student-email`, {
-        method: "POST",
-        body: JSON.stringify({ userId: user.id }),
-      });
-      toast.success(`Notification sent to ${user.full_name}`);
-    } catch (err) {
-      console.error("Failed to send email:", err);
-      toast.error("Could not send notification email");
-    } finally {
-      setSendingEmailId(null);
-    }
+
+    // Visual countdown interval
+    const interval = setInterval(() => {
+      timeLeft -= 1;
+      if (timeLeft > 0) {
+        toast(getToastMessage(timeLeft), {
+          id: toastId,
+          description: "Action will execute shortly. You can still undo.",
+          action: {
+            label: "Undo",
+            onClick: () => handleUndo(toastId),
+          },
+        });
+      } else {
+        clearInterval(interval);
+      }
+    }, 1000);
+
+    emailIntervals.current[user.id] = interval;
+
+    // Schedule the actual email sending
+    const timeout = setTimeout(async () => {
+      delete emailTimeouts.current[user.id];
+      delete emailIntervals.current[user.id];
+      
+      try {
+        await fetchWithAuth(`/admin/send-student-email`, {
+          method: "POST",
+          body: JSON.stringify({ 
+            userId: user.id,
+            fullName: user.full_name // Passing full name to backend/n8n
+          }),
+        });
+        toast.dismiss(toastId);
+        toast.success(`Notification successfully sent to ${user.full_name}`);
+      } catch (err) {
+        console.error("Failed to send email:", err);
+        toast.dismiss(toastId);
+        toast.error("Could not send notification email");
+      } finally {
+        setSendingEmailId(null);
+      }
+    }, 5000);
+
+    emailTimeouts.current[user.id] = timeout;
   };
 
   const handleViewAttendance = async (user: Profile) => {
@@ -801,6 +890,80 @@ export function UserManagement({
                   </span>
                 </div>
               </div>
+
+              {/* Location Map Ingress */}
+              {(selectedUser.latitude && selectedUser.longitude) && (
+                <div className="space-y-3 pt-2">
+                   <h4 className="font-semibold flex items-center justify-between text-sm">
+                     <span className="flex items-center">
+                        <Activity className="h-4 w-4 mr-2 text-primary" /> Geographical Ingress Node
+                        <a 
+                          href={`https://www.google.com/maps?q=${selectedUser.latitude},${selectedUser.longitude}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="ml-2 p-1.5 rounded-lg bg-primary/5 text-primary hover:bg-primary hover:text-white transition-all shadow-sm border border-primary/10 group"
+                          title="View on Google Maps"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                     </span>
+                     {selectedUser.full_address && !selectedUser.full_address.includes('Network Based Fallback') && (
+                        <Badge className="bg-emerald-500 text-white border-none text-[8px] h-4 animate-pulse">LIVE GPS VERIFIED</Badge>
+                     )}
+                   </h4>
+                   
+                   <div className="h-[200px] w-full rounded-2xl overflow-hidden border-2 border-slate-100 shadow-inner relative z-0">
+                      <MapContainer 
+                        center={[selectedUser.latitude, selectedUser.longitude]} 
+                        zoom={13} 
+                        scrollWheelZoom={false}
+                        className="h-full w-full"
+                      >
+                        <TileLayer
+                          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        />
+                        <Marker position={[selectedUser.latitude, selectedUser.longitude]}>
+                          <Popup>
+                            <div className="text-xs font-bold">
+                              {selectedUser.full_name}'s Location<br/>
+                              <span className="text-[10px] font-normal text-slate-500">{selectedUser.full_address}</span>
+                            </div>
+                          </Popup>
+                        </Marker>
+                      </MapContainer>
+                   </div>
+
+                   <div className="grid grid-cols-2 gap-2 mt-2">
+                      <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Latitude</p>
+                          <p className="text-[11px] font-bold text-slate-700">{selectedUser.latitude.toFixed(6)}</p>
+                      </div>
+                      <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Longitude</p>
+                          <p className="text-[11px] font-bold text-slate-700">{selectedUser.longitude.toFixed(6)}</p>
+                      </div>
+                   </div>
+                </div>
+              )}
+
+              {!(selectedUser.latitude && selectedUser.longitude) && (selectedUser.city || selectedUser.country) && (
+                <div className="space-y-3 pt-2">
+                   <h4 className="font-semibold flex items-center text-sm">
+                     <Activity className="h-4 w-4 mr-2 text-primary" /> Geospatial Node (Legacy)
+                   </h4>
+                   <div className="grid grid-cols-2 gap-2 mb-2">
+                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">City / District</p>
+                          <p className="text-xs font-bold text-slate-700 truncate" title={selectedUser.city || ''}>{selectedUser.city || 'N/A'}, {selectedUser.district || ''}</p>
+                      </div>
+                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Country</p>
+                          <p className="text-xs font-bold text-slate-700 truncate" title={selectedUser.country || ''}>{selectedUser.country || 'N/A'}</p>
+                      </div>
+                   </div>
+                </div>
+              )}
 
               {/* Performance Section */}
               <div className="space-y-3 pt-2">

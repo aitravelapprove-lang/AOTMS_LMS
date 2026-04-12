@@ -122,6 +122,7 @@ const ResourceSchema = new Schema({
     instructor_name: { type: String },
     instructor_avatar_url: { type: String },
     short_description: { type: String },
+    category: { type: String },
     // Batch access control: empty = visible to all enrolled students
     allowed_batches: [{ type: Schema.Types.ObjectId, ref: 'Batch' }],
     created_at: { type: Date, default: Date.now }

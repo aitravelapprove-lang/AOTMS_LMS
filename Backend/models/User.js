@@ -24,6 +24,8 @@ const ProfileSchema = new mongoose.Schema({
     full_name: { type: String },
     avatar_url: { type: String },
     mobile_number: { type: String },
+    college_name: { type: String }, // User requested
+    institute_name: { type: String }, // User requested
     github_url: { type: String },
     linkedin_url: { type: String },
     title: { type: String },
@@ -37,6 +39,12 @@ const ProfileSchema = new mongoose.Schema({
     ats_credits: { type: Number, default: 3 }, // Added for resume scans
     approval_status: { type: String, default: 'pending' }, // pending, approved, suspended
     suspended_until: { type: Date }, // For account suspension timers
+    city: { type: String },
+    district: { type: String },
+    country: { type: String },
+    full_address: { type: String },
+    latitude: { type: Number },
+    longitude: { type: Number },
     created_at: { type: Date, default: Date.now },
     updated_at: { type: Date }
 });

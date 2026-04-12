@@ -30,7 +30,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { useInstructorLiveClasses, useCreateLiveClass, useDeleteLiveClass, useInstructorCourses, Course, LiveClass, uploadLivePoster } from '@/hooks/useInstructorData';
+import { useInstructorLiveClasses, useCreateLiveClass, useDeleteLiveClass, useInstructorCourses, useBatchStudents, Course, LiveClass, uploadLivePoster } from '@/hooks/useInstructorData';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
@@ -49,8 +49,14 @@ export function LiveClassManager() {
         startTime: '',
         duration: 60,
         agenda: '',
-        courseId: ''
+        courseId: '',
+        targetBatch: 'all'
     });
+
+    const { data: batchStudents = [], isLoading: isLoadingStudents } = useBatchStudents(
+        formData.courseId, 
+        formData.targetBatch
+    );
 
     const [posterFile, setPosterFile] = useState<File | null>(null);
     const [posterPreview, setPosterPreview] = useState<string | null>(null);
@@ -108,6 +114,11 @@ export function LiveClassManager() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
+        if (!formData.courseId) {
+            toast({ title: "Course Required", description: "Please select a target course for this live class.", variant: "destructive" });
+            return;
+        }
+
         if (isUploadingPoster) {
             toast({ title: "Still uploading...", description: "Please wait for the poster to finish uploading." });
             return;
@@ -116,10 +127,11 @@ export function LiveClassManager() {
         try {
             await createMeeting.mutateAsync({
                 ...formData,
+                target_batch: formData.targetBatch,
                 poster_url: finalPosterUrl
             });
             setIsAdding(false);
-            setFormData({ topic: '', startTime: '', duration: 60, agenda: '', courseId: '' });
+            setFormData({ topic: '', startTime: '', duration: 60, agenda: '', courseId: '', targetBatch: 'all' });
             setPosterFile(null);
             setPosterPreview(null);
             setFinalPosterUrl(null);
@@ -214,7 +226,7 @@ export function LiveClassManager() {
                                             {/* Floating Badges Overlay */}
                                             <div className="absolute bottom-3 left-3 right-3 z-30 flex items-center gap-2">
                                                 <div className="bg-black/50 backdrop-blur-md text-white text-[9px] font-bold px-3 py-1.5 rounded-xl border border-white/10 uppercase tracking-wider">
-                                                    Live
+                                                    {session.target_batch === 'all' ? 'All Batches' : `${session.target_batch} Batch`}
                                                 </div>
                                                 <div className="bg-[#10B981] text-white text-[9px] font-bold px-3 py-1.5 rounded-xl uppercase tracking-wider shadow-lg">
                                                     {session.status}
@@ -343,7 +355,7 @@ export function LiveClassManager() {
                             {/* Header */}
                             <div className="text-center px-8 pt-10 pb-6 border-b border-slate-100">
                                 <h3 className="text-2xl font-bold text-slate-900 tracking-tight">Schedule Live Session</h3>
-                                <p className="text-slate-500 text-sm mt-1">Powered by Zoom Video SDK</p>
+                                <p className="text-slate-500 text-sm mt-1">Target specific batches for improved engagement</p>
                             </div>
 
                             <form onSubmit={handleSubmit} className="px-8 py-6 space-y-5">
@@ -385,21 +397,78 @@ export function LiveClassManager() {
                                     </div>
                                 </div>
 
-                                {/* Associated Course */}
-                                <div className="space-y-1.5">
-                                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Associated Course (Optional)</label>
-                                    <select
-                                        title="Associated Course"
-                                        value={formData.courseId}
-                                        onChange={e => setFormData({ ...formData, courseId: e.target.value })}
-                                        className="w-full h-11 px-4 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all appearance-none"
-                                    >
-                                        <option value="">Standalone Meeting</option>
-                                        {(courses as any[]).map((course: Course) => (
-                                            <option key={course.id} value={course.id}>{course.title}</option>
-                                        ))}
-                                    </select>
+                                {/* Target Selection: Course + Batch */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest text-[#0075CF]">Select Course</label>
+                                        <select
+                                            title="Target Course"
+                                            required
+                                            value={formData.courseId}
+                                            onChange={e => setFormData({ ...formData, courseId: e.target.value })}
+                                            className="w-full h-11 px-4 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all appearance-none"
+                                        >
+                                            <option value="">Select at least one course</option>
+                                            {(courses as any[]).map((course: Course) => (
+                                                <option key={course.id} value={course.id}>{course.title}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest text-[#0075CF]">Select Batch</label>
+                                        <select
+                                            title="Target Batch"
+                                            value={formData.targetBatch}
+                                            disabled={!formData.courseId}
+                                            onChange={e => setFormData({ ...formData, targetBatch: e.target.value })}
+                                            className="w-full h-11 px-4 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all appearance-none disabled:bg-slate-50 disabled:text-slate-400"
+                                        >
+                                            <option value="all">All Batches</option>
+                                            <option value="morning">Morning</option>
+                                            <option value="afternoon">Afternoon</option>
+                                            <option value="evening">Evening</option>
+                                        </select>
+                                    </div>
                                 </div>
+
+                                {/* Student Visibility Preview */}
+                                {formData.courseId && (
+                                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h4 className="text-xs font-bold text-slate-600 uppercase flex items-center gap-2">
+                                                <Users className="w-3.5 h-3.5" />
+                                                {formData.targetBatch === 'all' ? 'Full Course Roster' : 'Verified Batch Students'} ({batchStudents.length})
+                                            </h4>
+                                            {isLoadingStudents && <div className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />}
+                                        </div>
+                                        
+                                        {batchStudents.length > 0 ? (
+                                            <div className="flex flex-wrap gap-2 max-h-[100px] overflow-y-auto pr-2 custom-scrollbar">
+                                                {batchStudents.map(student => (
+                                                    <div 
+                                                        key={student.id} 
+                                                        className="flex items-center gap-2 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-sm animate-in fade-in slide-in-from-left-2"
+                                                    >
+                                                        {student.avatar_url ? (
+                                                            <img src={student.avatar_url} className="w-4 h-4 rounded-full object-cover" alt="" />
+                                                        ) : (
+                                                            <div className="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center text-[8px] font-bold text-primary italic">
+                                                                {student.full_name?.charAt(0)}
+                                                            </div>
+                                                        )}
+                                                        <span className="text-[10px] font-medium text-slate-600 truncate max-w-[80px]">
+                                                            {student.full_name}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-[10px] text-slate-400 italic">
+                                                {isLoadingStudents ? 'Scanning batch roster...' : 'No students found in this batch yet.'}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
 
                                 {/* Agenda */}
                                 <div className="space-y-1.5">

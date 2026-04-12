@@ -27,7 +27,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function StudentResources() {
     const { data: enrolledCourses, isLoading: isLoadingCourses } = useEnrolledCourses();
-    const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+    const [selectedCourseId, setSelectedCourseId] = useState<string | null>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState('all');
     const [downloadingId, setDownloadingId] = useState<string | null>(null);
@@ -36,7 +36,7 @@ export default function StudentResources() {
         return new Set(saved ? JSON.parse(saved) : []);
     });
 
-    const { data: resources, isLoading: isLoadingResources, refetch } = useStudentResources(selectedCourseId);
+    const { data: resources, isLoading: isLoadingResources, refetch } = useStudentResources(selectedCourseId === 'all' ? null : selectedCourseId);
 
     const filteredResources = resources?.filter((resource: CourseResource) => {
         const matchesSearch = resource.asset_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -110,6 +110,9 @@ export default function StudentResources() {
                                     <SelectValue placeholder="Select a course..." />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl shadow-xl border-slate-100">
+                                    <SelectItem value="all" className="font-bold cursor-pointer py-3 text-primary">
+                                        All Courses (Aggregate)
+                                    </SelectItem>
                                     {isLoadingCourses ? (
                                         <div className="p-4 text-center text-sm text-slate-500 flex items-center justify-center gap-2">
                                             <Loader2 className="h-4 w-4 animate-spin" /> Loading courses...
@@ -134,29 +137,26 @@ export default function StudentResources() {
                                 className="pl-10 h-11 bg-white border-slate-200 shadow-sm rounded-xl font-medium focus-visible:ring-primary"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                disabled={!selectedCourseId}
                             />
                         </div>
                     </div>
                 </div>
                 
-                {selectedCourseId && (
-                    <div className="px-5 bg-white border-b border-slate-50">
-                        <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full">
-                            <TabsList className="bg-transparent h-12 p-0 gap-6 w-full justify-start overflow-x-auto no-scrollbar">
-                                {['all', 'Study Material', 'Presentation', 'Assignment', 'Project'].map(tab => (
-                                    <TabsTrigger 
-                                        key={tab} 
-                                        value={tab}
-                                        className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary border-b-2 border-transparent rounded-none px-1 h-full capitalize text-sm font-bold text-slate-500 hover:text-slate-700 transition-all"
-                                    >
-                                        {tab === 'all' ? 'All Resources' : tab}
-                                    </TabsTrigger>
-                                ))}
-                            </TabsList>
-                        </Tabs>
-                    </div>
-                )}
+                <div className="px-5 bg-white border-b border-slate-50">
+                    <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full">
+                        <TabsList className="bg-transparent h-12 p-0 gap-6 w-full justify-start overflow-x-auto no-scrollbar">
+                            {['all', 'Study Material', 'Presentation', 'Assignment', 'Project'].map(tab => (
+                                <TabsTrigger 
+                                    key={tab} 
+                                    value={tab}
+                                    className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary border-b-2 border-transparent rounded-none px-1 h-full capitalize text-sm font-bold text-slate-500 hover:text-slate-700 transition-all"
+                                >
+                                    {tab === 'all' ? 'All Resources' : tab}
+                                </TabsTrigger>
+                            ))}
+                        </TabsList>
+                    </Tabs>
+                </div>
             </Card>
 
             {/* Content Grid */}
@@ -214,7 +214,7 @@ export default function StudentResources() {
                                                     {resource.asset_title}
                                                 </h3>
                                                 <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
-                                                    <span>{resource.resource_type}</span>
+                                                    <span>{resource.resource_type} {resource.category && `• ${resource.category}`}</span>
                                                     <span>•</span>
                                                     <span>{new Date(resource.created_at || '').toLocaleDateString()}</span>
                                                 </div>

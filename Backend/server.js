@@ -2768,6 +2768,36 @@ app.get('/api/instructor/courses', authenticateToken, requireInstructor, async (
     }
 });
 
+app.get('/api/instructor/courses/:id/batch/:batchType/students', authenticateToken, requireInstructor, async (req, res) => {
+    try {
+        const { id, batchType } = req.params;
+        // 1. Find the batches of this type for this course
+        const batches = await Batch.find({ course_id: id, batch_type: batchType.toLowerCase() }).select('_id').lean();
+        if (batches.length === 0) return res.json([]);
+
+        // 2. Find students assigned to these batches
+        const batchIds = batches.map(b => b._id);
+        const studentAssignments = await StudentBatch.find({ batch_id: { $in: batchIds } })
+            .populate('student_id', 'full_name email avatar_url mobile_number')
+            .lean();
+
+        // 3. Format and return
+        const students = studentAssignments.map(a => ({
+            id: a._id,
+            user_id: a.student_id?._id,
+            full_name: a.student_id?.full_name,
+            email: a.student_id?.email,
+            avatar_url: a.student_id?.avatar_url,
+            mobile_number: a.student_id?.mobile_number,
+            enrolled_at: a.assigned_at
+        })).filter(s => s.user_id);
+
+        res.json(students);
+    } catch (err) {
+        handleError(res, err, 'get-batch-students');
+    }
+});
+
 // --- Enrollment & Course Logic ---
 
 app.get('/api/courses/enrollments', authenticateToken, requireAdminOrManager, async (req, res) => {
@@ -3687,31 +3717,54 @@ app.get('/api/student/accessible-exams', authenticateToken, async (req, res) => 
 
 app.get('/api/student/exam-questions/:id', authenticateToken, async (req, res) => {
     try {
-        const { id } = req.params;
+        let { id } = req.params;
         let questions = [];
 
-        if (id.startsWith('qb_')) {
+        // Handle prefixes often added by the accessible-exams endpoint
+        const isQB = id.startsWith('qb_');
+        const isImplicit = id.startsWith('implicit_');
+        
+        if (isQB) {
             const topic = id.replace('qb_', '');
             questions = await QuestionBank.find({ 
                 topic, 
                 approval_status: 'approved' 
             }).lean();
         } else {
-            // Try to find as Mock Paper first
-            const mockPaper = await MockPaper.findById(id).populate('questions').lean();
-            if (mockPaper) {
-                questions = mockPaper.questions || [];
+            const cleanId = id.replace('implicit_', '').trim();
+            
+            // Try as Mock Paper first (Legacy Mock Paper model)
+            let source = null;
+            if (mongoose.Types.ObjectId.isValid(cleanId)) {
+                source = await MockPaper.findById(cleanId).populate('questions').lean();
+            }
+
+            if (source && (source.questions || []).length > 0) {
+                questions = source.questions || [];
             } else {
-                // Try as Exam
-                const exam = await Exam.findById(id).lean();
+                // Try as Exam (Modern Unified Flow)
+                const exam = mongoose.Types.ObjectId.isValid(cleanId) 
+                    ? await Exam.findById(cleanId).lean() 
+                    : null;
+                
                 if (exam) {
-                    // Fetch by topics if exam refers to QB topics, or other logic
+                    // Fetch by topics array OR by exam title (Sync Fallback)
+                    const searchTopics = (exam.topics && exam.topics.length > 0) 
+                        ? exam.topics 
+                        : [exam.title];
+
                     questions = await QuestionBank.find({ 
-                        topic: { $in: exam.topics }, 
+                        topic: { $in: searchTopics }, 
                         approval_status: 'approved' 
                     })
                     .limit(exam.total_questions || 50)
                     .lean();
+                } else if (isImplicit) {
+                    // If we still didn't find it but it's marked implicit, it might be a QB topic that leaked through
+                    questions = await QuestionBank.find({ 
+                        topic: cleanId, 
+                        approval_status: 'approved' 
+                    }).lean();
                 }
             }
         }
@@ -4708,27 +4761,48 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
                 console.log(`[ACL] Student scoping ${table} to ${scopeField}=${req.user.id}`);
             }
 
-            // Batch-wise scoping for content
-            if (['course_videos', 'course_resources'].includes(table)) {
-                // Find all batches the student is part of
-                const studentBatches = await StudentBatch.find({ student_id: req.user.id }).lean();
-                const studentBatchIds = studentBatches.map(sb => sb.batch_id.toString());
+            // Batch-wise and Enrollment-wise scoping for content
+            if (['course_videos', 'course_resources', 'live_classes', 'course_announcements', 'course_timeline'].includes(table)) {
+                // 1. Get all active enrollment IDs for this student
+                const enrollments = await Enrollment.find({ user_id: req.user.id, status: 'active' }).select('course_id').lean();
+                const enrolledCourseIds = enrollments.map(e => e.course_id.toString());
                 
-                const batchFilter = {
-                    $or: [
-                        { allowed_batches: { $exists: false } }, // No field at all
-                        { allowed_batches: { $size: 0 } },      // Empty array (visible to all)
-                        { allowed_batches: { $in: studentBatchIds } } // Specifically allowed for student's batches
-                    ]
-                };
+                const enrollmentFilter = { course_id: { $in: enrolledCourseIds } };
 
-                // Apply filter
-                if (Object.keys(query).length > 0) {
-                    query = { $and: [query, batchFilter] };
+                // 2. Find all batches the student is part of
+                const studentBatches = await StudentBatch.find({ student_id: req.user.id })
+                    .populate('batch_id', 'batch_type')
+                    .lean();
+
+                let contentFilter = {};
+
+                if (table === 'live_classes') {
+                    const studentBatchTypes = studentBatches.map(sb => sb.batch_id?.batch_type).filter(Boolean);
+                    const batchFilter = {
+                        $or: [
+                            { target_batch: 'all' },
+                            { target_batch: { $in: studentBatchTypes } }
+                        ]
+                    };
+                    contentFilter = { $and: [enrollmentFilter, batchFilter] };
                 } else {
-                    query = batchFilter;
+                    const studentBatchIds = studentBatches.map(sb => sb.batch_id?._id?.toString()).filter(Boolean);
+                    const batchFilter = {
+                        $or: [
+                            { allowed_batches: { $exists: false } }, 
+                            { allowed_batches: { $size: 0 } },      
+                            { allowed_batches: { $in: studentBatchIds } } 
+                        ]
+                    };
+                    contentFilter = { $and: [enrollmentFilter, batchFilter] };
                 }
-                console.log(`[ACL] Student batch-scoping applied for ${table}. Batches: ${studentBatchIds.join(', ') || 'None'}`);
+
+                // Apply final filter
+                if (Object.keys(query).length > 0) {
+                    query = { $and: [query, contentFilter] };
+                } else {
+                    query = contentFilter;
+                }
             }
             
             if (table === 'courses') {

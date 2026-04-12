@@ -937,8 +937,8 @@ function DashboardHome() {
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {[
           { title: "Active Enrollments", value: enrolledCourses?.length || 0, icon: BookOpen, color: "blue", desc: "Ongoing courses" },
-          { title: "Training Progress", value: completedCoursesCount, icon: Target, color: "orange", desc: "Modules finished" },
-          { title: "Platform Engagement", value: `${watchHours}h`, icon: Clock, color: "blue", desc: "Total learning time" },
+          { title: "Academic Credits", value: stats?.total_score || 0, icon: Trophy, color: "orange", desc: "Global ranking points" },
+          { title: "Exams Attempted", value: dashboardData?.results?.length || 0, icon: ClipboardCheck, color: "blue", desc: "Recent mock tests" },
         ].map((kpi, i) => (
           <motion.div
             key={kpi.title}

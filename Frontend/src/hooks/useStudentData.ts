@@ -350,10 +350,12 @@ export function useStudentResources(courseId: string | null) {
     return useQuery({
         queryKey: ['student-course-resources', courseId],
         queryFn: async () => {
-            if (!courseId) return [];
+            if (!courseId) {
+                return await fetchWithAuth('/data/course_resources?limit=100');
+            }
             return await fetchWithAuth(`/courses/${courseId}/resources`);
         },
-        enabled: !!courseId,
+        enabled: true,
     });
 }
 

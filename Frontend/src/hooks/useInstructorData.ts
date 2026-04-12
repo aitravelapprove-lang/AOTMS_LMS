@@ -40,6 +40,7 @@ export interface LiveClass {
   meeting_password?: string;
   poster_url?: string | null;
   status: string;
+  target_batch?: string;
 }
 
 export interface CourseTopic {
@@ -74,6 +75,7 @@ export interface CourseResource {
   asset_title: string;
   resource_type: string;
   short_description: string | null;
+  category?: string;
   instructor_avatar_url: string | null;
   instructor_name: string | null;
   file_url: string;
@@ -302,15 +304,18 @@ export interface StudentRosterEntry {
   enrolled_at: string;
 }
 
-export function useCourseRoster(courseId: string | null) {
-    return useQuery<StudentRosterEntry[]>({
-        queryKey: ['course-roster', courseId],
-        queryFn: async () => {
-            if (!courseId) return [];
-            return fetchWithAuth(`/courses/${courseId}/roster`);
-        },
-        enabled: !!courseId,
-    });
+export function useBatchStudents(courseId: string | null, batchType: string | null) {
+  return useQuery<StudentRosterEntry[]>({
+    queryKey: ['batch-students', courseId, batchType],
+    queryFn: async () => {
+      if (!courseId || !batchType) return [];
+      const url = batchType === 'all' 
+        ? `/courses/${courseId}/roster`
+        : `/instructor/courses/${courseId}/batch/${batchType}/students`;
+      return fetchWithAuth(url);
+    },
+    enabled: !!courseId && !!batchType,
+  });
 }
 
 // Mutations
@@ -1419,7 +1424,15 @@ export function useCreateLiveClass() {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (payload: { topic: string; startTime: string; duration: number; agenda: string; courseId?: string; poster_url?: string }) => {
+    mutationFn: async (payload: { 
+      topic: string; 
+      startTime: string; 
+      duration: number; 
+      agenda: string; 
+      courseId?: string; 
+      poster_url?: string;
+      target_batch?: string;
+    }) => {
       if (!user?.id) throw new Error('You must be logged in to schedule meetings');
 
       // 1. Create Zoom Meeting via our specific backend endpoint
@@ -1439,6 +1452,7 @@ export function useCreateLiveClass() {
         body: JSON.stringify({
           instructor_id: user.id,
           course_id: payload.courseId || null,
+          target_batch: payload.target_batch || 'all',
           title: payload.topic,
           description: payload.agenda,
           scheduled_at: payload.startTime,

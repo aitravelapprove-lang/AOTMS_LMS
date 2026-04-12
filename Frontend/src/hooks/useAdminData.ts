@@ -16,6 +16,12 @@ export interface Profile {
   role?: string;
   suspended_until?: string | null;
   user_id?: string;
+  city?: string | null;
+  district?: string | null;
+  country?: string | null;
+  full_address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export interface UserRole {
@@ -240,8 +246,6 @@ export function useAdminData(userRole?: string | null) {
 
   useEffect(() => {
     fetchAllData();
-    const interval = setInterval(fetchAllData, 30000);
-    return () => clearInterval(interval);
   }, [fetchAllData]);
 
   const approveCourse = async (courseId: string) => {
@@ -510,8 +514,6 @@ export function useLiveMonitoring() {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 30000); // 30s refresh
-    return () => clearInterval(interval);
   }, [fetchData]);
 
   const deleteEnrollment = async (id: string) => {

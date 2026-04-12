@@ -179,8 +179,6 @@ export function useExams() {
   return useQuery<Exam[]>({
     queryKey: ['exams'],
     queryFn: () => fetchWithAuth('/data/exams?sort=scheduled_date&order=asc&select=title,status,approval_status,scheduled_date,assigned_image,duration_minutes,total_marks,exam_type,created_by,created_at'),
-    refetchInterval: 10000, // 10s Background Refresh
-    staleTime: 5000, 
   });
 }
 
@@ -214,8 +212,11 @@ export function useUpdateExam() {
       );
       return { previousExams };
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['exams'] });
+      if (variables.approval_status === 'approved') {
+        toast({ title: 'Exam Approved', description: 'This exam is now available in the Final Batches repository.' });
+      }
     },
     onError: (error: Error, _variables, context) => {
       if (context?.previousExams) {
@@ -265,8 +266,6 @@ export function useQuestions() {
   return useQuery<Question[]>({
     queryKey: ['questions'],
     queryFn: () => fetchWithAuth('/data/question_bank?sort=created_at&order=desc'),
-    refetchInterval: 15000, // 15s Background Refresh
-    staleTime: 5000,
   });
 }
 

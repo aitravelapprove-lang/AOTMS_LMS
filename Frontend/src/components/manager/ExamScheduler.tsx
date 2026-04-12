@@ -646,7 +646,6 @@ export function ExamScheduler({ onNavigateToRepository }: { onNavigateToReposito
                         </div>
                       </div>
 
-                      {/* Basic configuration */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <FormField
                           control={form.control}
@@ -666,6 +665,29 @@ export function ExamScheduler({ onNavigateToRepository }: { onNavigateToReposito
                           )}
                         />
 
+                        <FormField
+                          control={form.control}
+                          name="scheduled_date"
+                          render={({ field }) => (
+                            <FormItem className="space-y-2">
+                              <FormLabel className="text-[11px] font-black uppercase tracking-widest text-slate-800">Date & Time</FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                                  <Input 
+                                    type="datetime-local" 
+                                    className="h-14 rounded-2xl border-slate-300 bg-white pl-11 font-bold text-slate-900 shadow-sm"
+                                    {...field} 
+                                  />
+                                </div>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <FormField
                           control={form.control}
                           name="exam_type"

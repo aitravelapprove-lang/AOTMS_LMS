@@ -408,9 +408,47 @@ export function QuestionBankApproval() {
         );
     }
 
+
     return (
-        <div className="space-y-8 pb-12">
+        <div className="pb-12 animate-in fade-in duration-700">
             {/* Premium Banner Header */}
+            <div className="relative overflow-hidden rounded-[3rem] sm:p-12 text-white shadow-2xl shadow-slate-200">
+
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-4">
+
+                            <div className="space-y-1">
+                                <Badge className=" hover:bg-blue-500 text-white border-none px-3 py-0.5 text-[10px] font-black uppercase tracking-widest rounded-full">
+                                    Administrative Hub
+                                </Badge>
+                                <h1 className="text-4xl sm:text-5xl font-black tracking-tighter uppercase italic leading-none">
+                                    Question <span className="text-blue-400 not-italic">Access</span>
+                                </h1>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div className="flex items-center gap-6">
+                        <div className="text-right hidden sm:block">
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Active Protocols</p>
+                            <p className="text-4xl font-black text-white italic">{approvedBanks.length}</p>
+                        </div>
+                        <div className="h-16 w-[1px] bg-white/10 hidden sm:block" />
+                        <div className="flex -space-x-4">
+                            {[1, 2, 3, 4].map((i) => (
+                                <div key={i} className="h-12 w-12 rounded-2xl border-4 border-slate-900 bg-slate-800 flex items-center justify-center shadow-xl">
+                                    <Users className="h-5 w-5 text-slate-500" />
+                                </div>
+                            ))}
+                            <div className="h-12 w-12 rounded-2xl border-4 border-slate-900 bg-blue-600 flex items-center justify-center shadow-xl">
+                                <span className="text-[10px] font-black">+</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
 
             {/* Direct List of Approved Items */}

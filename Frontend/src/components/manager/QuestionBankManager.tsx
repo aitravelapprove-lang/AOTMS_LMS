@@ -29,6 +29,12 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
+import {
   Plus,
   FileQuestion,
   Trash2,
@@ -36,6 +42,7 @@ import {
   Sparkles,
   Brain,
   CheckCircle,
+  CheckCircle2,
   XCircle,
   ChevronDown,
   ChevronUp,
@@ -46,6 +53,9 @@ import {
   ArrowRight,
   Calendar,
   ShieldCheck,
+  Archive,
+  Database,
+  History,
 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
@@ -769,33 +779,52 @@ export function QuestionBankManager({
       </div>
     );
   }
-
   return (
-    <div className="space-y-8 px-1 py-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
-
-      {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-8">
-        <div className="space-y-1">
-          <h2 className="text-xl sm:text-3xl font-bold tracking-tighter uppercase italic text-slate-900">Question <span className="text-slate-900 not-italic font-black">Bank</span></h2>
-          <p className="text-[10px] font-bold text-slate-700 uppercase tracking-[0.4em]">
-            {stats.total} Questions / {topics.length} Topics
-          </p>
+    <div className="space-y-8 px-1 py-2 animate-in fade-in duration-500">
+    <Tabs defaultValue="bank" className="space-y-8">
+      <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 pb-6 border-b-2 border-slate-100">
+        <div className="space-y-1.5">
+          <h2 className="text-3xl sm:text-4xl font-black tracking-tighter uppercase italic text-slate-900 leading-none">
+            Question <span className="text-slate-900 not-italic">Repository</span>
+          </h2>
+          <div className="flex items-center gap-3">
+             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">
+               {stats.total} Questions / {topics.length} Topics
+             </p>
+             <Badge className="bg-primary/10 text-primary border-none text-[8px] font-black px-2 py-0.5 rounded-full uppercase italic">Management Portal</Badge>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-           <Button 
-             variant="outline" 
-              className="rounded-xl h-10 sm:h-12 px-4 sm:px-6 border-slate-100 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 hover:border-slate-900 transition-all"
-           >
-             Filter Questions
-           </Button>
-           <Button 
-              className="rounded-xl h-10 sm:h-12 px-4 sm:px-8 bg-slate-900 hover:bg-black text-white text-[10px] font-bold uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-xl shadow-slate-100"
-             onClick={() => onSectionChange?.('exams')}
-           >
-             Create Exam <ArrowRight className="h-4 w-4 ml-2" />
-           </Button>
+        
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full xl:w-auto">
+          <TabsList className="bg-slate-100/50 p-1.5 rounded-[1.8rem] h-16 border border-slate-200/60 shadow-inner flex-1 sm:flex-none">
+            <TabsTrigger 
+              value="bank" 
+              className="rounded-2xl px-8 h-13 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3"
+            >
+              <Database className="h-4 w-4" />
+              General Bank
+            </TabsTrigger>
+            <TabsTrigger 
+              value="final-batches" 
+              className="rounded-2xl px-8 h-13 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3"
+            >
+              <Archive className="h-4 w-4" />
+              Final Batches
+            </TabsTrigger>
+          </TabsList>
+
+          <div className="flex items-center gap-2">
+            <Button 
+               className="rounded-2xl h-16 px-8 bg-slate-900 hover:bg-black text-white text-[10px] font-black uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-95 shadow-xl shadow-slate-200 group"
+               onClick={() => onSectionChange?.('exams')}
+            >
+              Create Exam <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          </div>
         </div>
       </div>
+
+      <TabsContent value="bank" className="space-y-8 mt-0 outline-none">
 
       {/* ─── Bulk Creator Section ─── */}
       <div className="grid gap-6 border rounded-xl p-6 bg-card shadow-sm">
@@ -1546,6 +1575,89 @@ export function QuestionBankManager({
           </div>
         </DialogContent>
       </Dialog>
-    </div>
-  );
+    </TabsContent>
+
+    <TabsContent value="final-batches" className="mt-0 outline-none">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {exams.filter(e => e.approval_status === 'approved').length === 0 ? (
+          <div className="col-span-full py-20 text-center border-2 border-dashed border-slate-100 rounded-[3rem] bg-slate-50/50">
+             <History className="h-12 w-12 text-slate-200 mx-auto mb-4" />
+             <h3 className="text-xl font-bold text-slate-900 uppercase tracking-widest italic">No Final Batches Pending</h3>
+             <p className="text-sm text-slate-400 font-bold uppercase tracking-widest mt-2">Approve scheduled exams to see them here.</p>
+          </div>
+        ) : (
+          exams.filter(e => e.approval_status === 'approved').map((exam) => {
+            const currentExamQuestions = filteredQuestions.filter(q => q.topic === exam.title).length;
+            return (
+              <Card key={exam.id} className="rounded-[2.5rem] overflow-hidden border-2 border-slate-50 hover:border-primary/20 transition-all hover:shadow-2xl group relative bg-white">
+                <div className="aspect-video relative overflow-hidden bg-slate-100">
+                  {exam.assigned_image ? (
+                    <img src={exam.assigned_image} className="h-full w-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all duration-700" alt="" />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center">
+                       <ShieldCheck className="h-12 w-12 text-slate-200" />
+                    </div>
+                  )}
+                  <div className="absolute top-4 right-4 animate-in fade-in zoom-in duration-500">
+                    <Badge className="bg-emerald-500 text-white border-none text-[8px] font-black uppercase tracking-widest px-3 py-1.5 h-6 rounded-full shadow-lg shadow-emerald-500/20 flex items-center gap-1.5">
+                      <CheckCircle2 className="h-3 w-3" /> APPROVED
+                    </Badge>
+                  </div>
+                </div>
+                
+                <CardContent className="p-8 space-y-6">
+                  <div className="space-y-1.5">
+                      <h4 className="text-xl font-black text-slate-900 uppercase tracking-tighter truncate leading-none">{exam.title}</h4>
+                      <div className="flex items-center gap-3">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                          <Calendar className="h-3 w-3" />
+                           {exam.scheduled_date ? new Date(exam.scheduled_date).toLocaleDateString() : 'N/A'}
+                        </p>
+                        <div className="h-1 w-1 rounded-full bg-slate-200" />
+                        <Badge variant="outline" className="text-[8px] font-black uppercase tracking-tighter h-4 px-1.5 rounded-sm">{exam.exam_type}</Badge>
+                      </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                      <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1 group-hover:bg-primary/5 transition-colors">
+                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Question Bank</p>
+                         <p className="text-2xl font-black text-slate-900 leading-none">
+                            {currentExamQuestions}
+                            <span className="text-[10px] text-slate-300 ml-1 font-bold">Files</span>
+                         </p>
+                      </div>
+                      <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1 group-hover:bg-violet-50 transition-colors">
+                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Total Weight</p>
+                         <p className="text-2xl font-black text-slate-900 leading-none">{exam.total_marks || 100}</p>
+                      </div>
+                  </div>
+
+                  <Button 
+                      onClick={() => {
+                        setSelectedExamId(exam.id);
+                        setGlobalTopic(exam.title);
+                        toast({ title: "Protocol Initiated", description: `You can now add questions to ${exam.title}` });
+                      }}
+                      className="w-full h-14 rounded-2xl bg-slate-900 hover:bg-black text-white text-[10px] font-black uppercase tracking-widest gap-3 shadow-xl shadow-slate-200 active:scale-95 transition-all"
+                  >
+                     UPLOAD QUESTIONS <Plus className="h-4 w-4" />
+                  </Button>
+                </CardContent>
+
+                {currentExamQuestions > 0 && (
+                  <div className="absolute bottom-24 right-8 transform translate-y-1/2">
+                     <div className="h-14 w-14 rounded-full bg-emerald-500 border-4 border-white shadow-xl flex items-center justify-center text-white ring-8 ring-emerald-500/10">
+                        <CheckCircle2 className="h-6 w-6" />
+                     </div>
+                  </div>
+                )}
+              </Card>
+            );
+          })
+        )}
+      </div>
+    </TabsContent>
+  </Tabs>
+</div>
+);
 }

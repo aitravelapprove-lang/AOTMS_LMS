@@ -40,7 +40,7 @@ const NotificationSchema = new Schema({
 NotificationSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
 
 const CouponSchema = new Schema({
-    code: { type: String, required: true, unique: true, index: true },
+    code: { type: String, required: true, index: true },
     user_id: { type: Schema.Types.ObjectId, ref: 'User', index: true }, // assigned to specific user
     discounted_price: { type: Number, required: true }, // The price they should pay
     is_used: { type: Boolean, default: false },
@@ -69,12 +69,22 @@ const AttendanceSchema = new Schema({
 });
 AttendanceSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
 
+const CouponRedemptionSchema = new Schema({
+    coupon_id: { type: Schema.Types.ObjectId, ref: 'Coupon', required: true, index: true },
+    user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    course_id: { type: Schema.Types.ObjectId, ref: 'Course', required: true },
+    redeemed_at: { type: Date, default: Date.now },
+    discounted_price: { type: Number }
+});
+CouponRedemptionSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
+
 module.exports = {
     SystemLog: mongoose.model('SystemLog', SystemLogSchema),
     SecurityEvent: mongoose.model('SecurityEvent', SecurityEventSchema),
     LeaderboardStat: mongoose.model('LeaderboardStat', LeaderboardStatSchema),
     Notification: mongoose.model('Notification', NotificationSchema),
     Coupon: mongoose.model('Coupon', CouponSchema),
+    CouponRedemption: mongoose.model('CouponRedemption', CouponRedemptionSchema),
     Lead: mongoose.model('Lead', LeadSchema),
     Attendance: mongoose.model('Attendance', AttendanceSchema)
 };

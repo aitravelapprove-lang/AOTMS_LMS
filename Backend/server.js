@@ -859,12 +859,8 @@ app.post('/api/public/enroll', async (req, res) => {
 });
 
 app.post('/api/auth/signup', async (req, res) => {
-    const { email, password, fullName, phone } = req.body;
+    const { email, password, fullName, phone, collegeName, instituteName, city, district, country, fullAddress, latitude, longitude } = req.body;
     try {
-        // ... (verification check)
-        const verifiedDoc = await VerifiedEmail.findOne({ email });
-        
-        // ... (existing check)
         const existingUser = await User.findOne({ email });
         if (existingUser) return res.status(400).json({ error: 'User already exists' });
 
@@ -887,7 +883,15 @@ app.post('/api/auth/signup', async (req, res) => {
             email,
             full_name: fullName,
             avatar_url: avatarUrl,
-            mobile_number: phone, // Store as mobile_number in Profile
+            mobile_number: phone, 
+            college_name: collegeName,
+            institute_name: instituteName,
+            city,
+            district,
+            country,
+            full_address: fullAddress,
+            latitude,
+            longitude,
             approval_status: 'pending'
         });
 
@@ -1468,16 +1472,22 @@ app.delete('/api/admin/question-bank/:topic', authenticateToken, requireAdmin, a
     try {
         const result = await QuestionBank.deleteMany({ topic });
         
+        // Also permanently remove any scheduled exams for this topic
+        await Exam.deleteMany({ title: topic });
+
+        // Also remove all granted access for this topic to ensure clean slate
+        await StudentExamAccess.deleteMany({ question_bank_topic: topic });
+
         // Log action
         await SystemLog.create({
             log_type: 'audit',
             module: 'QuestionBank',
-            action: `Question Bank Permanently Removed for topic: ${topic}`,
+            action: `Question Bank & Associated Exams Permanently Removed for topic: ${topic}`,
             details: { topic, deleted_count: result.deletedCount },
             user_id: req.user.id
         });
 
-        res.json({ message: `Question Bank for ${topic} permanently removed`, deleted_count: result.deletedCount });
+        res.json({ message: `Question Bank & Exams for ${topic} permanently removed`, deleted_count: result.deletedCount });
     } catch (err) {
         handleError(res, err, 'remove-question-bank');
     }

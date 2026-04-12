@@ -258,7 +258,7 @@ export function GrantStudentAccess({ profiles: propProfiles = [], enrollments: p
                                                         {student.role || 'student'}
                                                     </Badge>
                                                </div>
-                                               <p className="text-xs text-muted-foreground truncate">{student.email}</p>
+                                               <p className="text-xs text-slate-900 truncate">{student.email}</p>
                                            </div>
                                       </div>
                                   ))
@@ -298,7 +298,7 @@ export function GrantStudentAccess({ profiles: propProfiles = [], enrollments: p
                           </div>
                           <div className="flex-1 overflow-hidden">
                             <p className="font-black text-slate-900 truncate leading-none mb-1">{selectedStudent.full_name}</p>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1 mb-2 truncate">
+                            <p className="text-xs text-slate-900 flex items-center gap-1 mb-2 truncate">
                               <Mail className="h-3 w-3" />
                               {selectedStudent.email}
                             </p>
@@ -353,7 +353,7 @@ export function GrantStudentAccess({ profiles: propProfiles = [], enrollments: p
                                         Student
                                      </Badge>
                                  </div>
-                                 <p className="text-xs text-muted-foreground truncate">{student.email}</p>
+                                 <p className="text-xs text-slate-900 truncate">{student.email}</p>
                              </div>
                          </div>
                          <Button 

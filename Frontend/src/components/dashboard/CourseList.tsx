@@ -84,7 +84,7 @@ export function CourseList({ type = 'enrolled', onSelectCourse }: CourseListProp
     }
 
     return (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 items-start">
             {courses.map((course: StudentCourse, index: number) => {
                 const thumbnailUrl = course.thumbnail_url
                     ? (course.thumbnail_url.startsWith('http') ? course.thumbnail_url : (course.thumbnail_url.includes('s3') ? course.thumbnail_url : `/s3/public/${course.thumbnail_url}`))
@@ -151,9 +151,8 @@ export function CourseList({ type = 'enrolled', onSelectCourse }: CourseListProp
                                     {course.description || "Explore this comprehensive course and enhance your skills."}
                                 </CardDescription>
                             </CardHeader>
-
-                            <CardContent className="p-5 pt-4 flex flex-col flex-1 justify-end space-y-5">
-                                <div className="flex items-center gap-4 text-xs font-medium text-muted-foreground">
+                            <CardContent className="p-5 pt-0 flex flex-col flex-1">
+                                <div className="flex items-center gap-4 text-xs font-medium text-muted-foreground mb-6">
                                     <div className="flex items-center gap-1.5 bg-muted/50 px-2.5 py-1.5 rounded-lg">
                                         <Clock className="h-3.5 w-3.5 text-primary" />
                                         <span>{course.duration_hours || 10} hours</span>
@@ -164,8 +163,10 @@ export function CourseList({ type = 'enrolled', onSelectCourse }: CourseListProp
                                     </div>
                                 </div>
 
-                                {type === 'enrolled' ? (
-                                    <div className="space-y-2 mt-auto p-4 bg-muted/30 rounded-2xl border border-border/50 transition-colors group-hover:bg-primary/5 group-hover:border-primary/20">
+                                <div className="mt-auto">
+                                    {type === 'enrolled' ? (
+                                        <div className="space-y-4 p-4 bg-muted/30 rounded-2xl border border-border/50 transition-colors group-hover:bg-primary/5 group-hover:border-primary/20">
+
                                         {course.enrollmentStatus === 'pending' ? (
                                             <div className="text-center py-2">
                                                 <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-200 border-amber-200 gap-1">
@@ -185,27 +186,47 @@ export function CourseList({ type = 'enrolled', onSelectCourse }: CourseListProp
                                                 <div className="flex-1">
                                                     {course.remaining_balance ? (
                                                         <div className="space-y-4 mb-4">
-                                                            <div className="flex justify-between text-[11px] font-bold">
-                                                                <span className="text-slate-500 uppercase tracking-tighter">Payment Strategy</span>
-                                                                <span className="text-primary font-black uppercase tracking-widest text-[9px]">Term-Based (60/40)</span>
+                                                            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-tight">
+                                                                <span className="text-slate-400">Payment Strategy</span>
+                                                                <span className="text-primary bg-primary/10 px-2 py-0.5 rounded-full text-[9px]">Term-Based (60/40)</span>
                                                             </div>
-                                                            
                                                             <div className="grid grid-cols-2 gap-2">
-                                                                <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-100/50 flex flex-col items-center">
-                                                                    <span className="text-[7px] font-black uppercase tracking-widest text-emerald-500">1st Term (60%)</span>
-                                                                    <span className="text-xs font-black text-emerald-700">₹{Math.round((course.price || 0) * 0.6).toLocaleString('en-IN')}</span>
-                                                                    <span className="text-[6px] font-bold text-emerald-600 uppercase mt-0.5 tracking-tighter flex items-center gap-1"><CheckCircle className="h-2 w-2" /> Cleared</span>
+                                                                <div className="p-2.5 rounded-2xl bg-emerald-50/50 border border-emerald-100/50 flex flex-col items-center justify-center text-center transition-all hover:bg-emerald-50">
+                                                                    <span className="text-[7px] font-extrabold uppercase tracking-widest text-emerald-600/70 mb-1">Term 01</span>
+                                                                    <div className="text-[15px] font-black text-emerald-800 leading-none">₹{Math.round((course.price || 0) * 0.6).toLocaleString('en-IN')}</div>
+                                                                    <div className="text-[7px] font-bold text-emerald-600 uppercase mt-2 bg-emerald-100/50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                                        <CheckCircle className="h-2 w-2" /> Cleared
+                                                                    </div>
                                                                 </div>
-                                                                <div className="p-2 rounded-xl bg-amber-50 border border-amber-100/50 flex flex-col items-center">
-                                                                    <span className="text-[7px] font-black uppercase tracking-widest text-amber-500">2nd Term (40%)</span>
-                                                                    <span className="text-xs font-black text-amber-700">₹{Math.round((course.price || 0) * 0.4).toLocaleString('en-IN')}</span>
-                                                                    <span className="text-[6px] font-bold text-amber-600 uppercase mt-0.5 tracking-tighter animate-pulse">Pending View</span>
+                                                                <div className="p-2.5 rounded-2xl bg-amber-50/50 border border-amber-100/50 flex flex-col items-center justify-center text-center transition-all hover:bg-amber-50">
+                                                                    <span className="text-[7px] font-extrabold uppercase tracking-widest text-amber-600/70 mb-1">Term 02</span>
+                                                                    <div className="text-[15px] font-black text-amber-800 leading-none">₹{Math.round((course.price || 0) * 0.4).toLocaleString('en-IN')}</div>
+                                                                    <div className="text-[7px] font-bold text-amber-600 uppercase mt-2 bg-amber-100/50 px-2 py-0.5 rounded-full animate-pulse flex items-center justify-center">
+                                                                        Pending
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                             
-                                                            <div className="text-[10px] text-amber-600 bg-amber-50/50 p-2 rounded-xl border border-amber-100 flex justify-between items-center">
-                                                               <span className="font-bold flex items-center gap-1"><CreditCard className="h-3 w-3" /> Due Amount:</span>
-                                                               <span className="font-black">₹{(course.remaining_balance || 0).toLocaleString('en-IN')}</span>
+                                                            <div className="p-4 rounded-2xl bg-slate-900 text-white shadow-xl shadow-slate-200/50 border border-slate-800">
+                                                                <div className="space-y-4">
+                                                                    <div className="flex justify-between items-center">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                                                                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Total Due</span>
+                                                                        </div>
+                                                                        <span className="text-[8px] font-black bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase tracking-tighter border border-primary/20">Pending</span>
+                                                                    </div>
+                                                                    
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className="h-10 w-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
+                                                                            <CreditCard className="h-5 w-5 text-primary" />
+                                                                        </div>
+                                                                        <div className="flex flex-col min-w-0">
+                                                                            <span className="text-[10px] font-bold text-slate-400">Due Amount</span>
+                                                                            <span className="text-2xl font-black text-primary tracking-tight leading-none mt-1 truncate">₹{(course.remaining_balance || 0).toLocaleString('en-IN')}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     ) : (
@@ -213,12 +234,18 @@ export function CourseList({ type = 'enrolled', onSelectCourse }: CourseListProp
                                                     )}
                                                 </div>
 
-                                                <div className="mt-auto space-y-2 pt-2 border-t border-slate-100/50">
-                                                    <div className="flex justify-between text-[11px] font-black uppercase tracking-tighter">
-                                                        <span className="text-slate-400">Course Progress</span>
-                                                        <span className="text-primary">{course.progress || 0}%</span>
+                                                <div className="mt-auto space-y-3 pt-4 border-t border-slate-100/30">
+                                                    <div className="flex justify-between items-end">
+                                                        <div className="flex flex-col gap-0.5">
+                                                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Learning Journey</span>
+                                                            <span className="text-[11px] font-bold text-slate-600">Course Progress</span>
+                                                        </div>
+                                                        <div className="flex items-baseline gap-0.5">
+                                                            <span className="text-lg font-black text-primary leading-none">{course.progress || 0}</span>
+                                                            <span className="text-[10px] font-bold text-primary">%</span>
+                                                        </div>
                                                     </div>
-                                                    <Progress value={course.progress || 0} className="h-2 bg-slate-100 [&>div]:bg-primary shadow-sm" />
+                                                    <Progress value={course.progress || 0} className="h-2.5 bg-slate-100 [&>div]:bg-gradient-to-r [&>div]:from-primary [&>div]:to-primary/80 shadow-inner rounded-full" />
                                                 </div>
                                             </>
                                         )}
@@ -257,15 +284,17 @@ export function CourseList({ type = 'enrolled', onSelectCourse }: CourseListProp
                                                 
                                                 {/* Term Breakdown (60/40) */}
                                                 <div className="grid grid-cols-2 gap-2 mt-2">
-                                                    <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-100/50 flex flex-col items-center">
-                                                        <span className="text-[8px] font-black uppercase tracking-widest text-blue-400">1st Term (60%)</span>
-                                                        <span className="text-sm font-black text-blue-700">₹{Math.round((course.price || 0) * 0.6).toLocaleString('en-IN')}</span>
-                                                    </div>
-                                                    <div className="p-2.5 rounded-xl bg-purple-50 border border-purple-100/50 flex flex-col items-center">
-                                                        <span className="text-[8px] font-black uppercase tracking-widest text-purple-400">2nd Term (40%)</span>
-                                                        <span className="text-sm font-black text-purple-700">₹{Math.round((course.price || 0) * 0.4).toLocaleString('en-IN')}</span>
-                                                    </div>
-                                                </div>
+                                                     <div className="p-2.5 rounded-2xl bg-blue-50/50 border border-blue-100/50 flex flex-col items-center justify-center text-center transition-all hover:bg-blue-50">
+                                                         <span className="text-[7px] font-extrabold uppercase tracking-widest text-blue-500/70 mb-1">1st Term</span>
+                                                         <div className="text-xs font-black text-blue-700 leading-none">60%</div>
+                                                         <div className="text-sm lg:text-[15px] font-black text-blue-800 mt-1">₹{Math.round((course.price || 0) * 0.6).toLocaleString('en-IN')}</div>
+                                                     </div>
+                                                     <div className="p-2.5 rounded-2xl bg-purple-50/50 border border-purple-100/50 flex flex-col items-center justify-center text-center transition-all hover:bg-purple-50">
+                                                         <span className="text-[7px] font-extrabold uppercase tracking-widest text-purple-500/70 mb-1">2nd Term</span>
+                                                         <div className="text-xs font-black text-purple-700 leading-none">40%</div>
+                                                         <div className="text-sm lg:text-[15px] font-black text-purple-800 mt-1">₹{Math.round((course.price || 0) * 0.4).toLocaleString('en-IN')}</div>
+                                                     </div>
+                                                 </div>
                                                 <Button
                                                     className="w-full group/btn pro-button-primary"
                                                     onClick={(e) => {
@@ -280,7 +309,8 @@ export function CourseList({ type = 'enrolled', onSelectCourse }: CourseListProp
                                         )}
                                     </div>
                                 )}
-                            </CardContent>
+                            </div>
+                        </CardContent>
                         </Card>
                     </motion.div>
                 )

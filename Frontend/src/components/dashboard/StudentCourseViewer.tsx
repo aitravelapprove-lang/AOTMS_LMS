@@ -380,7 +380,7 @@ export function StudentCourseViewer({ course, isEnrolled = true, onBack }: Stude
                                                                     if (paymentProof) {
                                                                         const formData = new FormData();
                                                                         formData.append('file', paymentProof);
-                                                                        const uploadRes = await fetchWithAuth('/upload', { method: 'POST', body: formData });
+                                                                        const uploadRes = await fetchWithAuth<{ url: string }>('/upload', { method: 'POST', body: formData });
                                                                         paymentProofUrl = uploadRes?.url;
                                                                     }
                                                                     await enrollMutation.mutateAsync({ 

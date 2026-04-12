@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { fetchWithAuth } from '@/lib/api';
-import { Loader2, CheckCircle, XCircle, FileText, AlertCircle, LayoutGrid, Clock, History, Eye, Users, UserPlus, Trash2, ShieldCheck, BrainCircuit, RefreshCw, Award, Calendar, User, BookOpen } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, FileText, AlertCircle, LayoutGrid, Clock, History, Eye, Users, UserPlus, Trash2, ShieldCheck, BrainCircuit, RefreshCw, Award, Calendar, User, BookOpen, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -467,88 +467,129 @@ export function QuestionBankApproval() {
             ) : (
                 <div className="grid gap-4">
                     {approvedBanks.map((bank) => (
-                        <Card key={bank.topic} className="overflow-hidden border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-500 rounded-[2.5rem]">
-                            <CardContent className="p-0">
-                                <div className="flex flex-col lg:flex-row items-stretch group/card">
-                                    <div className="relative bg-slate-900 min-w-0 lg:min-w-[320px] h-[180px] lg:h-[220px] border-b lg:border-b-0 lg:border-r border-emerald-100 overflow-hidden group/poster">
+                        <Card key={bank.topic} className="group overflow-hidden border-none shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-700 rounded-[3rem] bg-white relative">
+                            {/* Animated Background Decor */}
+                            <div className="absolute top-0 right-0 -mr-24 -mt-24 h-64 w-64 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors duration-700" />
+                            
+                            <CardContent className="p-0 relative z-10">
+                                <div className="flex flex-col lg:flex-row items-stretch">
+                                    {/* Image/Poster Side */}
+                                    <div className="relative w-full lg:w-[340px] h-[220px] lg:h-auto overflow-hidden shrink-0">
                                         {getImageSrc(bank.assigned_image) ? (
-                                            <img src={getImageSrc(bank.assigned_image)!} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover/poster:scale-110" />
+                                            <>
+                                                <img 
+                                                    src={getImageSrc(bank.assigned_image)!} 
+                                                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
+                                                    alt={bank.topic}
+                                                />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent" />
+                                            </>
                                         ) : (
-                                            <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4">
-                                                <div className="h-16 w-16 rounded-[1.5rem] bg-emerald-500/10 backdrop-blur-xl border border-emerald-500/20 flex items-center justify-center shadow-2xl">
-                                                    <CheckCircle className="h-8 w-8 text-emerald-500" />
+                                            <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-950 flex flex-col items-center justify-center p-6 text-center">
+                                                <div className="h-16 w-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center mb-4 shadow-2xl">
+                                                    <BrainCircuit className="h-8 w-8 text-primary" />
                                                 </div>
-                                                <div className="text-center">
-                                                    <p className="text-[10px] font-black uppercase text-emerald-500/60 tracking-[0.2em]">Verified Content</p>
-                                                    <p className="text-[8px] font-bold text-emerald-500/30 uppercase tracking-widest mt-1">Ready for Access</p>
-                                                </div>
+                                                <p className="text-[10px] font-black uppercase text-white/40 tracking-[0.3em]">Module Repository</p>
                                             </div>
                                         )}
-                                        <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-emerald-900/80 to-transparent flex items-center justify-between">
-                                            <Badge variant="secondary" className="bg-white/10 backdrop-blur-md text-white border-white/20 font-black px-3 py-1 text-[10px] uppercase tracking-wider">
-                                                {bank.count} Questions
+
+                                        {/* Questions Count Badge */}
+                                        <div className="absolute top-6 left-6">
+                                            <div className="px-4 py-2 bg-black/40 backdrop-blur-xl border border-white/20 rounded-2xl flex items-center gap-2 group/badge transition-all hover:bg-primary hover:border-primary/50">
+                                                <FileText className="h-3.5 w-3.5 text-primary group-hover/badge:text-white transition-colors" />
+                                                <span className="text-[11px] font-black text-white uppercase tracking-wider">{bank.count} <span className="text-white/60 font-medium">Questions</span></span>
+                                            </div>
+                                        </div>
+
+                                        {/* Status Indicators overlaying the image on mobile, or bottom left */}
+                                        <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between">
+                                            <Badge className="bg-emerald-500 text-white border-none px-3 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-emerald-500/20">
+                                                Verified & Ready
                                             </Badge>
-                                            <div className="h-6 w-6 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-400/30 flex items-center justify-center">
-                                                <ShieldCheck className="h-3 w-3 text-white" />
+                                            <div className="h-10 w-10 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center shadow-lg">
+                                                <ShieldCheck className="h-5 w-5 text-emerald-400" />
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="flex-1 p-4 sm:p-8 space-y-2 min-w-0">
-                                        <div className="flex items-center gap-3">
-                                            <h3 className="font-bold text-base sm:text-xl text-slate-900 break-words">{bank.topic}</h3>
-                                            <Badge className="bg-emerald-100/50 text-emerald-700 border-none px-2 py-0.5 text-[10px] uppercase tracking-wider font-black">Verified & Ready</Badge>
-                                        </div>
-                                        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-xs font-semibold text-slate-500 mt-4">
-                                            <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
-                                                <Clock className="h-3.5 w-3.5 text-emerald-600" />
-                                                <span>{bank.duration || 60}m</span>
+                                    {/* Content Side */}
+                                    <div className="flex-1 p-8 sm:p-10 flex flex-col justify-between min-w-0">
+                                        <div className="space-y-6">
+                                            <div className="space-y-1">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                                                    <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.3em]">Topic Repository</span>
+                                                </div>
+                                                <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-none truncate group-hover:text-primary transition-colors duration-300">
+                                                    {bank.topic}
+                                                </h3>
                                             </div>
-                                            <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
-                                                <Award className="h-3.5 w-3.5 text-emerald-600" />
-                                                <span>{bank.total_marks || 0} Total Marks</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 bg-emerald-50/50 px-3 py-2 rounded-xl border border-emerald-100">
-                                                <RefreshCw className={cn("h-3.5 w-3.5 text-emerald-600")} />
-                                                <span>Shuffle: {bank.shuffle ? 'ON' : 'OFF'}</span>
-                                            </div>
-                                        </div>
 
-                                        <div className="flex items-center gap-4 text-xs font-semibold text-slate-500 mt-6 border-t border-slate-50 pt-4">
-                                            <div
-                                                className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-200 transition-colors text-[10px] font-black uppercase tracking-widest"
-                                                onClick={() => handleViewAccess(bank.topic)}
+                                            {/* Meta Tags Grid */}
+                                            <div className="flex flex-wrap items-center gap-3">
+                                                {[
+                                                    { icon: Clock, label: `${bank.duration || 60}m`, color: "text-slate-900", bg: "bg-slate-100", border: "border-slate-200" },
+                                                    { icon: Award, label: `${bank.total_marks || 0} Total Marks`, color: "text-slate-900", bg: "bg-slate-100", border: "border-slate-200" },
+                                                    { icon: RefreshCw, label: `Shuffle: ${bank.shuffle ? 'ON' : 'OFF'}`, color: "text-slate-900", bg: "bg-slate-100", border: "border-slate-200" }
+                                                ].map((tag, i) => (
+                                                    <div key={i} className={cn("flex items-center gap-2 px-4 py-2.5 rounded-2xl border transition-all hover:scale-105 duration-300", tag.bg, tag.border)}>
+                                                        <tag.icon className={cn("h-4 w-4", tag.color)} />
+                                                        <span className="text-[11px] font-extrabold text-slate-900 uppercase tracking-tight">{tag.label}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            {/* Access Summary */}
+                                            <div className="pt-6 border-t border-slate-900">
+                                                <div 
+                                                    onClick={() => handleViewAccess(bank.topic)}
+                                                    className="inline-flex items-center gap-3 px-5 py-2.5 bg-slate-900 text-white rounded-2xl cursor-pointer hover:bg-primary transition-all duration-500 group/access shadow-lg shadow-slate-900/10"
+                                                >
+                                                    <div className="h-6 w-6 rounded-lg bg-white/10 flex items-center justify-center">
+                                                        <Users className="h-3.5 w-3.5 text-primary group-hover/access:text-white transition-colors" />
+                                                    </div>
+                                                    <span className="text-[11px] font-black uppercase tracking-[0.1em]">
+                                                        {accessCount[bank.topic] || 0} Students Access Granted
+                                                    </span>
+                                                    <ArrowRight className="h-4 w-4 ml-1 opacity-0 -translate-x-2 group-hover/access:opacity-100 group-hover/access:translate-x-0 transition-all duration-300" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Actions Section */}
+                                    <div className="p-8 lg:p-10 lg:bg-slate-50/50 flex flex-row lg:flex-col items-center justify-center gap-6 lg:border-l border-slate-100 shrink-0 min-w-0 lg:min-w-[260px] relative">
+                                        <div className="flex flex-col w-full gap-3 items-center">
+                                            <Button
+                                                onClick={() => handlePreviewQuestions(bank.topic)}
+                                                variant="outline"
+                                                className="w-full h-14 rounded-2xl border-2 border-slate-200 bg-white text-slate-800 hover:border-primary hover:text-primary font-black text-[11px] uppercase tracking-[0.2em] shadow-sm transition-all"
                                             >
-                                                <Users className="h-3.5 w-3.5 text-primary" />
-                                                <span>{accessCount[bank.topic] || 0} Students Access Granted</span>
-                                            </div>
+                                                <Eye className="h-4 w-4 mr-3" />
+                                                View Test
+                                            </Button>
+                                            <Button
+                                                onClick={() => handleGrantAccessClick(bank.topic)}
+                                                className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-primary/25 transition-all active:scale-95 flex items-center justify-center"
+                                            >
+                                                <UserPlus className="h-4.5 w-4.5 mr-3" />
+                                                Grant Access
+                                            </Button>
                                         </div>
-                                    </div>
 
-                                    <div className="p-4 sm:p-8 lg:bg-slate-50/50 flex flex-row lg:flex-col justify-center gap-2 sm:gap-3 border-t lg:border-t-0 lg:border-l border-slate-100 min-w-0 lg:min-w-[220px]">
-                                        <Button
-                                            onClick={() => handlePreviewQuestions(bank.topic)}
-                                            variant="outline"
-                                            className="flex-1 lg:w-full h-11 rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50 font-bold"
-                                        >
-                                            <Eye className="h-4 w-4 mr-2" />
-                                            View Test
-                                        </Button>
-                                        <Button
-                                            onClick={() => handleGrantAccessClick(bank.topic)}
-                                            className="flex-[2] lg:w-full h-11 rounded-xl pro-button-primary shadow-lg shadow-primary/20 font-bold"
-                                        >
-                                            <UserPlus className="h-4 w-4 mr-2" />
-                                            Grant Access
-                                        </Button>
+                                        <div className="hidden lg:flex items-center gap-3 w-full px-2">
+                                            <div className="h-px flex-1 bg-slate-900" />
+                                            <span className="text-[8px] font-black text-slate-900 uppercase tracking-widest leading-none">Options</span>
+                                            <div className="h-px flex-1 bg-slate-900" />
+                                        </div>
+
                                         <Button
                                             variant="ghost"
                                             onClick={() => handleRemoveClick(bank.topic)}
                                             disabled={!!processing}
-                                            className="h-11 w-11 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50"
-                                            title="Remove"
+                                            className="h-14 w-14 rounded-2xl text-slate-900 hover:text-red-500 hover:bg-red-50 transition-all border border-transparent hover:border-red-100 flex items-center justify-center"
                                         >
-                                            <Trash2 className="h-4 w-4" />
+                                            <Trash2 className="h-5 w-5" />
                                         </Button>
                                     </div>
                                 </div>

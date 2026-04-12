@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation, Link } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   User,
@@ -36,6 +37,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
 import logo from "@/assets/logo.png";
+import { cn } from "@/lib/utils";
 
 export function ManagerSidebar() {
   const { state } = useSidebar();
@@ -86,23 +88,26 @@ export function ManagerSidebar() {
   })).filter(group => group.items.length > 0);
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-slate-200 bg-white">
-      <SidebarHeader className="h-20 flex items-center px-6 border-b border-slate-50">
+    <Sidebar collapsible="icon" className="border-r border-slate-200/40 !bg-white/80 backdrop-blur-2xl font-sans shadow-[20px_0_40px_rgba(0,0,0,0.01)]">
+      <SidebarHeader className="h-24 flex items-center justify-center px-4 group-data-[collapsible=icon]:px-0 border-b border-slate-200/60">
         {!collapsed ? (
-          <div className="flex flex-col items-start gap-1.5">
+          <div className="flex flex-col items-center gap-1">
             <img src={logo} alt="AOTMS Logo" className="h-10 w-auto" />
-            <span className="text-[9px] font-black text-primary uppercase tracking-[0.2em] ml-1">
+            <span className="text-[9px] font-bold text-primary uppercase tracking-[0.2em]">
                 MANAGER PANEL
             </span>
           </div>
         ) : (
-          <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center mx-auto shadow-sm shadow-slate-200">
+          <div className="flex items-center justify-center">
             <img src={logo} alt="AOTMS Logo" className="h-6 w-auto" />
           </div>
         )}
       </SidebarHeader>
 
-      <SidebarContent className="p-4 space-y-6">
+      <SidebarContent className={cn(
+        "px-3 group-data-[collapsible=icon]:px-2 space-y-8 scrollbar-hide",
+        collapsed ? "py-6" : "py-4"
+      )}>
         {!collapsed && (
           <div className="px-2">
             <div className="relative group">
@@ -118,29 +123,57 @@ export function ManagerSidebar() {
         )}
 
         {filteredGroups.map((group) => (
-          <SidebarGroup key={group.label}>
+          <SidebarGroup key={group.label} className="p-0">
             {!collapsed && (
-              <SidebarGroupLabel className="px-3 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-2">
+              <SidebarGroupLabel className="px-4 text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 p-0 h-auto mb-3">
                 {group.label}
               </SidebarGroupLabel>
             )}
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu className="gap-1.5">
                 {group.items.map((item) => (
                   <SidebarMenuItem key={item.id}>
                     <SidebarMenuButton
                       asChild
                       isActive={isActive(item.url)}
-                      className="h-11 px-4 rounded-xl transition-all duration-300 group relative data-[active=true]:bg-[#0075CF] data-[active=true]:text-white data-[active=true]:shadow-lg data-[active=true]:shadow-[#0075CF]/20 hover:bg-[#0075CF]/10 hover:text-[#0075CF] text-slate-500 group-data-[collapsible=icon]:!px-0 group-data-[collapsible=icon]:!justify-center"
+                      tooltip={item.title}
+                      className={cn(
+                        "h-12 px-4 rounded-xl transition-all duration-300 group relative overflow-hidden",
+                        isActive(item.url) 
+                          ? "bg-primary text-white shadow-[0_10px_20px_rgba(var(--primary),0.2)]" 
+                          : "hover:bg-primary/5 text-slate-600 hover:text-primary"
+                      )}
                     >
-                      <Link to={item.url} className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0">
-                        <item.icon
-                          className="h-5 w-5 transition-all duration-300 shrink-0 group-data-[active=true]:text-white group-hover:text-[#0075CF] text-slate-400 group-data-[active=true]:scale-110"
-                        />
+                      <Link to={item.url} className="flex items-center gap-3.5 w-full">
+                        <div className="relative z-10">
+                          <item.icon
+                            className={cn(
+                              "h-[1.125rem] w-[1.125rem] transition-all duration-300",
+                              isActive(item.url) ? "text-white scale-110" : "text-slate-400 group-hover:text-primary"
+                            )}
+                          />
+                        </div>
+                        
                         {!collapsed && (
-                          <span className="font-black text-xs uppercase tracking-wider z-10 transition-colors group-data-[active=true]:text-white group-hover:text-[#0075CF] text-slate-600">
+                          <motion.span 
+                            className={cn(
+                              "font-bold text-xs uppercase tracking-wider z-10",
+                              isActive(item.url) ? "text-white" : "group-hover:text-primary"
+                            )}
+                            initial={{ opacity: 0, x: -5 }}
+                            animate={{ opacity: 1, x: 0 }}
+                          >
                             {item.title}
-                          </span>
+                          </motion.span>
+                        )}
+
+                        {isActive(item.url) && (
+                          <motion.div 
+                            layoutId="active-pill-manager"
+                            className="absolute inset-0 bg-primary z-0"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                          />
                         )}
                       </Link>
                     </SidebarMenuButton>
@@ -157,10 +190,10 @@ export function ManagerSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
               onClick={signOut}
-              className="h-10 px-3 rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-600 transition-all flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
+              className="h-11 px-4 rounded-lg text-rose-600 hover:bg-rose-50 hover:text-rose-700 font-semibold transition-all flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
             >
-              <LogOut className="h-4.5 w-4.5 shrink-0" />
-              {!collapsed && <span className="text-[12px] font-bold uppercase tracking-widest">Sign Out</span>}
+              <LogOut className="h-5 w-5 shrink-0" />
+              {!collapsed && <span className="text-sm">Sign Out</span>}
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -168,3 +201,4 @@ export function ManagerSidebar() {
     </Sidebar>
   );
 }
+

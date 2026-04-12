@@ -108,7 +108,7 @@ export function InstructorSidebar() {
         </Link>
       </SidebarHeader>
 
-      <SidebarContent className="px-3 group-data-[collapsible=icon]:px-2 py-6 space-y-8 custom-scrollbar">
+      <SidebarContent className="px-3 group-data-[collapsible=icon]:px-2 py-6 space-y-8 scrollbar-hide">
         {/* Hub */}
         <SidebarGroup>
           <div className="px-4 mb-4">

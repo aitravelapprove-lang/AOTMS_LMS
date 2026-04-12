@@ -212,7 +212,7 @@ function ExamCard({
                   ? "bg-rose-500 text-white"
                   : exam.status === "active"
                     ? "bg-slate-900 text-white animate-pulse"
-                    : "bg-slate-200 text-slate-500",
+                    : "bg-slate-900 text-white",
             )}
           >
             {isPending
@@ -231,20 +231,20 @@ function ExamCard({
           <h4 className="font-bold text-base sm:text-xl text-slate-900 leading-tight transition-colors line-clamp-2 uppercase tracking-tighter">
             {exam.title}
           </h4>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[8px] font-black text-slate-400 uppercase tracking-widest">
-            <span className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
-              <Clock className="h-2.5 w-2.5" /> {exam.duration_minutes}m
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-2 text-[8px] font-black text-slate-900 uppercase tracking-widest">
+            <span className="flex items-center gap-1.5 bg-slate-100 px-2 py-1.5 rounded-lg border border-slate-200">
+              <Clock className="h-2.5 w-2.5 text-slate-900" /> {exam.duration_minutes}m
             </span>
-            <span className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
-              <Target className="h-2.5 w-2.5" /> {exam.total_marks}pts
+            <span className="flex items-center gap-1.5 bg-slate-100 px-2 py-1.5 rounded-lg border border-slate-200">
+              <Target className="h-2.5 w-2.5 text-slate-900" /> {exam.total_marks}pts
             </span>
-            <span className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
-              <ShieldAlert className="h-2.5 w-2.5" /> -{exam.negative_marking || 0}
+            <span className="flex items-center gap-1.5 bg-slate-100 px-2 py-1.5 rounded-lg border border-slate-200">
+              <ShieldAlert className="h-2.5 w-2.5 text-rose-600" /> -{exam.negative_marking || 0}
             </span>
-            <span className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
-              <RefreshCw className="h-2.5 w-2.5" /> {exam.max_attempts}x
+            <span className="flex items-center gap-1.5 bg-slate-100 px-2 py-1.5 rounded-lg border border-slate-200">
+              <RefreshCw className="h-2.5 w-2.5 text-slate-900" /> {exam.max_attempts}x
             </span>
-            <span className={cn("flex items-center gap-1.5 px-2 py-1 rounded-md border", exam.shuffle_questions ? "bg-emerald-50 border-emerald-100 text-emerald-600" : "bg-slate-50 border-slate-100 text-slate-400")}>
+            <span className={cn("flex items-center gap-1.5 px-2 py-1.5 rounded-lg border", exam.shuffle_questions ? "bg-emerald-100 border-emerald-200 text-emerald-900 font-black" : "bg-slate-100 border-slate-200 text-slate-900")}>
               <Shuffle className="h-2.5 w-2.5" /> {exam.shuffle_questions ? "Shuffled" : "Fixed"}
             </span>
           </div>
@@ -252,7 +252,7 @@ function ExamCard({
           {exam.custom_fields && exam.custom_fields.length > 0 && (
             <div className="flex flex-wrap gap-1.5 pt-1">
                {exam.custom_fields.slice(0, 3).map((f, i: number) => (
-                 <Badge key={i} variant="outline" className="text-[7px] font-bold uppercase tracking-tighter h-5 border-slate-100 text-slate-400 px-1.5 rounded-sm">
+                 <Badge key={i} variant="outline" className="text-[7px] font-black uppercase tracking-tighter h-5 border-slate-200 text-slate-900 px-1.5 rounded-sm">
                     {f.label}: {f.value}
                  </Badge>
                ))}
@@ -260,7 +260,7 @@ function ExamCard({
             </div>
           )}
 
-          <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-300 uppercase tracking-widest pt-1">
+          <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-900 uppercase tracking-widest pt-1">
              <CalendarIcon className="h-3 w-3" />
              {exam.scheduled_date && !isNaN(new Date(exam.scheduled_date).getTime())
                ? format(new Date(exam.scheduled_date), "MMM dd, yyyy")
@@ -270,13 +270,13 @@ function ExamCard({
 
         <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
           {!isPast && exam.approval_status === "approved" && (
-            <div className="flex flex-1 gap-2">
+            <div className="flex flex-col xl:flex-row flex-1 gap-2">
               <Button
                 className={cn(
-                  "flex-[2] h-12 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all active:scale-95",
+                  "flex-1 xl:flex-[2] h-11 xl:h-12 rounded-xl xl:rounded-2xl font-black text-[9px] xl:text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-lg",
                   exam.status === "active"
-                    ? "bg-slate-900 hover:bg-black text-white"
-                    : "bg-slate-100 hover:bg-slate-200 text-slate-900",
+                    ? "bg-slate-900 hover:bg-black text-white shadow-slate-900/10"
+                    : "bg-slate-100 hover:bg-slate-200 text-slate-900 shadow-none",
                 )}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -290,7 +290,7 @@ function ExamCard({
               </Button>
               <Button
                 variant="outline"
-                className="flex-1 h-12 rounded-2xl border-slate-100 text-slate-400 hover:text-slate-900 hover:border-slate-900 font-bold text-[9px] uppercase tracking-widest transition-all"
+                className="flex-1 h-11 xl:h-12 rounded-xl xl:rounded-2xl border-slate-200 text-slate-900 hover:bg-slate-50 font-black text-[9px] uppercase tracking-widest transition-all"
                 onClick={(e) => {
                   e.stopPropagation();
                   onConfigure?.(exam);
@@ -329,7 +329,7 @@ function ExamCard({
           <Button
             variant="ghost"
             size="icon"
-            className="h-12 w-12 rounded-2xl text-slate-200 hover:text-destructive hover:bg-rose-50 transition-all border border-transparent hover:border-rose-100"
+            className="h-11 xl:h-12 w-11 xl:w-12 rounded-xl xl:rounded-2xl text-slate-900 hover:text-destructive hover:bg-rose-50 transition-all border border-transparent hover:border-rose-100"
             onClick={(e) => {
               e.stopPropagation();
               onDelete(exam.id);

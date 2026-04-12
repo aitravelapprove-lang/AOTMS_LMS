@@ -462,7 +462,7 @@ export function InstructorManagement() {
               <div
                 key={instructor.user_id}
                 className={cn(
-                  "group relative bg-white rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/30 overflow-hidden flex flex-col transition-all duration-500 hover:border-indigo-600/30 hover:translate-y-[-4px]",
+                  "group relative bg-white rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/30 overflow-hidden flex flex-col transition-all duration-500 hover:border-primary/30 hover:translate-y-[-4px]",
                   isSuspended && "opacity-80 grayscale-[0.2]",
                 )}
               >
@@ -470,7 +470,7 @@ export function InstructorManagement() {
                 <div
                   className={cn(
                     "absolute top-0 left-0 right-0 h-1.5",
-                    isSuspended ? "bg-rose-500" : "bg-indigo-600",
+                    isSuspended ? "bg-rose-500" : "bg-gradient-to-r from-primary to-accent",
                   )}
                 />
 
@@ -483,7 +483,7 @@ export function InstructorManagement() {
                             src={instructor.avatar_url}
                             className="object-cover"
                           />
-                          <AvatarFallback className="bg-indigo-50 text-indigo-600 font-black text-xl">
+                          <AvatarFallback className="bg-primary/5 text-primary font-black text-xl">
                             {instructor.full_name?.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
@@ -491,7 +491,7 @@ export function InstructorManagement() {
                       <div
                         className={cn(
                           "absolute -bottom-1 -right-1 h-5 w-5 rounded-full border-2 border-white shadow-md flex items-center justify-center",
-                          isSuspended ? "bg-rose-500" : "bg-emerald-500",
+                          isSuspended ? "bg-rose-500" : "bg-primary",
                         )}
                       >
                         <div className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
@@ -603,7 +603,7 @@ export function InstructorManagement() {
                   </div>
 
                   <div className="space-y-1">
-                    <h4 className="text-xl font-black text-slate-900 tracking-tighter leading-none group-hover:text-indigo-600 transition-colors truncate">
+                    <h4 className="text-xl font-black text-slate-900 tracking-tighter leading-none group-hover:text-primary transition-colors truncate">
                       {instructor.full_name}
                     </h4>
                     <p className="text-sm font-bold text-slate-400 truncate">
@@ -612,11 +612,11 @@ export function InstructorManagement() {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-3">
-                    <Badge className="bg-indigo-50 text-indigo-600 border-none px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider">
+                    <Badge className="bg-primary/10 text-primary border-none px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider">
                       Academic Faculty
                     </Badge>
                     <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">
-                      <Calendar className="h-3 w-3 text-indigo-500" />
+                      <Calendar className="h-3 w-3 text-primary" />
                       {instructor.created_at
                         ? new Date(instructor.created_at).toLocaleDateString(
                             undefined,
@@ -635,7 +635,7 @@ export function InstructorManagement() {
                         Teaching {assignedCourses.length} Courses
                       </p>
                     </div>
-                    <div className="h-10 w-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-indigo-600 transform group-hover/status:rotate-12 transition-transform">
+                    <div className="h-10 w-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-primary transform group-hover/status:rotate-12 transition-transform">
                       <BookOpen className="h-5 w-5" />
                     </div>
                   </div>
@@ -644,7 +644,7 @@ export function InstructorManagement() {
                 <div className="mt-auto p-4 bg-slate-50/30 border-t border-slate-100 flex gap-3">
                   <Button
                     onClick={() => handleOpenProfileModal(instructor)}
-                    className="flex-1 h-14 bg-indigo-600 hover:bg-slate-900 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl transition-all shadow-xl shadow-indigo-100 hover:shadow-indigo-300 hover:translate-y-[-2px] active:translate-y-0"
+                    className="flex-1 h-14 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl transition-all shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:translate-y-[-2px] active:translate-y-0"
                   >
                     Manage Profile
                     <ArrowRight className="h-4 w-4 ml-3" />
@@ -664,12 +664,12 @@ export function InstructorManagement() {
           <DialogHeader className="p-8 pb-4 relative z-10 space-y-4">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <DialogTitle className="flex items-center gap-3 text-2xl font-black text-slate-900 tracking-tight text-center sm:text-left">
-                <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center border border-indigo-100 shadow-inner group shrink-0">
-                  <Award className="h-6 w-6 text-indigo-600 group-hover:rotate-12 transition-transform" />
+                <div className="h-12 w-12 rounded-2xl bg-primary/5 flex items-center justify-center border border-primary/10 shadow-inner group shrink-0">
+                  <Award className="h-6 w-6 text-primary group-hover:rotate-12 transition-transform" />
                 </div>
                 <div className="flex flex-col sm:flex-row items-center sm:gap-2">
                   <span>Instructor</span>
-                  <span className="text-indigo-600 italic">Profile</span>
+                  <span className="text-primary italic">Profile</span>
                 </div>
               </DialogTitle>
               <Badge className="bg-emerald-500/10 text-emerald-600 border-none px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shrink-0">
@@ -684,14 +684,14 @@ export function InstructorManagement() {
           {selectedInstructor && (
             <div className="px-5 sm:px-8 pb-20 pt-2 space-y-8 relative z-10 max-h-[75vh] overflow-y-auto scrollbar-hide">
               <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-6 sm:gap-8 bg-white/60 backdrop-blur-xl p-8 sm:p-10 rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/40 relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                 <div className="relative z-10 flex flex-col items-center">
                   <Avatar className="h-32 w-32 rounded-[2.5rem] border-4 border-white shadow-2xl shrink-0 overflow-hidden group-hover:scale-105 transition-transform duration-500">
                     <AvatarImage
                       src={selectedInstructor.avatar_url}
                       className="object-cover"
                     />
-                    <AvatarFallback className="text-5xl font-black text-indigo-600 bg-indigo-50">
+                    <AvatarFallback className="text-5xl font-black text-primary bg-primary/5">
                       {selectedInstructor.full_name?.[0]?.toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
@@ -700,7 +700,7 @@ export function InstructorManagement() {
                   </div>
                 </div>
                 <div className="text-center sm:text-left space-y-4 relative z-10 min-w-0 flex-1 w-full">
-                  <h3 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tighter leading-tight truncate w-full">
+                  <h3 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tighter leading-tight truncate w-full group-hover:text-primary transition-colors">
                     {selectedInstructor.full_name}
                   </h3>
                   <div className="flex flex-wrap items-center gap-2 mt-1 justify-center sm:justify-start">

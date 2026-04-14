@@ -287,7 +287,6 @@ export default function AdminDashboard() {
     updateCourseStatus,
     updateEnrollmentStatus: _updateEnrollmentStatus,
     deleteEnrollment: _deleteEnrollment,
-    deleteCourse: _deleteCourse,
     resetStudentATS: _resetStudentATS,
   } = adminData;
 
@@ -341,18 +340,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const deleteCourse = async (id: string) => {
-    if (
-      confirm(
-        "Are you sure you want to permanently delete this course? This action cannot be undone.",
-      )
-    ) {
-      const success = await _deleteCourse(id);
-      if (success) {
-        setCoursesRefreshKey((prev) => prev + 1);
-      }
-    }
-  };
+
 
   const loadEnrollments = useCallback(async () => {
     setEnrollmentsLoading(true);
@@ -929,7 +917,6 @@ export default function AdminDashboard() {
                       loading={dataLoading}
                       onUpdatePrice={adminData.updateCoursePrice}
                       onToggleActive={adminData.toggleCourseActive}
-                      onDelete={deleteCourse}
                       onViewSyllabus={(course) => setBuildingCourse(course as CombinedCourse)}
                     />
                   </motion.div>

@@ -5176,6 +5176,11 @@ app.delete('/api/data/:table/:id', authenticateToken, async (req, res) => {
     const Model = MODEL_MAP[table];
     if (!Model) return res.status(403).json({ error: 'Invalid table' });
 
+    // PERMANENTLY BLOCK COURSE DELETION
+    if (table === 'courses') {
+        return res.status(403).json({ error: 'Course deletion is permanently disabled. Please archive or deactivate the course instead.' });
+    }
+
     try {
         const role = await getUserRole(req.user.id);
 

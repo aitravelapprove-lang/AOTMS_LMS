@@ -27,36 +27,7 @@ export function ManagerCourses() {
     const [processingId, setProcessingId] = useState<string | null>(null);
     const { toast } = useToast();
 
-    const handleDelete = async (courseId: string, courseTitle: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (!confirm("Are you sure you want to permanently delete this course? This action cannot be undone.")) return;
 
-        setProcessingId(courseId);
-        try {
-            // 1. Delete the course
-            await fetchWithAuth(`/data/courses/${courseId}`, {
-                method: 'DELETE'
-            });
-
-            // 2. Notify Admin via System Log
-            await fetchWithAuth('/rpc/log_admin_action', {
-                method: 'POST',
-                body: JSON.stringify({
-                    _module: 'Course',
-                    _action: 'Course Deleted by Manager',
-                    _details: { course_id: courseId, title: courseTitle }
-                })
-            });
-
-            toast({ title: 'Success', description: 'Course deleted permanently' });
-            refetch();
-        } catch (err) {
-            console.error(err);
-            toast({ title: 'Error', description: 'Failed to delete course', variant: 'destructive' });
-        } finally {
-            setProcessingId(null);
-        }
-    };
 
     if (viewingCourse) {
         return <CourseBuilder course={viewingCourse} onBack={() => setViewingCourse(null)} />;
@@ -117,28 +88,6 @@ export function ManagerCourses() {
                                                 {course.category || 'Course'}
                                             </span>
                                         </div>
-                                        <div className="absolute top-3 right-3">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity shadow-sm bg-black/20 hover:bg-black/40 rounded-full backdrop-blur-sm">
-                                                        <MoreVertical className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem 
-                                                        className="text-destructive focus:text-destructive cursor-pointer"
-                                                        onClick={(e) => handleDelete(course.id, course.title, e)}
-                                                        disabled={processingId === course.id}
-                                                    >
-                                                        {processingId === course.id ? (
-                                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                                        ) : (
-                                                            <Trash2 className="h-4 w-4 mr-2" />
-                                                        )}
-                                                        Delete Permanently
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
                                         </div>
                                     </div>
                                     <CardContent className="p-4 flex-1 flex flex-col">

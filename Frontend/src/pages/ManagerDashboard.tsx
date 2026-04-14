@@ -229,7 +229,6 @@ export default function ManagerDashboard() {
     updateEnrollmentStatus,
     deleteEnrollment,
     enrollments,
-    deleteCourse: _deleteCourse,
   } = useAdminData(userRole);
 
   if (authLoading) {
@@ -318,7 +317,6 @@ export default function ManagerDashboard() {
             loading={dataLoading} 
             onUpdatePrice={updateCoursePrice}
             onToggleActive={toggleCourseActive}
-            onDelete={_deleteCourse}
             onViewSyllabus={(course) => {
               // Normalize the course object to match InstructorCourse interface
               const normalizedCourse = {

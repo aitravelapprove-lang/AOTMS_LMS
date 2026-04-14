@@ -280,19 +280,7 @@ export function AllCoursesList({
                     >
                       Manage
                     </Button>
-                    {onDelete && (
-                      <Button
-                        variant="destructive"
-                        className="rounded-xl h-10 w-10 p-0 flex items-center justify-center shadow-lg shadow-red-100 shrink-0"
-                        onClick={() => {
-                          if (confirm(`Are you sure you want to delete "${course.title}"?`)) {
-                            onDelete(course.id);
-                          }
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
+
                   </div>
                 </div>
 

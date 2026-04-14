@@ -96,24 +96,7 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
         }
     };
 
-    const handleDelete = async (courseId: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (!confirm("Are you sure you want to permanently delete this course? This cannot be undone.")) return;
-        
-        setProcessing(courseId);
-        try {
-            await fetchWithAuth(`/data/courses/${courseId}`, {
-                method: 'DELETE'
-            });
-            toast({ title: 'Success', description: 'Course deleted successfully' });
-            refetch();
-        } catch (err) {
-            console.error(err);
-            toast({ title: 'Error', description: 'Failed to delete course', variant: 'destructive' });
-        } finally {
-            setProcessing(null);
-        }
-    };
+
     const { user } = useAuth();
     const [assigning, setAssigning] = useState<string | null>(null);
 
@@ -283,16 +266,7 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
                                                                     Save as Draft
                                                                 </DropdownMenuItem>
                                                             )}
-                                                            {(course.status === 'draft' || course.status === 'rejected' || !course.status) && (
-                                                                <DropdownMenuItem 
-                                                                    onClick={(e) => handleDelete(course.id, e)} 
-                                                                    disabled={processing === course.id}
-                                                                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
-                                                                >
-                                                                    <Trash2 className="h-4 w-4 mr-2" />
-                                                                    Delete Course
-                                                                </DropdownMenuItem>
-                                                            )}
+
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
                                                 </div>

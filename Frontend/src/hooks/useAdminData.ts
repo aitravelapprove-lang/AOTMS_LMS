@@ -391,17 +391,7 @@ export function useAdminData(userRole?: string | null) {
     }
   };
 
-  const deleteCourse = async (courseId: string) => {
-    try {
-      await fetchWithAuth(`/data/courses/${courseId}`, { method: 'DELETE' });
-      toast({ title: 'Deleted', description: 'Course removed' });
-      fetchAllData();
-      return true;
-    } catch (error) {
-      toast({ title: 'Error', description: 'Delete failed', variant: 'destructive' });
-      return false;
-    }
-  };
+
 
   const deleteExamResult = async (resultId: string) => {
     try {
@@ -486,7 +476,6 @@ export function useAdminData(userRole?: string | null) {
     updateUserRole,
     updateEnrollmentStatus,
     deleteEnrollment,
-    deleteCourse,
     resolveSecurityEvent,
     sendApprovalEmail,
     approveCourse,

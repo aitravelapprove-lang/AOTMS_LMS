@@ -60,6 +60,8 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
   const [filterCourse, setFilterCourse] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterTimeframe, setFilterTimeframe] = useState("all");
+  const [customFrom, setCustomFrom] = useState<string>("");
+  const [customTo, setCustomTo] = useState<string>("");
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [selectedEnrollment, setSelectedEnrollment] = useState<CourseEnrollment | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -183,6 +185,19 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
           matchesTimeframe = enrollmentDate >= yearAgo;
           break;
         }
+        case 'custom': {
+          if (customFrom) {
+            const from = new Date(customFrom);
+            from.setHours(0, 0, 0, 0);
+            matchesTimeframe = enrollmentDate >= from;
+          }
+          if (customTo) {
+            const to = new Date(customTo);
+            to.setHours(23, 59, 59, 999);
+            matchesTimeframe = matchesTimeframe && enrollmentDate <= to;
+          }
+          break;
+        }
       }
     }
 
@@ -280,7 +295,7 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
             />
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Select value={filterCourse} onValueChange={setFilterCourse}>
               <SelectTrigger className="h-12 w-44 rounded-2xl bg-white border-none shadow-xl shadow-slate-200/20 font-bold">
                  <SelectValue placeholder="All Courses" />
@@ -305,7 +320,8 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
               </SelectContent>
             </Select>
 
-            <Select value={filterTimeframe} onValueChange={setFilterTimeframe}>
+            {/* Timeframe selector */}
+            <Select value={filterTimeframe} onValueChange={(v) => { setFilterTimeframe(v); if (v !== 'custom') { setCustomFrom(''); setCustomTo(''); } }}>
               <SelectTrigger className="h-12 w-40 rounded-2xl bg-white border-none shadow-xl shadow-slate-200/20 font-bold">
                  <SelectValue placeholder="Timeframe" />
               </SelectTrigger>
@@ -315,8 +331,41 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                 <SelectItem value="week">Past Week</SelectItem>
                 <SelectItem value="month">Past Month</SelectItem>
                 <SelectItem value="year">Past Year</SelectItem>
+                <SelectItem value="custom">Custom Range</SelectItem>
               </SelectContent>
             </Select>
+
+            {/* Calendar date range — responsive, shows only when custom selected */}
+            {filterTimeframe === 'custom' && (
+              <div className="flex flex-wrap items-center gap-2 animate-in slide-in-from-right-4 duration-300">
+                <div className="flex items-center gap-2 bg-white rounded-2xl px-4 py-2.5 shadow-xl shadow-slate-200/20 border border-slate-100">
+                  <Calendar className="h-4 w-4 text-indigo-500 flex-shrink-0" />
+                  <div className="flex flex-col">
+                    <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">From</span>
+                    <input
+                      type="date"
+                      value={customFrom}
+                      onChange={(e) => setCustomFrom(e.target.value)}
+                      className="text-[11px] font-black text-slate-800 bg-transparent border-none outline-none cursor-pointer w-[110px]"
+                    />
+                  </div>
+                </div>
+                <span className="text-slate-300 font-black text-sm">→</span>
+                <div className="flex items-center gap-2 bg-white rounded-2xl px-4 py-2.5 shadow-xl shadow-slate-200/20 border border-slate-100">
+                  <Calendar className="h-4 w-4 text-indigo-500 flex-shrink-0" />
+                  <div className="flex flex-col">
+                    <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">To</span>
+                    <input
+                      type="date"
+                      value={customTo}
+                      min={customFrom || undefined}
+                      onChange={(e) => setCustomTo(e.target.value)}
+                      className="text-[11px] font-black text-slate-800 bg-transparent border-none outline-none cursor-pointer w-[110px]"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

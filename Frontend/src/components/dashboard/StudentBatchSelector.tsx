@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Layers, CheckCircle2, AlertCircle, Loader2, Clock } from "lucide-react";
+import { Layers, CheckCircle2, Loader2, Clock } from "lucide-react";
 import { useEnrolledCourses, useAvailableBatches, useStudentBatch, useRequestBatchAssignment } from "@/hooks/useStudentData";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -20,18 +20,16 @@ export function StudentBatchSelector() {
     const { mutateAsync: requestBatch, isPending } = useRequestBatchAssignment();
     const { toast } = useToast();
 
-    // Find courses that don't have a batch yet
     const activeCourses = courses?.filter(c => c.enrollmentStatus === 'active') || [];
 
     const handleConfirm = async () => {
         if (!selectedCourseId || !selectedBatchId) return;
-        
         try {
-            const resp = await requestBatch({ courseId: selectedCourseId, batchId: selectedBatchId });
+            await requestBatch({ courseId: selectedCourseId, batchId: selectedBatchId });
             toast({
                 title: currentBatch ? "Transfer Requested" : "Batch Assigned",
-                description: currentBatch 
-                    ? "Instructor permission requested for your batch change." 
+                description: currentBatch
+                    ? "Instructor permission requested for your batch change."
                     : "You have been assigned to your selected batch.",
                 className: currentBatch ? "bg-amber-50 border-amber-200" : "bg-emerald-50 border-emerald-200"
             });
@@ -49,15 +47,21 @@ export function StudentBatchSelector() {
     if (coursesLoading || activeCourses.length === 0) return null;
 
     return (
-        <div className="flex flex-col lg:flex-row items-center gap-3 bg-white/50 backdrop-blur-md p-2 rounded-[1.5rem] border border-slate-100 shadow-sm animate-in fade-in zoom-in duration-300 w-full lg:w-auto">
-            <div className="flex items-center gap-2 px-3 py-2 bg-slate-900 rounded-xl shrink-0 group hover:bg-primary transition-colors cursor-help w-full lg:w-auto justify-center lg:justify-start">
-                <Layers className="h-4 w-4 text-white" />
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white">Course Batches</span>
-            </div>
+        /* Outer wrapper — fixed height, internal scroll, no overflow outside */
+        <div className="w-full overflow-x-auto scrollbar-hide rounded-2xl">
+            <div className="flex items-center gap-2 min-w-max px-1 py-1">
 
-            <div className="flex flex-col lg:flex-row items-center gap-2 w-full lg:w-auto">
+                {/* Label pill */}
+                <div className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-900 rounded-xl shrink-0">
+                    <Layers className="h-3.5 w-3.5 text-white" />
+                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white whitespace-nowrap">
+                        Course Batches
+                    </span>
+                </div>
+
+                {/* Course select */}
                 <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
-                    <SelectTrigger className="w-full lg:w-[220px] h-11 rounded-xl border-slate-200 bg-white text-[11px] font-bold shadow-sm">
+                    <SelectTrigger className="w-[200px] h-10 rounded-xl border-slate-200 bg-white text-[11px] font-bold shadow-sm shrink-0">
                         <SelectValue placeholder="Select Course" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border-slate-100">
@@ -69,11 +73,15 @@ export function StudentBatchSelector() {
                     </SelectContent>
                 </Select>
 
+                {/* Batch select + confirm — visible only when course is selected */}
                 {selectedCourseId && (
-                    <div className="flex items-center gap-2 w-full lg:w-auto animate-in slide-in-from-left-2">
+                    <>
                         <Select value={selectedBatchId} onValueChange={setSelectedBatchId}>
-                            <SelectTrigger className="w-full lg:w-[160px] h-11 rounded-xl border-slate-200 bg-white text-[11px] font-bold shadow-sm">
-                                {batchesLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <SelectValue placeholder="Select Batch" />}
+                            <SelectTrigger className="w-[150px] h-10 rounded-xl border-slate-200 bg-white text-[11px] font-bold shadow-sm shrink-0">
+                                {batchesLoading
+                                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                                    : <SelectValue placeholder="Select Batch" />
+                                }
                             </SelectTrigger>
                             <SelectContent className="rounded-xl border-slate-100">
                                 {batches?.map(batch => (
@@ -84,9 +92,9 @@ export function StudentBatchSelector() {
                             </SelectContent>
                         </Select>
 
-                        <Button 
-                            size="sm" 
-                            className="h-11 px-6 rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg shadow-primary/10 flex items-center gap-2"
+                        <Button
+                            size="sm"
+                            className="h-10 px-5 rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg shadow-primary/10 flex items-center gap-1.5 shrink-0"
                             disabled={!selectedBatchId || isPending || (currentBatch?.id === selectedBatchId)}
                             onClick={handleConfirm}
                         >
@@ -97,16 +105,25 @@ export function StudentBatchSelector() {
                                 </>
                             )}
                         </Button>
+                    </>
+                )}
+
+                {/* Current batch indicator */}
+                {currentBatch && !selectedBatchId && (
+                    <div className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-xl shrink-0">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                        <div className="flex flex-col">
+                            <span className="text-[8px] font-black uppercase tracking-tight text-emerald-600 leading-none">Locked</span>
+                            <span className="text-[9px] font-bold text-emerald-700 leading-none mt-0.5 whitespace-nowrap">
+                                {currentBatch.batch_name}
+                            </span>
+                        </div>
                     </div>
                 )}
-            </div>
 
-            {currentBatch && !selectedBatchId && (
-                <div className="hidden xl:flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-emerald-100 rounded-xl animate-in slide-in-from-right-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                    <span className="text-[10px] font-black uppercase tracking-tighter text-emerald-600">Locked: {currentBatch.batch_name}</span>
-                </div>
-            )}
+               
+
+            </div>
         </div>
     );
 }

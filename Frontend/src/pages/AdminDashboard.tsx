@@ -17,6 +17,7 @@ import { GrantStudentAccess } from "@/components/admin/GrantStudentAccess";
 import { AllCoursesList } from "@/components/admin/AllCoursesList";
 import { ResumeScanHistory } from "@/components/admin/ResumeScanHistory";
 import { LiveMonitoring } from "@/components/admin/LiveMonitoring";
+import { StudentPerformance } from "@/components/admin/StudentPerformance";
 import InstructorAccessAdmin from "@/pages/InstructorAccess";
 import { ExamScheduler } from "@/components/manager/ExamScheduler";
 import { QuestionBankManager } from "@/components/manager/QuestionBankManager";
@@ -70,9 +71,10 @@ import {
   Gift,
   Power,
   Layers,
-  Zap,
   Bell,
   CheckCheck,
+  Trophy,
+  Zap,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { CouponManager } from "@/components/admin/CouponManager";
@@ -235,17 +237,28 @@ export default function AdminDashboard() {
     null,
   );
   const [systemHealth, setSystemHealth] = useState(99.9);
-  const [liveLearners, setLiveLearners] = useState(128);
+  const [liveLearners, setLiveLearners] = useState(0);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      // Random fluctuation between 98.5 and 99.9
-      const newHealth = +(98.5 + Math.random() * 1.4).toFixed(1);
-      setSystemHealth(newHealth);
+    const fetchPlatformStats = async () => {
+      try {
+        const { fetchWithAuth } = await import('@/lib/api');
+        const data = await fetchWithAuth('/admin/platform-stats') as {
+          liveLearners?: number;
+          systemHealth?: number;
+          totalUsers?: number;
+          pendingEnrollments?: number;
+        };
+        if (data?.liveLearners !== undefined) setLiveLearners(data.liveLearners);
+        if (data?.systemHealth !== undefined) setSystemHealth(data.systemHealth);
+      } catch (err) {
+        // Fallback: gentle random fluctuation if API fails
+        setSystemHealth(prev => parseFloat((Math.max(97, Math.min(99.9, prev + (Math.random() - 0.5) * 0.3))).toFixed(1)));
+      }
+    };
 
-      // Fluctuating learners count
-      setLiveLearners((prev) => prev + (Math.random() > 0.5 ? 1 : -1));
-    }, 3000);
+    fetchPlatformStats();
+    const interval = setInterval(fetchPlatformStats, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -387,6 +400,8 @@ export default function AdminDashboard() {
     const tabUrlMap: Record<string, string> = {
       "/admin": "users",
       "/admin/users": "users",
+      "/admin/grant-access": "grant-access",
+      "/admin/leaderboard": "leaderboard",
       "/admin/enrollments": "enrollments",
       "/admin/all-courses": "all-courses",
       "/admin/instructor-access": "instructor-access",
@@ -407,7 +422,10 @@ export default function AdminDashboard() {
       "/admin/profile": "profile",
       "/admin/settings": "settings",
       "/admin/notifications": "notifications",
+      "/admin/student-performance": "student-performance",
+      "/admin/resume-scans": "resume-scans",
     };
+
     const path = location.pathname;
     const tab = tabUrlMap[path];
     if (tab) {
@@ -625,22 +643,34 @@ export default function AdminDashboard() {
                         key: "tab-users",
                       },
                       {
+                        id: "grant-access",
+                        label: "Grant Access",
+                        icon: UserCheck,
+                        key: "tab-grant-access",
+                      },
+                      {
                         id: "enrollments",
                         label: "Student Enrollments",
                         icon: GraduationCap,
                         key: "tab-enrollments",
                       },
                       {
-                        id: "coupons",
-                        label: "Rewards & Coupons",
-                        icon: Ticket,
-                        key: "tab-coupons",
+                        id: "student-performance",
+                        label: "Student Performance",
+                        icon: BarChart3,
+                        key: "tab-student-performance",
                       },
                       {
-                        id: "grant-access",
-                        label: "Grant Access",
-                        icon: UserCheck,
-                        key: "tab-grant-access",
+                        id: "leaderboard",
+                        label: "Leaderboard",
+                        icon: Trophy,
+                        key: "tab-leaderboard",
+                      },
+                      {
+                        id: "coupons",
+                        label: "Reward & Coupons",
+                        icon: Ticket,
+                        key: "tab-coupons",
                       },
                       {
                         id: "resume-scans",
@@ -655,34 +685,10 @@ export default function AdminDashboard() {
                         key: "tab-instructor-access",
                       },
                       {
-                        id: "all-courses",
-                        label: "All Courses",
-                        icon: LayoutGrid,
-                        key: "tab-all-courses",
-                      },
-                      {
-                        id: "qa",
-                        label: "Quality Assurance",
-                        icon: ShieldCheck,
-                        key: "tab-qa",
-                      },
-                      {
-                        id: "chat",
-                        label: "Chat Monitor",
-                        icon: MessageSquare,
-                        key: "tab-chat",
-                      },
-                      {
                         id: "instructors",
                         label: "Instructors",
                         icon: Users,
                         key: "tab-instructors",
-                      },
-                      {
-                        id: "videos",
-                        label: "Video Library",
-                        icon: VideoIcon,
-                        key: "tab-videos",
                       },
                       {
                         id: "exam-scheduling",
@@ -703,6 +709,24 @@ export default function AdminDashboard() {
                         key: "tab-question-access",
                       },
                       {
+                        id: "all-courses",
+                        label: "All Courses",
+                        icon: LayoutGrid,
+                        key: "tab-all-courses",
+                      },
+                      {
+                        id: "videos",
+                        label: "Video Library",
+                        icon: VideoIcon,
+                        key: "tab-videos",
+                      },
+                      {
+                        id: "chat",
+                        label: "Chat Monitor",
+                        icon: MessageSquare,
+                        key: "tab-chat",
+                      },
+                      {
                         id: "live-monitoring",
                         label: "Live Monitoring",
                         icon: Activity,
@@ -716,11 +740,18 @@ export default function AdminDashboard() {
                       },
                       {
                         id: "notifications",
-                        label: "Notifications",
+                        label: "Notification",
                         icon: Bell,
                         key: "tab-notifications",
                       },
-                    ].map((tab) => (
+                      {
+                        id: "qa",
+                        label: "Quality Assurance",
+                        icon: ShieldCheck,
+                        key: "tab-qa",
+                      },
+                    ]
+.map((tab) => (
                       <TabsTrigger
                         key={tab.key}
                         value={tab.id}
@@ -741,6 +772,34 @@ export default function AdminDashboard() {
               </div>
 
               <div className="min-h-[600px]">
+                <TabsContent
+                  key="tab-student-performance"
+                  value="student-performance"
+                  className="mt-0 outline-none"
+                >
+                  <motion.div
+                    key="motion-student-performance"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <StudentPerformance />
+                  </motion.div>
+                </TabsContent>
+
+                <TabsContent
+                  key="tab-leaderboard"
+                  value="leaderboard"
+                  className="mt-0 outline-none"
+                >
+                  <motion.div
+                    key="motion-leaderboard"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <LeaderboardManager />
+                  </motion.div>
+                </TabsContent>
+
                 <TabsContent
                   key="tab-users"
                   value="users"
@@ -870,8 +929,8 @@ export default function AdminDashboard() {
                       loading={dataLoading}
                       onUpdatePrice={adminData.updateCoursePrice}
                       onToggleActive={adminData.toggleCourseActive}
-                      onDelete={_deleteCourse}
-                      onViewSyllabus={(course) => setBuildingCourse(course)}
+                      onDelete={deleteCourse}
+                      onViewSyllabus={(course) => setBuildingCourse(course as CombinedCourse)}
                     />
                   </motion.div>
                 </TabsContent>

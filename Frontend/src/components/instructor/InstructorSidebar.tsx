@@ -125,8 +125,8 @@ export function InstructorSidebar() {
                     className={cn(
                         "h-12 px-4 rounded-xl transition-all duration-300 group relative overflow-hidden",
                         isActive(item.url) 
-                          ? "bg-primary text-white shadow-[0_10px_20px_rgba(var(--primary),0.2)]" 
-                          : "hover:bg-primary/5 text-slate-600 hover:text-primary"
+                          ? "bg-slate-900 text-white shadow-xl shadow-slate-900/20" 
+                          : "hover:bg-slate-100 text-slate-600 hover:text-slate-900"
                     )}
                   >
                     <Link to={item.url} className="flex items-center gap-3.5 w-full">
@@ -160,7 +160,7 @@ export function InstructorSidebar() {
                           {item.title === "Student Roster" && stats?.totalStudents !== undefined && (
                             <Badge variant="secondary" className={cn(
                                 "h-5 px-1.5 text-[10px] font-black border-none transition-colors",
-                                isActive(item.url) ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
+                                isActive(item.url) ? "bg-white/20 text-white" : "bg-slate-100 text-slate-900"
                             )}>
                               {stats.totalStudents}
                             </Badge>
@@ -172,7 +172,7 @@ export function InstructorSidebar() {
                       {isActive(item.url) && (
                         <motion.div 
                           layoutId="active-pill"
-                          className="absolute inset-0 bg-primary z-0"
+                          className="absolute inset-0 bg-slate-900 z-0"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                         />

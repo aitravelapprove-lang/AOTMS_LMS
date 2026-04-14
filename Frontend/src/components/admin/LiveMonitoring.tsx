@@ -182,6 +182,8 @@ export function LiveMonitoring() {
         };
     });
 
+    const emailToProfileMap = new Map(profiles.map(p => [(p.email || '').toLowerCase(), p]));
+
     const filteredInstructors = instructorStats.filter(inst => 
         inst.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         inst.email?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -407,11 +409,15 @@ export function LiveMonitoring() {
                                                                                         <span className="text-[9px] font-black uppercase text-slate-500">Score: {batch.avgPerformance}%</span>
                                                                                     </div>
                                                                                     <div className="flex -space-x-2">
-                                                                                        {batch.students.slice(0, 3).map((s, idx) => (
-                                                                                            <Avatar key={idx} className="h-5 w-5 border-2 border-white">
-                                                                                                <AvatarFallback className="bg-slate-100 text-[8px] font-black">{s.student[0]}</AvatarFallback>
-                                                                                            </Avatar>
-                                                                                        ))}
+                                                                                        {batch.students.slice(0, 3).map((s, idx) => {
+                                                                                            const profile = emailToProfileMap.get((s.email || '').toLowerCase());
+                                                                                            return (
+                                                                                                <Avatar key={idx} className="h-5 w-5 border-2 border-white">
+                                                                                                    <AvatarImage src={profile?.avatar_url || ''} />
+                                                                                                    <AvatarFallback className="bg-slate-100 text-[8px] font-black">{s.student[0]}</AvatarFallback>
+                                                                                                </Avatar>
+                                                                                            );
+                                                                                        })}
                                                                                         {batch.studentCount > 3 && (
                                                                                             <div className="h-5 w-5 rounded-full bg-slate-50 border-2 border-white flex items-center justify-center text-[7px] font-black text-slate-400">
                                                                                                 +{batch.studentCount - 3}
@@ -460,9 +466,12 @@ export function LiveMonitoring() {
                                             <tr key={i} className="group hover:bg-slate-50/50 transition-colors">
                                                 <td className="px-8 py-5">
                                                     <div className="flex items-center gap-4">
-                                                        <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center text-xs font-black text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-all">
-                                                            {en.student[0]}
-                                                        </div>
+                                                        <Avatar className="h-10 w-10 border border-slate-100 shadow-sm">
+                                                            <AvatarImage src={emailToProfileMap.get((en.email || '').toLowerCase())?.avatar_url || ''} />
+                                                            <AvatarFallback className="bg-slate-100 text-xs font-black text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-all">
+                                                                {en.student[0]}
+                                                            </AvatarFallback>
+                                                        </Avatar>
                                                         <div>
                                                             <div className="text-sm font-black text-slate-900">{en.student}</div>
                                                             <div className="text-[10px] font-bold text-slate-400">{en.email}</div>
@@ -549,8 +558,18 @@ export function LiveMonitoring() {
                                             {filteredResults.map((r, i) => (
                                                 <tr key={i} className="group hover:bg-slate-50/50 transition-colors">
                                                     <td className="px-8 py-5 align-middle">
-                                                        <div className="text-sm font-black text-slate-900">{r.student}</div>
-                                                        <div className="text-[10px] font-bold text-slate-400 tracking-tighter">{r.email}</div>
+                                                        <div className="flex items-center gap-4">
+                                                            <Avatar className="h-10 w-10 border border-slate-100 shadow-sm">
+                                                                <AvatarImage src={emailToProfileMap.get((r.email || '').toLowerCase())?.avatar_url || ''} />
+                                                                <AvatarFallback className="bg-slate-100 text-xs font-black text-slate-400">
+                                                                    {r.student[0]}
+                                                                </AvatarFallback>
+                                                            </Avatar>
+                                                            <div>
+                                                                <div className="text-sm font-black text-slate-900">{r.student}</div>
+                                                                <div className="text-[10px] font-bold text-slate-400 tracking-tighter">{r.email}</div>
+                                                            </div>
+                                                        </div>
                                                     </td>
                                                     <td className="px-8 py-5 align-middle">
                                                         <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider ${r.type === 'live' ? 'bg-rose-50 text-rose-600 border border-rose-100/50' : 'bg-indigo-50 text-indigo-600 border border-indigo-100/50'}`}>
@@ -640,7 +659,17 @@ export function LiveMonitoring() {
                                     {results.sort((a,b) => b.percentage - a.percentage).slice(0, 3).map((top, i) => (
                                         <div key={i} className="flex items-center justify-between p-4 rounded-[1.5rem] bg-slate-50 border border-slate-100/50 hover:bg-white hover:shadow-md transition-all group/performer">
                                             <div className="flex items-center gap-4">
-                                                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-xs font-black text-primary border border-primary/10 group-hover/performer:scale-110 transition-transform">#{i+1}</div>
+                                                <div className="relative">
+                                                    <Avatar className="h-10 w-10 border border-slate-100 shadow-sm rounded-xl">
+                                                        <AvatarImage src={emailToProfileMap.get((top.email || '').toLowerCase())?.avatar_url || ''} />
+                                                        <AvatarFallback className="bg-primary/10 text-primary text-xs font-black italic">
+                                                            {top.student?.[0]}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-primary flex items-center justify-center text-[8px] font-black text-white border-2 border-white shadow-sm">
+                                                        #{i+1}
+                                                    </div>
+                                                </div>
                                                 <div>
                                                     <div className="text-sm font-black text-slate-900 truncate w-32">{top.student}</div>
                                                     <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest leading-none mt-1">
@@ -686,9 +715,12 @@ export function LiveMonitoring() {
                                     {selectedBatchResults.map((r, i) => (
                                         <div key={i} className="flex items-center justify-between p-4 rounded-3xl bg-slate-50 border border-slate-100 hover:border-primary/20 hover:bg-white transition-all group">
                                             <div className="flex items-center gap-4">
-                                                <div className="h-10 w-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-xs font-black text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-all">
-                                                    {r.student?.[0]}
-                                                </div>
+                                                <Avatar className="h-10 w-10 border border-slate-100 shadow-sm rounded-xl">
+                                                    <AvatarImage src={emailToProfileMap.get((r.email || '').toLowerCase())?.avatar_url || ''} />
+                                                    <AvatarFallback className="bg-slate-100 text-xs font-black text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-all">
+                                                        {r.student?.[0]}
+                                                    </AvatarFallback>
+                                                </Avatar>
                                                 <div>
                                                     <div className="text-sm font-black text-slate-900">{r.student}</div>
                                                     <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{r.test_title}</div>

@@ -797,20 +797,6 @@ export function QuestionBankManager({
         
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full xl:w-auto">
           <TabsList className="bg-slate-100/50 p-1.5 rounded-[1.8rem] h-16 border border-slate-200/60 shadow-inner flex-1 sm:flex-none">
-            <TabsTrigger 
-              value="bank" 
-              className="rounded-2xl px-8 h-13 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3"
-            >
-              <Database className="h-4 w-4" />
-              General Bank
-            </TabsTrigger>
-            <TabsTrigger 
-              value="final-batches" 
-              className="rounded-2xl px-8 h-13 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3"
-            >
-              <Archive className="h-4 w-4" />
-              Final Batches
-            </TabsTrigger>
           </TabsList>
 
           <div className="flex items-center gap-2">
@@ -1502,92 +1488,104 @@ export function QuestionBankManager({
 
       {/* ─── Save Wizard Dialog ─── */}
       <Dialog open={isSaveWizardOpen} onOpenChange={setIsSaveWizardOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-hidden p-0 border-0 rounded-[2.5rem] shadow-2xl flex flex-col">
-          <div className="flex flex-col h-full w-full overflow-hidden min-h-[500px] bg-background">
-            <div className="flex-1 p-6 pt-8 sm:p-12 sm:pt-14 overflow-y-auto custom-scrollbar relative">
-              {/* Background Decorative Gradients */}
-              <div className="absolute top-0 right-0 w-80 h-80 bg-primary/5 rounded-full -mr-40 -mt-40 blur-[100px] pointer-events-none" />
-              
-              <DialogHeader className="mb-8 relative z-10 text-center">
-                <div className="space-y-3">
-                  <DialogTitle className="text-3xl sm:text-4xl font-black tracking-tighter italic leading-none uppercase text-slate-900">
-                    Finalize Batch
-                  </DialogTitle>
-                  <DialogDescription className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">
-                    Attach draft questions to an active exam schedule
-                  </DialogDescription>
-                </div>
-              </DialogHeader>
+        <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[92vh] overflow-hidden p-0 border-0 rounded-[2rem] shadow-2xl flex flex-col bg-white">
+          {/* Header */}
+          <div className="px-8 pt-8 pb-6 border-b border-slate-100">
+            <DialogTitle className="text-2xl font-black tracking-tighter uppercase text-slate-900">
+              Finalize Batch
+            </DialogTitle>
+            <DialogDescription className="text-[11px] font-semibold text-slate-400 uppercase tracking-[0.28em] mt-1">
+              Attach draft questions to an active exam schedule
+            </DialogDescription>
+          </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 relative z-10 pb-10">
-                {exams.length === 0 ? (
-                  <div className="col-span-full py-20 text-center border-2 border-dashed border-slate-100 rounded-[3rem] bg-slate-50/50">
-                     <p className="text-sm font-black text-slate-300 uppercase tracking-widest italic">No Active Schedulings Found</p>
-                     <Button variant="link" className="text-primary mt-2 uppercase text-[10px] font-bold tracking-widest" onClick={() => onSectionChange?.('exams')}>Create New Schedule</Button>
-                  </div>
-                ) : (
-                  exams.map((exam) => (
-                    <div 
+          {/* Exam Grid */}
+          <div className="flex-1 overflow-y-auto p-6">
+            {exams.length === 0 ? (
+              <div className="py-20 text-center border-2 border-dashed border-slate-100 rounded-[2rem] bg-slate-50/50">
+                <p className="text-sm font-black text-slate-300 uppercase tracking-widest italic">No Active Schedulings Found</p>
+                <Button variant="link" className="text-primary mt-2 uppercase text-[10px] font-bold tracking-widest" onClick={() => onSectionChange?.('exams')}>Create New Schedule</Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {exams.map((exam) => {
+                  const isSelected = selectedExamId === exam.id;
+                  return (
+                    <div
                       key={exam.id}
                       onClick={() => setSelectedExamId(exam.id)}
-                      className={cn(
-                        "group aspect-[4/5] rounded-[2rem] border-4 transition-all cursor-pointer flex flex-col p-3 relative overflow-hidden",
-                        selectedExamId === exam.id 
-                          ? "border-slate-900 bg-slate-900 text-white shadow-2xl scale-[1.05] z-20" 
-                          : "bg-white border-slate-50 hover:border-slate-100 text-slate-900 hover:scale-[1.02]"
-                      )}
+                      className="group relative cursor-pointer rounded-[1.5rem] border-2 border-slate-100 bg-white overflow-hidden hover:border-slate-200 hover:shadow-lg transition-all duration-300"
                     >
-                      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/60 to-transparent z-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                       
-                       <div className="flex-1 rounded-[1.5rem] bg-slate-50 overflow-hidden relative z-10 mb-3 shadow-inner">
-                         {exam.assigned_image ? (
-                           <img src={exam.assigned_image} className="h-full w-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-700" alt="" />
-                         ) : (
-                           <div className="h-full w-full flex items-center justify-center">
-                              <ShieldCheck className={cn("h-8 w-8", selectedExamId === exam.id ? "text-slate-700" : "text-slate-200")} />
-                           </div>
-                         )}
-                       </div>
-
-                       <div className="relative z-10 space-y-0.5">
-                          <h4 className="text-[9px] font-black uppercase tracking-widest italic truncate">{exam.title}</h4>
-                          <div className="flex items-center justify-between">
-                             <span className={cn("text-[8px] font-bold uppercase tracking-tighter", selectedExamId === exam.id ? "text-slate-400" : "text-slate-300")}>
-                                #{exam.id.slice(0, 6)}
-                             </span>
-                             {selectedExamId === exam.id && (
-                               <div className="h-4 w-4 rounded-full bg-white flex items-center justify-center">
-                                  <CheckCircle className="h-3 w-3 text-slate-900" />
-                               </div>
-                             )}
+                      {/* Poster — 1080x720 aspect (3:2) */}
+                      <div className="relative w-full" style={{ aspectRatio: '3/2' }}>
+                        {exam.assigned_image ? (
+                          <img
+                            src={exam.assigned_image}
+                            className="absolute inset-0 w-full h-full object-cover"
+                            alt={exam.title}
+                          />
+                        ) : (
+                          <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                            <ShieldCheck className="h-10 w-10 text-slate-300" />
                           </div>
-                       </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
+                        )}
 
-            <DialogFooter className="p-4 sm:p-10 bg-slate-50 shadow-inner flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 sm:gap-6">
-              <Button variant="ghost" className="h-12 w-full sm:w-auto sm:h-14 px-10 rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[10px] text-slate-400 hover:text-slate-900" onClick={() => setIsSaveWizardOpen(false)}>
-                Back to Editor
-              </Button>
-              <Button
-                className="flex-1 h-16 rounded-[1.8rem] font-black text-[13px] uppercase tracking-[0.25em] gap-4 bg-slate-900 hover:bg-black text-white shadow-[0_20px_40px_rgba(0,0,0,0.15)] transition-all hover:scale-[1.02] active:scale-95"
-                onClick={handleFinalSave}
-                disabled={isSaving || !selectedExamId}
-              >
-                {isSaving ? <Loader2 className="h-6 w-6 animate-spin text-white/50" /> : <Plus className="h-6 w-6" />}
-                Confirm
-              </Button>
-            </DialogFooter>
+                        {/* Hover Popup Overlay - no color change */}
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-start justify-end p-3 pointer-events-none">
+                          <p className="text-[10px] font-black text-white uppercase tracking-widest leading-tight line-clamp-2">{exam.title}</p>
+                          {exam.scheduled_date && (
+                            <p className="text-[9px] text-white/70 font-medium mt-0.5">
+                              {new Date(exam.scheduled_date).toLocaleDateString()}
+                            </p>
+                          )}
+                          {exam.total_marks && (
+                            <p className="text-[9px] text-white/70 font-medium">{exam.total_marks} marks</p>
+                          )}
+                        </div>
+
+                        {/* Selected Radio indicator */}
+                        <div className={cn(
+                          "absolute top-2.5 right-2.5 h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all duration-200 bg-white",
+                          isSelected ? "border-slate-900" : "border-white/70"
+                        )}>
+                          {isSelected && (
+                            <div className="h-2.5 w-2.5 rounded-full bg-slate-900" />
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Title below image */}
+                      <div className="px-3 py-2.5">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-700 truncate">{exam.title}</p>
+                        <p className="text-[9px] text-slate-400 font-medium">#{exam.id.slice(0, 6)}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
+
+          <DialogFooter className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <Button variant="ghost" className="h-12 w-full sm:w-auto px-8 rounded-xl font-black uppercase tracking-widest text-[10px] text-slate-400 hover:text-slate-900" onClick={() => setIsSaveWizardOpen(false)}>
+              Back to Editor
+            </Button>
+            <Button
+              className="flex-1 h-12 rounded-xl font-black text-[11px] uppercase tracking-[0.25em] gap-3 bg-slate-900 hover:bg-black text-white shadow-lg transition-all active:scale-95"
+              onClick={handleFinalSave}
+              disabled={isSaving || !selectedExamId}
+            >
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin text-white/50" /> : <Plus className="h-4 w-4" />}
+              + Confirm
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </TabsContent>
 
     <TabsContent value="final-batches" className="mt-0 outline-none">
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+
         {exams.filter(e => e.approval_status === 'approved').length === 0 ? (
           <div className="col-span-full py-20 text-center border-2 border-dashed border-slate-100 rounded-[3rem] bg-slate-50/50">
              <History className="h-12 w-12 text-slate-200 mx-auto mb-4" />

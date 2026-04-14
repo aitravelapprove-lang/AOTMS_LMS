@@ -267,14 +267,6 @@ const App = () => (
                 }
               />
               <Route
-                path="/manager"
-                element={
-                  <ProtectedRoute allowedRoles={["manager", "admin"]}>
-                    <ManagerDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
                 path="/manager/*"
                 element={
                   <ProtectedRoute allowedRoles={["manager", "admin"]}>

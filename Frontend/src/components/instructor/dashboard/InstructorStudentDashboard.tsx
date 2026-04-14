@@ -168,131 +168,93 @@ function StudentRow({ student, onSendMessage, onViewDetails }: {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="grid grid-cols-12 gap-x-6 gap-y-4 p-4 rounded-2xl border border-slate-100 hover:border-primary/20 hover:bg-slate-50/30 transition-all duration-300 group"
+      className="grid grid-cols-12 gap-x-8 gap-y-4 p-6 rounded-3xl border border-slate-100 bg-white hover:border-primary/20 hover:shadow-xl hover:shadow-slate-200/40 transition-all duration-500 group relative"
     >
-      {/* 1. Student Identity (col-span-4) */}
-      <div className="col-span-12 lg:col-span-4 flex items-center gap-4">
-        <div className="relative flex-shrink-0">
-          <Avatar className="h-12 w-12 border-2 border-white shadow-xl ring-1 ring-slate-100">
+
+      {/* 1. Student Identity (col-span-6) */}
+      <div className="col-span-12 lg:col-span-6 flex items-center gap-6">
+        <div className="relative flex-shrink-0 group-hover:scale-105 transition-transform duration-500">
+          <Avatar className="h-16 w-16 border-4 border-white shadow-2xl ring-1 ring-slate-100 rounded-2xl overflow-hidden">
             <AvatarImage src={student.avatarUrl ? (student.avatarUrl.startsWith('http') ? student.avatarUrl : `${import.meta.env.VITE_API_URL || '/api'}/s3/public/${student.avatarUrl}`) : `https://api.dicebear.com/9.x/avataaars/svg?seed=${student.userId}`} />
-            <AvatarFallback className="bg-primary/5 text-primary text-sm font-black">
+            <AvatarFallback className="bg-slate-100 text-slate-900 text-xl font-black">
               {student.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
             </AvatarFallback>
           </Avatar>
-          <div className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white bg-green-500 shadow-sm" />
+          <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-lg border-4 border-white bg-slate-900 shadow-lg flex items-center justify-center">
+            <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+          </div>
         </div>
         <div className="min-w-0">
-          <p className="font-black text-[15px] text-slate-900 truncate tracking-tight mb-1">{student.name}</p>
-          <Badge variant="secondary" className={cn(
-            "h-5 px-2 text-[9px] font-black border-none uppercase tracking-[0.05em]",
-            status.bg,
-            status.text
-          )}>
-            {status.label}
-          </Badge>
+          <p className="font-black text-xl text-slate-900 truncate tracking-tight mb-1 group-hover:text-black transition-colors">{student.name}</p>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className={cn(
+              "h-6 px-3 text-[10px] font-black border-none uppercase tracking-[0.05em] rounded-lg",
+              status.bg,
+              status.label === 'Active' ? 'bg-slate-900 text-white' : status.text
+            )}>
+              {status.label}
+            </Badge>
+            <span className="text-[11px] font-bold text-slate-400 font-mono tracking-tighter">ID: {student.userId.slice(-6).toUpperCase()}</span>
+          </div>
         </div>
       </div>
 
       {/* 2. Contact Details (col-span-4) */}
-      <div className="col-span-12 sm:col-span-6 lg:col-span-3 space-y-1.5 py-1">
-        <div className="flex items-center gap-2 text-slate-700">
-          <Mail className="h-3 w-3 opacity-60 flex-shrink-0" />
-          <span className="text-[10px] font-bold truncate tracking-tight">{student.email}</span>
+      <div className="col-span-12 sm:col-span-8 lg:col-span-4 space-y-3 py-1 border-l border-slate-100 pl-8">
+        <div className="flex items-center gap-4 text-slate-600 group/item">
+          <div className="h-9 w-9 rounded-xl bg-slate-50 flex items-center justify-center group-hover/item:bg-slate-900 group-hover/item:text-white transition-all duration-300">
+            <Mail className="h-4 w-4 opacity-60 group-hover/item:opacity-100" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Email Address</span>
+            <span className="text-[13px] font-bold truncate tracking-tight text-slate-700">{student.email}</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2 text-slate-600">
-          <Phone className="h-3 w-3 opacity-60 flex-shrink-0" />
-          <span className="text-[10px] font-bold tracking-tight">{student.mobileNumber || 'No Mobile Registered'}</span>
-        </div>
-      </div>
-
-      {/* 3. Enrollments (col-span-2) */}
-      <div className="hidden lg:block col-span-2 text-center space-y-1">
-        <div className="flex items-center justify-center gap-1.5 font-black text-slate-900 text-sm">
-          <span>{student.enrolledCourses}</span>
-          <BookOpen className="h-3 w-3 opacity-20" />
-        </div>
-        <div className="flex flex-wrap gap-1 mt-0.5 justify-center">
-          {student.courseEnrollments.map((enr, i) => (
-            <Badge 
-              key={i} 
-              variant="secondary" 
-              className={`text-[8px] h-4 px-1.5 border-none uppercase font-black ${
-                enr.batchType === 'morning' ? 'bg-amber-50 text-amber-600' :
-                enr.batchType === 'afternoon' ? 'bg-blue-50 text-blue-600' :
-                enr.batchType === 'evening' ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-400'
-              }`}
-              title={enr.batchName || 'No Batch'}
-            >
-              {enr.batchType ? enr.batchType.charAt(0).toUpperCase() + enr.batchType.slice(1) : 'No Batch'}
-            </Badge>
-          ))}
+        <div className="flex items-center gap-4 text-slate-600 group/item">
+          <div className="h-9 w-9 rounded-xl bg-slate-50 flex items-center justify-center group-hover/item:bg-slate-900 group-hover/item:text-white transition-all duration-300">
+            <Phone className="h-4 w-4 opacity-60 group-hover/item:opacity-100" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Mobile Number</span>
+            <span className="text-[13px] font-bold tracking-tight text-slate-700">{student.mobileNumber || 'No Mobile Registered'}</span>
+          </div>
         </div>
       </div>
 
-      {/* 4. Learning Progress (col-span-3) */}
-      <div className="hidden lg:block col-span-3 space-y-2 border-l border-slate-100 px-4">
-        <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-slate-600">
-          <span>Progress Score</span>
-          <span className="text-primary">{student.overallProgress}%</span>
-        </div>
-        <Progress 
-          value={student.overallProgress} 
-          className="h-1.5 bg-slate-100 rounded-full"
-          indicatorClassName={cn(
-            "rounded-full",
-            student.status === 'completed' ? 'bg-emerald-500' :
-            student.status === 'at-risk' ? 'bg-amber-500' : 'bg-primary'
-          )}
-        />
+      {/* 3. Actions (col-span-2) */}
+      <div className="col-span-12 sm:col-span-4 lg:col-span-2 flex items-center justify-end gap-3 border-l border-slate-100 pl-4">
+        <Button 
+          variant="outline" 
+          size="icon" 
+          className="h-12 w-12 rounded-2xl text-slate-900 border-slate-100 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all shadow-sm"
+          onClick={() => onViewDetails(student.userId)}
+        >
+          <Eye className="w-5 h-5" />
+        </Button>
         
-        <div className="flex items-center gap-2">
-           <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Enrollments: {student.enrolledCourses}</span>
-        </div>
-      </div>
-
-      {/* 5. Last Session & Actions (col-span-2) */}
-      <div className="col-span-12 sm:col-span-6 lg:col-span-2 flex items-center justify-between sm:justify-end gap-6 pt-2 sm:pt-0">
-        <div className="text-right sm:text-right flex flex-col items-end">
-          <span className="text-[11px] font-black text-slate-900 leading-none mb-1">{formatTimeAgo(student.lastActiveAt)}</span>
-          <span className="text-[8px] font-black uppercase text-slate-500 tracking-[0.2em] leading-none">Activity</span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="h-8 px-3 rounded-lg text-primary border-primary/10 hover:bg-primary hover:text-white font-black text-[9px] uppercase gap-1.5 transition-all"
-            onClick={() => onViewDetails(student.userId)}
-          >
-            <Eye className="w-3 h-3" />
-            <span className="hidden sm:inline">Profile</span>
-          </Button>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-slate-100 transition-all border border-transparent">
-                <MoreHorizontal className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52 rounded-2xl p-2 border-slate-100 shadow-2xl">
-              <DropdownMenuLabel className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 px-3 py-2">Governance</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="flex items-center gap-3 rounded-xl px-3 h-10 font-bold focus:bg-primary focus:text-white transition-all cursor-pointer" onClick={() => onViewDetails(student.userId)}>
-                <User className="w-3.5 h-3.5 opacity-50" /> <span className="text-sm">Profile Detail</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center gap-3 rounded-xl px-3 h-10 font-bold focus:bg-primary focus:text-white transition-all cursor-pointer" onClick={() => onSendMessage(student.userId)}>
-                <Mail className="w-3.5 h-3.5 opacity-50" /> <span className="text-sm">Send Pulse</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="flex items-center gap-3 rounded-xl px-3 h-10 font-bold text-rose-600 focus:bg-rose-600 focus:text-white transition-all cursor-pointer">
-                <UserMinus className="w-3.5 h-3.5 opacity-50" /> <span className="text-sm">Terminate</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-12 w-12 rounded-2xl hover:bg-slate-100 transition-all border border-slate-100">
+              <MoreHorizontal className="w-5 h-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-64 rounded-[2.5rem] p-4 border-none shadow-2xl bg-white/95 backdrop-blur-xl">
+            <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 px-4 py-3">Student Operations</DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-slate-100" />
+            <DropdownMenuItem className="flex items-center gap-3 rounded-2xl px-4 h-14 font-bold focus:bg-slate-900 focus:text-white transition-all cursor-pointer mb-2" onClick={() => onViewDetails(student.userId)}>
+              <User className="w-5 h-5 opacity-50" /> <span className="text-sm">Detailed Profile</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="flex items-center gap-3 rounded-2xl px-4 h-14 font-bold focus:bg-slate-900 focus:text-white transition-all cursor-pointer mb-2" onClick={() => onSendMessage(student.userId)}>
+              <Zap className="w-5 h-5 opacity-50 text-amber-500" /> <span className="text-sm">Send Fast Pulse</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-slate-100" />
+            <DropdownMenuItem className="flex items-center gap-3 rounded-2xl px-4 h-14 font-bold text-rose-600 focus:bg-rose-600 focus:text-white transition-all cursor-pointer">
+              <AlertCircle className="w-5 h-5 opacity-50" /> <span className="text-sm">Restrict Session</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </motion.div>
-
   );
 }
 
@@ -610,32 +572,33 @@ export function InstructorStudentDashboard() {
           loading={loading}
         />
       </div>
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
+      <div className="space-y-6">
+          <Card className="border-none shadow-xl shadow-slate-200/40 rounded-[2.5rem] overflow-hidden bg-white/50 backdrop-blur-md">
+            <CardHeader className="p-8 pb-3">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                <CardTitle className="text-[13px] font-black uppercase tracking-[0.2em] text-slate-700">
-                  Global Roster ({filteredStudents.length})
-                </CardTitle>
+                <div>
+                  <CardTitle className="text-[13px] font-black uppercase tracking-[0.2em] text-slate-700">
+                    Global Roster ({filteredStudents.length})
+                  </CardTitle>
+                  <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Performance Registry</p>
+                </div>
                 <div className="flex flex-wrap items-center gap-3">
-                  <div className="relative flex-1 min-w-[200px]">
-                    <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                  <div className="relative flex-1 min-w-[200px] sm:min-w-[300px]">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <Input
-                      placeholder="Search identity..."
+                      placeholder="Search identity or credential..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9 h-10 w-full bg-slate-50/50 border-none rounded-xl text-xs font-bold"
+                      className="pl-12 h-12 w-full bg-white border-none shadow-sm rounded-2xl text-xs font-bold ring-1 ring-slate-100 focus-visible:ring-primary/20"
                     />
                   </div>
                   <div className="flex items-center gap-2">
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-[120px] h-10 rounded-xl bg-slate-50/50 border-none text-[10px] font-black uppercase tracking-widest">
-                        <Filter className="w-3.5 h-3.5 mr-2 opacity-40" />
+                      <SelectTrigger className="w-[140px] h-12 rounded-2xl bg-white border-none shadow-sm ring-1 ring-slate-100 text-[10px] font-black uppercase tracking-widest">
+                        <Filter className="w-3.5 h-3.5 mr-2 opacity-40 text-primary" />
                         <SelectValue placeholder="Status" />
                       </SelectTrigger>
-                      <SelectContent className="rounded-2xl border-slate-100 p-2">
+                      <SelectContent className="rounded-2xl border-none shadow-2xl p-2">
                         <SelectItem value="all" className="rounded-xl font-bold">All Status</SelectItem>
                         <SelectItem value="active" className="rounded-xl font-bold">Active</SelectItem>
                         <SelectItem value="completed" className="rounded-xl font-bold">Completed</SelectItem>
@@ -644,11 +607,11 @@ export function InstructorStudentDashboard() {
                     </Select>
 
                     <Select value={batchFilter} onValueChange={setBatchFilter}>
-                      <SelectTrigger className="w-[120px] h-10 rounded-xl bg-slate-50/50 border-none text-[10px] font-black uppercase tracking-widest">
-                        <Clock className="w-3.5 h-3.5 mr-2 opacity-40" />
+                      <SelectTrigger className="w-[140px] h-12 rounded-2xl bg-white border-none shadow-sm ring-1 ring-slate-100 text-[10px] font-black uppercase tracking-widest">
+                        <Clock className="w-3.5 h-3.5 mr-2 opacity-40 text-primary" />
                         <SelectValue placeholder="Batch" />
                       </SelectTrigger>
-                      <SelectContent className="rounded-2xl border-slate-100 p-2">
+                      <SelectContent className="rounded-2xl border-none shadow-2xl p-2">
                         <SelectItem value="all" className="rounded-xl font-bold">All Batches</SelectItem>
                         <SelectItem value="morning" className="rounded-xl font-bold">Morning</SelectItem>
                         <SelectItem value="afternoon" className="rounded-xl font-bold">Afternoon</SelectItem>
@@ -659,20 +622,19 @@ export function InstructorStudentDashboard() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="hidden lg:grid grid-cols-12 gap-4 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 border-b bg-slate-50/50 rounded-t-xl">
-                <div className="col-span-3">Student Identity</div>
-                <div className="col-span-3">Contact Details</div>
-                <div className="col-span-2 text-center">Enrollments</div>
-                <div className="col-span-2 text-center">Learning Progress</div>
-                <div className="col-span-2 text-right">Last Session</div>
+            <CardContent className="p-8 pt-4 space-y-4">
+              <div className="hidden lg:grid grid-cols-12 gap-8 px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-100 bg-slate-50/30 rounded-2xl">
+                <div className="col-span-6">Student Identity</div>
+                <div className="col-span-4">Contact Details</div>
+                <div className="col-span-2 text-right">Operations</div>
               </div>
 
-              <ScrollArea className="h-[400px] pr-2">
-                <div className="space-y-2">
+              <ScrollArea className="h-[550px] pr-4 admin-scrollbar">
+                <div className="space-y-3">
                   {loading ? (
-                    <div className="flex items-center justify-center py-12">
-                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                    <div className="flex flex-col items-center justify-center py-24 gap-4">
+                      <div className="h-10 w-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Syncing Registry...</p>
                     </div>
                   ) : filteredStudents.length > 0 ? (
                     filteredStudents.map((student) => (
@@ -684,13 +646,15 @@ export function InstructorStudentDashboard() {
                       />
                     ))
                   ) : (
-                    <div className="flex flex-col items-center justify-center py-12 text-center">
-                      <Users className="w-10 h-10 text-muted-foreground/50 mb-2" />
-                      <p className="text-sm text-muted-foreground">No students found</p>
-                      <p className="text-xs text-muted-foreground mt-1">
+                    <div className="flex flex-col items-center justify-center py-32 text-center">
+                      <div className="h-20 w-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
+                        <Users className="w-10 h-10 text-slate-200" />
+                      </div>
+                      <h3 className="text-lg font-black text-slate-900 tracking-tight">No match found in current registry</h3>
+                      <p className="text-sm font-medium text-slate-400 mt-2 max-w-[280px]">
                         {searchQuery || statusFilter !== 'all' || courseFilter !== 'all'
-                          ? 'Try adjusting your filters' 
-                          : 'Students will appear once they enroll in your courses'}
+                          ? 'We couldn\'t find any students matching your current search parameters.' 
+                          : 'You haven\'t onboarded any students for your courses yet.'}
                       </p>
                     </div>
                   )}
@@ -700,72 +664,7 @@ export function InstructorStudentDashboard() {
           </Card>
         </div>
 
-        <div className="space-y-6">
-
-          
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-primary" />
-                Course Progress
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {coursesLoading ? (
-                <div className="space-y-3">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="space-y-2 animate-pulse">
-                      <div className="h-4 w-32 bg-muted rounded" />
-                      <div className="h-2 w-full bg-muted rounded" />
-                    </div>
-                  ))}
-                </div>
-              ) : (courses as Course[]) && (courses as Course[]).length > 0 ? (
-                (courses as Course[]).slice(0, 5).map((course: Course) => {
-                  const enrolledCount = students?.filter(s => 
-                    s.courseEnrollments.some(e => e.courseId === course.id)
-                  ).length || 0;
-                  const completedCount = students?.filter(s => 
-                    s.courseEnrollments.some(e => e.courseId === course.id && e.progress === 100)
-                  ).length || 0;
-                  const avgProgress = enrolledCount > 0 
-                    ? Math.round(
-                        (students
-                          ?.filter(s => s.courseEnrollments.some(e => e.courseId === course.id))
-                          .reduce((acc, s) => acc + (s.courseEnrollments.find(e => e.courseId === course.id)?.progress || 0), 0) || 0)
-                        / enrolledCount
-                      )
-                    : 0;
-
-                  return (
-                    <div key={course.id} className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground truncate flex-1 mr-2">{course.title}</span>
-                        <span className="font-medium">{avgProgress}%</span>
-                      </div>
-                      <Progress value={avgProgress} className="h-2" indicatorClassName={
-                        avgProgress >= 70 ? 'bg-green-500' : 
-                        avgProgress >= 40 ? 'bg-blue-500' : 'bg-amber-500'
-                      } />
-                      <p className="text-xs text-muted-foreground">
-                        {enrolledCount} enrolled, {completedCount} completed
-                      </p>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="text-center py-6 text-muted-foreground">
-                  <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">No courses yet</p>
-                  <p className="text-xs">Create courses to track student progress</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+        <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
         <DialogContent className="w-[95vw] sm:max-w-[500px] p-0 overflow-hidden border-none shadow-2xl rounded-2xl sm:rounded-[2rem]">
           {selectedStudent && (
             <div className="bg-white">

@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Play, BookOpen, Clock, Sparkles, ChevronRight, LayoutGrid, CreditCard, Layers, CheckCircle } from "lucide-react";
+import { Play, BookOpen, Clock, Sparkles, ChevronRight, LayoutGrid, Layers, CheckCircle } from "lucide-react";
 import { useEnrolledCourses, useAvailableCourses, StudentCourse, useStudentBatch } from "@/hooks/useStudentData";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -206,29 +206,9 @@ export function CourseList({ type = 'enrolled', onSelectCourse }: CourseListProp
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                            
-                                                            <div className="p-4 rounded-2xl bg-slate-900 text-white shadow-xl shadow-slate-200/50 border border-slate-800">
-                                                                <div className="space-y-4">
-                                                                    <div className="flex justify-between items-center">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                                                                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Total Due</span>
-                                                                        </div>
-                                                                        <span className="text-[8px] font-black bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase tracking-tighter border border-primary/20">Pending</span>
-                                                                    </div>
-                                                                    
-                                                                    <div className="flex items-center gap-3">
-                                                                        <div className="h-10 w-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
-                                                                            <CreditCard className="h-5 w-5 text-primary" />
-                                                                        </div>
-                                                                        <div className="flex flex-col min-w-0">
-                                                                            <span className="text-[10px] font-bold text-slate-400">Due Amount</span>
-                                                                            <span className="text-2xl font-black text-primary tracking-tight leading-none mt-1 truncate">₹{(course.remaining_balance || 0).toLocaleString('en-IN')}</span>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
+
                                                         </div>
+
                                                     ) : (
                                                         <CourseBatchBadge courseId={course.id} />
                                                     )}

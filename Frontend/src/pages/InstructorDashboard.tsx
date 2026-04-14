@@ -108,11 +108,11 @@ function FeedbackModal({
                   <div className="flex items-center gap-5 mb-6">
                     <Avatar className="h-14 w-14 border-4 border-white shadow-xl">
                         <AvatarImage src={r.user_avatar} />
-                        <AvatarFallback className="bg-primary/10 text-primary font-black uppercase text-xs">{r.user_name?.slice(0, 2)}</AvatarFallback>
+                        <AvatarFallback className="bg-slate-100 text-slate-900 font-bold uppercase">{r.user_name?.charAt(0) || 'U'}</AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">
                        <h5 className="font-black text-xl text-slate-900 truncate">{r.user_name}</h5>
-                       <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] truncate">{r.course_title}</p>
+                       <p className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] truncate">{r.course_title}</p>
                     </div>
                   </div>
                   <div className="flex gap-1 mb-5">
@@ -181,7 +181,7 @@ function ActiveSessions() {
       {sessions.map((s: LiveClass) => (
         <div key={s.id} className="p-6 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group">
           <div className="flex items-center gap-4 mb-6">
-            <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-500">
+            <div className="h-14 w-14 rounded-2xl bg-slate-900/10 flex items-center justify-center text-slate-900 group-hover:bg-slate-900 group-hover:text-white transition-all duration-500">
                 <Video className="h-7 w-7" />
             </div>
             <div className="min-w-0">
@@ -230,13 +230,13 @@ function WelcomeBanner({
 
       <div className="relative z-10 p-6 sm:p-10 lg:p-12 flex flex-col lg:flex-row lg:items-center justify-between gap-6 lg:gap-12">
         <div className="space-y-4">
-          <Badge className="bg-primary/10 text-primary border-primary/20 font-black px-4 py-1.5 rounded-full text-[10px] uppercase tracking-[0.25em] shadow-sm backdrop-blur-md inline-flex items-center gap-2">
+          <Badge className="bg-slate-900/10 text-slate-900 border-slate-900/20 font-black px-4 py-1.5 rounded-full text-[10px] uppercase tracking-[0.25em] shadow-sm backdrop-blur-md inline-flex items-center gap-2">
             <Sparkles className="h-3.5 w-3.5" />
             Instructor Hub
           </Badge>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900">
             {greeting},{" "}
-            <span className="text-primary italic inline-block hover:-translate-y-1 transition-transform cursor-default">
+            <span className="text-slate-900 italic inline-block hover:-translate-y-1 transition-transform cursor-default">
               {name.split(" ")[0]}
             </span>
             .
@@ -250,7 +250,7 @@ function WelcomeBanner({
 
         <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto mt-6 lg:mt-0">
           <button 
-            className="h-10 px-5 rounded-xl bg-primary hover:bg-primary/95 text-white font-bold text-xs shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap"
+            className="h-10 px-5 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap"
             onClick={() => navigate('/instructor/courses')}
           >
             <Plus className="h-3.5 w-3.5" />
@@ -366,7 +366,7 @@ export default function InstructorDashboard() {
         <InstructorHeader />
 
         <main className="flex-1 w-full overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-8 lg:p-10 custom-scrollbar">
-          <div className="max-w-7xl mx-auto space-y-10">
+          <div className="max-w-[1800px] mx-auto space-y-10">
             <AnimatePresence mode="wait">
               {/* ── Dashboard Root ─────────────────────────────────────────── */}
               {isRoot && (
@@ -422,7 +422,7 @@ export default function InstructorDashboard() {
                              onOpenChange={setIsFeedbackOpen} 
                            />
                         </div>
-                        <Badge variant="secondary" className="w-fit bg-primary/10 text-primary border-none text-[12px] uppercase font-black tracking-widest px-4 py-2 rounded-lg">
+                        <Badge variant="secondary" className="w-fit bg-slate-900/10 text-slate-900 border-none text-[12px] uppercase font-black tracking-widest px-4 py-2 rounded-lg">
                           {courses.length} Total Curricula
                         </Badge>
                       </div>

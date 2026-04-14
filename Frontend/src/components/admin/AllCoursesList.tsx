@@ -8,8 +8,8 @@ import {
   BarChart3,
   Clock,
   Pencil,
-  Trash2,
   DollarSign,
+  Trash2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,21 +28,21 @@ import type { Course as AdminCourse } from "@/hooks/useAdminData";
 interface AllCoursesListProps {
   courses: AdminCourse[];
   loading: boolean;
-  onDelete?: (id: string) => void;
   onView?: (course: AdminCourse) => void;
   onViewSyllabus?: (course: AdminCourse) => void;
   onUpdatePrice?: (id: string, price: string) => void;
   onToggleActive?: (id: string, isActive: boolean) => void;
+  onDelete?: (id: string) => void;
 }
 
 export function AllCoursesList({
   courses: allCourses,
   loading,
-  onDelete,
   onView,
   onViewSyllabus,
   onUpdatePrice,
   onToggleActive,
+  onDelete,
 }: AllCoursesListProps) {
   const [editingPrice, setEditingPrice] = useState<{
     id: string;
@@ -280,10 +280,23 @@ export function AllCoursesList({
                     >
                       Manage
                     </Button>
+                    {onDelete && (
+                      <Button
+                        variant="destructive"
+                        className="rounded-xl h-10 w-10 p-0 flex items-center justify-center shadow-lg shadow-red-100 shrink-0"
+                        onClick={() => {
+                          if (confirm(`Are you sure you want to delete "${course.title}"?`)) {
+                            onDelete(course.id);
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
 
-                {/* Hover Management Float */}
+                {/* Hover Management Float - Edit Price Only */}
                 <div className="absolute top-6 right-6 flex flex-col gap-2 opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 transition-all duration-300">
                   <Button
                     size="icon"
@@ -298,14 +311,6 @@ export function AllCoursesList({
                     }
                   >
                     <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 rounded-full bg-white shadow-lg text-slate-400 hover:text-red-600 border-none"
-                    onClick={() => onDelete?.(course.id)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               </motion.div>

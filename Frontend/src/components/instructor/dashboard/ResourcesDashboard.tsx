@@ -291,42 +291,56 @@ export function ResourcesDashboard() {
 
   const getFileIcon = (type: string) => {
     switch(type) {
-      case 'Study Material': return <FileText className="h-10 w-10 text-rose-500" />;
-      case 'Presentation': return <Presentation className="h-10 w-10 text-amber-500" />;
-      case 'Assignment': return <BookOpen className="h-10 w-10 text-indigo-500" />;
-      case 'Exercise': return <RefreshCw className="h-10 w-10 text-emerald-500" />;
-      case 'Project': return <Cloud className="h-10 w-10 text-blue-500" />;
-      default: return <FileIcon className="h-10 w-10 text-slate-500" />;
+      case 'Study Material': return <FileText className="h-5 w-5 text-rose-500" />;
+      case 'Presentation': return <Presentation className="h-5 w-5 text-amber-500" />;
+      case 'Assignment': return <BookOpen className="h-5 w-5 text-indigo-500" />;
+      case 'Exercise': return <RefreshCw className="h-5 w-5 text-emerald-500" />;
+      case 'Project': return <Cloud className="h-5 w-5 text-blue-500" />;
+      default: return <FileIcon className="h-5 w-5 text-slate-500" />;
     }
   };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto p-4 md:p-6 lg:p-8 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-card p-6 rounded-2xl border shadow-sm">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            Course Resources
-          </h1>
-          <p className="text-muted-foreground">
-            Central repository for your course materials and student resources.
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white p-6 lg:p-8 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/20 relative overflow-hidden group">
+        <div className="absolute right-0 top-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110 duration-700" />
+        <div className="space-y-1 relative z-10">
+          <div className="flex items-center gap-3">
+             <div className="h-10 w-10 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+                <BookOpen className="h-5 w-5 text-white" />
+             </div>
+             <h1 className="text-2xl lg:text-3xl font-black tracking-tight text-slate-900 uppercase italic">
+                Course Resources
+             </h1>
+          </div>
+          <p className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-[0.2em] ml-1">
+            Global Asset Repository & Content Management
           </p>
         </div>
-        <div className="flex items-center gap-3 self-end md:self-auto">
+        <div className="flex flex-wrap items-center gap-3 relative z-10">
           <Button 
-            variant="ghost" 
-            size="icon" 
+            variant="outline" 
+            size="sm" 
             onClick={() => refetch()}
             disabled={loadingResources || !selectedCourse}
-            className="hover:bg-primary/10 rounded-full"
+            className="h-12 w-12 rounded-2xl border-slate-200 hover:bg-slate-50 transition-all flex item-center justify-center p-0"
           >
-            <RefreshCw className={`h-5 w-5 ${loadingResources ? 'animate-spin text-primary' : ''}`} />
+            <RefreshCw className={`h-5 w-5 ${loadingResources ? 'animate-spin text-primary' : 'text-slate-400'}`} />
           </Button>
-          <div className="w-64">
+          <div className="w-full sm:w-64">
             <CourseSelector 
               selectedCourse={selectedCourse} 
               onSelectCourse={setSelectedCourse} 
             />
           </div>
+          <Button 
+            className="h-12 px-6 rounded-2xl pro-button-primary font-black gap-2 shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={!selectedCourse}
+          >
+            <Upload className="h-4 w-4" />
+            <span className="hidden sm:inline">Add Resource</span>
+          </Button>
         </div>
       </div>
 
@@ -516,21 +530,20 @@ export function ResourcesDashboard() {
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
                               >
-                                <Card className="group relative overflow-hidden border-none shadow-md hover:shadow-2xl transition-all duration-300 bg-card/50 backdrop-blur-sm">
-                                  <div className="absolute top-0 left-0 w-1.5 h-full bg-primary opacity-20 group-hover:opacity-100 transition-opacity" />
-                                  <CardContent className="p-6">
-                                    <div className="flex items-start gap-4">
-                                      <div className="bg-card shadow-sm p-4 rounded-xl transform group-hover:-rotate-6 transition-transform">
+                                <Card className="group relative overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 bg-white">
+                                  <CardContent className="p-4">
+                                    <div className="flex items-start gap-3">
+                                      <div className="bg-slate-50 p-3 rounded-xl transform group-hover:-rotate-6 transition-transform">
                                         {getFileIcon(resource.resource_type)}
                                       </div>
                                       <div className="min-w-0 flex-1 space-y-1">
-                                        <h4 className="text-lg font-bold truncate group-hover:text-primary transition-colors pr-8 leading-tight">
+                                        <h4 className="text-base font-black text-slate-900 group-hover:text-primary transition-colors pr-8 leading-tight">
                                           {resource.asset_title}
                                         </h4>
-                                        <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-muted-foreground">
-                                          <span className="px-2 py-0.5 bg-muted rounded uppercase tracking-tighter shadow-sm">{resource.resource_type}</span>
+                                        <div className="flex flex-wrap items-center gap-2 text-[10px] font-black text-slate-400">
+                                          <span className="px-2 py-0.5 bg-slate-100 rounded uppercase tracking-tighter text-slate-600">{resource.resource_type}</span>
                                           <span className="opacity-40">•</span>
-                                          <span className="font-mono">{resource.upload_format}</span>
+                                          <span className="font-mono uppercase">{resource.upload_format}</span>
                                           <span className="opacity-40">•</span>
                                           <div className="flex items-center gap-1.5">
                                             {resource.instructor_avatar_url ? (
@@ -538,10 +551,10 @@ export function ResourcesDashboard() {
                                             ) : (
                                               <div className="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center text-[8px]">{resource.instructor_name?.charAt(0)}</div>
                                             )}
-                                            <span>{resource.instructor_name}</span>
+                                            <span className="truncate max-w-[150px]">{resource.instructor_name}</span>
                                           </div>
                                         </div>
-                                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black opacity-30 mt-2">
+                                        <p className="text-[10px] text-slate-300 uppercase tracking-widest font-black mt-2">
                                           Published {new Date(resource.created_at || '').toLocaleDateString()}
                                         </p>
                                         {resource.allowed_batches && resource.allowed_batches.length > 0 && (
@@ -619,115 +632,147 @@ function MetadataDialog({
 }) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px] rounded-3xl p-0 overflow-hidden border-none shadow-2xl">
-                <div className="bg-primary/10 p-8 flex flex-col items-center justify-center text-center space-y-3">
-                    <div className="bg-primary p-4 rounded-2xl shadow-lg">
-                        <Upload className="h-8 w-8 text-primary-foreground" />
+            <DialogContent className="sm:max-w-2xl p-0 overflow-hidden border-none shadow-2xl rounded-3xl lg:rounded-[2.5rem] flex flex-col h-[90vh] sm:h-auto sm:max-h-[85vh]">
+                <div className="bg-slate-900 p-8 flex flex-col items-center justify-center text-center space-y-3 relative shrink-0">
+                    <div className="absolute top-0 right-0 p-8 opacity-10">
+                        <Cloud className="h-32 w-32 text-white" />
                     </div>
-                    <div>
-                        <DialogTitle className="text-2xl font-black">Confirm Details</DialogTitle>
-                        <DialogDescription className="font-bold text-primary/60">
-                            The file "{fileName}" is uploaded. Now tag it for students.
+                    <div className="bg-primary p-4 rounded-2xl shadow-xl relative z-10">
+                        <Upload className="h-8 w-8 text-white" />
+                    </div>
+                    <div className="relative z-10">
+                        <DialogTitle className="text-2xl font-black text-white uppercase tracking-tight">Resource Blueprint</DialogTitle>
+                        <DialogDescription className="font-bold text-slate-400 mt-1">
+                            Finalizing metadata for <span className="text-primary">{fileName}</span>
                         </DialogDescription>
                     </div>
                 </div>
 
-                <div className="p-8 space-y-6">
-                    <div className="space-y-2">
-                        <Label htmlFor="title" className="text-xs uppercase font-black tracking-widest text-muted-foreground ml-1">Asset Title</Label>
-                        <Input 
-                            id="title" 
-                            className="h-12 bg-muted/30 border-none rounded-xl focus-visible:ring-primary font-bold"
-                            value={formData.title} 
-                            onChange={(e) => setFormData({...formData, title: e.target.value})}
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="type" className="text-xs uppercase font-black tracking-widest text-muted-foreground ml-1">Resource Type</Label>
-                        <Select 
-                            value={formData.resource_type} 
-                            onValueChange={(v) => setFormData({...formData, resource_type: v})}
-                        >
-                            <SelectTrigger className="h-12 bg-muted/30 border-none rounded-xl focus-visible:ring-primary font-bold">
-                                <SelectValue placeholder="Select type" />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl border-none shadow-xl font-bold">
-                                <SelectItem value="Study Material">Study Material</SelectItem>
-                                <SelectItem value="Presentation">Presentation (PPT)</SelectItem>
-                                <SelectItem value="Assignment">Assignment</SelectItem>
-                                <SelectItem value="Exercise">In-Class Exercise</SelectItem>
-                                <SelectItem value="Reading List">Reading List</SelectItem>
-                                <SelectItem value="Project">Project Assets</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="category" className="text-xs uppercase font-black tracking-widest text-muted-foreground ml-1">Asset Category</Label>
-                        <Input 
-                            id="category" 
-                            className="h-12 bg-muted/30 border-none rounded-xl focus-visible:ring-primary font-bold"
-                            placeholder="e.g. Core Java, UI/UX, Backend"
-                            value={formData.category || ''} 
-                            onChange={(e) => setFormData({...formData, category: e.target.value})}
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="desc" className="text-xs uppercase font-black tracking-widest text-muted-foreground ml-1">Short Description</Label>
-                        <Textarea 
-                            id="desc" 
-                            className="bg-muted/30 border-none rounded-xl focus-visible:ring-primary font-medium min-h-[100px]"
-                            placeholder="What should students know about this?"
-                            value={formData.description}
-                            onChange={(e) => setFormData({...formData, description: e.target.value})}
-                        />
-                    </div>
-
-                    {/* Batch Selection */}
-                    {batches && batches.length > 0 && (
-                        <div className="space-y-3">
-                            <Label className="text-xs uppercase font-black tracking-widest text-muted-foreground ml-1">Restricted Access (Optional)</Label>
-                            <div className="flex flex-wrap gap-2">
-                                {batches.map((batch) => {
-                                    const isSelected = formData.allowed_batches.includes(batch.id);
-                                    return (
-                                        <Badge
-                                            key={batch.id}
-                                            variant={isSelected ? "default" : "outline"}
-                                            className={`cursor-pointer h-10 px-4 rounded-xl font-bold uppercase text-[10px] transition-all ${
-                                                isSelected ? 'bg-primary text-white' : 'bg-slate-50 text-slate-500 border-slate-200'
-                                            }`}
-                                            onClick={() => {
-                                                if (isSelected) {
-                                                    setFormData({ ...formData, allowed_batches: formData.allowed_batches.filter(id => id !== batch.id) });
-                                                } else {
-                                                    setFormData({ ...formData, allowed_batches: [...formData.allowed_batches, batch.id] });
-                                                }
-                                            }}
-                                        >
-                                            {batch.batch_name}
-                                        </Badge>
-                                    );
-                                })}
+                <ScrollArea className="flex-1 overflow-y-auto">
+                    <div className="p-8 space-y-6">
+                        <div className="grid gap-6 sm:grid-cols-2">
+                            <div className="space-y-2">
+                                <Label htmlFor="title" className="text-[10px] uppercase font-black tracking-widest text-slate-400 ml-1 flex items-center gap-1">
+                                    Asset Identity <span className="text-rose-500 font-black text-xs">*</span>
+                                </Label>
+                                <Input 
+                                    id="title" 
+                                    className="h-12 bg-slate-50 border-none rounded-xl focus-visible:ring-primary font-bold shadow-inner"
+                                    value={formData.title} 
+                                    onChange={(e) => setFormData({...formData, title: e.target.value})}
+                                    required
+                                />
                             </div>
-                            <p className="text-[10px] text-slate-400 italic">No batches selected = visible to all students.</p>
-                        </div>
-                    )}
-                </div>
 
-                <DialogFooter className="p-8 pt-0 bg-muted/5">
+                            <div className="space-y-2">
+                                <Label htmlFor="type" className="text-[10px] uppercase font-black tracking-widest text-slate-400 ml-1 flex items-center gap-1">
+                                    Resource Taxonomy <span className="text-rose-500 font-black text-xs">*</span>
+                                </Label>
+                                <Select 
+                                    value={formData.resource_type} 
+                                    onValueChange={(v) => setFormData({...formData, resource_type: v as CourseResource['resource_type']})}
+                                >
+                                    <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl focus-visible:ring-primary font-bold shadow-inner uppercase text-[10px]">
+                                        <SelectValue placeholder="Select type" />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-none shadow-2xl font-bold p-2">
+                                        <SelectItem value="Study Material" className="rounded-xl">Study Material</SelectItem>
+                                        <SelectItem value="Presentation" className="rounded-xl">Presentation (PPT)</SelectItem>
+                                        <SelectItem value="Assignment" className="rounded-xl">Assignment</SelectItem>
+                                        <SelectItem value="Exercise" className="rounded-xl">In-Class Exercise</SelectItem>
+                                        <SelectItem value="Reading List" className="rounded-xl">Reading List</SelectItem>
+                                        <SelectItem value="Project" className="rounded-xl">Project Assets</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="category" className="text-[10px] uppercase font-black tracking-widest text-slate-400 ml-1 flex items-center gap-1">
+                                Knowledge Category <span className="text-rose-500 font-black text-xs">*</span>
+                            </Label>
+                            <Input 
+                                id="category" 
+                                className="h-12 bg-slate-50 border-none rounded-xl focus-visible:ring-primary font-bold shadow-inner"
+                                placeholder="e.g. Core Java, UI/UX, Backend"
+                                value={formData.category || ''} 
+                                onChange={(e) => setFormData({...formData, category: e.target.value})}
+                                required
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="desc" className="text-[10px] uppercase font-black tracking-widest text-slate-400 ml-1 flex items-center gap-1">
+                                Resource Context <span className="text-rose-500 font-black text-xs">*</span>
+                            </Label>
+                            <Textarea 
+                                id="desc" 
+                                className="bg-slate-50 border-none rounded-xl focus-visible:ring-primary font-medium min-h-[100px] shadow-inner"
+                                placeholder="What should students know about this?"
+                                value={formData.description}
+                                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                                required
+                            />
+                        </div>
+
+                        {batches && batches.length > 0 && (
+                            <div className="space-y-4 pt-4 border-t border-slate-100">
+                                <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 ml-1 flex items-center gap-1">
+                                    <Users className="h-3 w-3" /> Target Batches <span className="text-rose-500 font-black text-xs">*</span>
+                                </Label>
+                                <div className="flex flex-wrap gap-2">
+                                    {batches.map((batch) => {
+                                        const isSelected = formData.allowed_batches.includes(batch.id);
+                                        return (
+                                            <Badge
+                                                key={batch.id}
+                                                variant={isSelected ? "default" : "outline"}
+                                                className={`cursor-pointer h-10 px-4 rounded-xl font-bold uppercase text-[9px] tracking-tight transition-all border-none ${
+                                                    isSelected ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                                                }`}
+                                                onClick={() => {
+                                                    if (isSelected) {
+                                                        setFormData({ ...formData, allowed_batches: formData.allowed_batches.filter(id => id !== batch.id) });
+                                                    } else {
+                                                        setFormData({ ...formData, allowed_batches: [...formData.allowed_batches, batch.id] });
+                                                    }
+                                                }}
+                                            >
+                                                {batch.batch_name}
+                                            </Badge>
+                                        );
+                                    })}
+                                </div>
+                                <div className="bg-blue-50 p-4 rounded-2xl flex items-start gap-3 border border-blue-100">
+                                    <CheckCircle2 className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+                                    <p className="text-[10px] text-blue-700 font-bold leading-relaxed">
+                                        Only students in the selected batches will be able to view and download this resource. All other batches will be restricted.
+                                    </p>
+                                </div>
+                                {formData.allowed_batches.length === 0 && (
+                                    <div className="bg-amber-50 p-4 rounded-2xl flex items-start gap-3 border border-amber-100">
+                                        <AlertCircle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                                        <p className="text-[10px] text-amber-700 font-bold leading-relaxed">
+                                            <span className="font-black">WARNING:</span> No batches selected. This resource will be available to <span className="font-black uppercase">EVERYONE</span> in the course.
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </ScrollArea>
+
+                <DialogFooter className="p-8 border-t bg-slate-50 gap-4 shrink-0">
                     <Button 
                         variant="ghost" 
                         onClick={() => onOpenChange(false)}
-                        className="rounded-xl font-bold h-12 px-6"
+                        className="rounded-xl font-black h-12 px-6 uppercase text-[10px] tracking-widest"
                     >
-                        Cancel
+                        Abandon
                     </Button>
                     <Button 
                         onClick={onSave}
-                        className="rounded-xl font-black h-12 px-10 shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all"
+                        className="rounded-2xl pro-button-primary font-black h-12 px-10 shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all uppercase text-[10px] tracking-widest"
                     >
                         Publish Asset
                     </Button>

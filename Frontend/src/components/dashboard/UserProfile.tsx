@@ -324,7 +324,7 @@ export function UserProfile() {
                 <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight italic uppercase">Profile Command Center</h1>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">Manage your professional identity and system credentials</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">Manage your professional identity and portfolio</p>
                 </div>
             </div>
 
@@ -365,36 +365,10 @@ export function UserProfile() {
                         <CardDescription className="text-xs font-bold text-slate-400 group-hover:text-primary transition-colors">{profile.email}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-8 p-8">
-                        <div className="p-6 rounded-[2rem] bg-blue-50/50 border border-blue-100 flex flex-col items-center justify-center text-center gap-2 group-hover:bg-primary group-hover:text-white transition-all duration-500 hover:scale-[1.02]">
+                        <div className="p-6 rounded-[2rem] bg-slate-50 border border-slate-100 flex flex-col items-center justify-center text-center gap-2 group-hover:bg-slate-900 group-hover:text-white transition-all duration-500 hover:scale-[1.02]">
                             <span className="text-sm font-black uppercase tracking-[0.25em]">{userRole || 'Student'}</span>
                             <div className="h-1.5 w-1.5 rounded-full bg-current opacity-50" />
-                            <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">Joined {new Date().getFullYear()}</span>
-                        </div>
-
-                        <div className="pt-6 border-t border-dashed border-slate-200 space-y-4">
-                            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 text-center block">System Identity (UUID)</Label>
-                            <div className="flex items-center justify-center gap-3">
-                                <div className="px-5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 font-mono text-xs font-bold text-slate-600 shadow-inner">
-                                    {profile.id?.slice(0, 4) || '69bc'}...
-                                </div>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-10 w-10 rounded-xl bg-white border border-slate-200 shadow-sm hover:text-primary hover:border-primary transition-all"
-                                    onClick={() => {
-                                        navigator.clipboard.writeText(profile.id);
-                                        toast({
-                                            title: "ID Copied",
-                                            description: "Your unique identification ID has been copied to clipboard.",
-                                        });
-                                    }}
-                                >
-                                    <Copy className="h-4 w-4" />
-                                </Button>
-                            </div>
-                            <p className="text-[10px] font-bold text-slate-400 text-center leading-relaxed max-w-[200px] mx-auto">
-                                This is your unique system identifier for administrative and academic purposes.
-                            </p>
+                            <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">Verified Member</span>
                         </div>
                     </CardContent>
                 </Card>
@@ -435,7 +409,7 @@ export function UserProfile() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="instituteName">Institute Name</Label>
+                                    <Label htmlFor="instituteName">Company Name</Label>
                                     <Input
                                         id="instituteName"
                                         placeholder="Enter institute name if applicable"
@@ -581,35 +555,6 @@ export function UserProfile() {
                                     </>
                                 )}
                             </div>
-
-                             <div className="space-y-4 pt-4 border-t border-slate-100">
-                                <h4 className="text-sm font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                                   <ExternalLink className="h-4 w-4" /> System Location Metadata
-                                   {(profile.latitude && profile.longitude) && <Badge className="bg-emerald-500 text-white border-none text-[8px] h-4 animate-pulse">GPS ACTIVE</Badge>}
-                                </h4>
-                                <div className="grid gap-4 md:grid-cols-3">
-                                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">City / District</p>
-                                      <p className="text-xs font-bold text-slate-700">{profile.city || 'N/A'}{profile.district ? `, ${profile.district}` : ''}</p>
-                                   </div>
-                                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Country</p>
-                                      <p className="text-xs font-bold text-slate-700">{profile.country || 'N/A'}</p>
-                                   </div>
-                                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Coordinates</p>
-                                      <p className="text-xs font-bold text-slate-700">
-                                         {profile.latitude && profile.longitude 
-                                            ? `${profile.latitude.toFixed(4)}, ${profile.longitude.toFixed(4)}` 
-                                            : 'N/A'}
-                                      </p>
-                                   </div>
-                                   <div className="md:col-span-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Full System Address Mapping</p>
-                                      <p className="text-xs font-bold text-slate-700">{profile.full_address || 'Identity verification pending geolocation sync.'}</p>
-                                   </div>
-                                </div>
-                             </div>
 
                              <div className="space-y-2">
                                 <Label htmlFor="bio">Bio</Label>

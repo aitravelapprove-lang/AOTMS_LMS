@@ -270,7 +270,7 @@ export function CouponManager() {
         <div className="flex items-center gap-4 bg-white p-2 rounded-[2rem] border border-slate-200 shadow-sm">
             <div className="flex -space-x-3 px-2">
                 {students.slice(0, 5).map((s, i) => (
-                    <Avatar key={i} className="h-9 w-9 border-2 border-white ring-1 ring-slate-100 italic transition-transform hover:scale-110 cursor-help">
+                    <Avatar key={i} className="h-9 w-9 border-2 border-white ring-1 ring-slate-100 cursor-default">
                         <AvatarImage src={s.avatar_url || ""} />
                         <AvatarFallback className="bg-slate-50 text-[10px] font-black">{s.full_name?.[0]}</AvatarFallback>
                     </Avatar>
@@ -313,72 +313,81 @@ export function CouponManager() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="bg-white p-2 rounded-xl border border-slate-200 flex items-center gap-2">
-                             <Badge variant="outline" className="text-[10px] font-black uppercase text-slate-400 border-slate-100">Filter Type</Badge>
-                             <select 
-                                value={filterType}
-                                onChange={(e) => {
-                                    setFilterType(e.target.value as "all" | "college" | "institute");
-                                    setFilterValue("");
-                                    setSelectedStudent(null);
-                                    setSelectedBulkUserIds([]);
-                                }}
-                                className="flex-1 bg-transparent border-none text-[12px] font-black text-slate-700 focus:ring-0 outline-none uppercase tracking-wider cursor-pointer"
-                             >
-                                <option value="all">View All (Manual)</option>
-                                <option value="college">College Wise</option>
-                                <option value="institute">Institute Wise</option>
-                             </select>
-                        </div>
-
-                        {filterType !== "all" && (
-                            <div className="md:col-span-2 bg-white p-2 rounded-xl border border-slate-200 flex items-center gap-2 animate-in slide-in-from-right-4">
-                                <Badge variant="outline" className="text-[10px] font-black uppercase text-primary border-primary/20 bg-primary/5">Select {filterType === "college" ? "College" : "Institute"}</Badge>
+                    <div className="flex flex-col gap-4">
+                        {/* Row 1: Filter controls - always single line */}
+                        <div className="flex flex-nowrap items-center gap-3">
+                            {/* Filter Type Dropdown */}
+                            <div className="flex-shrink-0 flex items-center gap-2 bg-white pl-3 pr-2 py-2 rounded-2xl border border-slate-200 shadow-sm min-w-0">
+                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 whitespace-nowrap flex-shrink-0">Filter</span>
+                                <div className="w-px h-4 bg-slate-200 flex-shrink-0" />
                                 <select 
-                                    value={filterValue}
+                                    value={filterType}
                                     onChange={(e) => {
-                                        setFilterValue(e.target.value);
+                                        setFilterType(e.target.value as "all" | "college" | "institute");
+                                        setFilterValue("");
                                         setSelectedStudent(null);
-                                        // Auto-select all when a filter is applied
-                                        if (e.target.value) {
-                                            const getVal = (v: string | { name?: string; title?: string } | null | undefined) => (typeof v === 'object' && v !== null) ? (v.name || v.title) : v;
-                                            const newFiltered = students.filter(s => 
-                                                filterType === 'college' ? getVal(s.college_name) === e.target.value : getVal(s.institute_name) === e.target.value
-                                            );
-                                            setSelectedBulkUserIds(newFiltered.map(s => s.id));
-                                        } else {
-                                            setSelectedBulkUserIds([]);
-                                        }
+                                        setSelectedBulkUserIds([]);
                                     }}
-                                    className="flex-1 bg-transparent border-none text-[12px] font-black text-slate-900 focus:ring-0 outline-none tracking-tight cursor-pointer"
+                                    className="bg-transparent border-none text-[11px] font-black text-slate-700 focus:ring-0 outline-none uppercase tracking-wider cursor-pointer pr-1 whitespace-nowrap"
                                 >
-                                    <option value="">{filterType === "college" ? "-- Choose College --" : "-- Choose Institute --"}</option>
-                                    {(filterType === "college" ? uniqueColleges : uniqueInstitutes).map(val => (
-                                        <option key={val} value={val}>{val}</option>
-                                    ))}
-                                    {(filterType === "college" ? uniqueColleges : uniqueInstitutes).length === 0 && (
-                                        <option disabled value="">No {filterType} data found in records</option>
-                                    )}
+                                    <option value="all">All Students</option>
+                                    <option value="college">College Wise</option>
+                                    <option value="institute">Institute Wise</option>
                                 </select>
                             </div>
-                        )}
 
+                            {/* College / Institute Dropdown */}
+                            {filterType !== "all" && (
+                                <div className="flex-1 flex items-center gap-2 bg-white pl-3 pr-2 py-2 rounded-2xl border border-primary/30 shadow-sm animate-in slide-in-from-right-4 min-w-0">
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-primary whitespace-nowrap flex-shrink-0">
+                                        {filterType === "college" ? "College" : "Institute"}
+                                    </span>
+                                    <div className="w-px h-4 bg-primary/20 flex-shrink-0" />
+                                    <select 
+                                        value={filterValue}
+                                        onChange={(e) => {
+                                            setFilterValue(e.target.value);
+                                            setSelectedStudent(null);
+                                            if (e.target.value) {
+                                                const getVal = (v: string | { name?: string; title?: string } | null | undefined) => (typeof v === 'object' && v !== null) ? (v.name || v.title) : v;
+                                                const newFiltered = students.filter(s => 
+                                                    filterType === 'college' ? getVal(s.college_name) === e.target.value : getVal(s.institute_name) === e.target.value
+                                                );
+                                                setSelectedBulkUserIds(newFiltered.map(s => s.id));
+                                            } else {
+                                                setSelectedBulkUserIds([]);
+                                            }
+                                        }}
+                                        className="flex-1 bg-transparent border-none text-[11px] font-black text-slate-900 focus:ring-0 outline-none tracking-tight cursor-pointer truncate"
+                                    >
+                                        <option value="">{filterType === "college" ? "— Choose College —" : "— Choose Institute —"}</option>
+                                        {(filterType === "college" ? uniqueColleges : uniqueInstitutes).map(val => (
+                                            <option key={val} value={val}>{val}</option>
+                                        ))}
+                                        {(filterType === "college" ? uniqueColleges : uniqueInstitutes).length === 0 && (
+                                            <option disabled value="">No {filterType} data found</option>
+                                        )}
+                                    </select>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Row 2: Selection counter bar */}
                         {filterValue && filteredStudents.length > 0 && (
-                            <div className="flex items-center justify-between bg-slate-100/50 p-3 rounded-2xl border border-dashed border-slate-200 animate-in fade-in zoom-in-95 duration-500">
-                                <div className="flex items-center gap-3">
-                                    <div className={`h-6 w-6 rounded-lg flex items-center justify-center transition-colors ${selectedBulkUserIds.length === filteredStudents.length ? 'bg-indigo-500' : 'bg-slate-200'}`}>
-                                        <CheckCircle2 className={`h-4 w-4 ${selectedBulkUserIds.length === filteredStudents.length ? 'text-white' : 'text-slate-400'}`} />
+                            <div className="flex items-center justify-between bg-slate-50 px-4 py-2.5 rounded-2xl border border-dashed border-slate-200 animate-in fade-in zoom-in-95 duration-500">
+                                <div className="flex items-center gap-2.5">
+                                    <div className={`h-5 w-5 rounded-md flex items-center justify-center transition-colors ${selectedBulkUserIds.length === filteredStudents.length ? 'bg-indigo-500' : 'bg-slate-200'}`}>
+                                        <CheckCircle2 className={`h-3 w-3 ${selectedBulkUserIds.length === filteredStudents.length ? 'text-white' : 'text-slate-400'}`} />
                                     </div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">
-                                        Selection: {selectedBulkUserIds.length} / {filteredStudents.length} Students
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                        {selectedBulkUserIds.length} / {filteredStudents.length} Selected
                                     </p>
                                 </div>
                                 <Button 
                                     variant="ghost" 
                                     size="sm" 
                                     onClick={toggleSelectAll}
-                                    className="h-8 px-4 rounded-xl text-[10px] font-black uppercase tracking-tighter hover:bg-slate-200"
+                                    className="h-7 px-3 rounded-xl text-[9px] font-black uppercase tracking-tight hover:bg-slate-200 text-slate-600"
                                 >
                                     {selectedBulkUserIds.length === filteredStudents.length ? "Deselect All" : "Select All"}
                                 </Button>
@@ -543,25 +552,33 @@ export function CouponManager() {
                           </div>
                       </div>
                     ) : (
-                      <div className="space-y-4 flex-1 flex flex-col">
+                      <div className="flex flex-col gap-3">
                         <div className="flex items-center justify-between">
                             <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Target Cohort ({selectedBulkUserIds.length})</p>
-                            <Badge className="bg-indigo-100 text-indigo-600 border-none text-[8px] font-black uppercase">{filterValue}</Badge>
+                            <Badge className="bg-indigo-100 text-indigo-600 border-none text-[8px] font-black uppercase px-2 py-0.5">{filterValue}</Badge>
                         </div>
-                        <div className="flex-1 overflow-y-auto max-h-[250px] pr-2 custom-scrollbar space-y-2">
-                           {students.filter(s => selectedBulkUserIds.includes(s.id)).map(student => (
-                              <div key={student.id} className="flex items-center gap-3 p-2 rounded-xl bg-slate-50 border border-slate-100 animate-in fade-in slide-in-from-right-2">
-                                 <Avatar className="h-8 w-8 rounded-lg">
-                                    <AvatarImage src={student.avatar_url || ""} />
-                                    <AvatarFallback className="text-[10px] font-black bg-white">{student.full_name?.[0]}</AvatarFallback>
-                                 </Avatar>
-                                 <div className="flex-1 min-w-0 text-left">
-                                    <p className="text-[11px] font-black text-slate-800 truncate leading-tight">{student.full_name}</p>
-                                    <p className="text-[9px] font-bold text-slate-400 truncate tracking-tight">{student.email}</p>
-                                 </div>
-                                 <div className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
-                              </div>
-                           ))}
+                        {/* Contained scrollable list with fixed height */}
+                        <div className="rounded-2xl border border-slate-100 bg-slate-50 shadow-inner overflow-hidden">
+                            <div className="overflow-y-auto max-h-[200px] p-2 space-y-1.5 custom-scrollbar">
+                               {students.filter(s => selectedBulkUserIds.includes(s.id)).map(student => (
+                                  <div key={student.id} className="flex items-center gap-3 px-3 py-2 rounded-xl bg-white border border-slate-100 shadow-sm animate-in fade-in slide-in-from-right-2">
+                                     <Avatar className="h-7 w-7 rounded-lg flex-shrink-0">
+                                        <AvatarImage src={student.avatar_url || ""} />
+                                        <AvatarFallback className="text-[9px] font-black bg-primary/5 text-primary">{student.full_name?.[0]}</AvatarFallback>
+                                     </Avatar>
+                                     <div className="flex-1 min-w-0">
+                                        <p className="text-[11px] font-black text-slate-800 truncate leading-tight">{student.full_name}</p>
+                                        <p className="text-[9px] font-bold text-slate-400 truncate tracking-tight">{student.email}</p>
+                                     </div>
+                                     <div className="h-1.5 w-1.5 rounded-full bg-indigo-400 flex-shrink-0" />
+                                  </div>
+                               ))}
+                               {selectedBulkUserIds.length === 0 && (
+                                   <div className="py-6 text-center">
+                                       <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">No students selected</p>
+                                   </div>
+                               )}
+                            </div>
                         </div>
                       </div>
                     )}

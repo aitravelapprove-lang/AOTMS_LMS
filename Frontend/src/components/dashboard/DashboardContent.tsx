@@ -227,16 +227,16 @@ function CoursesTab() {
     <div className="w-full space-y-8 h-full">
       {/* Payment Modal JSX */}
       <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
-        <DialogContent className="w-[95vw] sm:max-w-xl p-0 overflow-hidden border-0 rounded-[1.5rem] sm:rounded-[2rem] shadow-2xl bg-white max-h-[90vh] flex flex-col">
+        <DialogContent className="w-[95vw] sm:max-w-2xl p-0 overflow-hidden border-none shadow-2xl rounded-[2.5rem] bg-white h-auto max-h-[95vh] flex flex-col">
           <DialogHeader className="sr-only">
             <DialogTitle>Enrollment & Payment Protocol</DialogTitle>
             <DialogDescription>Verify credentials and submit payment proof for course activation.</DialogDescription>
           </DialogHeader>
           {/* Top Course Strip (Compact) */}
           {paymentCourse && (
-            <div className="bg-slate-900 px-6 py-4 text-white flex items-center justify-between shrink-0">
+            <div className="bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between shrink-0">
                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-lg overflow-hidden border border-white/10 shrink-0">
+                  <div className="h-10 w-10 rounded-lg overflow-hidden border border-slate-200 shrink-0">
                     <img 
                       src={paymentCourse.thumbnail_url?.startsWith('http') ? paymentCourse.thumbnail_url : `${API_URL}/s3/public/${paymentCourse.thumbnail_url}`} 
                       alt="" 
@@ -244,12 +244,12 @@ function CoursesTab() {
                     />
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm leading-none">{paymentCourse.title}</h3>
-                    <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest font-black">
+                    <h3 className="font-bold text-sm text-slate-900 leading-none">{paymentCourse.title}</h3>
+                    <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-black">
                       {paymentTerm === 'term2' ? (
-                        <span className="text-amber-400">Balance: ₹{term2Amount.toLocaleString('en-IN')}</span>
+                        <span className="text-amber-600">Balance: ₹{term2Amount.toLocaleString('en-IN')}</span>
                       ) : (
-                        <span>Total: ₹{getEffectivePrice().toLocaleString('en-IN')}</span>
+                        <span className="text-slate-700">Total: ₹{getEffectivePrice().toLocaleString('en-IN')}</span>
                       )}
                     </p>
                   </div>
@@ -257,7 +257,7 @@ function CoursesTab() {
                <Button 
                 variant="ghost" 
                 size="icon" 
-                className="text-white/40 hover:text-white hover:bg-white/10 rounded-full h-8 w-8"
+                className="text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-full h-8 w-8"
                 onClick={() => setShowPaymentModal(false)}
               >
                 <X className="h-4 w-4" />
@@ -265,11 +265,11 @@ function CoursesTab() {
             </div>
           )}
 
-          <div className="p-6 space-y-6 overflow-y-auto overflow-x-hidden custom-scrollbar">
+          <div className="p-8 sm:p-10 space-y-8 overflow-y-auto overflow-x-hidden custom-scrollbar">
             {/* Term Selection (Drastically Reduced Height) */}
-            <div className="space-y-2">
+            <div className="space-y-4">
                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Select Payment Plan</div>
-               <div className="grid grid-cols-2 gap-2">
+               <div className="grid grid-cols-2 gap-4">
                  {[ 
                    { id: 'full', label: 'Full', pct: 100, amount: getEffectivePrice() },
                    { id: 'term1', label: 'Term 1', pct: 60, amount: term1Amount },
@@ -281,10 +281,10 @@ function CoursesTab() {
                     <button 
                       key={plan.id}
                       onClick={() => setPaymentTerm(plan.id as 'full' | 'term1' | 'term2')}
-                      className={`p-2 rounded-xl border transition-all text-center flex flex-col items-center justify-center gap-0.5 ${paymentTerm === plan.id ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-slate-100 bg-slate-50 hover:bg-slate-100'}`}
+                      className={`p-4 rounded-2xl border-2 transition-all text-center flex flex-col items-center justify-center gap-1 ${paymentTerm === plan.id ? 'border-slate-900 bg-slate-900 text-white shadow-xl shadow-slate-200' : 'border-slate-100 bg-slate-50 hover:bg-slate-100 text-slate-900 font-bold'}`}
                     >
-                      <div className={`text-[9px] font-black uppercase ${paymentTerm === plan.id ? 'text-primary' : 'text-slate-500'}`}>{plan.label} ({plan.pct}%)</div>
-                      <div className="font-black text-xs text-slate-900">₹{plan.amount.toLocaleString('en-IN')}</div>
+                      <div className={`text-[10px] font-black uppercase tracking-wider ${paymentTerm === plan.id ? 'text-slate-300' : 'text-slate-500'}`}>{plan.label} ({plan.pct}%)</div>
+                      <div className="font-black text-lg">₹{plan.amount.toLocaleString('en-IN')}</div>
                     </button>
                  ))}
                </div>
@@ -292,34 +292,34 @@ function CoursesTab() {
 
             {/* Payment Section (Horizontal Mix) */}
             <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 sm:gap-6 items-start">
-               {/* QR Section (Small) */}
-               <div className="col-span-1 sm:col-span-2 space-y-3">
-                  <div className="relative h-28 w-28 sm:h-32 sm:w-32 mx-auto bg-slate-50 rounded-2xl p-2 border-2 border-slate-100 group">
-                    <img src="/scanner.jpeg" alt="QR" className="w-full h-full object-contain" />
+               {/* QR Section */}
+               <div className="col-span-1 sm:col-span-2 flex flex-col items-center gap-4">
+                  <div className="relative w-full aspect-square max-w-[240px] mx-auto bg-white rounded-3xl p-4 border-2 border-slate-100 shadow-xl overflow-hidden group/qr">
+                    <img src="/scanner.jpeg" alt="QR Code" className="w-full h-full object-contain rounded-xl group-hover:scale-110 transition-transform duration-500" />
+                    <div className="absolute inset-0 bg-slate-900/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                   <div className="text-center">
-                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Scanner UI Attached</span>
-                    <p className="text-[8px] text-slate-400 truncate mt-0.5">8019942233@hdfcbank</p>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Secure Scan Portal</span>
                   </div>
                </div>
 
                {/* Inputs Column (Compressed) */}
                <div className="col-span-1 sm:col-span-3 space-y-4">
                   {/* Coupon (Enhanced UX) */}
-                  <div className="space-y-2">
-                    <div className="flex gap-2 group">
+                  <div className="space-y-4">
+                    <div className="flex gap-3 group">
                       <Input 
                         placeholder="COUPON CODE"
                         value={couponCode}
                         onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                         disabled={appliedPrice !== null}
-                        className="flex-1 h-11 rounded-xl border-slate-200 bg-slate-50 px-4 text-xs font-black tracking-widest placeholder:text-slate-300 placeholder:font-bold focus:ring-4 focus:ring-primary/5 transition-all"
+                        className="flex-1 h-12 rounded-xl border-none bg-slate-100 px-5 text-sm font-black tracking-widest placeholder:text-slate-300 focus-visible:ring-black transition-all"
                       />
                       <Button 
                         size="sm"
                         onClick={handleApplyCoupon}
                         disabled={!couponCode || isValidating || appliedPrice !== null}
-                        className="h-11 px-6 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-primary/10 transition-all hover:scale-[1.02] active:scale-95 shrink-0"
+                        className="h-12 px-8 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-slate-100 transition-all hover:scale-[1.02] active:scale-95 bg-slate-900 hover:bg-black text-white shrink-0"
                       >
                         {isValidating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Apply'}
                       </Button>
@@ -333,20 +333,20 @@ function CoursesTab() {
                         placeholder="12-DIGIT UTR NUMBER"
                         value={utrNumber}
                         onChange={(e) => setUtrNumber(e.target.value.replace(/\D/g, '').slice(0, 12))}
-                        className="w-full h-11 rounded-xl border-slate-200 bg-slate-50 px-4 pr-10 text-xs font-black tracking-widest placeholder:text-slate-300 placeholder:font-bold focus:ring-4 focus:ring-primary/5 transition-all"
+                        className="w-full h-12 rounded-xl border-none bg-slate-100 px-5 pr-10 text-sm font-black tracking-widest placeholder:text-slate-300 focus-visible:ring-black transition-all"
                       />
-                      <Hash className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within/utr:text-primary transition-colors" />
+                      <Hash className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within/utr:text-black transition-colors" />
                     </div>
                   </div>
 
                   {/* Upload (Enhanced UX) */}
                   <div 
-                    className={`h-11 flex items-center justify-center gap-2 border border-dashed rounded-xl cursor-pointer transition-all ${paymentProof ? 'border-primary bg-primary/5' : 'border-slate-200 hover:bg-slate-50 shadow-sm'}`}
+                    className={`h-12 flex items-center justify-center gap-3 border-2 border-dashed rounded-xl cursor-pointer transition-all ${paymentProof ? 'border-slate-900 bg-slate-900 text-white shadow-xl' : 'border-slate-200 hover:bg-slate-100'}`}
                     onClick={() => document.getElementById('payment-proof')?.click()}
                   >
-                    <Upload className={`h-4 w-4 ${paymentProof ? 'text-primary' : 'text-slate-400'}`} />
-                    <span className={`text-[10px] font-black uppercase tracking-widest truncate max-w-[150px] ${paymentProof ? 'text-primary' : 'text-slate-500'}`}>
-                      {paymentProof ? paymentProof.name : 'Proof Screenshot'}
+                    <Upload className={`h-4 w-4 ${paymentProof ? 'text-white' : 'text-slate-400'}`} />
+                    <span className={`text-[10px] font-black uppercase tracking-widest truncate max-w-[150px] ${paymentProof ? 'text-white' : 'text-slate-500'}`}>
+                      {paymentProof ? paymentProof.name : 'Upload Payment Image'}
                     </span>
                     <input id="payment-proof" type="file" className="hidden" accept="image/*" onChange={(e) => setPaymentProof(e.target.files?.[0] || null)} />
                   </div>
@@ -354,17 +354,17 @@ function CoursesTab() {
             </div>
 
             {/* Action Bar (Low Height) */}
-            <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-4">
+            <div className="pt-6 sm:pt-8 border-t border-slate-100 flex items-center justify-between gap-6 pb-2">
               <div className="flex-1">
-                 <p className="text-[9px] text-slate-400 leading-tight">By clicking enroll, you agree to our terms. Manual approval may take 2-4 hours.</p>
+                 <p className="text-[10px] text-slate-400 font-bold leading-relaxed max-w-[280px]">By clicking enroll, you agree to our terms. Manual approval usually takes <span className="text-slate-900">2-4 hours</span>.</p>
               </div>
               <Button
-                  size="sm"
-                  className="h-10 px-8 rounded-xl font-black uppercase tracking-widest text-[11px] shadow-lg shadow-primary/20 shrink-0"
+                  size="lg"
+                  className="h-14 px-12 rounded-[1.25rem] font-black uppercase tracking-[0.1em] text-[12px] shadow-2xl shadow-slate-200 bg-slate-900 hover:bg-black text-white transition-all hover:scale-[1.02] active:scale-95 shrink-0"
                   disabled={isUploading || !paymentProof || utrNumber.length !== 12}
                   onClick={handleEnrollmentSubmit}
               >
-                  {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Enroll Now'}
+                  {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Confirm Enrollment'}
               </Button>
             </div>
           </div>
@@ -1278,23 +1278,27 @@ export function DashboardContent() {
               </div>
             </div>
             
-            <div className="lg:ml-auto flex flex-col lg:flex-row items-stretch lg:items-center gap-3 w-full lg:w-auto">
+            <div className="lg:ml-auto flex flex-col lg:flex-row items-stretch lg:items-center gap-3 w-full lg:w-auto min-w-0">
               {currentPath === "/student-dashboard/courses" && (
-                <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 w-full lg:w-auto">
-                    <StudentBatchSelector />
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto min-w-0 overflow-hidden">
+                    {/* Batch Selector — internal scroll, never overflows */}
+                    <div className="flex-1 min-w-0 overflow-hidden">
+                      <StudentBatchSelector />
+                    </div>
                     <Button 
                       variant="outline"
                       onClick={() => {
                         setSelectedCourseForRating({ id: 'GENERAL', title: 'AOTMS Pro Academy' });
                         setRatingModalOpen(true);
                       }}
-                      className="bg-white border-2 border-slate-100 text-slate-900 font-black rounded-xl px-4 sm:px-6 h-10 sm:h-12 shadow-sm hover:border-yellow-400 hover:text-yellow-600 transition-all gap-2 text-[10px] sm:text-xs uppercase w-full sm:w-auto"
+                      className="bg-white border-2 border-slate-100 text-slate-900 font-black rounded-xl px-4 sm:px-6 h-10 sm:h-12 shadow-sm hover:border-yellow-400 hover:text-yellow-600 transition-all gap-2 text-[10px] sm:text-xs uppercase shrink-0 w-full sm:w-auto"
                     >
                       <Star className="h-4 w-4 fill-current" />
                       Pulse Your Rating
                     </Button>
                 </div>
               )}
+
               {currentPath === "/student-dashboard/notifications" && (
                 <Button 
                   onClick={() => navigate("/student-dashboard/courses")}

@@ -31,6 +31,12 @@ import {
   Search,
   X,
   UserCheck,
+  Trophy,
+  Activity,
+  MessageSquare,
+  Settings,
+  Bell,
+  ClipboardList,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useAuth } from "@/hooks/useAuth";
@@ -40,44 +46,57 @@ import { cn } from "@/lib/utils";
 
 const navGroups = [
   {
-    label: "Overview",
+    label: "User administration",
     items: [
-      { title: "Admin Home", url: "/admin", icon: LayoutDashboard },
-      { title: "My Profile", url: "/admin/profile", icon: User },
+      { title: "User Management", url: "/admin/users", icon: Users },
+      { title: "Grant Access", url: "/admin/grant-access", icon: UserCheck },
+      { title: "Student Enrollments", url: "/admin/enrollments", icon: GraduationCap },
     ],
   },
   {
-    label: "User Administration",
+    label: "Platform Performance",
     items: [
-      { title: "User Directory", url: "/admin/users", icon: Users },
+      { title: "Student Performance", url: "/admin/student-performance", icon: TrendingUp },
+      { title: "Leaderboard", url: "/admin/leaderboard", icon: Trophy },
+      { title: "Rewards & Coupons", url: "/admin/coupons", icon: Ticket },
+      { title: "Resume Scans", url: "/admin/resume-scans", icon: ClipboardList },
+    ],
+  },
+  {
+    label: "Management Portal",
+    items: [
       { title: "Instructor Access", url: "/admin/instructor-access", icon: ShieldCheck },
-      { title: "Instructor List", url: "/admin/instructors", icon: Award },
-    ],
-  },
-  {
-    label: "Course Materials",
-    items: [
-      { title: "All Courses", url: "/admin/all-courses", icon: GraduationCap },
-      { title: "Video Lessons", url: "/admin/videos", icon: Video },
-      { title: "Question Bank", url: "/admin/questions", icon: FileQuestion },
-      { title: "Question Database", url: "/admin/question-repository", icon: Database },
-      { title: "Question Access", url: "/admin/question-access", icon: UserCheck },
-    ],
-  },
-  {
-    label: "Academic Management",
-    items: [
+      { title: "Instructors List", url: "/admin/instructors", icon: Award },
       { title: "Exam Schedule", url: "/admin/exam-scheduling", icon: Calendar },
-      { title: "Live Activity", url: "/admin/live-monitoring", icon: TrendingUp },
     ],
   },
   {
-    label: "Marketing & Growth",
+    label: "Academic Content",
     items: [
-      { title: "Coupon Manager", url: "/admin/coupons", icon: Ticket },
+      { title: "Question Repository", url: "/admin/question-repository", icon: Database },
+      { title: "Question Access", url: "/admin/question-access", icon: UserCheck },
+      { title: "All Courses", url: "/admin/all-courses", icon: GraduationCap },
+      { title: "Video Library", url: "/admin/videos", icon: Video },
+    ],
+  },
+  {
+    label: "System Monitoring",
+    items: [
+      { title: "Chat Monitor", url: "/admin/chat", icon: MessageSquare },
+      { title: "Live Monitoring", url: "/admin/live-monitoring", icon: Activity },
+      { title: "Quality Assurance", url: "/admin/qa", icon: ShieldCheck },
+    ],
+  },
+  {
+    label: "System & Tools",
+    items: [
+      { title: "Settings", url: "/admin/settings", icon: Settings },
+      { title: "Notifications", url: "/admin/notifications", icon: Bell },
+      { title: "Admin Profile", url: "/admin/profile", icon: User },
     ],
   },
 ];
+
 
 export function AdminSidebar() {
   const { state } = useSidebar();

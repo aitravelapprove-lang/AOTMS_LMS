@@ -223,61 +223,34 @@ export default function StudentResources() {
                                                 {resource.short_description || "No description provided."}
                                             </p>
                                         </CardContent>
-                                        
-                                        <CardFooter className="p-5 pt-0 mt-auto">
-                                            {viewedResources.has(resource.id) ? (
-                                                <Dialog>
-                                                    <DialogTrigger asChild>
-                                                        <Button className="w-full rounded-xl font-bold bg-slate-900 text-white hover:bg-slate-800 shadow-md transition-all">
-                                                            <Eye className="h-4 w-4 mr-2" />
-                                                            View Resource
-                                                        </Button>
-                                                    </DialogTrigger>
-                                                    <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0 gap-0 overflow-hidden rounded-2xl">
-                                                        <DialogHeader className="p-4 border-b bg-slate-50 flex-shrink-0">
-                                                            <DialogTitle className="flex items-center gap-2">
-                                                                {getIcon(resource.resource_type)}
-                                                                <span className="truncate">{resource.asset_title}</span>
-                                                            </DialogTitle>
-                                                            <DialogDescription>
-                                                                {resource.short_description}
-                                                            </DialogDescription>
-                                                        </DialogHeader>
-                                                        <div className="flex-1 bg-slate-100 relative overflow-hidden flex items-center justify-center">
-                                                            {resource.file_url.toLowerCase().endsWith('.pdf') ? (
-                                                                <iframe src={resource.file_url} className="w-full h-full" title="PDF Preview" />
-                                                            ) : (resource.file_url.match(/\.(jpeg|jpg|gif|png)$/i)) ? (
-                                                                <img src={resource.file_url} alt="Preview" className="max-w-full max-h-full object-contain" />
-                                                            ) : (resource.file_url.match(/\.(mp4|webm)$/i)) ? (
-                                                                <video src={resource.file_url} controls className="max-w-full max-h-full" />
-                                                            ) : (
-                                                                <div className="text-center p-8">
-                                                                    <FileIcon className="h-16 w-16 mx-auto text-slate-300 mb-4" />
-                                                                    <p className="font-bold text-slate-700">Preview not available for this file type.</p>
-                                                                    <Button className="mt-4" onClick={() => handleDownload(resource.file_url, resource.id)}>
-                                                                        Download File
-                                                                    </Button>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </DialogContent>
-                                                </Dialog>
-                                            ) : (
-                                                <Button 
-                                                    className="w-full rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform"
-                                                    onClick={() => handleDownload(resource.file_url, resource.id)}
-                                                    disabled={downloadingId === resource.id}
-                                                >
-                                                    {downloadingId === resource.id ? (
-                                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                                    ) : (
-                                                        <>
-                                                            <Download className="h-4 w-4 mr-2" />
-                                                            Download to View
-                                                        </>
-                                                    )}
-                                                </Button>
-                                            )}
+                                                                             <CardFooter className="p-5 pt-0 mt-auto">
+                                            <Button 
+                                                className="w-full rounded-xl font-bold bg-slate-900 shadow-lg shadow-slate-200 hover:scale-[1.02] transition-all gap-2"
+                                                onClick={() => {
+                                                    const isPreviewable = resource.file_url.toLowerCase().endsWith('.pdf') || 
+                                                                         resource.file_url.match(/\.(jpeg|jpg|gif|png)$/i) ||
+                                                                         resource.file_url.match(/\.(mp4|webm)$/i);
+                                                    
+                                                    if (isPreviewable) {
+                                                        // For previewable files, we still use the dialog but we can also trigger it directly if preferred.
+                                                        // However, the user said "click open form .. preview not available .. remove this type of trigger".
+                                                        // So for NON-previewable, just download.
+                                                        window.open(resource.file_url, '_blank');
+                                                    } else {
+                                                        handleDownload(resource.file_url, resource.id);
+                                                    }
+                                                }}
+                                                disabled={downloadingId === resource.id}
+                                            >
+                                                {downloadingId === resource.id ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin text-white" />
+                                                ) : (
+                                                    <>
+                                                        <Eye className="h-4 w-4" />
+                                                        View or Download
+                                                    </>
+                                                )}
+                                            </Button>
                                         </CardFooter>
                                     </Card>
                                 </motion.div>

@@ -42,14 +42,14 @@ export function InstructorHeader() {
       
       {/* Left Section */}
       <div className="flex items-center gap-3 lg:gap-5 min-w-0">
-        <SidebarTrigger className="h-9 w-9 text-slate-500 hover:text-primary hover:bg-primary/8 rounded-xl transition-all duration-200 shrink-0" />
+        <SidebarTrigger className="h-9 w-9 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all duration-200 shrink-0" />
 
         {/* Breadcrumb / Page Title indicator */}
         <div className="hidden sm:flex items-center gap-2">
           <div className="h-5 w-px bg-slate-200" />
-          <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-primary/5 border border-primary/10">
-            <Sparkles className="h-3 w-3 text-primary" />
-            <span className="text-[11px] font-bold text-primary uppercase tracking-widest">
+          <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-900">
+            <Sparkles className="h-3 w-3 text-white" />
+            <span className="text-[11px] font-bold text-white uppercase tracking-widest">
               Instructor Hub
             </span>
           </div>
@@ -57,10 +57,10 @@ export function InstructorHeader() {
 
         {/* Search - Hidden on mobile */}
         <div className="relative hidden lg:block group">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors duration-200" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-slate-900 transition-colors duration-200" />
           <Input
             placeholder="Search courses, students..."
-            className="pl-10 w-[280px] xl:w-[340px] h-9 bg-slate-50 border-slate-200 focus-visible:ring-primary/20 focus-visible:bg-white focus-visible:border-primary/40 text-sm font-medium transition-all rounded-xl placeholder:text-slate-400 text-slate-700"
+            className="pl-10 w-[280px] xl:w-[340px] h-9 bg-slate-50 border-slate-200 focus-visible:ring-slate-200 focus-visible:bg-white focus-visible:border-slate-400 text-sm font-medium transition-all rounded-xl placeholder:text-slate-400 text-slate-700"
           />
           <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden xl:inline-flex h-5 items-center gap-0.5 rounded border border-slate-200 bg-white px-1.5 text-[10px] font-medium text-slate-400">
             ⌘K
@@ -86,7 +86,7 @@ export function InstructorHeader() {
             variant="ghost"
             size="icon"
             onClick={() => navigate("/instructor/notifications")}
-            className="h-9 w-9 rounded-xl bg-slate-50 border border-slate-200 hover:bg-primary/5 hover:border-primary/20 text-slate-600 hover:text-primary transition-all duration-200"
+            className="h-9 w-9 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 hover:border-slate-300 text-slate-600 hover:text-slate-900 transition-all duration-200"
           >
             <Bell className="h-4 w-4" />
           </Button>
@@ -121,17 +121,17 @@ export function InstructorHeader() {
                 <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm" />
               </div>
               <div className="hidden md:block text-left">
-                <p className="text-xs font-bold text-slate-800 group-hover:text-primary transition-colors leading-tight max-w-[120px] truncate">
+                <p className="text-xs font-bold text-slate-800 group-hover:text-slate-900 transition-colors leading-tight max-w-[120px] truncate">
                   {fullName}
                 </p>
                 <div className="flex items-center gap-1 mt-0.5">
-                  <ShieldCheck className="h-2.5 w-2.5 text-primary" />
-                  <span className="text-[9px] font-bold text-primary uppercase tracking-wider">
+                  <ShieldCheck className="h-2.5 w-2.5 text-slate-900" />
+                  <span className="text-[9px] font-bold text-slate-900 uppercase tracking-wider">
                     Verified Mentor
                   </span>
                 </div>
               </div>
-              <ChevronDown className="h-3.5 w-3.5 text-slate-400 group-hover:text-primary transition-all group-hover:translate-y-0.5 hidden md:block" />
+              <ChevronDown className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-900 transition-all group-hover:translate-y-0.5 hidden md:block" />
             </Button>
           </DropdownMenuTrigger>
 

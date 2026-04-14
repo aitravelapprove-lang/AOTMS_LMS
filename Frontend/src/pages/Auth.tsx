@@ -48,6 +48,12 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { ChevronsUpDown } from "lucide-react";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
+
 
 const COLLEGES = [
   "Velagapudi Ramakrishna Siddhartha Engineering College",
@@ -234,7 +240,7 @@ export default function Auth() {
     return () => window.removeEventListener("mousedown", handleGlobalClick);
   }, []);
 
-  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
 
   // Redirect if already logged in
   useEffect(() => {
@@ -525,36 +531,7 @@ export default function Auth() {
     }
   };
 
-  const handleOtpInputChange = (
-    index: number,
-    value: string,
-    onChange: (value: string) => void,
-  ) => {
-    const newValue = value.replace(/[^0-9]/g, "");
-    if (newValue.length <= 1) {
-      const otpArray = otpForm.getValues("otp").split("");
-      otpArray[index] = newValue;
-      const newOtp = otpArray.join("").slice(0, 6);
-      onChange(newOtp);
 
-      if (newValue && index < 5) {
-        otpInputRefs.current[index + 1]?.focus();
-      }
-    }
-  };
-
-  const handleOtpKeyDown = (
-    index: number,
-    e: React.KeyboardEvent<HTMLInputElement>,
-  ) => {
-    if (
-      e.key === "Backspace" &&
-      !otpForm.getValues("otp")[index] &&
-      index > 0
-    ) {
-      otpInputRefs.current[index - 1]?.focus();
-    }
-  };
 
   const handleLogin = async (data: LoginFormData) => {
     setLoading(true);
@@ -765,31 +742,34 @@ export default function Auth() {
                       </p>
                     </div>
 
-                    <div className="flex justify-center gap-3">
-                      {[0, 1, 2, 3, 4, 5].map((index) => (
-                        <input
-                          key={index}
-                          ref={(el) => {
-                            otpInputRefs.current[index] = el;
-                          }}
-                          type="text"
-                          inputMode="numeric"
-                          maxLength={1}
-                          className="w-12 h-14 text-center text-xl font-bold bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-[#0075CF] focus:ring-4 focus:ring-[#0075CF]/10 outline-none transition-all"
-                          onChange={(e) =>
-                            handleOtpInputChange(
-                              index,
-                              e.target.value,
-                              otpForm.setValue.bind(null, "otp"),
-                            )
-                          }
-                          onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                          value={otpForm.getValues("otp")[index] || ""}
-                          onFocus={() => setIsTyping(true)}
-                          onBlur={() => setIsTyping(false)}
-                        />
-                      ))}
-                    </div>
+                    <FormField
+                      control={otpForm.control}
+                      name="otp"
+                      render={({ field }) => (
+                        <FormItem className="flex justify-center flex-col items-center">
+                          <FormControl>
+                            <InputOTP
+                              maxLength={6}
+                              {...field}
+                              onFocus={() => setIsTyping(true)}
+                              onBlur={() => setIsTyping(false)}
+                            >
+                              <div className="flex gap-3">
+                                {[0, 1, 2, 3, 4, 5].map((index) => (
+                                  <InputOTPGroup key={index}>
+                                    <InputOTPSlot
+                                      index={index}
+                                      className="w-12 h-14 text-xl font-bold bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-[#0075CF] focus:ring-4 focus:ring-[#0075CF]/10 transition-all"
+                                    />
+                                  </InputOTPGroup>
+                                ))}
+                              </div>
+                            </InputOTP>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
                     <Button
                       type="submit"
@@ -1045,31 +1025,34 @@ export default function Auth() {
                         </span>
                       </p>
 
-                      <div className="flex justify-center gap-2 mb-6">
-                        {[0, 1, 2, 3, 4, 5].map((index) => (
-                          <input
-                            key={index}
-                            ref={(el) => {
-                              otpInputRefs.current[index] = el;
-                            }}
-                            type="text"
-                            inputMode="numeric"
-                            maxLength={1}
-                            className="w-12 h-12 text-center text-lg font-black bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-[#0075CF] focus:ring-4 focus:ring-[#0075CF]/10 outline-none transition-all"
-                            onChange={(e) =>
-                              handleOtpInputChange(
-                                index,
-                                e.target.value,
-                                otpForm.setValue.bind(null, "otp"),
-                              )
-                            }
-                            onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                            onFocus={() => setIsTyping(true)}
-                            onBlur={() => setIsTyping(false)}
-                            value={otpForm.getValues("otp")[index] || ""}
-                          />
-                        ))}
-                      </div>
+                      <FormField
+                        control={otpForm.control}
+                        name="otp"
+                        render={({ field }) => (
+                          <FormItem className="flex justify-center flex-col items-center mb-6">
+                            <FormControl>
+                              <InputOTP
+                                maxLength={6}
+                                {...field}
+                                onFocus={() => setIsTyping(true)}
+                                onBlur={() => setIsTyping(false)}
+                              >
+                                <div className="flex gap-2">
+                                  {[0, 1, 2, 3, 4, 5].map((index) => (
+                                    <InputOTPGroup key={index}>
+                                      <InputOTPSlot
+                                        index={index}
+                                        className="w-12 h-12 text-lg font-black bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-[#0075CF] focus:ring-4 focus:ring-[#0075CF]/10 outline-none transition-all"
+                                      />
+                                    </InputOTPGroup>
+                                  ))}
+                                </div>
+                              </InputOTP>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
                       <Button
                         type="submit"

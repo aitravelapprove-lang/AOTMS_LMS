@@ -29,6 +29,7 @@ import {
   Zap,
   MessageSquare,
   Folder,
+  ClipboardList,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -63,6 +64,7 @@ const navigationGroups = [
   {
     label: "System",
     items: [
+      { title: "Attendance", url: "/student-dashboard/attendance", icon: ClipboardList },
       { title: "History", url: "/student-dashboard/history", icon: History },
       { title: "Notifications", url: "/student-dashboard/notifications", icon: Bell },
       { title: "Settings", url: "/student-dashboard/settings", icon: Settings },

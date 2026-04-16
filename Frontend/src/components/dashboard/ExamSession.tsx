@@ -30,6 +30,15 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { fetchWithAuth } from '@/lib/api';
 
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
 interface ExamSessionProps {
   examId: string;
   examTitle: string;
@@ -55,6 +64,7 @@ export function ExamSession({ examId, examTitle, durationMinutes, onFinish, onEx
   // Coding Execution State
   const [consoleOutput, setConsoleOutput] = useState<Record<string, string>>({});
   const [isRunning, setIsRunning] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const { toast } = useToast();
 
@@ -233,7 +243,7 @@ export function ExamSession({ examId, examTitle, durationMinutes, onFinish, onEx
                     <Button 
                         variant="ghost" 
                         className="h-10 px-4 text-red-600 hover:bg-red-50 hover:text-red-700 rounded-xl font-bold flex items-center gap-2"
-                        onClick={onExit}
+                        onClick={() => setShowExitConfirm(true)}
                     >
                         <LogOut className="h-4 w-4" /> Exit
                     </Button>
@@ -477,6 +487,54 @@ export function ExamSession({ examId, examTitle, durationMinutes, onFinish, onEx
                 </div>
             </section>
         </main>
+
+        <Dialog open={showExitConfirm} onOpenChange={setShowExitConfirm}>
+            <DialogContent className="rounded-[2.5rem] sm:max-w-[420px] p-0 overflow-hidden border-none shadow-2xl">
+                <div className="bg-red-500 p-8 text-white relative">
+                    <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }} />
+                    <div className="h-16 w-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 border border-white/30 shadow-xl relative z-10">
+                        <AlertCircle className="h-8 w-8 text-white" />
+                    </div>
+                    <DialogTitle className="text-2xl font-black tracking-tight relative z-10">Abandon Assessment?</DialogTitle>
+                    <DialogDescription className="text-white/80 mt-2 font-medium relative z-10 italic">
+                        "Your progress is temporary, but your potential is permanent. Are you sure you want to stop now?"
+                    </DialogDescription>
+                </div>
+
+                <div className="p-8 bg-white space-y-6">
+                    <div className="space-y-3">
+                        <p className="text-sm font-bold text-slate-600">
+                             Once you exit, your current performance data will <span className="text-red-600 underline decoration-2">not be stored</span> in your profile. 
+                        </p>
+                        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex items-center gap-4">
+                            <div className="h-10 w-10 rounded-xl bg-white shadow-sm flex items-center justify-center border border-slate-100">
+                                <Monitor className="h-5 w-5 text-slate-400" />
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Current Progress</p>
+                                <p className="text-sm font-black text-slate-900">{Math.round(progress)}% Complete</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3 pt-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowExitConfirm(false)}
+                            className="flex-1 h-14 rounded-2xl border-2 border-slate-100 text-slate-600 font-bold hover:bg-slate-50 hover:border-slate-200 transition-all active:scale-95"
+                        >
+                            No, Stay
+                        </Button>
+                        <Button
+                            onClick={onExit}
+                            className="flex-1 h-14 rounded-2xl bg-red-500 hover:bg-red-600 text-white shadow-xl shadow-red-500/20 font-black uppercase tracking-widest text-[11px] transition-all active:scale-95"
+                        >
+                            Yes, Exit
+                        </Button>
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
     </div>
   );
 }

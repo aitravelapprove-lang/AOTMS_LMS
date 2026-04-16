@@ -58,12 +58,14 @@ import {
   Hash,
   Ticket,
   Zap,
-  Key
+  Key,
+  ClipboardList
 } from "lucide-react";
 import { UserProfile } from "./UserProfile";
 import { CourseList } from "./CourseList";
 import { StudentCourseViewer } from "./StudentCourseViewer";
 import { StudentHistory } from "./StudentHistory";
+import { StudentAttendance } from "./StudentAttendance";
 import StudentResources from "./StudentResources";
 import StudentVideoLibrary from "./StudentVideoLibrary";
 import { ExamModule } from "./ExamModule";
@@ -115,6 +117,7 @@ function CoursesTab() {
   const [utrNumber, setUtrNumber] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [paymentTerm, setPaymentTerm] = useState<'full' | 'term1' | 'term2'>('full');
+  const [selectedBatchType, setSelectedBatchType] = useState<'morning' | 'afternoon' | 'evening'>('morning');
 
   const getEffectivePrice = () => {
     return (appliedPrice !== null ? appliedPrice : (paymentCourse?.price || 0)) as number;
@@ -290,6 +293,7 @@ function CoursesTab() {
                </div>
             </div>
 
+
             {/* Payment Section (Horizontal Mix) */}
             <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 sm:gap-6 items-start">
                {/* QR Section */}
@@ -356,7 +360,7 @@ function CoursesTab() {
             {/* Action Bar (Low Height) */}
             <div className="pt-6 sm:pt-8 border-t border-slate-100 flex items-center justify-between gap-6 pb-2">
               <div className="flex-1">
-                 <p className="text-[10px] text-slate-400 font-bold leading-relaxed max-w-[280px]">By clicking enroll, you agree to our terms. Manual approval usually takes <span className="text-slate-900">2-4 hours</span>.</p>
+                 <p className="text-[10px] text-slate-400 font-bold leading-relaxed max-w-[280px]">By clicking enroll, you agree to our terms. Approval usually takes <span className="text-slate-900">24 hours</span>.</p>
               </div>
               <Button
                   size="lg"
@@ -743,9 +747,9 @@ function AttendancePulse() {
   const [checkedIn, setCheckedIn] = useState(false);
   const [checking, setChecking] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if already checked in today
     const checkStatus = async () => {
       try {
         const today = new Date().toISOString().split('T')[0];
@@ -798,15 +802,23 @@ function AttendancePulse() {
     <div className="relative group">
        <AnimatePresence mode="wait">
          {checkedIn ? (
-           <motion.div 
-             key="checked"
-             initial={{ scale: 0.8, opacity: 0 }}
-             animate={{ scale: 1, opacity: 1 }}
-             className="h-12 px-6 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center gap-2 font-black text-[10px] uppercase tracking-tighter shadow-sm"
-           >
-             <CheckCircle2 className="h-4 w-4" />
-             Attendance Secured
-           </motion.div>
+           <div className="flex flex-col items-end gap-1">
+             <motion.div 
+               key="checked"
+               initial={{ scale: 0.8, opacity: 0 }}
+               animate={{ scale: 1, opacity: 1 }}
+               className="h-12 px-6 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center gap-2 font-black text-[10px] uppercase tracking-tighter shadow-sm"
+             >
+               <CheckCircle2 className="h-4 w-4" />
+               Attendance Secured
+             </motion.div>
+             <button 
+               onClick={() => navigate('/student-dashboard/attendance')}
+               className="text-[9px] font-black text-slate-400 hover:text-primary uppercase tracking-widest px-2 transition-colors flex items-center gap-1"
+             >
+               View Attendance Ledger <ChevronRight className="h-2 w-2" />
+             </button>
+           </div>
          ) : (
            <motion.button
              key="mark"
@@ -1194,6 +1206,12 @@ const routeConfig: Record<string, { title: string; description: string; icon: Re
     description: "Practice with timed mock examinations",
     icon: FileText,
     component: <ExamModule type="mock" />,
+  },
+  "/student-dashboard/attendance": {
+    title: "My Attendance",
+    description: "Track and review your daily attendance records",
+    icon: ClipboardList,
+    component: <StudentAttendance />,
   },
   "/student-dashboard/history": {
     title: "Academic Record",

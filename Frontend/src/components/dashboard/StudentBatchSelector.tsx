@@ -25,21 +25,28 @@ export function StudentBatchSelector() {
     const handleConfirm = async () => {
         if (!selectedCourseId || !selectedBatchId) return;
         try {
-            await requestBatch({ courseId: selectedCourseId, batchId: selectedBatchId });
+            const [bid, btype] = selectedBatchId.split('-');
+            
+            await requestBatch({ 
+                courseId: selectedCourseId, 
+                batchId: bid,
+                session_type: btype 
+            });
+            
             toast({
                 title: currentBatch ? "Transfer Requested" : "Batch Assigned",
-                description: currentBatch
-                    ? "Instructor permission requested for your batch change."
-                    : "You have been assigned to your selected batch.",
-                className: currentBatch ? "bg-amber-50 border-amber-200" : "bg-emerald-50 border-emerald-200"
+                description: `Successfully requested access to the ${btype} session.`,
+                className: "bg-emerald-50 border-emerald-100 text-emerald-900 rounded-[2rem] font-bold shadow-2xl"
             });
             setSelectedBatchId("");
+            // Refresh batch status if needed (most hooks handle this via invalidation)
         } catch (err: unknown) {
             const error = err as Error;
             toast({
-                title: "Request Failed",
+                title: "Allocation Failed",
                 description: error.message || "Could not process batch request.",
-                variant: "destructive"
+                variant: "destructive",
+                className: "rounded-[2rem] font-bold"
             });
         }
     };
@@ -84,21 +91,50 @@ export function StudentBatchSelector() {
                                 }
                             </SelectTrigger>
                             <SelectContent className="rounded-xl border-slate-100">
-                                {batches?.map(batch => (
-                                    <SelectItem key={batch.id} value={batch.id} className="text-[11px] font-medium p-3">
-                                        {batch.batch_name} ({batch.batch_type})
-                                    </SelectItem>
-                                ))}
+                                {(() => {
+                                    const items = (batches || []).flatMap(b => {
+                                        const batch = b as { 
+                                            id: string; 
+                                            batch_name: string; 
+                                            batch_type: string;
+                                            batches?: Array<{ id: string; batch_name: string; batch_type: string }>;
+                                        };
+                                        if (batch.batches && batch.batches.length > 0) {
+                                            return batch.batches.map(sub => ({ ...sub, parentId: b.id }));
+                                        }
+                                        return [{ ...b, parentId: b.id }];
+                                    });
+
+                                    return items.map((batch: { id: string, parentId: string, batch_name: string, batch_type: string }, idx: number) => {
+                                        const isCurrent = currentBatch?.id === batch.parentId && currentBatch?.batch_type === batch.batch_type;
+                                        const val = `${batch.parentId}-${batch.batch_type}`;
+                                        
+                                        const displayName = batch.batch_name.includes(`(${batch.batch_type.charAt(0).toUpperCase()}`) 
+                                            ? batch.batch_name 
+                                            : `${batch.batch_name} (${batch.batch_type})`;
+
+                                        return (
+                                            <SelectItem 
+                                                key={`${val}-${idx}`} 
+                                                value={val} 
+                                                className={`text-[11px] font-medium p-3 ${isCurrent ? 'bg-emerald-50 text-emerald-700 font-black' : ''}`}
+                                                disabled={isCurrent}
+                                            >
+                                                {displayName} {isCurrent ? '— Current' : ''}
+                                            </SelectItem>
+                                        );
+                                    });
+                                })()}
                             </SelectContent>
                         </Select>
 
                         <Button
                             size="sm"
                             className="h-10 px-5 rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg shadow-primary/10 flex items-center gap-1.5 shrink-0"
-                            disabled={!selectedBatchId || isPending || (currentBatch?.id === selectedBatchId)}
+                            disabled={!selectedBatchId || isPending}
                             onClick={handleConfirm}
                         >
-                            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                            {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : (
                                 <>
                                     <Clock className="h-3 w-3" />
                                     {currentBatch ? 'Transfer' : 'Confirm'}
@@ -108,7 +144,6 @@ export function StudentBatchSelector() {
                     </>
                 )}
 
-                {/* Current batch indicator */}
                 {currentBatch && !selectedBatchId && (
                     <div className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-xl shrink-0">
                         <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />

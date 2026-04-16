@@ -8,6 +8,7 @@ interface ExamScheduleData {
     description: string;
     duration_minutes: number;
     total_marks: number;
+    scheduled_date?: string;
 }
 
 interface MockTestData {
@@ -16,6 +17,7 @@ interface MockTestData {
     duration_minutes: number;
     total_marks: number;
     question_count: number;
+    scheduled_date?: string;
 }
 
 export function useStudentEnrollments() {
@@ -69,7 +71,8 @@ export function useStudentExams() {
                         duration_minutes: sched.duration_minutes,
                         total_marks: sched.total_marks,
                         is_completed: !!a.is_completed,
-                        assigned_image: a.assigned_image
+                        assigned_image: a.assigned_image,
+                        scheduled_date: sched.scheduled_date
                     };
                 });
         },
@@ -95,7 +98,8 @@ export function useStudentMockPapers() {
                         duration_minutes: mock.duration_minutes,
                         total_marks: mock.total_marks,
                         is_completed: !!a.is_completed,
-                        assigned_image: a.assigned_image
+                        assigned_image: a.assigned_image,
+                        scheduled_date: mock.scheduled_date
                     };
                 });
         },
@@ -188,6 +192,7 @@ export interface StudentExam {
     total_marks: number;
     is_completed: boolean;
     assigned_image?: string;
+    scheduled_date?: string;
 }
 
 export interface LeaderboardEntry {
@@ -291,7 +296,7 @@ export function useEnrollCourse() {
     const { user } = useAuth();
 
     return useMutation({
-        mutationFn: async ({ courseId, payment_proof_url, utr_number, coupon_code, payment_term }: { courseId: string, payment_proof_url?: string | null, utr_number?: string | null, coupon_code?: string, payment_term?: string }) => {
+        mutationFn: async ({ courseId, payment_proof_url, utr_number, coupon_code, payment_term, requested_batch_type }: { courseId: string, payment_proof_url?: string | null, utr_number?: string | null, coupon_code?: string, payment_term?: string, requested_batch_type?: string }) => {
             if (!user?.id) throw new Error("Not logged in");
             return fetchWithAuth('/courses/enroll', {
                 method: 'POST',
@@ -300,7 +305,8 @@ export function useEnrollCourse() {
                     payment_proof_url,
                     utr_number,
                     coupon_code,
-                    payment_term
+                    payment_term,
+                    requested_batch_type
                 })
             });
         },
@@ -411,9 +417,10 @@ export function useStudentBatch(courseId: string | null) {
             return await fetchWithAuth(`/batches/my-batch/${courseId}`) as { 
                 id: string; 
                 batch_name: string; 
-                batch_type: 'morning' | 'afternoon' | 'evening'; 
+                batch_type: 'morning' | 'afternoon' | 'evening' | 'all'; 
                 start_time: string; 
                 end_time: string;
+                requested_batch_type?: string;
             } | null;
         },
         enabled: !!courseId && !!user?.id,
@@ -428,8 +435,8 @@ export function useAvailableBatches(courseId: string | null) {
             return await fetchWithAuth(`/batches/course/${courseId}`) as {
                 id: string;
                 batch_name: string;
-                batch_type: 'morning' | 'afternoon' | 'evening';
-                start_time: string;
+                batch_type: 'morning' | 'afternoon' | 'evening' | 'all';
+                start_time: string; 
                 end_time: string;
             }[];
         },
@@ -440,10 +447,10 @@ export function useAvailableBatches(courseId: string | null) {
 export function useRequestBatchAssignment() {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: async ({ courseId, batchId }: { courseId: string, batchId: string }) => {
-            return fetchWithAuth('/batches/student-request', {
+        mutationFn: async ({ courseId, batchId, session_type }: { courseId: string, batchId: string, session_type?: string }) => {
+            return fetchWithAuth(`/batches/request/${courseId}`, {
                 method: 'POST',
-                body: JSON.stringify({ courseId, batchId })
+                body: JSON.stringify({ batch_id: batchId, session_type })
             });
         },
         onSuccess: (_, variables) => {

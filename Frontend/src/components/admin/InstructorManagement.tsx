@@ -193,20 +193,32 @@ export function InstructorManagement() {
             ...new Set(studentBatches.map((sb) => sb.student_id)),
           ];
           if (studentIds.length > 0) {
-            const profiles = (await fetchWithAuth(
-              `/data/profiles?user_id=in.(${studentIds.join(",")})`,
-            )) as Profile[];
-            const studentsByBatch: Record<string, Profile[]> = {};
+          const [profiles, users] = (await Promise.all([
+            fetchWithAuth(`/data/profiles?user_id=in.(${studentIds.join(",")})`),
+            fetchWithAuth(`/data/users?id=in.(${studentIds.join(",")})`)
+          ])) as [Profile[], any[]];
 
-            batches.forEach((b) => {
-              const bStudentIds = studentBatches
-                .filter((sb) => sb.batch_id === b.id)
-                .map((sb) => sb.student_id);
-              studentsByBatch[b.id] = profiles.filter((p) =>
-                bStudentIds.includes(p.user_id),
-              );
+          const userMap = users.reduce((acc, u) => { acc[u.id] = u; return acc; }, {});
+
+          const studentsByBatch: Record<string, Profile[]> = {};
+
+          batches.forEach((b) => {
+            const bStudentIds = studentBatches
+              .filter((sb) => sb.batch_id === b.id)
+              .map((sb) => sb.student_id);
+
+            studentsByBatch[b.id] = bStudentIds.map(sid => {
+                const profile = profiles.find(p => p.user_id === sid);
+                const user = userMap[sid];
+                return {
+                    user_id: sid,
+                    full_name: profile?.full_name || user?.full_name || 'Student',
+                    email: profile?.email || user?.email || 'N/A',
+                    avatar_url: profile?.avatar_url
+                } as Profile;
             });
-            setBatchStudents(studentsByBatch);
+          });
+          setBatchStudents(studentsByBatch);
           }
 
           const batchesWithCounts = batches.map((b) => ({

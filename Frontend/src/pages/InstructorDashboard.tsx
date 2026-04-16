@@ -26,6 +26,7 @@ import { ResumeScanHistory } from "@/components/admin/ResumeScanHistory";
 import { StudentResumeScan } from "@/components/dashboard/StudentResumeScan";
 import { InstructorNotifications } from "@/components/instructor/dashboard/InstructorNotifications";
 import { ResourcesDashboard } from "@/components/instructor/dashboard/ResourcesDashboard";
+import Lanyard from "@/components/instructor/dashboard/Lanyard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -248,7 +249,7 @@ function WelcomeBanner({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto mt-6 lg:mt-0">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto mt-6 lg:mt-0 relative">
           <button 
             className="h-10 px-5 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap"
             onClick={() => navigate('/instructor/courses')}
@@ -271,6 +272,11 @@ function WelcomeBanner({
             <span>View Schedule</span>
           </button>
         </div>
+      </div>
+
+      {/* Embedded 3D Lanyard - Exact Position from User Drawing */}
+      <div className="absolute top-0 right-1/4 w-[200px] h-full pointer-events-none hidden lg:block">
+         <Lanyard />
       </div>
     </motion.div>
   );

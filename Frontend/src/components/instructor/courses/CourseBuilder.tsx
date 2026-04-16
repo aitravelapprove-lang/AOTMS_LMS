@@ -375,7 +375,11 @@ export function CourseBuilder({ course, onBack }: CourseBuilderProps) {
             <AnimatePresence mode="wait">
                 {activeTab === 'batches' ? (
                     <motion.div key="batches" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                        <BatchManager courseId={course.id} courseTitle={course.title} />
+                        <BatchManager 
+                            courseId={course.id} 
+                            courseTitle={course.title} 
+                            assignedSession={course.assigned_session}
+                        />
                     </motion.div>
                 ) : (
                     <motion.div key="syllabus" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>

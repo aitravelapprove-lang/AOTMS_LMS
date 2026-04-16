@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PlayCircle, Edit, ArrowRight, Trash2, Layers, Clock, AlertCircle, CheckCircle, Send, FileEdit, MoreHorizontal, RefreshCw, Plus, Archive, ShieldAlert, BookOpen as BookOpenIcon, Calendar, Eye, Users } from 'lucide-react';
+import { PlayCircle, Edit, ArrowRight, Trash2, Layers, Clock, AlertCircle, CheckCircle, Send, FileEdit, MoreHorizontal, RefreshCw, Plus, Archive, ShieldAlert, BookOpen as BookOpenIcon, Calendar, Eye, Users, ShieldCheck } from 'lucide-react';
 import { 
     Dialog, 
     DialogContent, 
@@ -20,7 +20,16 @@ import { API_URL } from '@/lib/api';
 import { Course } from '@/hooks/useInstructorData';
 import { CourseBuilder } from './CourseBuilder';
 import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,6 +53,13 @@ interface InstructorProfile {
     id?: string;
     full_name?: string;
     avatar_url?: string;
+    assigned_session?: 'morning' | 'afternoon' | 'evening' | 'all';
+    is_approved?: boolean;
+}
+
+interface CourseWithSession extends Course {
+    assigned_session?: 'morning' | 'afternoon' | 'evening' | 'all';
+    occupied_sessions?: string[];
 }
 
 export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, title }: InstructorCoursesProps = {}) {
@@ -60,6 +76,15 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
     const [selectedProfile, setSelectedProfile] = useState<Course | null>(null);
     const [showProfile, setShowProfile] = useState(false);
     const [processing, setProcessing] = useState<string | null>(null);
+    const [showEnrollModal, setShowEnrollModal] = useState(false);
+    const [enrollingCourse, setEnrollingCourse] = useState<Course | null>(null);
+    const [dealingSession, setDealingSession] = useState<'morning' | 'afternoon' | 'evening' | 'all'>('morning');
+    const [batchData, setBatchData] = useState({
+        name: '',
+        capacity: 50,
+        startTime: '07:00',
+        endTime: '09:00'
+    });
     const { toast } = useToast();
 
     const handleSubmitForReview = async (courseId: string, e: React.MouseEvent) => {
@@ -106,12 +131,20 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
         try {
             await fetchWithAuth(`/instructor/choose-course`, {
                 method: 'POST',
-                body: JSON.stringify({ courseId })
+                body: JSON.stringify({ 
+                    courseId,
+                    dealing_session: dealingSession,
+                    batch_name: batchData.name || undefined,
+                    capacity: batchData.capacity,
+                    start_time: batchData.startTime,
+                    end_time: batchData.endTime
+                })
             });
             toast({ 
                 title: 'Request Sent', 
-                description: 'Your enrollment request has been submitted for admin approval.' 
+                description: `Batch "${batchData.name || dealingSession}" initialized.` 
             });
+            setShowEnrollModal(false);
             refetch();
         } catch (err) {
             toast({ title: 'Error', description: 'Failed to request enrollment.', variant: 'destructive' });
@@ -145,6 +178,128 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
                     </Button>
                 </div>
             )}
+
+            {/* Create Training Batch Modal - Styled exactly like the image */}
+            <Dialog open={showEnrollModal} onOpenChange={setShowEnrollModal}>
+                <DialogContent className="rounded-[2.5rem] border-none shadow-2xl p-8 max-w-md bg-white">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Create Training Batch</DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium">Define the schedule and capacity for a new student cohort.</DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-5 py-4">
+                        <div className="space-y-2">
+                            <Label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">Batch Label</Label>
+                            <Input 
+                                placeholder="e.g. Morning Batch 1" 
+                                value={batchData.name}
+                                onChange={(e) => setBatchData(prev => ({ ...prev, name: e.target.value }))}
+                                className="h-12 rounded-2xl border-slate-200 bg-slate-50/50 focus:ring-primary/20" 
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">Type</Label>
+                                <Select 
+                                    value={dealingSession} 
+                                    onValueChange={(v: 'morning' | 'afternoon' | 'evening' | 'all') => {
+                                        setDealingSession(v);
+                                        const defaults = v === 'morning' ? { s: '09:00', e: '11:00' } : 
+                                                        v === 'afternoon' ? { s: '13:00', e: '15:00' } : 
+                                                        v === 'evening' ? { s: '18:00', e: '20:00' } :
+                                                        { s: '09:00', e: '21:00' };
+                                        setBatchData(prev => ({ ...prev, startTime: defaults.s, endTime: defaults.e }));
+                                    }}
+                                >
+                                    <SelectTrigger className="h-12 rounded-2xl border-slate-200 bg-slate-50/50">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem 
+                                            value="all" 
+                                            disabled={enrollingCourse?.occupied_sessions && enrollingCourse.occupied_sessions.length > 0}
+                                        >
+                                            All Session {enrollingCourse?.occupied_sessions?.length ? '(Locked)' : ''}
+                                        </SelectItem>
+                                        <SelectItem 
+                                            value="morning" 
+                                            disabled={enrollingCourse?.occupied_sessions?.includes('morning') || enrollingCourse?.occupied_sessions?.includes('all')}
+                                        >
+                                            Morning {enrollingCourse?.occupied_sessions?.includes('morning') ? '(Occupied)' : ''}
+                                        </SelectItem>
+                                        <SelectItem 
+                                            value="afternoon" 
+                                            disabled={enrollingCourse?.occupied_sessions?.includes('afternoon') || enrollingCourse?.occupied_sessions?.includes('all')}
+                                        >
+                                            Afternoon {enrollingCourse?.occupied_sessions?.includes('afternoon') ? '(Occupied)' : ''}
+                                        </SelectItem>
+                                        <SelectItem 
+                                            value="evening" 
+                                            disabled={enrollingCourse?.occupied_sessions?.includes('evening') || enrollingCourse?.occupied_sessions?.includes('all')}
+                                        >
+                                            Evening {enrollingCourse?.occupied_sessions?.includes('evening') ? '(Occupied)' : ''}
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">Max Capacity</Label>
+                                <Input 
+                                    type="number"
+                                    value={batchData.capacity}
+                                    onChange={(e) => setBatchData(prev => ({ ...prev, capacity: parseInt(e.target.value) || 0 }))}
+                                    className="h-12 rounded-2xl border-slate-200 bg-slate-50/50" 
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">Start Time</Label>
+                                <div className="relative">
+                                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                    <Input 
+                                        type="time"
+                                        value={batchData.startTime}
+                                        onChange={(e) => setBatchData(prev => ({ ...prev, startTime: e.target.value }))}
+                                        className="h-12 rounded-2xl border-slate-200 bg-slate-50/50 pl-10" 
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">End Time</Label>
+                                <div className="relative">
+                                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                    <Input 
+                                        type="time"
+                                        value={batchData.endTime}
+                                        onChange={(e) => setBatchData(prev => ({ ...prev, endTime: e.target.value }))}
+                                        className="h-12 rounded-2xl border-slate-200 bg-slate-50/50 pl-10" 
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <DialogFooter className="flex items-center gap-3 pt-4">
+                        <Button 
+                            variant="ghost" 
+                            onClick={() => setShowEnrollModal(false)}
+                            className="flex-1 h-12 rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-400"
+                        >
+                            Cancel
+                        </Button>
+                        <Button 
+                            onClick={(e) => enrollingCourse && handleAssignToMe(enrollingCourse.id, e)}
+                            disabled={assigning !== null}
+                            className="flex-1 h-12 rounded-2xl bg-[#0084FF] hover:bg-[#0073e6] text-white font-black text-[10px] uppercase tracking-widest shadow-xl shadow-blue-500/20"
+                        >
+                            {assigning ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : `Initialize ${dealingSession === 'all' ? 'Manual Access' : 'Record'}`}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {isLoading ? (
                 <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -181,7 +336,7 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
                 return (
                     <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                         <AnimatePresence mode="popLayout">
-                            {filtered.map((course: Course, index: number) => {
+                            {filtered.map((course: CourseWithSession, index: number) => {
                             const instructors = (course.instructor_ids || []) as string[];
                             const isInstructorOwner = instructors.includes(user?.id || "");
                             const isAssignedToOther = instructors.length > 0 && !isInstructorOwner;
@@ -294,7 +449,19 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
                                                             }
                                                             <span className="text-[10px] font-black text-slate-900 uppercase tracking-tighter truncate">Owner Access</span>
                                                         </div>
-                                                    ) : instructors.length > 0 ? (
+                                                    ) : course.assigned_session ? (
+                                                        <div className="flex items-center gap-1.5 overflow-hidden">
+                                                            <div className={cn(
+                                                              "h-2 w-2 rounded-full animate-pulse shrink-0",
+                                                              course.assigned_session === 'morning' ? 'bg-orange-500' :
+                                                              course.assigned_session === 'afternoon' ? 'bg-blue-500' :
+                                                              course.assigned_session === 'evening' ? 'bg-violet-500' : 'bg-emerald-500'
+                                                            )} />
+                                                            <span className="text-[10px] font-black text-slate-900 uppercase tracking-tighter truncate">
+                                                              {course.assigned_session} Unit
+                                                            </span>
+                                                        </div>
+                                                     ) : instructors.length > 0 ? (
                                                         <div className="flex items-center gap-1.5 overflow-hidden">
                                                             <Users className="h-3 w-3 text-primary/40 shrink-0" />
                                                             <span className="text-[10px] font-black text-slate-800 uppercase tracking-tighter truncate">Team Managed</span>
@@ -331,14 +498,48 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
                                                         <Button 
                                                             variant="outline" 
                                                             size="sm" 
-                                                            className="h-8 px-2 sm:px-3 text-[10px] font-black uppercase tracking-tighter border-primary/20 hover:bg-primary hover:text-white rounded-lg transition-all gap-1.5"
-                                                            onClick={(e) => handleAssignToMe(course.id || course._id, e)}
-                                                            disabled={assigning === (course.id || course._id) || isInstructorOwner}
+                                                            className={cn(
+                                                                "h-8 px-2 sm:px-3 text-[10px] font-black uppercase tracking-tighter border-primary/20 hover:bg-primary hover:text-white rounded-lg transition-all gap-1.5",
+                                                                (() => {
+                                                                    const occupied = course.occupied_sessions || [];
+                                                                    const isFullyOccupied = occupied.includes('all') || 
+                                                                        (['morning', 'afternoon', 'evening'].every(s => occupied.includes(s)));
+                                                                    return isFullyOccupied ? "opacity-50 cursor-not-allowed bg-slate-50 text-slate-400 border-slate-200" : "";
+                                                                })()
+                                                            )}
+                                                            onClick={(e) => {
+                                                                const occupied = course.occupied_sessions || [];
+                                                                const isFullyOccupied = occupied.includes('all') || 
+                                                                    (['morning', 'afternoon', 'evening'].every(s => occupied.includes(s)));
+                                                                if (isFullyOccupied) return;
+                                                                
+                                                                e.stopPropagation();
+                                                                setEnrollingCourse(course);
+                                                                setShowEnrollModal(true);
+                                                            }}
+                                                            disabled={assigning === (course.id || course._id) || isInstructorOwner || (() => {
+                                                                const occupied = course.occupied_sessions || [];
+                                                                return occupied.includes('all') || (['morning', 'afternoon', 'evening'].every(s => occupied.includes(s)));
+                                                            })()}
                                                         >
-                                                            {assigning === (course.id || course._id) ? <RefreshCw className="h-3 w-3 animate-spin text-primary" /> : <Plus className="h-3 w-3" />}
-                                                            <span className="hidden sm:inline">{instructors.length > 0 ? 'Join' : 'Enroll'}</span>
+                                                            {(() => {
+                                                                const occupied = course.occupied_sessions || [];
+                                                                const isFullyOccupied = occupied.includes('all') || (['morning', 'afternoon', 'evening'].every(s => occupied.includes(s)));
+                                                                
+                                                                if (isFullyOccupied) return <ShieldCheck className="h-3 w-3" />;
+                                                                if (assigning === (course.id || course._id)) return <RefreshCw className="h-3 w-3 animate-spin text-primary" />;
+                                                                return <Plus className="h-3 w-3" />;
+                                                            })()}
+                                                            <span className="hidden sm:inline">
+                                                                {(() => {
+                                                                    const occupied = course.occupied_sessions || [];
+                                                                    const isFullyOccupied = occupied.includes('all') || (['morning', 'afternoon', 'evening'].every(s => occupied.includes(s)));
+                                                                    return isFullyOccupied ? "Sessions Full" : "Enroll";
+                                                                })()}
+                                                            </span>
                                                         </Button>
                                                     )}
+
                                                 </div>
                                             </div>
                                         </CardContent>
@@ -445,9 +646,10 @@ export function InstructorCourses({ limit, hideHeader, showAll: initialShowAll, 
                         {viewTab === 'catalog' && selectedProfile && !selectedProfile.instructor_ids?.includes(user?.id || "") && (
                              <Button 
                                 className="pro-button-primary h-10 px-8 rounded-lg shadow-md" 
-                                onClick={(e) => {
+                                onClick={() => {
                                     setShowProfile(false);
-                                    handleAssignToMe(selectedProfile.id || selectedProfile._id, e);
+                                    setEnrollingCourse(selectedProfile);
+                                    setShowEnrollModal(true);
                                 }}
                                 disabled={assigning === (selectedProfile?.id || selectedProfile?._id) || selectedProfile.instructor_ids?.includes(user?.id || "")}
                              >

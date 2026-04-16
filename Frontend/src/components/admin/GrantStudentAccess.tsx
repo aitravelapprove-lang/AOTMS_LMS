@@ -36,6 +36,7 @@ interface Course {
   id: string;
   title: string;
   status: string;
+  price?: number;
 }
 
 interface GrantStudentAccessProps {
@@ -88,7 +89,7 @@ export function GrantStudentAccess({ profiles: propProfiles = [], enrollments: p
   const { data: courses = [], isLoading: coursesLoading } = useQuery({
     queryKey: ['approved-courses'],
     queryFn: async () => {
-      const data = await fetchWithAuth('/data/courses?status=in.(published,approved,active)&select=id,title,status');
+      const data = await fetchWithAuth('/data/courses?status=in.(published,approved,active)&select=id,title,status,price');
       return data as Course[];
     }
   });
@@ -128,7 +129,9 @@ export function GrantStudentAccess({ profiles: propProfiles = [], enrollments: p
           user_id: selectedStudent.id,
           course_id: selectedCourse.id,
           status: 'active',
-          progress_percentage: 0
+          progress_percentage: 0,
+          final_price: selectedCourse.price || 0,
+          payment_term: 'full'
         })
       });
     },

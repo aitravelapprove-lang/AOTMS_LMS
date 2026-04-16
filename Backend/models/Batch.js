@@ -2,14 +2,29 @@ const mongoose = require('mongoose');
 
 const BatchSchema = new mongoose.Schema({
     batch_name: { type: String, required: true },
-    batch_type: { type: String, enum: ['morning', 'afternoon', 'evening'], required: true },
-    start_time: { type: String, required: true }, // e.g. "07:00"
-    end_time: { type: String, required: true },   // e.g. "09:00"
+    batch_type: { type: String, enum: ['morning', 'afternoon', 'evening', 'all'], required: true },
     course_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
     instructor_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    max_students: { type: Number, default: 30 },
-    is_active: { type: Boolean, default: true },
-    created_at: { type: Date, default: Date.now }
+    max_students: { type: Number },
+    is_active: { type: Boolean },
+    status: { type: String, enum: ['pending', 'approved', 'rejected', 'archived'] },
+    batch_category: { type: String, enum: ['approve', 'remove'] },
+    created_at: { type: Date, default: Date.now },
+    batches: [{
+        batch_name: String,
+        batch_type: String,
+        max_students: Number,
+        is_active: { type: Boolean, default: false },
+        status: { type: String, default: 'pending' }
+    }]
+});
+
+BatchSchema.pre('save', function() {
+    if (this.batch_type === 'all') {
+        this.batch_category = 'approve';
+    } else if (['morning', 'afternoon', 'evening'].includes(this.batch_type)) {
+        this.batch_category = 'remove';
+    }
 });
 BatchSchema.set('toJSON', {
     virtuals: true, versionKey: false,
@@ -20,6 +35,7 @@ const StudentBatchSchema = new mongoose.Schema({
     student_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     course_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
     batch_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Batch', required: true },
+    assigned_session: { type: String, enum: ['morning', 'afternoon', 'evening', 'all'] }, // Tracks specific slot in "all"
     assigned_at: { type: Date, default: Date.now },
     assigned_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     previous_batch_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Batch', default: null },
@@ -36,6 +52,7 @@ const BatchRequestSchema = new mongoose.Schema({
     student_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     course_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
     batch_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Batch', required: true },
+    requested_session: { type: String, enum: ['morning', 'afternoon', 'evening', 'all'] },
     status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
     type: { type: String, enum: ['initial', 'change'], default: 'initial' },
     requested_at: { type: Date, default: Date.now },

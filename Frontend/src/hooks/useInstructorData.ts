@@ -26,6 +26,9 @@ export interface Course {
   duration_hours?: number;
   price?: number;
   original_price?: number;
+  occupied_sessions?: string[];
+  assigned_session?: 'morning' | 'afternoon' | 'evening' | 'all';
+  assigned_batch_id?: string;
 }
 
 export interface LiveClass {
@@ -374,6 +377,28 @@ export function useAnnouncements(courseId: string | null) {
   });
 }
 
+export interface RosterStudent {
+  student_id: string;
+  full_name: string;
+  email: string;
+  avatar_url?: string;
+  role: string;
+  batch: {
+    id: string;
+    name: string;
+    type: string;
+    session?: string;
+  } | null;
+}
+
+export interface GroupedRoster {
+  morning: RosterStudent[];
+  afternoon: RosterStudent[];
+  evening: RosterStudent[];
+  all: RosterStudent[];
+  unassigned: RosterStudent[];
+}
+
 export interface StudentRosterEntry {
   id: string;
   user_id: string;
@@ -399,11 +424,11 @@ export function useBatchStudents(courseId: string | null, batchType: string | nu
 }
 
 export function useCourseRoster(courseId: string | null) {
-  return useQuery<StudentRosterEntry[]>({
+  return useQuery<GroupedRoster>({
     queryKey: ["course-roster", courseId],
     queryFn: async () => {
-      if (!courseId) return [];
-      return fetchWithAuth(`/courses/${courseId}/roster`);
+      if (!courseId) return { morning: [], afternoon: [], evening: [], all: [], unassigned: [] };
+      return fetchWithAuth(`/batches/course-roster/${courseId}`);
     },
     enabled: !!courseId,
   });

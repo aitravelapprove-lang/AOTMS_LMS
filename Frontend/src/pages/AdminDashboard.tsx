@@ -805,6 +805,8 @@ export default function AdminDashboard() {
                       onUpdateStatus={updateUserStatus}
                       onUpdateRole={updateUserRole}
                       onSendEmail={sendApprovalEmail}
+                      onUpdateEnrollmentStatus={updateEnrollmentStatus}
+                      onResetATS={async (userId) => { await _resetStudentATS(userId); }}
                     />
                   </motion.div>
                 </TabsContent>

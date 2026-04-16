@@ -230,7 +230,7 @@ export function ExamApproval() {
                         </Badge>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-[10px] font-black text-slate-500 uppercase tracking-widest italic">
-                        <span className="flex items-center gap-1.5"><Calendar className="h-3 w-3" /> {exam.scheduled_date ? format(new Date(exam.scheduled_date), 'MMM dd, HH:mm') : 'Unscheduled'}</span>
+                        <span className="flex items-center gap-1.5"><Calendar className="h-3 w-3" /> {exam.scheduled_date ? format(new Date(exam.scheduled_date), 'MMM dd, hh:mm a') : 'Unscheduled'}</span>
                         <span className="flex items-center gap-1.5"><History className="h-3 w-3" /> {exam.duration_minutes} Mins</span>
                         <span className="flex items-center gap-1.5"><ShieldCheck className="h-3 w-3" /> {exam.proctoring_enabled ? 'SECURE' : 'OPEN'}</span>
                       </div>

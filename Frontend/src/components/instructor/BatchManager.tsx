@@ -26,11 +26,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { fetchWithAuth } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import { 
   Users, 
   Plus, 
   Clock, 
   Trash2, 
+  Pencil,
   Split, 
   Layers,
   Search,
@@ -63,13 +65,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 interface Batch {
   id: string;
   batch_name: string;
-  batch_type: 'morning' | 'afternoon' | 'evening';
-  start_time: string;
-  end_time: string;
+  batch_type: 'morning' | 'afternoon' | 'evening' | 'all';
+  start_time?: string;
+  end_time?: string;
   max_students: number;
   student_count: number;
-  is_active: boolean;
   created_at: string;
+  batches?: Batch[];
+  batch_category?: string;
+  original?: Batch;
+  students?: RosterStudent[];
 }
 
 interface RosterStudent {
@@ -81,6 +86,7 @@ interface RosterStudent {
     id: string;
     name: string;
     type: string;
+    session?: string;
   };
 }
 
@@ -108,12 +114,14 @@ interface BatchRequest {
     batch_type: string;
   };
   type: string;
+  requested_session?: string;
   requested_at: string;
 }
 
 interface BatchManagerProps {
   courseId: string;
   courseTitle: string;
+  assignedSession?: 'morning' | 'afternoon' | 'evening' | 'all';
 }
 
 // ─── Draggable Student Card ─────────────────────────────────────────────────
@@ -215,7 +223,7 @@ function DroppableRosterColumn({ title, students, colorClass, type, onRemove }: 
   );
 }
 
-export function BatchManager({ courseId, courseTitle }: BatchManagerProps) {
+export function BatchManager({ courseId, courseTitle, assignedSession }: BatchManagerProps) {
   const [batches, setBatches] = useState<Batch[]>([]);
   const [roster, setRoster] = useState<GroupedRoster | null>(null);
   const [requests, setRequests] = useState<BatchRequest[]>([]);
@@ -238,15 +246,35 @@ export function BatchManager({ courseId, courseTitle }: BatchManagerProps) {
 
   const [activeStudent, setActiveStudent] = useState<RosterStudent | null>(null);
 
-  // Create Batch State
+  const isRestricted = useMemo(() => {
+    return batches.some(b => b.batch_category === 'remove');
+  }, [batches]);
+
+  // Create/Edit Batch State
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
   const [newBatch, setNewBatch] = useState({
     batch_name: "",
-    batch_type: "morning" as 'morning' | 'afternoon' | 'evening',
-    start_time: "09:00",
-    end_time: "11:00",
+    batch_type: "morning" as 'morning' | 'afternoon' | 'evening' | 'all',
     max_students: 30
   });
+
+  const handleUpdateBatch = async () => {
+    if (!editingBatch) return;
+    try {
+      await fetchWithAuth(`/batches/${editingBatch.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(newBatch)
+      });
+      toast({ title: "Success", description: "Batch updated successfully" });
+      setEditingBatch(null);
+      setShowCreateModal(false);
+      loadBatches();
+    } catch (e: unknown) {
+      const error = e as Error;
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
 
   // Assign Student Modal
   const [assignmentModal, setAssignmentModal] = useState<{ student: RosterStudent | null, isOpen: boolean }>({
@@ -279,12 +307,21 @@ export function BatchManager({ courseId, courseTitle }: BatchManagerProps) {
 
   const handleCreateBatch = async () => {
     try {
-      await fetchWithAuth('/batches', {
-        method: 'POST',
-        body: JSON.stringify({ ...newBatch, course_id: courseId })
+      await fetchWithAuth("/batches", {
+        method: "POST",
+        body: JSON.stringify({
+          ...newBatch,
+          course_id: courseId,
+        }),
       });
-      toast({ title: "Success", description: "Batch created successfully" });
+
+      toast({ title: "Success", description: "Batch initialized successfully" });
       setShowCreateModal(false);
+      setNewBatch({
+        batch_name: "",
+        batch_type: "morning",
+        max_students: 30
+      });
       loadBatches();
     } catch (e: unknown) {
       const error = e as Error;
@@ -292,7 +329,7 @@ export function BatchManager({ courseId, courseTitle }: BatchManagerProps) {
     }
   };
 
-  const handleAssignStudent = async (batchId: string, studentId?: string) => {
+  const handleAssignStudent = async (batchId: string, studentId?: string, session?: string) => {
     const targetStudentId = studentId || assignmentModal.student?.student_id;
     if (!targetStudentId) return;
 
@@ -301,10 +338,11 @@ export function BatchManager({ courseId, courseTitle }: BatchManagerProps) {
         method: 'POST',
         body: JSON.stringify({ 
           student_id: targetStudentId,
-          course_id: courseId 
+          course_id: courseId,
+          session: session // Pass the specific session slot
         })
       });
-      toast({ title: "Assigned", description: "Batch assignment updated." });
+      toast({ title: "Assigned", description: `Assigned to ${session || 'batch'} successfully.` });
       setAssignmentModal({ student: null, isOpen: false });
       loadBatches();
     } catch (e: unknown) {
@@ -328,7 +366,10 @@ export function BatchManager({ courseId, courseTitle }: BatchManagerProps) {
     
     // Find if the student is already in a batch of this type
     const student = active.data.current as RosterStudent;
-    if (student.batch?.type === targetBatchType) return;
+    
+    // Check session or type mismatch
+    const currentSession = student.batch?.session || student.batch?.type;
+    if (currentSession === targetBatchType) return;
 
     if (targetBatchType === 'unassigned') {
       if (student.batch) {
@@ -338,19 +379,23 @@ export function BatchManager({ courseId, courseTitle }: BatchManagerProps) {
     }
 
     // Assign to a batch of the target type
-    const possibleBatches = batches.filter(b => b.batch_type === targetBatchType && b.is_active);
+    // Look for direct session batches OR container batches that hold this session
+    const possibleBatches = batches.filter(b => 
+        b.batch_type === targetBatchType || 
+        (b.batch_type === 'all' && b.batches?.some(sub => sub.batch_type === targetBatchType))
+    );
     
     if (possibleBatches.length === 0) {
       toast({ 
         title: "No Batches", 
-        description: `Create a ${targetBatchType} batch first.`,
+        description: `Create a ${targetBatchType} section first.`,
         variant: "destructive"
       });
       return;
     }
 
     if (possibleBatches.length === 1) {
-      handleAssignStudent(possibleBatches[0].id, studentId);
+      handleAssignStudent(possibleBatches[0].id, studentId, targetBatchType);
     } else {
       // Multiple batches of this type, open modal to choose
       setAssignmentModal({ student, isOpen: true });
@@ -379,19 +424,6 @@ export function BatchManager({ courseId, courseTitle }: BatchManagerProps) {
     }
   };
 
-  const handleAutoSplit = async () => {
-    try {
-      const res = await fetchWithAuth(`/batches/auto-split/${courseId}`, { method: 'POST' }) as { message?: string };
-      toast({ 
-        title: "Scaling Complete", 
-        description: res.message || "Students distributed across batches." 
-      });
-      loadBatches();
-    } catch (e: unknown) {
-      const error = e as Error;
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    }
-  };
 
   const handleDeleteBatch = async (id: string) => {
     if (!confirm("Are you sure? This will remove all student assignments for this batch.")) return;
@@ -402,6 +434,16 @@ export function BatchManager({ courseId, courseTitle }: BatchManagerProps) {
     } catch (e: unknown) {
       const error = e as Error;
       toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const getSessionTime = (type: string) => {
+    switch(type) {
+      case 'morning': return "08:00 AM — 12:00 PM";
+      case 'afternoon': return "01:00 PM — 05:00 PM";
+      case 'evening': return "06:00 PM — 09:00 PM";
+      case 'all': return "08:00 AM — 09:00 PM";
+      default: return "";
     }
   };
 
@@ -437,13 +479,15 @@ export function BatchManager({ courseId, courseTitle }: BatchManagerProps) {
               >
                 Batch Cards
               </Button>
-              <Button 
-                variant={viewMode === 'roster' ? 'default' : 'ghost'}
-                onClick={() => setViewMode('roster')}
-                className={`rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest transition-all ${viewMode === 'roster' ? 'bg-white text-primary shadow-sm' : 'text-slate-400'}`}
-              >
-                Full Roster
-              </Button>
+              {!isRestricted && (
+                <Button 
+                  variant={viewMode === 'roster' ? 'default' : 'ghost'}
+                  onClick={() => setViewMode('roster')}
+                  className={`rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest transition-all ${viewMode === 'roster' ? 'bg-white text-primary shadow-sm' : 'text-slate-400'}`}
+                >
+                  Full Roster
+                </Button>
+              )}
               <Button 
                 variant={viewMode === 'requests' ? 'default' : 'ghost'}
                 onClick={() => setViewMode('requests')}
@@ -459,20 +503,15 @@ export function BatchManager({ courseId, courseTitle }: BatchManagerProps) {
             </div>
           </div>
 
-          <Button 
-            onClick={handleAutoSplit}
-            className="rounded-xl h-11 px-6 bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100 font-black text-[10px] uppercase tracking-widest flex items-center gap-2 border shadow-sm"
-          >
-            <Split className="h-4 w-4" />
-            Auto-Scale
-          </Button>
-          <Button 
-            onClick={() => setShowCreateModal(true)}
-            className="rounded-xl h-11 px-6 bg-primary text-white hover:bg-primary/90 font-black text-[10px] uppercase tracking-widest flex items-center gap-2 shadow-xl shadow-primary/20"
-          >
-            <Plus className="h-4 w-4" />
-            Create Batch
-          </Button>
+          {!isRestricted && (
+            <Button 
+              onClick={() => setShowCreateModal(true)}
+              className="rounded-xl h-11 px-6 bg-primary text-white hover:bg-primary/90 font-black text-[10px] uppercase tracking-widest flex items-center gap-2 shadow-xl shadow-primary/20"
+            >
+              <Plus className="h-4 w-4" />
+              Create Batch
+            </Button>
+          )}
         </div>
       </div>
 
@@ -483,113 +522,162 @@ export function BatchManager({ courseId, courseTitle }: BatchManagerProps) {
           ))}
         </div>
       ) : viewMode === 'batches' ? (
-        batches.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-20 bg-slate-50 rounded-[4rem] border-4 border-dashed border-slate-200 text-center">
-            <div className="h-24 w-24 bg-white rounded-full shadow-2xl flex items-center justify-center mb-8 relative">
-              <Users className="h-10 w-10 text-slate-300" />
-              <div className="absolute -top-1 -right-1 h-6 w-6 bg-primary rounded-full animate-ping opacity-20" />
-            </div>
-            <h3 className="text-2xl font-black text-slate-900 tracking-tight">Zero Active Batches</h3>
-            <p className="text-slate-500 max-w-sm mt-4 text-sm font-medium leading-relaxed">
-              Enable strict time-gating by creating your first training batch. Students will automatically split as they enroll.
-            </p>
-            <Button onClick={() => setShowCreateModal(true)} variant="default" className="mt-10 rounded-2xl h-14 px-10 bg-primary text-white font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/30">
-              Initialize First Batch
-            </Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <AnimatePresence>
-              {batches.map((batch, idx) => (
-                <motion.div
-                  key={batch.id}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.05 }}
+        (() => {
+          const filteredBatches = assignedSession && assignedSession !== 'all' 
+            ? batches.filter(b => b.batch_type === assignedSession) 
+            : batches;
+
+          if (filteredBatches.length === 0) {
+            return (
+              <div className="flex flex-col items-center justify-center p-20 bg-slate-50 rounded-[4rem] border-4 border-dashed border-slate-200 text-center">
+                <div className="h-24 w-24 bg-white rounded-full shadow-2xl flex items-center justify-center mb-8 relative">
+                  <Users className="h-10 w-10 text-slate-300" />
+                  <div className="absolute -top-1 -right-1 h-6 w-6 bg-primary rounded-full animate-ping opacity-20" />
+                </div>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight">Zero Active Batches</h3>
+                <p className="text-slate-500 max-w-sm mt-4 text-sm font-medium leading-relaxed">
+                  {(assignedSession || 'all') !== 'all' 
+                    ? `You don't have any dealing batches for the ${assignedSession} session yet.`
+                    : "Enable strict time-gating by creating your first training batch. Students will automatically split as they enroll."
+                  }
+                </p>
+                <Button 
+                   onClick={() => {
+                     setNewBatch(prev => ({ ...prev, batch_type: (assignedSession === 'all' || !assignedSession) ? 'morning' : (assignedSession as 'morning' | 'afternoon' | 'evening') }));
+                     setShowCreateModal(true);
+                   }} 
+                   variant="default" 
+                   className="mt-10 rounded-2xl h-14 px-10 bg-primary text-white font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/30"
                 >
-                  <Card className="rounded-[3rem] border-slate-100 shadow-xl hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] transition-all duration-500 group overflow-hidden bg-white/80 backdrop-blur-sm border">
-                    <CardContent className="p-0">
-                      <div className="p-8">
-                        <div className="flex items-center justify-between mb-6">
-                          <Badge className={`rounded-xl font-black text-[10px] uppercase px-3 py-1.5 border-none ${
-                            batch.batch_type === 'morning' ? 'bg-orange-100 text-orange-700' :
-                            batch.batch_type === 'afternoon' ? 'bg-blue-100 text-blue-700' :
-                            'bg-violet-100 text-violet-700'
-                          }`}>
-                            {batch.batch_type} Session
-                          </Badge>
-                          <div className="flex items-center gap-2">
-                             <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
-                               <Calendar className="h-3 w-3" />
-                               {formatDate(batch.created_at)}
-                             </span>
-                             <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => handleDeleteBatch(batch.id)}
-                              className="h-9 w-9 rounded-xl hover:bg-rose-50 hover:text-rose-600 text-slate-300 opacity-20 group-hover:opacity-100 transition-all border border-transparent hover:border-rose-100"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
+                  Initialize {(assignedSession && assignedSession !== 'all') ? assignedSession : 'First'} Batch
+                </Button>
+              </div>
+            );
+          }
 
-                        <h3 className="text-xl font-black text-slate-900 leading-tight mb-2 tracking-tight">{batch.batch_name}</h3>
-                        <div className="flex items-center gap-2.5 text-slate-500 font-bold text-xs uppercase tracking-widest mb-8">
-                          <div className="h-6 w-6 rounded-lg bg-slate-100 flex items-center justify-center">
-                             <Clock className="h-3.5 w-3.5" />
-                          </div>
-                          {batch.start_time} — {batch.end_time}
-                        </div>
+          return (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <AnimatePresence>
+                {(() => {
+                  const items = (filteredBatches as Batch[]).flatMap(b => {
+                    if (b.batches && b.batches.length > 0) {
+                      return b.batches.map(sub => ({ ...sub, id: b.id, original: b }));
+                    }
+                    return [b];
+                  });
 
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between px-1">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Global Capacity</span>
-                            <span className="text-sm font-black text-slate-900">{batch.student_count} / {batch.max_students} <span className="text-[10px] text-slate-400 font-medium">LMS Nodes</span></span>
-                          </div>
-                          <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
-                            <motion.div 
-                              initial={{ width: 0 }}
-                              animate={{ width: `${Math.min(100, (batch.student_count / batch.max_students) * 100)}%` }}
-                              className={`h-full transition-all duration-1000 ${
-                                (batch.student_count / batch.max_students) > 0.9 ? 'bg-rose-500' :
-                                (batch.student_count / batch.max_students) > 0.7 ? 'bg-amber-500' :
-                                'bg-primary'
-                              }`}
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="bg-slate-50/80 p-5 px-8 border-t border-slate-100 flex items-center justify-between">
-                         <div className="flex -space-x-3">
-                            {roster && roster[batch.batch_type].slice(0, 4).map((s, idx) => (
-                              <Avatar key={s.student_id} className="h-8 w-8 border-2 border-white shadow-md">
-                                <AvatarImage src={s.avatar_url} />
-                                <AvatarFallback className="bg-slate-200 text-[10px] font-bold text-slate-500">{s.full_name[0]}</AvatarFallback>
-                              </Avatar>
-                            ))}
-                            {(batch.student_count > 4) && (
-                              <div className="h-8 w-8 rounded-full bg-white border-2 border-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400 z-10">
-                                +{batch.student_count - 4}
+                  return items.map((batch, idx: number) => {
+                    const b = batch as Batch & { original?: Batch }; 
+                    return (
+                    <motion.div
+                      key={b.batch_type === 'morning' || b.batch_type === 'afternoon' || b.batch_type === 'evening' ? `${b.id}-${b.batch_type}` : b.id}
+                      initial={{ opacity: 0, y: 30 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.05 }}
+                    >
+                      <Card className="rounded-[3rem] border-slate-100 shadow-xl hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] transition-all duration-500 group overflow-hidden bg-white/80 backdrop-blur-sm border">
+                        <CardContent className="p-0">
+                          <div className="p-8">
+                            <div className="flex items-center justify-between mb-6">
+                              <Badge className={`rounded-xl font-black text-[10px] uppercase px-3 py-1.5 border-none ${
+                                batch.batch_type === 'morning' ? 'bg-orange-100 text-orange-700' :
+                                batch.batch_type === 'afternoon' ? 'bg-blue-100 text-blue-700' :
+                                'bg-violet-100 text-violet-700'
+                              }`}>
+                                {batch.batch_type} Session
+                              </Badge>
+                              <div className="flex items-center gap-1">
+                                 <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                                   <Calendar className="h-3 w-3" />
+                                   {formatDate(batch.created_at || batch.original?.created_at)}
+                                 </span>
+                                 <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                   onClick={() => {
+                                     const target = batch.original || batch;
+                                     setEditingBatch(target);
+                                     setNewBatch({
+                                       batch_name: batch.batch_name,
+                                       batch_type: batch.batch_type, // Crucial: use the card's session type
+                                       max_students: batch.max_students
+                                     });
+                                     setShowCreateModal(true);
+                                   }}
+                                   className="h-9 w-9 rounded-xl hover:bg-primary/5 hover:text-primary text-slate-300 opacity-20 group-hover:opacity-100 transition-all border border-transparent mr-1"
+                                 >
+                                   <Pencil className="h-3.5 w-3.5" />
+                                 </Button>
+                                 <Button 
+                                   variant="ghost" 
+                                   size="icon" 
+                                   onClick={() => handleDeleteBatch(batch.id)}
+                                   className="h-9 w-9 rounded-xl hover:bg-rose-50 hover:text-rose-600 text-slate-300 opacity-20 group-hover:opacity-100 transition-all border border-transparent hover:border-rose-100"
+                                 >
+                                   <Trash2 className="h-4 w-4" />
+                                 </Button>
                               </div>
-                            )}
-                         </div>
-                         <Button 
-                           variant="ghost" 
-                           onClick={() => setViewMode('roster')}
-                           className="h-auto p-0 text-primary font-black text-[10px] uppercase tracking-[0.15em] hover:bg-transparent hover:translate-x-1 transition-all"
-                         >
-                            Check Unit Roster <ArrowRight className="h-3 w-3 ml-1" />
-                         </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-        )
+                            </div>
+
+                            <h3 className="text-xl font-black text-slate-900 leading-tight mb-2 tracking-tight">{batch.batch_name}</h3>
+                            <div className="flex items-center gap-2.5 text-slate-500 font-bold text-xs uppercase tracking-widest mb-8">
+                              <div className="h-6 w-6 rounded-lg bg-slate-100 flex items-center justify-center">
+                                 <Clock className="h-3.5 w-3.5" />
+                              </div>
+                              {getSessionTime(batch.batch_type)}
+                            </div>
+
+                            <div className="space-y-4">
+                              <div className="flex items-center justify-between px-1">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Global Capacity</span>
+                                <span className="text-sm font-black text-slate-900">{batch.student_count || 0} / {batch.max_students} <span className="text-[10px] text-slate-400 font-medium">LMS Nodes</span></span>
+                              </div>
+                              <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                                <motion.div 
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${Math.min(((batch.student_count || 0) / (batch.max_students || 1)) * 100, 100)}%` }}
+                                  transition={{ duration: 1, ease: "easeOut" }}
+                                  className={`h-full rounded-full ${
+                                    ((batch.student_count || 0) / (batch.max_students || 1)) > 0.8 ? 'bg-rose-500' : 
+                                    ((batch.student_count || 0) / (batch.max_students || 1)) > 0.5 ? 'bg-amber-500' : 'bg-primary'
+                                  }`}
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="px-8 py-5 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
+                             <div className="flex -space-x-2">
+                                {(batch.students || []).slice(0, 4).map((s: RosterStudent) => (
+                                  <Avatar key={s.student_id} className="h-8 w-8 border-2 border-white ring-2 ring-slate-50 shadow-sm">
+                                    <AvatarImage src={s.avatar_url} />
+                                    <AvatarFallback className="bg-slate-200 text-[10px] font-bold text-slate-500">{s.full_name[0]}</AvatarFallback>
+                                  </Avatar>
+                                ))}
+                                {(batch.student_count > 4) && (
+                                  <div className="h-8 w-8 rounded-full bg-white border-2 border-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400 z-10">
+                                    +{batch.student_count - 4}
+                                  </div>
+                                )}
+                             </div>
+                             <Button 
+                               variant="ghost" 
+                               onClick={() => setViewMode('roster')}
+                               className="h-auto p-0 text-primary font-black text-[10px] uppercase tracking-[0.15em] hover:bg-transparent hover:translate-x-1 transition-all"
+                             >
+                                Check Unit Roster <ArrowRight className="h-3 w-3 ml-1" />
+                             </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                    );
+                  });
+                })()}
+              </AnimatePresence>
+            </div>
+          );
+        })()
       ) : viewMode === 'requests' ? (
         <div className="space-y-6 max-w-4xl">
           <div className="flex items-center gap-3 mb-2 px-2">
@@ -617,11 +705,26 @@ export function BatchManager({ courseId, courseTitle }: BatchManagerProps) {
                         {request.student_id.full_name[0]}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
-                      <h4 className="font-black text-slate-900 leading-tight">{request.student_id.full_name}</h4>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
-                        Moving to: <span className="text-primary">{request.batch_id.batch_name}</span> ({request.batch_id.batch_type})
-                      </p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-black text-slate-900 leading-tight">{request.student_id.full_name}</h4>
+                        {request.requested_session && (
+                          <span className={cn(
+                            "px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1.5",
+                            request.requested_session === 'morning' ? "bg-amber-50 text-amber-600 border border-amber-100" :
+                            request.requested_session === 'afternoon' ? "bg-orange-50 text-orange-600 border border-orange-100" :
+                            "bg-indigo-50 text-indigo-600 border border-indigo-100"
+                          )}>
+                            <Clock className="h-3 w-3" />
+                            {request.requested_session}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                          Requesting <span className="text-primary font-black">{request.batch_id.batch_name}</span> for {request.course_id.title}
+                        </p>
+                      </div>
                     </div>
                   </div>
                   
@@ -749,11 +852,21 @@ export function BatchManager({ courseId, courseTitle }: BatchManagerProps) {
       )}
 
       {/* Create Modal */}
-      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+        <Dialog 
+          open={showCreateModal} 
+          onOpenChange={(open) => {
+            setShowCreateModal(open);
+            if(!open) setEditingBatch(null);
+          }}
+        >
         <DialogContent className="rounded-[2.5rem] border-none shadow-2xl p-8 max-w-md bg-white">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Create Training Batch</DialogTitle>
-            <DialogDescription className="text-slate-500 font-medium">Define the schedule and capacity for a new student cohort.</DialogDescription>
+            <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">
+              {editingBatch ? 'Adjust Training Batch' : 'Create Training Batch'}
+            </DialogTitle>
+            <DialogDescription className="text-slate-500 font-medium">
+              {editingBatch ? 'Update configuration for the active student cohort.' : 'Define the schedule and capacity for a new student cohort.'}
+            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-5 py-4">
@@ -770,7 +883,7 @@ export function BatchManager({ courseId, courseTitle }: BatchManagerProps) {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">Type</Label>
-                <Select value={newBatch.batch_type} onValueChange={(v: 'morning' | 'afternoon' | 'evening') => setNewBatch({...newBatch, batch_type: v})}>
+                <Select value={newBatch.batch_type} onValueChange={(v: 'morning' | 'afternoon' | 'evening' | 'all') => setNewBatch({...newBatch, batch_type: v})}>
                   <SelectTrigger className="h-12 rounded-2xl border-slate-200 bg-slate-50/50">
                     <SelectValue />
                   </SelectTrigger>
@@ -778,6 +891,7 @@ export function BatchManager({ courseId, courseTitle }: BatchManagerProps) {
                     <SelectItem value="morning">Morning</SelectItem>
                     <SelectItem value="afternoon">Afternoon</SelectItem>
                     <SelectItem value="evening">Evening</SelectItem>
+                    {!editingBatch && <SelectItem value="all">Full Daily Unit (Split 3)</SelectItem>}
                   </SelectContent>
                 </Select>
               </div>
@@ -792,37 +906,28 @@ export function BatchManager({ courseId, courseTitle }: BatchManagerProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">Start Time</Label>
-                <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <Input 
-                    type="time"
-                    value={newBatch.start_time}
-                    onChange={(e) => setNewBatch({...newBatch, start_time: e.target.value})}
-                    className="h-12 rounded-2xl border-slate-200 bg-slate-50/50 pl-10" 
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">End Time</Label>
-                <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <Input 
-                    type="time"
-                    value={newBatch.end_time}
-                    onChange={(e) => setNewBatch({...newBatch, end_time: e.target.value})}
-                    className="h-12 rounded-2xl border-slate-200 bg-slate-50/50 pl-10" 
-                  />
-                </div>
-              </div>
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+               <div className="flex items-center gap-2 mb-2">
+                  <Clock className="h-4 w-4 text-primary" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Fixed Session Timings</span>
+               </div>
+               <p className="text-sm font-black text-slate-900 leading-tight">
+                  {getSessionTime(newBatch.batch_type)}
+               </p>
+               <p className="text-[10px] font-medium text-slate-400 mt-1 leading-relaxed">
+                  Timings are optimized for local timezones and cannot be modified.
+               </p>
             </div>
           </div>
 
-          <DialogFooter className="gap-3">
-            <Button variant="ghost" className="rounded-2xl h-12 font-black uppercase text-xs tracking-widest border border-slate-100" onClick={() => setShowCreateModal(false)}>Cancel</Button>
-            <Button className="rounded-2xl h-12 px-8 bg-primary text-white hover:bg-primary/90 font-black uppercase text-xs tracking-widest shadow-lg shadow-primary/20" onClick={handleCreateBatch}>Initialize Batch</Button>
+          <DialogFooter className="gap-3 mt-4 border-t pt-6">
+            <Button variant="ghost" className="rounded-2xl h-12 font-black uppercase text-xs tracking-widest border border-slate-100" onClick={() => { setShowCreateModal(false); setEditingBatch(null); }}>Cancel</Button>
+            <Button 
+              className="rounded-2xl h-12 px-8 bg-primary text-white hover:bg-primary/90 font-black uppercase text-xs tracking-widest shadow-lg shadow-primary/20" 
+              onClick={editingBatch ? handleUpdateBatch : handleCreateBatch}
+            >
+              {editingBatch ? 'Save Changes' : 'Initialize Batch'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

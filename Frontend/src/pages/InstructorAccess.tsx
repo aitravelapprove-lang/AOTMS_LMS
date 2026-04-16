@@ -27,6 +27,7 @@ import {
   Check,
   MoreVertical,
   Trash2,
+  Calendar,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -64,6 +65,10 @@ interface AdminCourse {
   rejection_reason: string | null;
   created_at: string;
   updated_at: string;
+  batch_type?: string;
+  batch_name?: string;
+  instructor_id?: string;
+  row_id: string;
 }
 
 interface Stats {
@@ -82,6 +87,7 @@ export default function InstructorAccess() {
   const [selectedCourse, setSelectedCourse] = useState<AdminCourse | null>(
     null,
   );
+  const [selectedInstructorId, setSelectedInstructorId] = useState<string | null>(null);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [processing, setProcessing] = useState(false);
@@ -135,14 +141,36 @@ export default function InstructorAccess() {
     fetchCourses();
   }, [fetchCourses]);
 
-  const handleApprove = async (courseId: string, title: string) => {
+  const handleApprove = async (courseId: string, title: string, instructorId?: string) => {
     setProcessing(true);
     try {
       await fetchWithAuth("/admin/approve-course", {
         method: "PUT",
-        body: JSON.stringify({ courseId, status: "approved" }),
+        body: JSON.stringify({ courseId, instructorId, status: "approved" }),
       });
+      
+      // Update local state immediately for visual responsiveness
+      setCourses(prevCourses => prevCourses.map(c => {
+        const isTarget = instructorId 
+          ? (c.id === courseId && c.instructor_id === instructorId)
+          : (c.id === courseId);
+          
+        if (isTarget) {
+          return { ...c, status: "approved" as "approved" };
+        }
+        return c;
+      }));
+
+      // Update stats locally
+      setStats(prev => ({
+        ...prev,
+        pending: Math.max(0, prev.pending - 1),
+        approved: prev.approved + 1
+      }));
+
       toast.success(`Access granted for: ${title}`);
+      
+      // Refresh to sync everything else
       fetchCourses();
     } catch (err) {
       console.error("Failed to approve:", err);
@@ -152,24 +180,37 @@ export default function InstructorAccess() {
     }
   };
 
-  const handleDeleteCourse = async (courseId: string, title: string) => {
+  const handleDeleteCourse = async (course: AdminCourse) => {
+    const courseId = course.id;
+    const instructorId = course.instructor_id;
+    const title = course.title;
+    const instructorName = course.instructor_name;
+
     if (
       !confirm(
-        `Are you sure you want to remove all instructor assignments from "${title}"? This will return the course to draft status but will NOT delete the course content.`,
+        `Are you sure you want to revoke access for "${instructorName}" from "${title}"? This will also delete their specific teaching batches.`,
       )
     )
       return;
 
     setProcessing(true);
     try {
-      await fetchWithAuth(`/admin/clear-course-instructors/${courseId}`, {
-        method: "DELETE",
-      });
-      toast.success(`Access removed: ${title}`);
+        if (instructorId) {
+            // Surgical Revocation
+            await fetchWithAuth(`/admin/revoke-instructor-access/${courseId}/${instructorId}`, {
+                method: "DELETE",
+            });
+        } else {
+            // Legacy / Clear All fallback
+            await fetchWithAuth(`/admin/clear-course-instructors/${courseId}`, {
+                method: "DELETE",
+            });
+        }
+      toast.success(`Access removed for ${instructorName}`);
       fetchCourses();
     } catch (err) {
-      console.error("Failed to unassign:", err);
-      toast.error("Failed to remove instructors");
+      console.error("Failed to revoke access:", err);
+      toast.error("Failed to remove instructor access");
     } finally {
       setProcessing(false);
     }
@@ -183,6 +224,7 @@ export default function InstructorAccess() {
         method: "PUT",
         body: JSON.stringify({
           courseId: selectedCourse.id,
+          instructorId: selectedInstructorId,
           status: "rejected",
           rejectionReason: rejectReason,
         }),
@@ -190,6 +232,7 @@ export default function InstructorAccess() {
       toast.info(`Request rejected for: ${selectedCourse.title}`);
       setShowRejectDialog(false);
       setSelectedCourse(null);
+      setSelectedInstructorId(null);
       setRejectReason("");
       fetchCourses();
     } catch (err) {
@@ -395,11 +438,11 @@ export default function InstructorAccess() {
         </CardHeader>
         <CardContent className="p-8">
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div className="space-y-4">
+              {[1, 2, 3, 4].map((i) => (
                 <div
                   key={i}
-                  className="h-24 rounded-2xl bg-slate-50 animate-pulse border border-slate-100"
+                  className="h-20 rounded-2xl bg-slate-50 animate-pulse border border-slate-100"
                 />
               ))}
             </div>
@@ -416,154 +459,158 @@ export default function InstructorAccess() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              {/* Table Header - Visible on Desktop */}
+              <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 bg-slate-50/50 rounded-2xl border border-slate-100 mb-2">
+                <div className="col-span-1 text-[10px] font-black uppercase tracking-widest text-slate-400">Image</div>
+                <div className="col-span-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Instructor & Email</div>
+                <div className="col-span-2 text-[10px] font-black uppercase tracking-widest text-slate-400">Course Target</div>
+                <div className="col-span-2 text-[10px] font-black uppercase tracking-widest text-slate-400">Session Unit</div>
+                <div className="col-span-1 text-[10px] font-black uppercase tracking-widest text-slate-400">Status</div>
+                <div className="col-span-1 text-[10px] font-black uppercase tracking-widest text-slate-400">Date</div>
+                <div className="col-span-2 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">Actions</div>
+              </div>
+
               <AnimatePresence mode="popLayout">
                 {filteredCourses.map((course) => (
                   <motion.div
-                    key={course.id}
+                    key={course.row_id || `${course.id}_${course.instructor_id}`}
                     layout
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="group flex flex-col md:flex-row md:items-center justify-between p-5 rounded-3xl border border-slate-200 bg-white hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500 relative overflow-hidden gap-6"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.98 }}
+                    className="grid grid-cols-1 md:grid-cols-12 gap-4 md:items-center p-4 md:p-6 bg-white rounded-[2rem] border border-slate-100 hover:border-primary/30 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300 relative group"
                   >
-                    <div className="flex items-start sm:items-center gap-5 min-w-0 flex-1">
-                      <div className="relative shrink-0">
-                        <Avatar className="h-14 w-14 border-2 border-slate-50 shadow-md rounded-2xl overflow-hidden transition-transform duration-500 group-hover:scale-105">
-                          <AvatarImage src={course.instructor_avatar || ""} />
-                          <AvatarFallback className={`${course.instructor_name === 'No Instructor Assigned' ? 'bg-slate-50 text-slate-300' : 'bg-primary/5 text-primary'} text-base font-black`}>
-                            {course.instructor_name === 'No Instructor Assigned' ? '?' : (course.instructor_name?.[0] || 'I')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div
-                          className={`absolute -bottom-1 -right-1 h-5 w-5 rounded-full border-4 border-white flex items-center justify-center shadow-sm ${
-                            course.status === "pending"
-                              ? "bg-amber-500"
-                              : course.status === "approved"
-                                ? "bg-emerald-500"
-                                : "bg-rose-500"
-                          }`}
-                        >
-                          <div className="h-1.5 w-1.5 bg-white rounded-full animate-pulse" />
-                        </div>
-                      </div>
+                    {/* Image Column */}
+                    <div className="col-span-1 flex items-center justify-center md:justify-start">
+                      <Avatar className="h-12 w-12 border-2 border-slate-50 shadow-sm rounded-xl overflow-hidden group-hover:scale-110 transition-transform">
+                        <AvatarImage src={course.instructor_avatar || ""} />
+                        <AvatarFallback className="bg-primary/5 text-primary text-xs font-black">
+                          {course.instructor_name?.[0] || 'I'}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
 
-                      <div className="flex-1 min-w-0 space-y-1.5">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h4 className={`text-[16px] font-black group-hover:text-primary transition-colors line-clamp-1 tracking-tight ${course.instructor_name === 'No Instructor Assigned' ? 'text-slate-400 italic' : 'text-slate-900'}`}>
-                            {course.instructor_name}
-                          </h4>
-                          <Badge
-                            className={`text-[9px] h-5 px-2 rounded-lg uppercase font-black tracking-wider border-none shadow-none ${
-                              course.status === "approved"
-                                ? "bg-emerald-500 text-white"
-                                : course.status === "pending"
-                                  ? "bg-amber-100 text-amber-700"
-                                  : "bg-rose-50 text-rose-600"
-                            }`}
-                          >
-                            {course.status === "pending"
-                              ? "PENDING"
-                              : "INSTRUCTOR"}
-                          </Badge>
-                        </div>
-                        <p className="text-[12px] font-semibold text-slate-900 line-clamp-1 opacity-100">
-                          {course.instructor_email}
-                        </p>
-                        <div className="flex flex-wrap items-center gap-2 pt-1">
-                          <div className="px-3 py-1 bg-slate-50 rounded-lg border border-slate-100 flex items-center gap-2 max-w-full">
-                            <BookOpen className="h-3 w-3 text-primary/40 shrink-0" />
-                            <span className="text-[10px] font-bold text-slate-900 uppercase tracking-tight line-clamp-1">
-                              {course.title}
-                            </span>
-                          </div>
-                          {course.created_at && (
-                            <div className="px-3 py-1 bg-slate-50/50 rounded-lg border border-slate-100/50 flex items-center gap-2">
-                              <Clock className="h-3 w-3 text-slate-300 shrink-0" />
-                              <span className="text-[10px] font-bold text-slate-900 uppercase tracking-tight">
-                                {new Date(course.created_at).toLocaleDateString(
-                                  "en-GB",
-                                )}
-                              </span>
-                            </div>
-                          )}
-                        </div>
+                    {/* Instructor & Email Column */}
+                    <div className="col-span-1 md:col-span-3 min-w-0 space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm md:text-base font-black text-slate-900 truncate tracking-tight">{course.instructor_name}</h4>
+                        {course.batch_name && (
+                            <Badge variant="outline" className="h-4 px-1.5 text-[7px] font-black uppercase border-slate-200 text-slate-400 bg-slate-50">
+                                {course.batch_name}
+                            </Badge>
+                        )}
+                      </div>
+                      <p className="text-[11px] md:text-sm font-medium text-slate-400 truncate tracking-tight uppercase">{course.instructor_email}</p>
+                    </div>
+
+                    {/* Course Column */}
+                    <div className="col-span-1 md:col-span-2">
+                      <div className="flex items-center gap-3">
+                         <div className="h-8 w-8 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
+                           <BookOpen className="h-4 w-4 text-indigo-500" />
+                         </div>
+                         <p className="text-xs md:text-sm font-black text-slate-800 line-clamp-1">{course.title}</p>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between md:justify-end gap-3 md:ml-6 shrink-0 border-t md:border-t-0 pt-4 md:pt-0 border-slate-50">
-                      {course.status === "pending" ? (
+                    {/* Batch Column */}
+                    <div className="col-span-1 md:col-span-2">
+                       <div className="flex items-center gap-2">
+                          <div className={`h-8 px-3 rounded-full flex items-center gap-2 border ${
+                            course.batch_type === 'morning' ? 'bg-orange-50 border-orange-100 text-orange-600' :
+                            course.batch_type === 'afternoon' ? 'bg-blue-50 border-blue-100 text-blue-600' :
+                            course.batch_type === 'evening' ? 'bg-violet-50 border-violet-100 text-violet-600' :
+                            'bg-slate-50 border-slate-100 text-slate-400'
+                          }`}>
+                            <Clock className="h-3 w-3" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">
+                                {course.batch_type || 'unassigned'}
+                            </span>
+                          </div>
+                       </div>
+                    </div>
+
+                    {/* Status Column */}
+                    <div className="col-span-1 md:col-span-1">
+                       <div className="flex items-center">
+                          <Badge className={`rounded-xl px-2 py-1 font-black text-[8px] uppercase tracking-widest border-none ${
+                            course.status === 'pending' ? 'bg-amber-100 text-amber-600' :
+                            course.status === 'approved' ? 'bg-emerald-100 text-emerald-600' :
+                            'bg-rose-100 text-rose-600'
+                          }`}>
+                            {course.status}
+                          </Badge>
+                       </div>
+                    </div>
+
+                    {/* Date Column */}
+                    <div className="col-span-1 md:col-span-1">
+                       <span className="text-[11px] font-black text-slate-400 uppercase tracking-tighter flex items-center gap-1.5 md:block">
+                          <Calendar className="h-3 w-3 md:hidden text-slate-300" />
+                          {course.created_at ? new Date(course.created_at).toLocaleDateString('en-GB') : 'N/A'}
+                       </span>
+                    </div>
+
+                    {/* Actions Column */}
+                    <div className="col-span-1 md:col-span-2 flex items-center justify-between md:justify-end gap-2 border-t md:border-t-0 pt-4 md:pt-0">
+                      {course.status === 'pending' && (
                         <div className="flex items-center gap-2">
-                          <Button
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleApprove(course.id, course.title);
-                            }}
+                          <Button 
+                            onClick={() => handleApprove(course.id, course.title, course.instructor_id)}
                             disabled={processing}
-                            className="h-10 px-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl shadow-lg shadow-emerald-100 transition-all font-black text-[11px] uppercase tracking-wider"
+                            className="h-10 px-4 bg-[#0084FF] hover:bg-[#0073e6] text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-blue-500/20"
                           >
-                            <Check className="h-4 w-4 mr-2" />
                             Grant Access
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedCourse(course);
-                              setShowRejectDialog(true);
-                            }}
-                            disabled={processing}
-                            className="h-10 px-4 bg-rose-50 hover:bg-rose-100 text-rose-500 border border-rose-100 rounded-xl transition-all font-black text-[11px] uppercase"
+                          <Button 
+                             variant="ghost" 
+                             onClick={() => { 
+                               setSelectedCourse(course); 
+                               setSelectedInstructorId(course.instructor_id || null);
+                               setShowRejectDialog(true); 
+                             }}
+                             disabled={processing}
+                             className="h-10 w-10 p-0 text-rose-500 hover:bg-rose-50 rounded-xl"
                           >
-                            <XCircle className="h-4 w-4" />
+                             <XCircle className="h-5 w-5" />
                           </Button>
-                        </div>
-                      ) : (
-                        <div
-                          className={`flex items-center gap-2 px-4 py-2 border rounded-xl font-black text-[11px] tracking-wider ${
-                            course.status === "rejected"
-                              ? "bg-rose-50 text-rose-500 border-rose-100"
-                              : "bg-emerald-50 text-emerald-600 border-emerald-100"
-                          }`}
-                        >
-                          {course.status === "rejected" ? (
-                            <XCircle className="h-4 w-4" />
-                          ) : (
-                            <ShieldCheck className="h-4 w-4" />
-                          )}
-                          <span className="uppercase">
-                            {course.status === "approved"
-                              ? "Verified Access"
-                              : course.status}
-                          </span>
                         </div>
                       )}
 
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-10 w-10 rounded-xl text-slate-400 hover:text-slate-900 border-slate-100 transition-all"
-                          >
-                            <MoreVertical className="h-4.5 w-4.5" />
+                          <Button variant="ghost" size="icon" className="h-10 w-10 text-slate-300 hover:text-slate-600 rounded-xl">
+                            <MoreVertical className="h-5 w-5" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="end"
-                          className="w-56 p-2 rounded-2xl shadow-2xl border-slate-100"
-                        >
-                          <DropdownMenuItem
-                            className="text-rose-600 focus:text-rose-600 focus:bg-rose-50 font-bold gap-3 p-3 rounded-xl cursor-pointer"
-                            onClick={() =>
-                              handleDeleteCourse(course.id, course.title)
-                            }
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Revoke/Delete Status
-                          </DropdownMenuItem>
+                        <DropdownMenuContent align="end" className="rounded-2xl border-none shadow-2xl p-2 bg-white/95 backdrop-blur-md">
+                           {course.status !== 'approved' && (
+                             <DropdownMenuItem 
+                               onClick={() => handleApprove(course.id, course.title, course.instructor_id)} 
+                               className="text-emerald-600 font-bold p-3 rounded-xl cursor-pointer"
+                             >
+                                <CheckCircle className="h-4 w-4 mr-3" />
+                                Grant Access
+                             </DropdownMenuItem>
+                           )}
+                           {course.status !== 'rejected' && (
+                             <DropdownMenuItem 
+                               onClick={() => {
+                                 setSelectedCourse(course);
+                                 setSelectedInstructorId(course.instructor_id || null);
+                                 setShowRejectDialog(true);
+                               }} 
+                               className="text-amber-600 font-bold p-3 rounded-xl cursor-pointer"
+                             >
+                                <XCircle className="h-4 w-4 mr-3" />
+                                Reject Request
+                             </DropdownMenuItem>
+                           )}
+                           <DropdownMenuItem onClick={() => handleDeleteCourse(course)} className="text-rose-600 font-bold p-3 rounded-xl cursor-pointer">
+                              <Trash2 className="h-4 w-4 mr-3" />
+                              Revoke Status
+                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>

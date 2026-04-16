@@ -78,6 +78,12 @@ const CouponRedemptionSchema = new Schema({
 });
 CouponRedemptionSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
 
+const CollegeSchema = new Schema({
+    name: { type: String, required: true, unique: true },
+    created_at: { type: Date, default: Date.now }
+});
+CollegeSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
+
 module.exports = {
     SystemLog: mongoose.model('SystemLog', SystemLogSchema),
     SecurityEvent: mongoose.model('SecurityEvent', SecurityEventSchema),
@@ -86,5 +92,6 @@ module.exports = {
     Coupon: mongoose.model('Coupon', CouponSchema),
     CouponRedemption: mongoose.model('CouponRedemption', CouponRedemptionSchema),
     Lead: mongoose.model('Lead', LeadSchema),
-    Attendance: mongoose.model('Attendance', AttendanceSchema)
+    Attendance: mongoose.model('Attendance', AttendanceSchema),
+    College: mongoose.model('College', CollegeSchema)
 };

@@ -54,7 +54,12 @@ import {
   MoreVertical,
   ArrowRight,
   CheckCircle2,
-  ExternalLink
+  ExternalLink,
+  BookOpen,
+  CreditCard,
+  ImageOff,
+  Zap,
+  ShieldCheck
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -108,6 +113,8 @@ interface UserManagementProps {
     role: "admin" | "manager" | "instructor" | "student",
   ) => Promise<boolean>;
   onSendEmail: (userId: string) => Promise<boolean>;
+  onUpdateEnrollmentStatus?: (id: string, status: "rejected" | "active") => Promise<void>;
+  onResetATS?: (userId: string) => Promise<void>;
 }
 
 export function UserManagement({
@@ -117,6 +124,8 @@ export function UserManagement({
   onUpdateStatus,
   onUpdateRole,
   onSendEmail,
+  onUpdateEnrollmentStatus,
+  onResetATS,
 }: UserManagementProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
@@ -130,6 +139,20 @@ export function UserManagement({
   const [processingAction, setProcessingAction] = useState<string | null>(null);
   const [showSuspendDialog, setShowSuspendDialog] = useState(false);
   const [suspensionDays, setSuspensionDays] = useState("7");
+  
+  interface PendingEnrollment {
+    id: string;
+    course_name: string;
+    payment_proof_url: string;
+    utr_number: string;
+    status: string;
+    final_price: number;
+    payment_term: string;
+    requested_batch_type: string;
+  }
+  const [pendingEnrollment, setPendingEnrollment] = useState<PendingEnrollment | null>(null);
+  const [loadingEnrollment, setLoadingEnrollment] = useState(false);
+
   interface PerformanceData {
     enrollments: { course_name: string; progress: number; status: string }[];
     results: { title: string; score: number; total: number; percentage: number; date: string }[];
@@ -251,6 +274,29 @@ export function UserManagement({
       setLoadingAttendance(false);
     }
   };
+
+  useEffect(() => {
+    if (showApprovalDialog && selectedUser?.id) {
+       setLoadingEnrollment(true);
+       // Fetch most recent pending enrollment for this user
+       fetchWithAuth(`/data/course_enrollments?user_id=eq.${selectedUser.id}&status=eq.pending`)
+          .then(data => {
+            const enrollments = data as PendingEnrollment[];
+            if (enrollments && enrollments.length > 0) {
+              setPendingEnrollment(enrollments[0]);
+            } else {
+              setPendingEnrollment(null);
+            }
+          })
+          .catch(err => {
+              console.error("Failed to fetch pending enrollment:", err);
+              setPendingEnrollment(null);
+          })
+          .finally(() => setLoadingEnrollment(false));
+    } else {
+       setPendingEnrollment(null);
+    }
+  }, [showApprovalDialog, selectedUser]);
 
   useEffect(() => {
     if (showProfileDialog && selectedUser?.id) {
@@ -406,88 +452,105 @@ export function UserManagement({
               {filteredUsers.map((user, idx) => (
                 <div
                   key={user.id}
-                  className={`group flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-[1.5rem] border transition-all relative overflow-hidden ${
+                  className={`group flex flex-col gap-3 p-4 rounded-[1.5rem] border transition-all relative overflow-hidden ${
                     user.approval_status === 'rejected' 
                       ? 'border-rose-200 bg-rose-50/30' 
                       : 'border-slate-200 bg-white hover:border-primary/30 hover:shadow-md'
                   }`}
                   style={{ animationDelay: `${idx * 40}ms` }}
                 >
-                  <div className="flex items-center gap-4 w-full sm:flex-1 min-w-0">
+                  {/* ── ROW 1 : Avatar · Name · Email · Role ── */}
+                  <div className="flex items-start gap-4 min-w-0">
+                    {/* Avatar */}
                     <div className="relative shrink-0">
-                      <Avatar className="h-12 w-12 sm:h-14 sm:w-14 border-2 border-slate-50 shadow-sm rounded-2xl overflow-hidden">
+                      <Avatar className="h-14 w-14 border-2 border-slate-50 shadow-md rounded-[1.25rem] overflow-hidden">
                         <AvatarImage src={user.avatar_url} className="object-cover" />
-                        <AvatarFallback className="bg-primary/5 text-primary font-bold">
+                        <AvatarFallback className="bg-primary/5 text-primary font-black text-lg">
                           {(user.full_name || user.email || "U").charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <div className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white shadow-sm ${
+                      <div className={`absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-white shadow-sm ${
                         user.status === 'suspended' ? 'bg-rose-500' : 'bg-emerald-500'
                       }`} />
                     </div>
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <p className="text-sm sm:text-base font-black text-slate-900 leading-tight truncate">{user.full_name || "Platform User"}</p>
-                        <Badge 
-                            variant="outline" 
-                            className={`text-[9px] h-4 px-1.5 rounded-md uppercase font-black tracking-tighter border-none shadow-none shrink-0 ${
-                                user.role === 'admin' ? 'bg-rose-50 text-rose-600' :
-                                user.role === 'manager' ? 'bg-amber-50 text-amber-600' :
-                                user.role === 'instructor' ? 'bg-blue-50 text-blue-600' :
-                                'bg-slate-100 text-slate-600'
-                            }`}
+                    {/* Name + Email + Role stacked */}
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-base font-black text-slate-900 leading-tight truncate">
+                          {user.full_name || "Platform User"}
+                        </p>
+                        <Badge
+                          variant="outline"
+                          className={`shrink-0 text-[10px] h-6 px-2.5 rounded-lg uppercase font-black tracking-tight border-none shadow-none ${
+                            user.role === 'admin'      ? 'bg-rose-50 text-rose-600'   :
+                            user.role === 'manager'    ? 'bg-amber-50 text-amber-600'  :
+                            user.role === 'instructor' ? 'bg-blue-50 text-blue-600'    :
+                            'bg-slate-100 text-slate-600'
+                          }`}
                         >
-                            {user.role || "student"}
+                          {user.role || "student"}
                         </Badge>
                       </div>
-                      <p className="text-[11px] text-muted-foreground truncate leading-none mb-2">{user.email}</p>
-                      <div className="flex flex-wrap items-center gap-1.5 opacity-100">
-                         <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">{formatLastActive(user.last_active_at)}</span>
-                          {user.approval_status === 'rejected' && (
-                            <span className="text-[8px] font-black text-rose-600 uppercase px-1 bg-rose-100/50 rounded">Rejected</span>
-                          )}
-                          {user.approval_status === 'approved' && user.status !== 'suspended' && (
-                            <span className="text-[8px] font-black text-emerald-600 uppercase px-1 bg-emerald-50 rounded">Approved</span>
-                          )}
-                         {user.status === 'suspended' && (
-                           <span className="text-[8px] font-black text-rose-500 uppercase px-1 bg-rose-50 rounded">Suspended</span>
+                      <p className="text-xs text-slate-500 font-bold truncate flex items-center gap-2">
+                        <Mail className="h-3 w-3 opacity-40" />
+                        {user.email}
+                      </p>
+                      <div className="flex items-center gap-2 pt-1">
+                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100/50">
+                           {formatLastActive(user.last_active_at)}
+                         </span>
+                         {user.approval_status === 'pending' && (
+                           <span className="text-[9px] font-black text-amber-600 uppercase px-2 py-0.5 bg-amber-50 rounded-md animate-pulse">Pending Review</span>
                          )}
                       </div>
                     </div>
                   </div>
 
-                  <div className="w-full sm:w-auto shrink-0 flex items-center justify-end gap-2 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-50">
-                    {user.approval_status === "pending" ? (
-                      <Button
-                        onClick={() => {
-                          setSelectedUser(user);
+                  {/* ── ROW 2 : Action buttons ── */}
+                  <div className="flex items-center gap-2 pt-3 mt-1 border-t border-slate-50/50">
+                    <Button
+                      onClick={() => handleViewProfile(user)}
+                      className="h-10 w-10 p-0 rounded-2xl bg-slate-50 text-slate-500 hover:bg-slate-900 hover:text-white transition-all shadow-sm border border-slate-100 flex items-center justify-center shrink-0"
+                      title="View Metrics"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+
+                    <Button
+                      onClick={() => {
+                        setSelectedUser(user);
+                        if (user.approval_status === "pending") {
                           setShowApprovalDialog(true);
-                        }}
-                        className="w-full sm:w-auto h-9 px-4 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all font-black text-[11px] uppercase tracking-wider"
-                      >
-                        Review Profile
-                      </Button>
-                    ) : (
+                        } else {
+                          setShowProfileDialog(true);
+                        }
+                      }}
+                      className={`flex-1 h-10 px-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.1em] transition-all shadow-sm border-none ${
+                        user.approval_status === "pending"
+                          ? "bg-amber-500 text-white hover:bg-amber-600"
+                          : "bg-primary text-white hover:bg-slate-900"
+                      }`}
+                    >
+                      {user.approval_status === "pending" ? "Review Credentials" : " Review Profile"}
+                    </Button>
+
+                    {user.role !== 'admin' && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button 
-                            className="w-full sm:w-auto h-9 px-4 rounded-xl bg-primary/5 text-primary hover:bg-primary hover:text-white transition-all font-black text-[11px] uppercase tracking-wider flex items-center justify-center gap-1 group/btn shadow-none border-none"
+                            className="h-10 w-10 p-0 rounded-2xl bg-slate-50 text-slate-400 hover:bg-slate-100 transition-all border border-slate-100 flex items-center justify-center shrink-0"
                           >
-                            + Access
-                            <ArrowRight className="h-3.5 w-3.5 ml-0.5 transition-transform group-hover/btn:translate-x-1" />
+                            <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56 rounded-2xl p-2 border-slate-200 shadow-2xl animate-in zoom-in-95 duration-200">
+                        <DropdownMenuContent align="end" className="w-56 rounded-[1.5rem] p-2 border-slate-100 shadow-2xl animate-in zoom-in-95 duration-200">
                           <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 p-2 border-b mb-1">Account Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => handleViewProfile(user)} className="rounded-xl font-bold text-[13px] py-2.5 cursor-pointer hover:bg-slate-50">
-                            <Eye className="mr-3 h-4 w-4 text-primary" /> View Full Profile
-                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleViewAttendance(user)} className="rounded-xl font-bold text-[13px] py-2.5 cursor-pointer hover:bg-slate-50">
                             <Fingerprint className="mr-3 h-4 w-4 text-blue-500" /> Attendance Records
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => handleSendEmail(user)} 
+                          <DropdownMenuItem
+                            onClick={() => handleSendEmail(user)}
                             disabled={sendingEmailId === user.id}
                             className="rounded-xl font-bold text-[13px] py-2.5 cursor-pointer hover:bg-slate-50"
                           >
@@ -649,38 +712,38 @@ export function UserManagement({
 
       {/* Approval Confirmation Dialog */}
       <Dialog open={showApprovalDialog} onOpenChange={setShowApprovalDialog}>
-        <DialogContent aria-describedby="approval-dialog-description" className="w-[95vw] sm:max-w-lg max-h-[85vh] overflow-hidden bg-white/95 backdrop-blur-2xl border border-slate-200/60 shadow-2xl rounded-2xl p-0 flex flex-col">
-          <DialogHeader className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 shrink-0 relative">
-            <DialogTitle className="flex items-center gap-3 text-lg font-semibold text-slate-800">
+        <DialogContent aria-describedby="approval-dialog-description" className="w-[95vw] sm:max-w-xl max-h-[90vh] overflow-hidden bg-white/95 backdrop-blur-2xl border border-slate-200/60 shadow-2xl rounded-[2.5rem] p-0 flex flex-col">
+          <DialogHeader className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 shrink-0 relative">
+            <DialogTitle className="flex items-center gap-3 text-lg font-bold text-slate-800">
               <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shadow-inner">
                 <Users className="h-5 w-5 text-primary" />
               </div>
               User Review & Approval
             </DialogTitle>
-            <DialogDescription id="approval-dialog-description" className="text-sm text-slate-600 font-medium sm:ml-13">
-              Review credential details before granting platform access.
+            <DialogDescription id="approval-dialog-description" className="text-sm text-slate-500 font-medium sm:ml-13">
+              Review credential details and enrollment assets.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5 scrollbar-thin">
-            <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 space-y-4 shadow-sm">
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 scrollbar-thin">
+            <div className="bg-slate-50/50 p-5 rounded-[2rem] border border-slate-100 space-y-4 shadow-sm">
               <div className="grid grid-cols-2 gap-4 pb-4 border-b border-slate-200/50">
                 <div className="space-y-1">
-                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">
                     Full Name
                   </p>
-                  <p className="text-sm font-bold text-slate-900 leading-tight">
+                  <p className="text-sm font-black text-slate-900 leading-tight">
                     {selectedUser?.full_name || "Not provided"}
                   </p>
                 </div>
                 <div className="space-y-1 text-right">
-                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">
                     Assigned Role
                   </p>
                   <div>
                     <Badge
                       variant="secondary"
-                      className="h-5 px-2 bg-white border text-slate-700 border-slate-200 shadow-sm font-bold uppercase tracking-tighter text-[9px]"
+                      className="h-5 px-2 bg-white border text-slate-700 border-slate-200 shadow-sm font-black uppercase tracking-tighter text-[9px]"
                     >
                       {selectedUser?.role || "student"}
                     </Badge>
@@ -688,122 +751,203 @@ export function UserManagement({
                 </div>
               </div>
 
-              <div className="pb-4 border-b border-slate-200/50 space-y-1.5">
-                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">
-                  Email Address
-                </p>
-                <p
-                  className="text-sm font-semibold text-slate-800 break-all leading-tight"
-                  title={selectedUser?.email}
-                >
-                  {selectedUser?.email}
-                </p>
-              </div>
-
-              <div className="pb-4 border-b border-slate-200/50 space-y-1.5">
-                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">
-                  User ID
-                </p>
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-mono text-slate-600 break-all leading-tight flex-1">
-                    {selectedUser?.id}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">
+                    Email Address
                   </p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 shrink-0 hover:bg-slate-200/50 rounded-lg transition-colors"
-                    onClick={() => selectedUser?.id && copyToClipboard(selectedUser.id)}
-                  >
-                    {copiedId === selectedUser?.id ? (
-                      <CheckCircle className="h-4 w-4 text-emerald-500" />
-                    ) : (
-                      <Copy className="h-4 w-4 text-slate-400" />
-                    )}
-                  </Button>
+                  <p className="text-[13px] font-bold text-slate-700 break-all leading-tight">
+                    {selectedUser?.email}
+                  </p>
                 </div>
-              </div>
-
-              <div className="pt-2 flex justify-between items-center">
-                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">
-                  Registration Date
-                </p>
-                <p className="text-sm font-bold text-slate-800">
-                  {selectedUser?.created_at
-                    ? new Date(selectedUser.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
-                    : "N/A"}
-                </p>
+                <div className="space-y-1.5 sm:text-right">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">
+                    Mobile Number
+                  </p>
+                  <p className="text-[13px] font-bold text-slate-700 leading-tight">
+                    {selectedUser?.mobile_number || "N/A"}
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="p-4 rounded-xl bg-amber-50/50 border border-amber-200/40 flex gap-3 items-start shadow-sm">
+            {loadingEnrollment ? (
+              <div className="p-10 flex flex-col items-center justify-center gap-4 bg-slate-50/50 rounded-[2rem] border border-slate-100">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Loading enrollment data...</p>
+              </div>
+            ) : pendingEnrollment ? (
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                {/* Enrollment Info Card */}
+                <div className="p-6 rounded-[2rem] bg-indigo-50 border border-indigo-100/50 space-y-5 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-4 opacity-5">
+                    <BookOpen className="h-16 w-16 text-indigo-900" />
+                  </div>
+                  
+                  <div className="flex justify-between items-start relative z-10">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Enrolling for Course</p>
+                      <h4 className="text-lg font-black text-indigo-900 leading-tight">{pendingEnrollment.course_name}</h4>
+                    </div>
+                    <Badge className="bg-white/80 text-indigo-600 border-indigo-100 shadow-sm font-black text-[9px] uppercase tracking-wider">
+                      {pendingEnrollment.requested_batch_type || 'morning'} session
+                    </Badge>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 pt-2 relative z-10">
+                    <div className="space-y-1">
+                      <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Transaction (UTR)</p>
+                      <p className="text-xs font-mono font-black text-indigo-800 tracking-wider flex items-center gap-2">
+                        {pendingEnrollment.utr_number || 'N/A'}
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6 text-indigo-400 hover:text-indigo-600"
+                          onClick={() => copyToClipboard(pendingEnrollment.utr_number)}
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </p>
+                    </div>
+                    <div className="space-y-1 text-right">
+                      <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Payment Term</p>
+                      <p className="text-xs font-black text-indigo-800 uppercase tracking-tight italic">
+                        {pendingEnrollment.payment_term || 'Full Pay'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Proof Visualizer */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between px-2">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                      <CreditCard className="h-3 w-3" /> Payment Proof Documentation
+                    </p>
+                    {pendingEnrollment.payment_proof_url && (
+                        <a 
+                          href={pendingEnrollment.payment_proof_url} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="text-[9px] font-black text-primary uppercase tracking-widest hover:underline"
+                        >
+                          Open Original
+                        </a>
+                    )}
+                  </div>
+                  <div className="relative group cursor-zoom-in rounded-[2.5rem] overflow-hidden bg-slate-100 border-2 border-slate-50 shadow-xl shadow-slate-200/20">
+                    {pendingEnrollment.payment_proof_url ? (
+                      <img 
+                        src={pendingEnrollment.payment_proof_url} 
+                        alt="Payment Proof" 
+                        className="w-full h-auto max-h-[350px] object-contain transition-transform duration-700 group-hover:scale-[1.02]"
+                      />
+                    ) : (
+                      <div className="h-48 flex flex-col items-center justify-center text-slate-300 gap-3">
+                         <ImageOff className="h-10 w-10 opacity-20" />
+                         <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">No preview available</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100 flex gap-3 shadow-sm">
+                <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                  <AlertCircle className="h-5 w-5 text-slate-400" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[11px] font-black text-slate-700 uppercase tracking-tight">No Dynamic Enrollment Found</p>
+                  <p className="text-[10px] text-slate-500 font-medium leading-relaxed">Checking primary profile credentials only. Access will be granted based on manual verification.</p>
+                </div>
+              </div>
+            )}
+            
+            <div className="p-4 rounded-2xl bg-amber-50/50 border border-amber-200/40 flex gap-3 items-start shadow-sm mt-4">
               <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-                <AlertCircle className="h-4 w-4 text-amber-600" />
+                <Zap className="h-4 w-4 text-amber-600 fill-amber-600" />
               </div>
               <div className="space-y-0.5">
-                <p className="text-[10px] font-bold text-amber-900 uppercase tracking-tight">
-                  System Action
-                </p>
+                <p className="text-[10px] font-black text-amber-900 uppercase tracking-tight">System Automation</p>
                 <p className="text-[10px] font-medium text-amber-800/70 leading-normal">
-                  Confirming approval will instantly trigger the onboarding
-                  welcome sequence via our automated systems.
+                  Approving will instantly activate the user profile and (if found) the pending course enrollment simultaneously.
                 </p>
               </div>
             </div>
           </div>
 
-          <DialogFooter className="px-5 py-4 border-t border-slate-100 bg-slate-50/50 flex shrink-0 sm:flex-row sm:justify-between items-center gap-3">
+          <DialogFooter className="px-6 py-5 border-t border-slate-100 bg-slate-50/50 flex shrink-0 sm:flex-row sm:justify-between items-center gap-4">
             <Button
               variant="ghost"
-              className="w-full sm:w-auto rounded-xl font-semibold text-slate-600 hover:text-slate-700 hover:bg-slate-200/50 h-11 px-6 active:scale-95 transition-all"
+              className="w-full sm:w-auto rounded-2xl font-black uppercase tracking-widest text-[10px] text-slate-400 hover:text-slate-600 h-14 px-8 active:scale-95 transition-all"
               onClick={() => setShowApprovalDialog(false)}
             >
-              Cancel
+              Close
             </Button>
 
-            <div className="flex gap-2 w-full sm:w-auto">
-              <Button
-                variant="outline"
-                className="flex-1 sm:w-28 rounded-xl font-semibold border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 h-10 px-4 active:scale-95 transition-all shadow-sm"
-                disabled={processingAction !== null || selectedUser?.approval_status === "rejected" || selectedUser?.approval_status === "approved"}
-                onClick={async () => {
-                  if (selectedUser) {
-                    setProcessingAction("reject");
-                    try {
-                      const success = await onUpdateStatus(selectedUser.id, "rejected");
-                      if (success) setShowApprovalDialog(false);
-                    } finally {
-                      setProcessingAction(null);
-                    }
-                  }
-                }}
-              >
-                {processingAction === "reject" ? <Loader2 className="h-4 w-4 animate-spin" /> : (selectedUser?.approval_status === "rejected" ? "Rejected" : "Reject")}
-              </Button>
+            <div className="flex gap-3 w-full sm:w-auto">
+              {(!pendingEnrollment || pendingEnrollment.status === 'pending') ? (
+                <>
+                  <Button
+                    variant="outline"
+                    className="flex-1 sm:w-32 rounded-2xl font-black uppercase tracking-widest text-[10px] border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 h-14 px-6 active:scale-95 transition-all shadow-sm"
+                    disabled={processingAction !== null}
+                    onClick={async () => {
+                      if (selectedUser) {
+                        setProcessingAction("reject");
+                        try {
+                          // Reject enrollment if exists
+                          if (pendingEnrollment && onUpdateEnrollmentStatus) {
+                            await onUpdateEnrollmentStatus(pendingEnrollment.id, "rejected");
+                          }
+                          // Reject user profile
+                          const success = await onUpdateStatus(selectedUser.id, "rejected");
+                          if (success) setShowApprovalDialog(false);
+                        } finally {
+                          setProcessingAction(null);
+                        }
+                      }
+                    }}
+                  >
+                    {processingAction === "reject" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Deny Access"}
+                  </Button>
 
-              <Button
-                className="flex-1 sm:w-28 rounded-xl font-semibold bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm shadow-emerald-500/20 gap-2 h-10 px-4 active:scale-95 transition-all"
-                disabled={processingAction !== null || selectedUser?.approval_status === "approved" || selectedUser?.approval_status === "rejected"}
-                onClick={async () => {
-                  if (selectedUser) {
-                    setProcessingAction("approve");
-                    try {
-                      const success = await onUpdateStatus(selectedUser.id, "approved");
-                      if (success) setShowApprovalDialog(false);
-                    } finally {
-                      setProcessingAction(null);
-                    }
-                  }
-                }}
-              >
-                {processingAction === "approve" ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    <CheckCircle className="h-4 w-4" />
-                    {selectedUser?.approval_status === "approved" ? "Approved" : "Approve"}
-                  </>
-                )}
-              </Button>
+                  <Button
+                    className="flex-1 sm:w-48 rounded-2xl font-black uppercase tracking-widest text-[10px] bg-slate-900 border-2 border-slate-900 text-white hover:bg-white hover:text-slate-900 shadow-xl shadow-slate-200/50 gap-3 h-14 px-8 active:scale-95 transition-all"
+                    disabled={processingAction !== null}
+                    onClick={async () => {
+                      if (selectedUser) {
+                        setProcessingAction("approve");
+                        try {
+                          // Approve enrollment if exists
+                          if (pendingEnrollment && onUpdateEnrollmentStatus) {
+                            await onUpdateEnrollmentStatus(pendingEnrollment.id, "active");
+                          }
+                          // Approve user profile
+                          const success = await onUpdateStatus(selectedUser.id, "approved");
+                          if (success) setShowApprovalDialog(false);
+                        } finally {
+                          setProcessingAction(null);
+                        }
+                      }
+                    }}
+                  >
+                    {processingAction === "approve" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <ShieldCheck className="h-5 w-5" />
+                        Approve Entry
+                      </>
+                    )}
+                  </Button>
+                </>
+              ) : (
+                <div className="flex items-center gap-3 px-6 h-14 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100/50">
+                   <ShieldCheck className="h-5 w-5" />
+                   <span className="text-[10px] font-black uppercase tracking-widest">Enrollment Active</span>
+                </div>
+              )}
             </div>
           </DialogFooter>
         </DialogContent>

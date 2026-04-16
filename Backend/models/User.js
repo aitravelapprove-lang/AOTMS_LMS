@@ -8,6 +8,9 @@ const UserSchema = new mongoose.Schema({
     phone: { type: String },
     failed_login_attempts: { type: Number, default: 0 },
     last_login_ip: { type: String },
+    last_login_at: { type: Date },
+    registration_date: { type: String },
+    registration_time: { type: String },
     created_at: { type: Date, default: Date.now }
 });
 
@@ -45,6 +48,8 @@ const ProfileSchema = new mongoose.Schema({
     full_address: { type: String },
     latitude: { type: Number },
     longitude: { type: Number },
+    registration_date: { type: String },
+    registration_time: { type: String },
     created_at: { type: Date, default: Date.now },
     updated_at: { type: Date }
 });

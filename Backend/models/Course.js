@@ -41,6 +41,7 @@ const EnrollmentSchema = new Schema({
     final_price: { type: Number }, // The price after discount
     payment_term: { type: String, default: 'full' }, // full, term1, term2
     remaining_balance: { type: Number, default: 0 },
+    requested_batch_type: { type: String, enum: ['morning', 'afternoon', 'evening'], default: 'morning' },
     enrolled_at: { type: Date, default: Date.now },
     completed_at: { type: Date },
     last_accessed_at: { type: Date }

@@ -156,6 +156,22 @@ export interface ExamResult {
   status: string;
   started_at: string;
   completed_at: string | null;
+  last_accessed_at: string | null;
+}
+
+export interface Batch {
+  id: string;
+  batch_name: string;
+  batch_type: string;
+  course_id: string;
+  instructor_id?: string;
+}
+
+export interface StudentBatch {
+  id: string;
+  student_id: string;
+  batch_id: string;
+  course_id: string;
 }
 
 // ─── Fetch helper ───────────────────────────────────────────────────────────
@@ -551,6 +567,20 @@ export function useCreateLeaderboardAudit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leaderboard-audit'] });
     },
+  });
+}
+
+export function useBatches() {
+  return useQuery<Batch[]>({
+    queryKey: ['batches'],
+    queryFn: () => fetchWithAuth('/data/batches?sort=batch_name&order=asc'),
+  });
+}
+
+export function useStudentBatches() {
+  return useQuery<StudentBatch[]>({
+    queryKey: ['student-batches'],
+    queryFn: () => fetchWithAuth('/data/student_batches'),
   });
 }
 

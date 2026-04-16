@@ -204,7 +204,12 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
     return matchesSearch && matchesCourse && matchesStatus && matchesTimeframe;
   });
 
-  const totalValue = filteredEnrollments.reduce((acc, e) => acc + safeParsePrice(e.final_price || e.price), 0);
+  const totalValue = filteredEnrollments.reduce((acc, e) => {
+    const full = safeParsePrice(e.final_price || e.price);
+    const paid = (e.payment_term === 'full' || e.payment_term === 'term2') ? full : 
+                 (e.payment_term === 'term1') ? Math.round(full * 0.6) : 0;
+    return acc + paid;
+  }, 0);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -400,13 +405,16 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                   <tbody className="divide-y divide-slate-50">
                     <AnimatePresence mode="popLayout">
                       {filteredEnrollments.map((enrollment, index) => {
-                        const fullFee = safeParsePrice(enrollment.price);
+                        const fullFee = safeParsePrice(enrollment.final_price || enrollment.price);
                         const isPaidFull = enrollment.payment_term === 'full';
                         const isTerm1 = enrollment.payment_term === 'term1';
                         const isTerm2 = enrollment.payment_term === 'term2';
                         const term1Fee = Math.round(fullFee * 0.6);
                         const term2Fee = Math.round(fullFee * 0.4);
-                        const depositedValue = safeParsePrice(enrollment.final_price);
+                        
+                        // Fix for the user's financial reporting issue:
+                        // Calculate actual deposited amount based on the term status
+                        const depositedValue = isPaidFull || isTerm2 ? fullFee : isTerm1 ? term1Fee : 0;
 
                         return (
                           <motion.tr 
@@ -463,7 +471,7 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                             </td>
                             <td className="px-4 py-6 text-center">
                               <div className="space-y-1.5">
-                                <p className="text-sm font-black text-indigo-600 tracking-tighter italic">₹{(isPaidFull ? fullFee : term1Fee).toLocaleString('en-IN')}</p>
+                                <p className="text-sm font-black text-indigo-600 tracking-tighter italic">₹{term1Fee.toLocaleString('en-IN')}</p>
                                 <Badge className={cn(
                                   "rounded-lg px-2 py-0.5 text-[8px] font-black uppercase tracking-widest border-none shadow-sm",
                                   (isTerm1 || isTerm2 || isPaidFull) ? "bg-indigo-50 text-indigo-600" : "bg-slate-100 text-slate-400 animate-pulse"
@@ -510,7 +518,7 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                               </div>
                             </td>
                             <td className="px-8 py-6 text-right">
-                              <div className="flex items-center justify-end gap-3 translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300">
+                              <div className="flex items-center justify-end gap-3 transition-all duration-300">
                                 {enrollment.status === 'pending' || !enrollment.status ? (
                                   <Button 
                                     onClick={() => handleUpdateStatus(enrollment.id, 'active')}
@@ -762,20 +770,32 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
 
           <div className="absolute bottom-0 left-0 right-0 p-8 bg-white/80 backdrop-blur-xl border-t border-slate-100 flex flex-wrap justify-end gap-5 rounded-b-[3rem] z-20">
               <Button variant="ghost" onClick={() => setSelectedEnrollment(null)} className="text-slate-400 font-black uppercase tracking-widest text-[10px] h-14 px-8 rounded-2xl hover:bg-slate-50 transition-all">Close Viewer</Button>
-              <Button 
-                variant="destructive"
-                className="rounded-2xl h-14 px-8 font-black uppercase tracking-widest text-[10px] shadow-xl shadow-rose-100 border-none transition-all hover:translate-y-[-4px]" 
-                onClick={() => { if(selectedEnrollment) handleUpdateStatus(selectedEnrollment.id, 'rejected'); setSelectedEnrollment(null); }}
-              >
-                Reject Admission
-              </Button>
-              <Button 
-                className="bg-indigo-600 hover:bg-slate-900 text-white rounded-2xl h-14 px-12 font-black uppercase tracking-widest text-[10px] transition-all shadow-2xl shadow-indigo-200 hover:translate-y-[-4px] active:translate-y-0" 
-                onClick={() => { if(selectedEnrollment) handleUpdateStatus(selectedEnrollment.id, 'active'); setSelectedEnrollment(null); }}
-              >
-                Approve Enrollment
-                <ArrowRight className="h-4 w-4 ml-3" />
-              </Button>
+              
+              {selectedEnrollment?.status === 'pending' && (
+                <>
+                  <Button 
+                    variant="destructive"
+                    className="rounded-2xl h-14 px-8 font-black uppercase tracking-widest text-[10px] shadow-xl shadow-rose-100 border-none transition-all hover:translate-y-[-4px]" 
+                    onClick={() => { if(selectedEnrollment) handleUpdateStatus(selectedEnrollment.id, 'rejected'); setSelectedEnrollment(null); }}
+                  >
+                    Reject Admission
+                  </Button>
+                  <Button 
+                    className="bg-indigo-600 hover:bg-slate-900 text-white rounded-2xl h-14 px-12 font-black uppercase tracking-widest text-[10px] transition-all shadow-2xl shadow-indigo-200 hover:translate-y-[-4px] active:translate-y-0" 
+                    onClick={() => { if(selectedEnrollment) handleUpdateStatus(selectedEnrollment.id, 'active'); setSelectedEnrollment(null); }}
+                  >
+                    Approve Enrollment
+                    <ArrowRight className="h-4 w-4 ml-3" />
+                  </Button>
+                </>
+              )}
+
+              {selectedEnrollment?.status === 'active' && (
+                <div className="flex items-center gap-3 px-6 h-14 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100/50">
+                   <ShieldCheck className="h-5 w-5" />
+                   <span className="text-[10px] font-black uppercase tracking-widest">Enrolled & Active</span>
+                </div>
+              )}
           </div>
         </DialogContent>
       </Dialog>

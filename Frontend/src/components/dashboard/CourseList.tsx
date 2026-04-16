@@ -22,7 +22,9 @@ function CourseBatchBadge({ courseId }: { courseId: string }) {
             <Layers className="h-3 w-3 text-primary" />
             <div className="flex flex-col">
                 <span className="text-[9px] font-black uppercase tracking-widest text-primary leading-tight">Assigned: {batch.batch_name}</span>
-                <span className="text-[8px] font-bold text-slate-400 leading-tight uppercase">{batch.batch_type} • {batch.start_time}-{batch.end_time}</span>
+                <span className="text-[8px] font-bold text-slate-400 leading-tight uppercase">
+                    {batch.batch_type === 'all' ? (batch as any).requested_batch_type || 'Morning' : batch.batch_type} • {batch.start_time}-{batch.end_time}
+                </span>
             </div>
         </div>
     );

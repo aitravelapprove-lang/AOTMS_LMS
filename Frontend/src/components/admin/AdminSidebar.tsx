@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   Sidebar,
   SidebarContent,
@@ -37,6 +39,7 @@ import {
   Settings,
   Bell,
   ClipboardList,
+  RefreshCcw,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useAuth } from "@/hooks/useAuth";
@@ -103,9 +106,39 @@ export function AdminSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const { signOut } = useAuth();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
+
+  const handleGlobalSync = useCallback(async () => {
+    setIsSyncing(true);
+    toast.dismiss();
+    const tId = toast.loading("Syncing platform data...", {
+      description: "Refreshing all core modules and analytics."
+    });
+
+    try {
+      // Invalidate all queries to trigger a global refresh
+      await queryClient.invalidateQueries();
+      
+      // Artificial delay for visual feedback if lightning fast
+      await new Promise(r => setTimeout(r, 600));
+      
+      toast.success("Platform Synchronized", {
+        id: tId,
+        description: "All modules are now up to date."
+      });
+    } catch (err) {
+      toast.error("Sync Failed", {
+        id: tId,
+        description: "Could not refresh all data. Check connection."
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [queryClient]);
 
   const filteredGroups = navGroups.map(group => ({
     ...group,
@@ -234,6 +267,16 @@ export function AdminSidebar() {
 
       <SidebarFooter className="p-4 group-data-[collapsible=icon]:p-2 border-t border-slate-50 bg-slate-50/50 mt-auto">
         <div className="space-y-2">
+          <Button
+            variant="ghost"
+            onClick={handleGlobalSync}
+            disabled={isSyncing}
+            className="w-full justify-start group-data-[collapsible=icon]:justify-center gap-3 h-11 px-4 group-data-[collapsible=icon]:px-0 rounded-lg text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 font-black transition-all"
+          >
+            <RefreshCcw className={cn("h-4 w-4 shrink-0 transition-transform duration-700", isSyncing && "animate-spin")} />
+            {!collapsed && <span className="text-[11px] uppercase tracking-wider">Sync Platform Data</span>}
+          </Button>
+
           <Button
             variant="ghost"
             className="w-full justify-start group-data-[collapsible=icon]:justify-center gap-3 h-11 px-4 group-data-[collapsible=icon]:px-0 rounded-lg text-rose-600 hover:bg-rose-50 hover:text-rose-700 font-semibold transition-all"

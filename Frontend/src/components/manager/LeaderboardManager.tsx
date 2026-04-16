@@ -2,15 +2,25 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useLeaderboard, useVerifyLeaderboardEntry } from '@/hooks/useManagerData';
+import { useLeaderboard, useVerifyLeaderboardEntry, useBatches, useStudentBatches } from '@/hooks/useManagerData';
 import { useAuth } from '@/hooks/useAuth';
-import { Trophy, Medal, CheckCircle, Shield, User } from 'lucide-react';
+import { Trophy, Medal, CheckCircle, Shield, User, Filter } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export function LeaderboardManager() {
   const { user } = useAuth();
-  const { data: leaderboard = [], isLoading } = useLeaderboard();
+  const { data: leaderboard = [], isLoading: leaderboardLoading } = useLeaderboard();
+  const { data: batches = [] } = useBatches();
+  const { data: studentBatches = [] } = useStudentBatches();
   const verifyEntry = useVerifyLeaderboardEntry();
+  const [selectedBatchId, setSelectedBatchId] = useState<string>("all");
 
   const handleVerify = async (id: string) => {
     if (!user?.id) return;
@@ -24,10 +34,16 @@ export function LeaderboardManager() {
     return <span className="font-bold text-muted-foreground">#{rank}</span>;
   };
 
-  const verifiedCount = leaderboard.filter(e => e.is_verified).length;
-  const unverifiedCount = leaderboard.filter(e => !e.is_verified).length;
+  const filteredLeaderboard = leaderboard.filter(entry => {
+    if (selectedBatchId === "all") return true;
+    const studentId = typeof entry.user_id === 'object' ? entry.user_id.id : entry.user_id;
+    return studentBatches.some(sb => sb.student_id === studentId && sb.batch_id === selectedBatchId);
+  });
 
-  if (isLoading) {
+  const verifiedCount = filteredLeaderboard.filter(e => e.is_verified).length;
+  const unverifiedCount = filteredLeaderboard.filter(e => !e.is_verified).length;
+
+  if (leaderboardLoading) {
     return <div className="flex items-center justify-center p-8">Loading leaderboard...</div>;
   }
 
@@ -38,15 +54,34 @@ export function LeaderboardManager() {
           <h3 className="text-lg font-semibold">Leaderboard Management</h3>
           <p className="text-sm text-muted-foreground">Verify and manage student rankings</p>
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
-          <Badge variant="default" className="gap-1">
-            <CheckCircle className="h-3 w-3" />
-            {verifiedCount} Verified
-          </Badge>
-          <Badge variant="secondary" className="gap-1">
-            <Shield className="h-3 w-3" />
-            {unverifiedCount} Pending
-          </Badge>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-slate-400" />
+            <Select value={selectedBatchId} onValueChange={setSelectedBatchId}>
+              <SelectTrigger className="w-[180px] h-9 rounded-xl border-slate-200">
+                <SelectValue placeholder="All Batches" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-slate-100 shadow-xl">
+                <SelectItem value="all">All Batches</SelectItem>
+                {batches.map(batch => (
+                  <SelectItem key={batch.id} value={batch.id}>
+                    {batch.batch_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-px h-6 bg-slate-200 mx-1 hidden sm:block" />
+          <div className="flex items-center gap-2">
+            <Badge variant="default" className="gap-1 rounded-lg">
+              <CheckCircle className="h-3 w-3" />
+              {verifiedCount} Verified
+            </Badge>
+            <Badge variant="secondary" className="gap-1 rounded-lg">
+              <Shield className="h-3 w-3" />
+              {unverifiedCount} Pending
+            </Badge>
+          </div>
         </div>
       </div>
 
@@ -57,7 +92,7 @@ export function LeaderboardManager() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Students</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{leaderboard.length}</div>
+            <div className="text-2xl font-bold">{filteredLeaderboard.length}</div>
             <p className="text-xs text-muted-foreground">on the leaderboard</p>
           </CardContent>
         </Card>
@@ -67,7 +102,7 @@ export function LeaderboardManager() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {leaderboard.length > 0 ? leaderboard[0]?.total_score || 0 : 0}
+              {filteredLeaderboard.length > 0 ? filteredLeaderboard[0]?.total_score || 0 : 0}
             </div>
             <p className="text-xs text-muted-foreground">points</p>
           </CardContent>
@@ -78,8 +113,8 @@ export function LeaderboardManager() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {leaderboard.length > 0 
-                ? Math.round(leaderboard.reduce((acc, e) => acc + (e.average_percentage || 0), 0) / leaderboard.length) 
+              {filteredLeaderboard.length > 0 
+                ? Math.round(filteredLeaderboard.reduce((acc, e) => acc + (e.average_percentage || 0), 0) / filteredLeaderboard.length) 
                 : 0}%
             </div>
             <p className="text-xs text-muted-foreground">average score</p>
@@ -97,15 +132,15 @@ export function LeaderboardManager() {
           <CardDescription>Click to verify student scores</CardDescription>
         </CardHeader>
         <CardContent>
-          {leaderboard.length === 0 ? (
+          {filteredLeaderboard.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Trophy className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No leaderboard entries yet</p>
+              <p>No leaderboard entries for this batch</p>
               <p className="text-sm">Students will appear here after completing exams</p>
             </div>
           ) : (
             <div className="space-y-2">
-              {leaderboard.map((entry, idx) => {
+              {filteredLeaderboard.map((entry, idx) => {
                 const userData = typeof entry.user_id === 'object' ? entry.user_id : null;
                 const displayName = userData?.full_name || 'Student';
                 const avatarUrl = userData?.avatar_url 

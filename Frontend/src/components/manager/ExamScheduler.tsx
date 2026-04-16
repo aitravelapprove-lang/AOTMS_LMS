@@ -263,7 +263,7 @@ function ExamCard({
           <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-900 uppercase tracking-widest pt-1">
              <CalendarIcon className="h-3 w-3" />
              {exam.scheduled_date && !isNaN(new Date(exam.scheduled_date).getTime())
-               ? format(new Date(exam.scheduled_date), "MMM dd, yyyy")
+               ? format(new Date(exam.scheduled_date), "MMM dd, hh:mm a")
                : "Unscheduled"}
           </div>
         </div>
@@ -271,23 +271,10 @@ function ExamCard({
         <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
           {!isPast && exam.approval_status === "approved" && (
             <div className="flex flex-col xl:flex-row flex-1 gap-2">
-              <Button
-                className={cn(
-                  "flex-1 xl:flex-[2] h-11 xl:h-12 rounded-xl xl:rounded-2xl font-black text-[9px] xl:text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-lg",
-                  exam.status === "active"
-                    ? "bg-slate-900 hover:bg-black text-white shadow-slate-900/10"
-                    : "bg-slate-100 hover:bg-slate-200 text-slate-900 shadow-none",
-                )}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onUpdate({
-                    id: exam.id,
-                    status: exam.status === "active" ? "completed" : "active",
-                  });
-                }}
-              >
-                {exam.status === "active" ? "End Protocol" : "Launch Protocol"}
-              </Button>
+              <div className="flex-1 xl:flex-[2] px-4 h-11 xl:h-12 bg-emerald-50 border border-emerald-100 rounded-xl xl:rounded-2xl flex items-center justify-center gap-2">
+                 <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                 <span className="text-[9px] font-black text-emerald-800 uppercase tracking-widest">Protocol Approved</span>
+              </div>
               <Button
                 variant="outline"
                 className="flex-1 h-11 xl:h-12 rounded-xl xl:rounded-2xl border-slate-200 text-slate-900 hover:bg-slate-50 font-black text-[9px] uppercase tracking-widest transition-all"

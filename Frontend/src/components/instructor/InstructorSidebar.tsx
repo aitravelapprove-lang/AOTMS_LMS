@@ -125,8 +125,8 @@ export function InstructorSidebar() {
                     className={cn(
                         "h-12 px-4 rounded-xl transition-all duration-300 group relative overflow-hidden",
                         isActive(item.url) 
-                          ? "bg-slate-900 text-white shadow-xl shadow-slate-900/20" 
-                          : "hover:bg-slate-100 text-slate-600 hover:text-slate-900"
+                          ? "bg-blue-600 text-white shadow-xl shadow-blue-600/20" 
+                          : "hover:bg-blue-50 text-slate-600 hover:text-blue-600"
                     )}
                   >
                     <Link to={item.url} className="flex items-center gap-3.5 w-full">
@@ -172,7 +172,7 @@ export function InstructorSidebar() {
                       {isActive(item.url) && (
                         <motion.div 
                           layoutId="active-pill"
-                          className="absolute inset-0 bg-slate-900 z-0"
+                          className="absolute inset-0 bg-blue-600 z-0"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                         />
@@ -201,8 +201,8 @@ export function InstructorSidebar() {
                     className={cn(
                         "h-12 px-4 rounded-xl transition-all duration-300 group relative overflow-hidden",
                         isActive(item.url) 
-                          ? "bg-slate-900 text-white shadow-xl" 
-                          : "hover:bg-slate-900/5 text-slate-600 hover:text-slate-900"
+                          ? "bg-blue-600 text-white shadow-xl shadow-blue-600/20" 
+                          : "hover:bg-blue-50 text-slate-600 hover:text-blue-600"
                     )}
                   >
                     <Link to={item.url} className="flex items-center gap-3.5">
@@ -210,7 +210,7 @@ export function InstructorSidebar() {
                         <item.icon
                            className={cn(
                                 "h-[1.125rem] w-[1.125rem] transition-all duration-300",
-                                isActive(item.url) ? "text-white scale-110" : "text-slate-400 group-hover:text-slate-900"
+                                isActive(item.url) ? "text-white scale-110" : "text-slate-400 group-hover:text-blue-600"
                            )}
                         />
                       </div>
@@ -218,7 +218,7 @@ export function InstructorSidebar() {
                         <motion.span 
                             className={cn(
                                 "font-black text-xs uppercase tracking-wider z-10",
-                                isActive(item.url) ? "text-white" : "group-hover:text-slate-900"
+                                isActive(item.url) ? "text-white" : "group-hover:text-blue-600"
                             )}
                             initial={{ opacity: 0, x: -5 }}
                             animate={{ opacity: 1, x: 0 }}
@@ -230,7 +230,7 @@ export function InstructorSidebar() {
                       {isActive(item.url) && (
                         <motion.div 
                           layoutId="active-pill-dark"
-                          className="absolute inset-0 bg-slate-900 z-0"
+                          className="absolute inset-0 bg-blue-600 z-0"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                         />

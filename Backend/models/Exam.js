@@ -71,6 +71,7 @@ const StudentExamAccessSchema = new Schema({
     question_bank_topic: { type: String }, // Optional access to QB
     access_type: { type: String, default: 'exam' }, // exam, mock, question_bank
     assigned_by: { type: Schema.Types.ObjectId, ref: 'User' }, // Instructor/Manager
+    scheduled_date: { type: Date }, // Time-gated access
     granted_at: { type: Date, default: Date.now, index: true }
 });
 StudentExamAccessSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });

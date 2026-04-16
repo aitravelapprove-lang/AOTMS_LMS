@@ -13,7 +13,13 @@ import {
   Sparkles,
   Zap,
   Star,
-  Plus
+  Plus,
+  Calendar as CalendarIcon,
+  School,
+  Building2,
+  Clock,
+  Filter,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +35,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { fetchWithAuth } from "@/lib/api";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { format, isSameDay, parseISO } from "date-fns";
 
 interface Student {
   id: string;
@@ -38,6 +51,9 @@ interface Student {
   avatar_url?: string;
   college_name?: string;
   institute_name?: string;
+  last_login_at?: string;
+  registration_date?: string;
+  registration_time?: string;
   role: string;
 }
 
@@ -72,11 +88,47 @@ export function CouponManager() {
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [discountAmount, setDiscountAmount] = useState("");
   const [coupons, setCoupons] = useState<Coupon[]>([]);
+  
+  // New State for Enhanced Filtering & College Management
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [registeredColleges, setRegisteredColleges] = useState<{id: string, name: string}[]>([]);
+  const [isAddingCollege, setIsAddingCollege] = useState(false);
+  const [newCollegeName, setNewCollegeName] = useState("");
+  const [isSavingCollege, setIsSavingCollege] = useState(false);
 
   useEffect(() => {
     fetchStudents();
     fetchCoupons();
+    fetchColleges();
   }, []);
+
+  const fetchColleges = async () => {
+    try {
+      const data = await fetchWithAuth<{id: string, name: string}[]>("/data/colleges");
+      setRegisteredColleges(data || []);
+    } catch (err) {
+      console.error("Failed to fetch colleges:", err);
+    }
+  };
+
+  const handleAddCollege = async () => {
+    if (!newCollegeName.trim()) return;
+    setIsSavingCollege(true);
+    try {
+      await fetchWithAuth("/data/colleges", {
+        method: "POST",
+        body: JSON.stringify({ name: newCollegeName.trim() })
+      });
+      toast.success("College added successfully");
+      setNewCollegeName("");
+      setIsAddingCollege(false);
+      fetchColleges();
+    } catch (err) {
+      toast.error("Failed to add college");
+    } finally {
+      setIsSavingCollege(false);
+    }
+  };
 
   const fetchCoupons = async () => {
     try {
@@ -210,6 +262,17 @@ export function CouponManager() {
       s.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       s.email?.toLowerCase().includes(searchQuery.toLowerCase());
     
+    // 1. Date Filter (Check registration_date)
+    if (selectedDate) {
+      if (!s.registration_date) return false;
+      try {
+        // registration_date is DD/MM/YYYY
+        const [day, month, year] = s.registration_date.split('/').map(Number);
+        const regDate = new Date(year, month - 1, day);
+        if (!isSameDay(regDate, selectedDate)) return false;
+      } catch { return false; }
+    }
+
     if (filterType === "all") return matchesSearch;
 
     const getCollegeName = (val: string | { name?: string; title?: string } | null | undefined) => {
@@ -227,16 +290,17 @@ export function CouponManager() {
   });
 
 
-  const uniqueColleges = Array.from(new Set(
-    students.map(s => {
+  const uniqueColleges = Array.from(new Set([
+    ...students.map(s => {
       // Handle potential object structure for college if it exists
       if (typeof s.college_name === 'object' && s.college_name !== null) {
         const c = s.college_name as { name?: string; title?: string };
         return c.name || c.title;
       }
       return s.college_name;
-    }).filter(Boolean)
-  )).sort() as string[];
+    }),
+    ...registeredColleges.map(c => c.name)
+  ].filter(Boolean))).sort() as string[];
 
   const uniqueInstitutes = Array.from(new Set(
     students.map(s => {
@@ -308,17 +372,25 @@ export function CouponManager() {
                                 placeholder="Search Student Repository..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-11 h-12 bg-white border-slate-200 rounded-[1.2rem] font-bold placeholder:text-slate-300 focus:ring-4 focus:ring-primary/10 transition-all shadow-sm"
+                                className="pl-11 pr-11 h-12 bg-white border-slate-200 rounded-[1.2rem] font-bold placeholder:text-slate-300 focus:ring-4 focus:ring-primary/10 transition-all shadow-sm"
                             />
+                            {searchQuery && (
+                                <button 
+                                    onClick={() => setSearchQuery("")}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 hover:text-primary transition-colors"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
+                            )}
                         </div>
                     </div>
 
                     <div className="flex flex-col gap-4">
                         {/* Row 1: Filter controls - always single line */}
-                        <div className="flex flex-nowrap items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-3">
                             {/* Filter Type Dropdown */}
                             <div className="flex-shrink-0 flex items-center gap-2 bg-white pl-3 pr-2 py-2 rounded-2xl border border-slate-200 shadow-sm min-w-0">
-                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 whitespace-nowrap flex-shrink-0">Filter</span>
+                                <Filter className="h-3.5 w-3.5 text-slate-400" />
                                 <div className="w-px h-4 bg-slate-200 flex-shrink-0" />
                                 <select 
                                     value={filterType}
@@ -338,10 +410,8 @@ export function CouponManager() {
 
                             {/* College / Institute Dropdown */}
                             {filterType !== "all" && (
-                                <div className="flex-1 flex items-center gap-2 bg-white pl-3 pr-2 py-2 rounded-2xl border border-primary/30 shadow-sm animate-in slide-in-from-right-4 min-w-0">
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-primary whitespace-nowrap flex-shrink-0">
-                                        {filterType === "college" ? "College" : "Institute"}
-                                    </span>
+                                <div className="flex-1 flex items-center gap-2 bg-white pl-3 pr-2 py-2 rounded-2xl border border-primary/30 shadow-sm animate-in slide-in-from-right-4 min-w-[200px]">
+                                    {filterType === 'college' ? <School className="h-3.5 w-3.5 text-primary" /> : <Building2 className="h-3.5 w-3.5 text-primary" />}
                                     <div className="w-px h-4 bg-primary/20 flex-shrink-0" />
                                     <select 
                                         value={filterValue}
@@ -364,11 +434,53 @@ export function CouponManager() {
                                         {(filterType === "college" ? uniqueColleges : uniqueInstitutes).map(val => (
                                             <option key={val} value={val}>{val}</option>
                                         ))}
-                                        {(filterType === "college" ? uniqueColleges : uniqueInstitutes).length === 0 && (
-                                            <option disabled value="">No {filterType} data found</option>
-                                        )}
                                     </select>
                                 </div>
+                            )}
+
+                            {/* Calendar Filter */}
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        className={`h-11 px-4 rounded-2xl border-slate-200 bg-white text-[11px] font-black uppercase tracking-widest gap-2 shadow-sm ${selectedDate ? 'border-primary text-primary bg-primary/5' : 'text-slate-500'}`}
+                                    >
+                                        <CalendarIcon className="h-3.5 w-3.5" />
+                                        {selectedDate ? format(selectedDate, "PPP") : "Filter Date"}
+                                        {selectedDate && (
+                                            <X 
+                                                className="h-3 w-3 ml-2 hover:text-rose-500 transition-colors" 
+                                                onClick={(e) => { e.stopPropagation(); setSelectedDate(undefined); }} 
+                                            />
+                                        )}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0 rounded-[2rem] border-slate-100 shadow-2xl" align="end">
+                                    <Calendar
+                                        mode="single"
+                                        selected={selectedDate}
+                                        onSelect={setSelectedDate}
+                                        className="p-4"
+                                    />
+                                </PopoverContent>
+                            </Popover>
+
+                            {(searchQuery || selectedDate || filterValue) && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                        setSearchQuery("");
+                                        setSelectedDate(undefined);
+                                        setFilterType("all");
+                                        setFilterValue("");
+                                        setSelectedBulkUserIds([]);
+                                    }}
+                                    className="h-11 px-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-rose-500 hover:bg-rose-50 hover:text-rose-600 gap-2"
+                                >
+                                    <X className="h-3.5 w-3.5" />
+                                    Clear All
+                                </Button>
                             )}
                         </div>
 
@@ -464,6 +576,23 @@ export function CouponManager() {
                                                     {student.email}
                                                 </span>
                                             </div>
+                                            {student.last_login_at && (
+                                                <div className="flex items-center gap-1.5 mt-1">
+                                                    <Clock className="h-2.5 w-2.5 text-slate-300" />
+                                                    <span className="text-[9px] font-black uppercase tracking-tighter text-slate-400">
+                                                        Logged: {format(parseISO(student.last_login_at), "MMM d, hh:mm aa")}
+                                                    </span>
+                                                </div>
+                                            )}
+
+                                            {(student.registration_date || student.registration_time) && (
+                                                <div className="flex items-center gap-1.5 mt-1 border-t border-slate-50 pt-1">
+                                                    <CalendarIcon className="h-2.5 w-2.5 text-slate-300" />
+                                                    <span className="text-[9px] font-black uppercase tracking-tighter text-slate-400">
+                                                        Joined: {student.registration_date} @ {student.registration_time}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
@@ -700,6 +829,7 @@ export function CouponManager() {
         </div>
 
       </div>
+
     </div>
   );
 }

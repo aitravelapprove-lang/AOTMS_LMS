@@ -26,6 +26,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { useCourses } from '@/hooks/useManagerData';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
 
 interface PendingQuestionBank {
     topic: string;
@@ -47,6 +48,7 @@ interface StudentAccess {
     student_avatar: string;
     assigned_by: string;
     granted_at: string;
+    scheduled_date?: string;
 }
 
 interface BatchStudentResponse {
@@ -167,6 +169,7 @@ export function QuestionBankApproval() {
     // College Wise Grant
     const [selectedCollege, setSelectedCollege] = useState<string>("all");
     const [selectedCollegeStudents, setSelectedCollegeStudents] = useState<string[]>([]);
+    const [scheduledDate, setScheduledDate] = useState("");
 
     const fetchPendingBanks = async (showLoading = true) => {
         try {
@@ -341,6 +344,28 @@ export function QuestionBankApproval() {
         }
     };
 
+    const handleRevokeAccess = async (studentId: string) => {
+        if (!accessingTopic) return;
+        try {
+            await fetchWithAuth(`/admin/question-bank/${encodeURIComponent(accessingTopic)}/revoke-access/${studentId}`, {
+                method: 'DELETE'
+            });
+            toast({
+                title: "Access Revoked",
+                description: "Student will no longer see this mock test in their portal."
+            });
+            // Refresh list
+            setAccessList(prev => prev.filter(s => (s.student_id?.toString() || s.id?.toString()) !== studentId));
+            fetchPendingBanks(false);
+        } catch (err) {
+            toast({
+                title: "Revocation Failed",
+                description: err instanceof Error ? err.message : "Could not remove student access",
+                variant: "destructive"
+            });
+        }
+    };
+
     const handleGrantAccessClick = async (topic: string) => {
         setGrantingTopic(topic);
         setGrantType('student');
@@ -350,6 +375,7 @@ export function QuestionBankApproval() {
         setSelectedBatchTypeFilter("all");
         setSelectedCollege("all");
         setSelectedCollegeStudents([]);
+        setScheduledDate(new Date().toISOString().slice(0, 16)); // Default to now
         setShowGrantDialog(true);
         setLoadingBatches(true);
         try {
@@ -397,7 +423,8 @@ export function QuestionBankApproval() {
                     userId: grantType === 'student' ? selectedStudentId : undefined,
                     userIds: grantType === 'college' ? selectedCollegeStudents : undefined,
                     batchId: grantType === 'batch' ? selectedBatchId : undefined,
-                    type: grantType
+                    type: grantType,
+                    scheduled_date: scheduledDate ? new Date(scheduledDate).toISOString() : undefined
                 })
             });
 
@@ -675,15 +702,42 @@ export function QuestionBankApproval() {
                                             </AvatarFallback>
                                         </Avatar>
                                         <div className="flex-1 min-w-0">
-                                            <p className="font-bold text-slate-900 truncate">{student.student_name}</p>
-                                            <p className="text-xs text-slate-500 truncate">{student.student_email}</p>
+                                            <p className="font-bold text-slate-900 truncate uppercase text-[11px] tracking-tight">{student.student_name}</p>
+                                            <p className="text-[10px] text-slate-500 truncate lowercase font-medium">{student.student_email}</p>
+                                            {student.college_name && (
+                                                <p className="text-[9px] font-black text-primary uppercase mt-1 line-clamp-1 italic">
+                                                    {student.college_name}
+                                                </p>
+                                            )}
+                                            {student.reg_date && (
+                                                <p className="text-[8px] font-bold text-slate-400 mt-0.5 uppercase tracking-tighter">
+                                                    Member Since: {student.reg_date}
+                                                </p>
+                                            )}
                                         </div>
-                                        <div className="text-right">
-                                            <p className="text-xs text-slate-500">Granted by</p>
-                                            <p className="text-sm font-semibold text-slate-700">{student.assigned_by}</p>
-                                            <p className="text-xs text-slate-400">
-                                                {new Date(student.granted_at).toLocaleDateString()}
-                                            </p>
+                                        <div className="flex items-center gap-2">
+                                            <div className="text-right">
+                                                <p className="text-xs text-slate-500">Granted by</p>
+                                                <p className="text-sm font-semibold text-slate-700">{student.assigned_by}</p>
+                                                <p className="text-xs text-slate-400">
+                                                    Created: {new Date(student.granted_at).toLocaleDateString()}
+                                                </p>
+                                                {student.scheduled_date && (
+                                                    <p className="text-[10px] font-black text-primary uppercase mt-1">
+                                                        Go-Live: {new Date(student.scheduled_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            {student.assigned_by !== 'Course Enrollment' && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => handleRevokeAccess(student.student_id?.toString() || idx.toString())}
+                                                    className="h-10 w-10 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all ml-2"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -1103,6 +1157,21 @@ export function QuestionBankApproval() {
                                     )}
                                 </TabsContent>
                             </Tabs>
+
+                            <div className="space-y-3 px-1 pt-4 border-t border-slate-100">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-1 flex items-center gap-2">
+                                    <Clock className="h-3 w-3" /> Scheduled Date & Time
+                                </Label>
+                                <Input 
+                                    type="datetime-local" 
+                                    value={scheduledDate}
+                                    onChange={(e) => setScheduledDate(e.target.value)}
+                                    className="h-14 rounded-3xl border-slate-200 bg-slate-50/50 focus:ring-primary/20 font-bold text-slate-700 transition-all hover:bg-white hover:shadow-md"
+                                />
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest pl-2">
+                                    Students will see the countdown until this time.
+                                </p>
+                            </div>
 
                             <div className="p-6 rounded-[1.5rem] bg-emerald-50/30 border border-emerald-500/10 space-y-3 relative overflow-hidden group">
                                 <div className="flex items-center gap-2">

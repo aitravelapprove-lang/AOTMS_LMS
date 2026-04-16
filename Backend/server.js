@@ -24,7 +24,7 @@ const { User, Profile, UserRole, OTP, VerifiedEmail, InstructorApplication, Gues
 const { Course, Enrollment, Topic, Module, Video, Announcement, Timeline, Resource, InstructorProgress, VideoProgress, CourseRating } = require('./models/Course');
 const { Exam, QuestionBank, ExamSchedule, StudentExamAccess, ExamResult, MockPaper, ExamRule, MockTestConfig } = require('./models/Exam');
 const { Assignment, Submission, Playlist, LiveClass } = require('./models/Content');
-const { SystemLog, SecurityEvent, LeaderboardStat, Notification, Coupon, Lead, Attendance } = require('./models/System');
+const { SystemLog, SecurityEvent, LeaderboardStat, Notification, Coupon, Lead, Attendance, College } = require('./models/System');
 const { Conversation, Message } = require('./models/Chat');
 const { Doubt, DoubtReply } = require('./models/Doubt');
 const { Batch, StudentBatch, BatchRequest } = require('./models/Batch');
@@ -75,7 +75,8 @@ const MODEL_MAP = {
     'leads': Lead,
     'batches': Batch,
     'attendance': Attendance,
-    'student_batches': StudentBatch
+    'student_batches': StudentBatch,
+    'colleges': College
 };
 
 const ALLOWED_TABLES = Object.keys(MODEL_MAP);
@@ -673,7 +674,7 @@ app.post('/api/progress/save', authenticateToken, async (req, res) => {
                     updated_at: new Date()
                 }
             },
-            { upsert: true, new: true, setDefaultsOnInsert: true }
+            { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
         );
 
         // Update overall course progress on every update
@@ -716,7 +717,7 @@ app.post('/api/progress/save', authenticateToken, async (req, res) => {
                  const updatedEnrollment = await Enrollment.findOneAndUpdate(
                      { user_id: userId, course_id: courseId },
                      { $set: { progress_percentage: coursePercent, last_accessed_at: new Date() } },
-                     { new: true }
+                     { returnDocument: 'after' }
                  );
 
                  if (!updatedEnrollment) {
@@ -761,7 +762,7 @@ app.post('/api/auth/send-otp', async (req, res) => {
         await OTP.findOneAndUpdate(
             { email },
             { otp, full_name, expires_at: expiresAt },
-            { upsert: true, new: true }
+            { upsert: true, returnDocument: 'after' }
         );
 
         console.log(`[AUTH-OTP] OTP for ${email}: ${otp}`);
@@ -791,7 +792,7 @@ app.post('/api/auth/resend-otp', async (req, res) => {
          await OTP.findOneAndUpdate(
             { email },
             { otp, full_name, expires_at: expiresAt },
-            { upsert: true, new: true }
+            { upsert: true, returnDocument: 'after' }
         );
         console.log(`[AUTH-OTP] Resent OTP for ${email}: ${otp}`);
 
@@ -867,6 +868,11 @@ app.post('/api/auth/signup', async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const passwordHash = await bcrypt.hash(password, salt);
         const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=random&color=fff`;
+        
+        // Generate 12-hour registration timestamp
+        const now = new Date();
+        const registrationDate = now.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const registrationTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
         // Create User
         const user = await User.create({
@@ -874,7 +880,9 @@ app.post('/api/auth/signup', async (req, res) => {
             password_hash: passwordHash,
             full_name: fullName,
             avatar_url: avatarUrl,
-            phone: phone // Store phone in User model too
+            phone: phone,
+            registration_date: registrationDate,
+            registration_time: registrationTime
         });
 
         // Create Profile
@@ -886,6 +894,8 @@ app.post('/api/auth/signup', async (req, res) => {
             mobile_number: phone, 
             college_name: collegeName,
             institute_name: instituteName,
+            registration_date: registrationDate,
+            registration_time: registrationTime,
             city,
             district,
             country,
@@ -951,6 +961,11 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(401).json({ error: errorMessage });
         }
 
+        // Update last login info
+        user.last_login_at = new Date();
+        user.last_login_ip = loginIp;
+        await user.save();
+
         // Check if suspended
         const [profile, roleDoc] = await Promise.all([
             Profile.findOne({ user_id: user._id }),
@@ -987,7 +1002,7 @@ app.post('/api/auth/login', async (req, res) => {
             await OTP.findOneAndUpdate(
                 { email },
                 { otp, full_name: user.full_name, expires_at: expiresAt },
-                { upsert: true, new: true }
+                { upsert: true, returnDocument: 'after' }
             );
 
             // Log the OTP dispatch as a security event
@@ -1116,7 +1131,7 @@ app.post('/api/auth/admin-resend-otp', async (req, res) => {
         await OTP.findOneAndUpdate(
             { email },
             { otp, full_name: user.full_name, expires_at: expiresAt },
-            { upsert: true, new: true }
+            { upsert: true, returnDocument: 'after' }
         );
 
         axios.post('https://aotms.app.n8n.cloud/webhook/Email', {
@@ -1212,6 +1227,17 @@ app.get('/api/admin/attendance/:userId', authenticateToken, requireAdminOrManage
     }
 });
 
+// Student: fetch own attendance history
+app.get('/api/student/my-attendance', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const history = await Attendance.find({ user_id: userId }).sort({ timestamp: -1 });
+        res.json(history);
+    } catch (err) {
+        handleError(res, err, 'get-student-attendance');
+    }
+});
+
 // Self-Upgrade endpoint (for dev/setup phase)
 app.post('/api/auth/self-upgrade', authenticateToken, async (req, res) => {
     const { email } = req.user;
@@ -1225,7 +1251,7 @@ app.post('/api/auth/self-upgrade', authenticateToken, async (req, res) => {
         const roleDoc = await UserRole.findOneAndUpdate(
             { user_id: req.user.id },
             { role: 'manager', updated_at: new Date() },
-            { upsert: true, new: true }
+            { upsert: true, returnDocument: 'after' }
         );
         res.json({ success: true, message: 'Your role has been upgraded to MANAGER', role: roleDoc.role });
     } catch (err) {
@@ -1274,7 +1300,7 @@ app.put('/api/admin/update-user-status', authenticateToken, requireAdmin, async 
         await Profile.findOneAndUpdate(
             { user_id: userId },
             updateData,
-            { new: true }
+            { returnDocument: 'after' }
         );
 
         // Notify user via socket for real-time suspension/approval
@@ -1377,35 +1403,6 @@ app.post('/api/rpc/log_admin_action', authenticateToken, requireAdminOrManager, 
     }
 });
 
-app.put('/api/admin/approve-course', authenticateToken, requireAdmin, async (req, res) => {
-    const { courseId, status, rejectionReason } = req.body;
-    if (!courseId || !status) return res.status(400).json({ error: 'Missing courseId or status' });
-
-    try {
-        const updateData = {
-            status,
-            reviewed_at: new Date(),
-            reviewed_by: req.user.id,
-            updated_at: new Date()
-        };
-        if (rejectionReason) updateData.rejection_reason = rejectionReason;
-
-        const course = await Course.findByIdAndUpdate(courseId, updateData, { new: true });
-        
-        // Log action
-        await SystemLog.create({
-            log_type: 'audit',
-            module: 'Course',
-            action: `Course ${status}`,
-            details: { course_id: courseId, status },
-            user_id: req.user.id
-        });
-
-        res.json({ message: `Course ${status}`, course });
-    } catch (err) {
-        handleError(res, err, 'approve-course');
-    }
-});
 
 app.put('/api/admin/toggle-course-active', authenticateToken, requireAdminOrManager, async (req, res) => {
     const { courseId, is_active } = req.body;
@@ -1415,7 +1412,7 @@ app.put('/api/admin/toggle-course-active', authenticateToken, requireAdminOrMana
         const course = await Course.findByIdAndUpdate(
             courseId, 
             { is_active, updated_at: new Date() }, 
-            { new: true }
+            { returnDocument: 'after' }
         );
         
         if (!course) return res.status(404).json({ error: 'Course not found' });
@@ -1541,10 +1538,11 @@ app.get('/api/admin/courses-with-instructors', authenticateToken, requireAdminOr
         // Get all unique instructor IDs from all courses (instructor_ids is an array)
         const instructorIds = [...new Set(courses.flatMap(c => c.instructor_ids || []).filter(id => id))];
 
-        // Fetch profiles AND User details for these instructors
-        const [profiles, users] = await Promise.all([
+        // Fetch profiles, User details, and potentially Batches
+        const [profiles, users, batches] = await Promise.all([
             Profile.find({ user_id: { $in: instructorIds } }).lean(),
-            User.find({ _id: { $in: instructorIds } }).select('full_name email avatar_url').lean()
+            User.find({ _id: { $in: instructorIds } }).select('full_name email avatar_url').lean(),
+            Batch.find({ course_id: { $in: courses.map(c => c._id) } }).lean()
         ]);
 
         const profileMap = profiles.reduce((acc, p) => {
@@ -1557,36 +1555,190 @@ app.get('/api/admin/courses-with-instructors', authenticateToken, requireAdminOr
             return acc;
         }, {});
 
-        // Map courses to include instructor details
-        const data = courses.map(course => {
-            const instructors = (course.instructor_ids || []).map(id => {
-                const p = profileMap[id.toString()] || {};
-                const u = userMap[id.toString()] || {};
-                return {
-                    id: id,
-                    full_name: p.full_name || u.full_name || 'System Instructor',
-                    email: p.email || u.email || '',
-                    avatar_url: p.avatar_url || u.avatar_url || ''
-                };
-            });
-
-            // Filter out internal/empty instructor slots if any (optional)
+        // Flatten courses into individual instructor-assignment rows
+        const flatData = [];
+        courses.forEach(course => {
+            const instructorIdsArr = (course.instructor_ids || []);
             
-            const mainInstructor = instructors[0] || { full_name: 'No Instructor Assigned', email: '', avatar_url: '' };
+            if (instructorIdsArr.length === 0) {
+                flatData.push({
+                    ...course,
+                    id: course._id,
+                    instructor_name: 'No Instructor Assigned',
+                    instructor_email: '',
+                    instructor_avatar: ''
+                });
+            } else {
+                instructorIdsArr.forEach(id => {
+                    const idStr = id.toString();
+                    const p = profileMap[idStr] || {};
+                    const u = userMap[idStr] || {};
+                    
+                    const sessionBatch = batches.find(b => 
+                        b.course_id.toString() === course._id.toString() && 
+                        b.instructor_id?.toString() === idStr
+                    );
 
-            return {
-                ...course,
-                id: course._id, // Ensure id is present for frontend
-                instructors, // New array format
-                instructor_name: instructors.map(i => i.full_name).join(', ') || 'No Instructor Assigned',
-                instructor_email: mainInstructor.email,
-                instructor_avatar: mainInstructor.avatar_url
-            };
+                    // DERIVE STATUS FROM BATCH - This allows independent approval
+                    // If no batch exists specifically for this instructor, it's still pending
+                    const rowStatus = sessionBatch?.status || 'pending';
+
+                    flatData.push({
+                        ...course,
+                        // row_id is used as key in the frontend
+                        row_id: `${course._id}_${idStr}`,
+                        course_id: course._id,
+                        id: course._id, 
+                        instructor_id: idStr,
+                        status: rowStatus, // INDIVIDUAL STATUS (pending, approved, rejected)
+                        instructor_name: p.full_name || u.full_name || 'System Instructor',
+                        instructor_email: p.email || u.email || '',
+                        instructor_avatar: p.avatar_url || u.avatar_url || '',
+                        batch_name: sessionBatch?.batch_name,
+                        batch_type: sessionBatch?.batch_type,
+                        start_time: sessionBatch?.start_time,
+                        end_time: sessionBatch?.end_time,
+                        max_students: sessionBatch?.max_students
+                    });
+                });
+            }
         });
 
-        res.json(data);
+        res.json(flatData);
     } catch (err) {
         handleError(res, err, 'admin-courses-with-instructors');
+    }
+});
+
+/**
+ * Individual Instructor Approval 
+ * Activates the instructor's batch specifically
+ */
+app.put('/api/admin/approve-course', authenticateToken, requireAdminOrManager, async (req, res) => {
+    const { courseId, instructorId, status, rejectionReason } = req.body;
+    if (!courseId || !status) return res.status(400).json({ error: 'Missing courseId or status' });
+
+    try {
+        if (instructorId) {
+            // Fetch instructor name to apply custom batch rules if needed
+            const instructorProf = await Profile.findOne({ user_id: new mongoose.Types.ObjectId(instructorId) }).lean();
+            const instructorName = instructorProf?.full_name || '';
+            const targetCourse = await Course.findById(courseId).lean();
+            const courseTitle = targetCourse?.title || '';
+
+            // Custom Batch Assignment Logic:
+            // 1. instructor A choose ai ml --> Morning Batch
+            // 2. instructor B choose ai ml But Type defferent --> Afternoon Batch
+            let forceBatchType = null;
+            if (courseTitle.toLowerCase().includes('ai') && courseTitle.toLowerCase().includes('ml')) {
+                if (instructorName.toLowerCase().includes('instructor a') || instructorName.toLowerCase().includes('raman')) {
+                    forceBatchType = 'morning';
+                } else if (instructorName.toLowerCase().includes('instructor b') || (instructorName.toLowerCase().includes('instructor') && !instructorName.toLowerCase().includes('a'))) {
+                    forceBatchType = 'afternoon';
+                }
+            }
+
+            // TARGETED BATCH UPDATE
+            const batchUpdate = await Batch.findOneAndUpdate(
+                { 
+                    course_id: new mongoose.Types.ObjectId(courseId), 
+                    instructor_id: new mongoose.Types.ObjectId(instructorId) 
+                },
+                { 
+                    status: status, 
+                    is_active: status === 'approved',
+                    ...(forceBatchType && { batch_type: forceBatchType })
+                },
+                { returnDocument: 'after' }
+            );
+            console.log(`[BatchUpdate] Result: ${batchUpdate ? 'Found' : 'NotFound - creating new'}`);
+            
+            if (!batchUpdate && status === 'approved') {
+                console.log(`[Approve] Creating missing batch record for instructor ${instructorId}`);
+                await Batch.create({
+                    batch_name: forceBatchType === 'morning' ? 'Morning AI ML Batch' : forceBatchType === 'afternoon' ? 'Afternoon AI ML Batch' : 'Approved Section',
+                    batch_type: forceBatchType || 'morning',
+                    start_time: forceBatchType === 'afternoon' ? '13:00' : '09:00',
+                    end_time: forceBatchType === 'afternoon' ? '15:00' : '12:00',
+                    course_id: new mongoose.Types.ObjectId(courseId),
+                    instructor_id: new mongoose.Types.ObjectId(instructorId),
+                    status: 'approved',
+                    is_active: true
+                });
+            }
+        }
+
+        // When instructorId is set, status is tracked per-Batch.
+        // We ALSO update the Course-level status to 'approved' if at least one instructor is approved.
+        // This fixes the "Grant Access still showing" bug for the platform view.
+        let course;
+        if (status === 'approved') {
+            course = await Course.findByIdAndUpdate(courseId, { 
+                status: 'approved',
+                reviewed_at: new Date(),
+                reviewed_by: req.user.id
+            }, { returnDocument: 'after' });
+        } else if (!instructorId) {
+             const updateData = {
+                status: status,
+                reviewed_at: new Date(),
+                reviewed_by: req.user.id,
+                rejection_reason: status === 'rejected' ? rejectionReason : null
+             };
+             course = await Course.findByIdAndUpdate(courseId, updateData, { returnDocument: 'after' });
+        } else {
+            course = await Course.findById(courseId).lean();
+        }
+
+        if (!course) return res.status(404).json({ error: 'Course not found' });
+
+        // Log action
+        await SystemLog.create({
+            log_type: 'audit',
+            module: 'Course',
+            action: `Instructor ${status}`,
+            details: { course_id: courseId, instructor_id: instructorId, status },
+            user_id: req.user.id
+        });
+
+        res.json({ message: `Access ${status} for instructor`, course });
+    } catch (err) {
+        handleError(res, err, 'admin-approve-course');
+    }
+});
+
+/**
+ * Specific Instructor Revocation
+ * Removes one instructor and their data without clearing the whole course
+ */
+app.delete('/api/admin/revoke-instructor-access/:courseId/:instructorId', authenticateToken, requireAdminOrManager, async (req, res) => {
+    const { courseId, instructorId } = req.params;
+    try {
+        // 1. Remove instructor from the course list
+        await Course.findByIdAndUpdate(courseId, {
+            $pull: { instructor_ids: instructorId }
+        });
+
+        // 2. Cascade delete that specific instructor's batches and data
+        const deletedBatchIds = (await Batch.find({ course_id: courseId, instructor_id: instructorId }).select('_id')).map(b => b._id);
+        
+        await Promise.all([
+            Batch.deleteMany({ course_id: courseId, instructor_id: instructorId }),
+            StudentBatch.deleteMany({ batch_id: { $in: deletedBatchIds } }),
+            BatchRequest.deleteMany({ batch_id: { $in: deletedBatchIds } })
+        ]);
+
+        await SystemLog.create({
+            log_type: 'audit',
+            module: 'Course',
+            action: 'Surgical Revocation',
+            details: { course_id: courseId, instructor_id: instructorId },
+            user_id: req.user.id
+        });
+
+        res.json({ message: 'Instructor access revoked and batches removed' });
+    } catch (err) {
+        handleError(res, err, 'admin-revoke-instructor-access');
     }
 });
 
@@ -1684,7 +1836,7 @@ app.post('/api/admin/assign-course', authenticateToken, requireAdminOrManager, a
             updated_at: new Date()
         };
 
-        const course = await Course.findByIdAndUpdate(courseId, updateData, { new: true });
+        const course = await Course.findByIdAndUpdate(courseId, updateData, { returnDocument: 'after' });
         
         // Log action
         await SystemLog.create({
@@ -1704,6 +1856,10 @@ app.post('/api/admin/assign-course', authenticateToken, requireAdminOrManager, a
 app.delete('/api/admin/clear-course-instructors/:courseId', authenticateToken, requireAdminOrManager, async (req, res) => {
     const { courseId } = req.params;
     try {
+        // Find the course first to get more details if needed for logs
+        const courseBefore = await Course.findById(courseId).lean();
+        if (!courseBefore) return res.status(404).json({ error: 'Course not found' });
+
         const course = await Course.findByIdAndUpdate(
             courseId,
             { 
@@ -1711,23 +1867,33 @@ app.delete('/api/admin/clear-course-instructors/:courseId', authenticateToken, r
                 status: 'draft',
                 updated_at: new Date()
             },
-            { new: true }
+            { returnDocument: 'after' }
         );
         
-        if (!course) return res.status(404).json({ error: 'Course not found' });
+        // CASCADING DELETION: Remove batches, student assignments, and requests
+        // associated with this course when instructor access is revoked
+        await Promise.all([
+            Batch.deleteMany({ course_id: courseId }),
+            StudentBatch.deleteMany({ course_id: courseId }),
+            BatchRequest.deleteMany({ course_id: courseId })
+        ]);
 
         // Log action
         await SystemLog.create({
             log_type: 'audit',
             module: 'Course',
-            action: 'Instructors Cleared',
-            details: { course_id: courseId },
+            action: 'Instructors & Batches Cleared',
+            details: { 
+                course_id: courseId, 
+                previous_instructors: courseBefore.instructor_ids,
+                cascaded_deletions: ['Batches']
+            },
             user_id: req.user.id
         });
 
-        res.json({ message: 'Requested instructors removed from curriculum node', course });
+        res.json({ message: 'Instructors cleared and batches removed successfully', course });
     } catch (err) {
-        handleError(res, err, 'clear-course-instructors');
+        handleError(res, err, 'admin-clear-course-instructors');
     }
 });
 
@@ -2114,7 +2280,10 @@ app.get('/api/admin/conversations', authenticateToken, requireAdminOrManager, as
     try {
         const conversations = await Conversation.find()
             .populate('participants', 'full_name avatar_url email')
-            .populate('last_message')
+            .populate({
+                path: 'last_message',
+                populate: { path: 'sender', select: 'full_name avatar_url' }
+            })
             .sort({ updated_at: -1 })
             .lean();
 
@@ -2147,7 +2316,9 @@ app.get('/api/admin/conversations', authenticateToken, requireAdminOrManager, as
             lastMessage: c.last_message ? {
                 content: c.last_message.content,
                 timestamp: c.last_message.created_at,
-                sender: c.last_message.sender
+                sender: c.last_message.sender?._id || c.last_message.sender,
+                sender_name: c.last_message.sender?.full_name,
+                sender_avatar: c.last_message.sender?.avatar_url
             } : null,
             updatedAt: c.updated_at
         }));
@@ -2161,13 +2332,16 @@ app.get('/api/admin/conversations', authenticateToken, requireAdminOrManager, as
 app.get('/api/admin/conversations/:id/messages', authenticateToken, requireAdminOrManager, async (req, res) => {
     try {
         const messages = await Message.find({ conversation_id: req.params.id })
+            .populate('sender', 'full_name avatar_url email')
             .sort({ created_at: 1 })
             .lean();
             
         res.json(messages.map(m => ({
             id: m._id,
             content: m.content,
-            sender: m.sender,
+            sender: m.sender?._id || m.sender,
+            sender_name: m.sender?.full_name,
+            sender_avatar: m.sender?.avatar_url,
             timestamp: m.created_at,
             status: m.status,
             type: m.type
@@ -2271,7 +2445,10 @@ app.get('/api/chat/conversations', authenticateToken, async (req, res) => {
     try {
         const conversations = await Conversation.find({ participants: req.user.id })
             .populate('participants', 'full_name avatar_url email')
-            .populate('last_message')
+            .populate({
+                path: 'last_message',
+                populate: { path: 'sender', select: 'full_name avatar_url' }
+            })
             .sort({ updated_at: -1 })
             .lean();
 
@@ -2290,7 +2467,9 @@ app.get('/api/chat/conversations', authenticateToken, async (req, res) => {
                     content: c.last_message.content,
                     timestamp: c.last_message.created_at,
                     status: c.last_message.status,
-                    sender: c.last_message.sender
+                    sender: c.last_message.sender?._id || c.last_message.sender,
+                    sender_name: c.last_message.sender?.full_name,
+                    sender_avatar: c.last_message.sender?.avatar_url
                 } : null,
                 unreadCount: c.unread_counts?.[req.user.id] || 0
             };
@@ -2306,6 +2485,7 @@ app.get('/api/chat/messages/:conversationId', authenticateToken, async (req, res
     const { conversationId } = req.params;
     try {
         const messages = await Message.find({ conversation_id: conversationId })
+            .populate('sender', 'full_name avatar_url email')
             .sort({ created_at: 1 })
             .lean();
         
@@ -2324,7 +2504,9 @@ app.get('/api/chat/messages/:conversationId', authenticateToken, async (req, res
         res.json(messages.map(m => ({
             id: m._id,
             content: m.content,
-            sender: m.sender,
+            sender: m.sender?._id || m.sender,
+            sender_name: m.sender?.full_name,
+            sender_avatar: m.sender?.avatar_url,
             timestamp: m.created_at,
             status: m.status,
             type: m.type
@@ -2447,7 +2629,7 @@ app.post('/api/chat/send', authenticateToken, async (req, res) => {
                 updated_at: new Date(),
                 // We update unread counts separately below or here if we have the ID
             },
-            { new: true }
+            { returnDocument: 'after' }
         );
 
         if (otherUserId) {
@@ -2569,7 +2751,7 @@ app.post('/api/student/video-progress', authenticateToken, async (req, res) => {
                 completed: !!completed,
                 updated_at: new Date()
             },
-            { upsert: true, new: true }
+            { upsert: true, returnDocument: 'after' }
         );
 
         // 2. Calculate and update overall enrollment progress
@@ -2727,33 +2909,80 @@ app.post('/api/instructor/register', upload.single('resume'), async (req, res) =
 });
 
 app.post('/api/instructor/choose-course', authenticateToken, requireInstructor, async (req, res) => {
-    const { courseId } = req.body;
+    const { courseId, dealing_session } = req.body;
     if (!courseId) return res.status(400).json({ error: 'courseId is required' });
 
     try {
-        const course = await Course.findById(courseId);
+        let course;
+        try {
+            course = await Course.findById(courseId);
+        } catch (e) {
+            return res.status(400).json({ error: 'Invalid Course ID format' });
+        }
+        
         if (!course) return res.status(404).json({ error: 'Course not found' });
         
-        // Ensure instructor_ids is an array
+        // Ensure instructor_ids is an array and check for inclusion properly
         if (!course.instructor_ids) course.instructor_ids = [];
+        const instructorId = new mongoose.Types.ObjectId(req.user.id);
         
-        if (course.instructor_ids.includes(req.user.id)) {
+        const isAlreadyAssigned = course.instructor_ids.some(id => id.toString() === instructorId.toString());
+        if (isAlreadyAssigned) {
             return res.status(400).json({ error: 'You are already assigned to this course' });
         }
 
-        // Add to instructor_ids array
-        course.instructor_ids.push(req.user.id);
+        // Add to instructor_ids array as ObjectId
+        course.instructor_ids.push(instructorId);
         course.status = 'pending';
         course.updated_at = new Date();
         await course.save();
 
-        res.json({ message: 'Course requested successfully' });
+        // Automatically create a batch for this instructor/session
+        if (dealing_session) {
+            const { 
+                batch_name, 
+                capacity 
+            } = req.body;
+
+            const sessionLabel = dealing_session.charAt(0).toUpperCase() + dealing_session.slice(1);
+
+            if (dealing_session === 'all') {
+                const totalCap = capacity || 150;
+                const m = Math.floor(totalCap/3), a = Math.floor(totalCap/3), e = totalCap - 2*m;
+                
+                await Batch.create({
+                    course_id: courseId,
+                    instructor_id: req.user.id,
+                    batch_name: batch_name || `${course.title} (All Sections)`,
+                    batch_type: 'all',
+                    batches: [
+                        { batch_name: `${batch_name || course.title} (Morning)`, batch_type: 'morning', max_students: m, is_active: false, status: 'pending' },
+                        { batch_name: `${batch_name || course.title} (Afternoon)`, batch_type: 'afternoon', max_students: a, is_active: false, status: 'pending' },
+                        { batch_name: `${batch_name || course.title} (Evening)`, batch_type: 'evening', max_students: e, is_active: false, status: 'pending' }
+                    ]
+                });
+            } else {
+                await Batch.create({
+                    course_id: courseId,
+                    instructor_id: req.user.id,
+                    batch_name: batch_name || `${course.title} (${sessionLabel})`,
+                    batch_type: dealing_session,
+                    max_students: capacity || 50,
+                    is_active: false, 
+                    status: 'pending',
+                    batch_category: 'remove'
+                });
+            }
+        }
+
+        res.json({ message: 'Course requested and batch initialized.' });
 
         // Notify Admins/Managers (Broadly for now, or specific)
         // We'll emit to a general 'admin' room if implemented, 
         // but for now let's just log and show how it would work.
         // In a real app, you'd find admins and send to them.
     } catch (err) {
+        console.error('[Error choose-course]', err);
         handleError(res, err, 'choose-course');
     }
 });
@@ -2769,11 +2998,42 @@ app.get('/api/instructor/courses', authenticateToken, requireInstructor, async (
         };
         
         if (all === 'true' || req.user.role === 'admin' || req.user.role === 'manager') {
-            query = {}; // View all courses for catalogue or admin/manager view
+            query = {}; 
         }
         
-        const courses = await Course.find(query).sort({ updated_at: -1 });
-        res.json(courses);
+        const courses = await Course.find(query).sort({ updated_at: -1 }).lean();
+        const courseIds = courses.map(c => c._id);
+
+        // Fetch ALL batches to see locks
+        const allBatches = await Batch.find({ 
+            course_id: { $in: courseIds },
+            status: { $in: ['pending', 'approved'] } 
+        }).select('course_id batch_type').lean();
+
+        // Fetch SPECIFIC batches for this instructor to see THEIR assignment
+        const myBatches = await Batch.find({
+            course_id: { $in: courseIds },
+            instructor_id: req.user.id
+        }).lean();
+
+        // Map data
+        const data = courses.map(course => {
+            const courseIdStr = course._id.toString();
+            const locks = allBatches.filter(b => b.course_id.toString() === courseIdStr);
+            const myMatch = myBatches.find(b => b.course_id.toString() === courseIdStr);
+            
+            const occupiedSessions = [...new Set(locks.map(b => b.batch_type))];
+            
+            return {
+                ...course,
+                id: course._id,
+                occupied_sessions: occupiedSessions,
+                assigned_session: myMatch?.batch_type, // 'morning', 'afternoon', etc.
+                is_approved: myMatch?.status === 'approved'
+            };
+        });
+        
+        res.json(data);
     } catch (err) {
         handleError(res, err, 'instructor-courses');
     }
@@ -2989,9 +3249,10 @@ app.post('/api/courses/enroll', authenticateToken, async (req, res) => {
                 applied_coupon: couponApplied,
                 final_price: amountToPay,
                 payment_term: payment_term,
+                requested_batch_type: req.body.requested_batch_type || 'morning',
                 remaining_balance: balance
             },
-            { upsert: true, new: true }
+            { upsert: true, returnDocument: 'after' }
         );
 
         res.json({ message: 'Enrollment application submitted! Waiting for administrative approval.' });
@@ -3631,7 +3892,8 @@ app.get('/api/student/accessible-exams', authenticateToken, async (req, res) => 
                     description: matchingExam?.description || `Topic-wise questions for ${topicKey}`,
                     duration_minutes: matchingExam?.duration_minutes || 60,
                     total_marks: matchingExam?.total_marks || 0, 
-                    question_count: matchingExam?.total_questions || 0
+                    question_count: matchingExam?.total_questions || 0,
+                    scheduled_date: explicitGrant?.scheduled_date || matchingExam?.scheduled_date || null
                 }
             });
         });
@@ -3657,7 +3919,8 @@ app.get('/api/student/accessible-exams', authenticateToken, async (req, res) => 
                         description: matchingExam?.description || `Topic-wise questions for ${topicKey}`,
                         duration_minutes: matchingExam?.duration_minutes || 60,
                         total_marks: matchingExam?.total_marks || 0, 
-                        question_count: matchingExam?.total_questions || 0
+                        question_count: matchingExam?.total_questions || 0,
+                        scheduled_date: explicitGrant?.scheduled_date || matchingExam?.scheduled_date || null
                     }
                 });
             }
@@ -3693,14 +3956,16 @@ app.get('/api/student/accessible-exams', authenticateToken, async (req, res) => 
                     description: exam.description || '',
                     duration_minutes: exam.duration_minutes,
                     total_marks: exam.total_marks,
-                    passing_marks: exam.passing_marks
+                    passing_marks: exam.passing_marks,
+                    scheduled_date: exam.scheduled_date
                 },
                 mock_papers: isMock ? {
                     title: exam.title,
                     description: exam.description || '',
                     duration_minutes: exam.duration_minutes,
                     total_marks: exam.total_marks,
-                    question_count: exam.total_questions || 0
+                    question_count: exam.total_questions || 0,
+                    scheduled_date: exam.scheduled_date
                 } : null
             };
         });
@@ -3727,14 +3992,16 @@ app.get('/api/student/accessible-exams', authenticateToken, async (req, res) => 
                         title: access.exam_id.title,
                         duration_minutes: access.exam_id.duration_minutes,
                         total_marks: access.exam_id.total_marks,
-                        passing_marks: access.exam_id.passing_marks
+                        passing_marks: access.exam_id.passing_marks,
+                        scheduled_date: access.exam_id.scheduled_date
                     } : null,
                     mock_papers: finalMockId ? {
                         title: access.mock_paper_id?.title || access.exam_id?.title,
                         description: access.mock_paper_id?.description || access.exam_id?.description || '',
                         duration_minutes: access.mock_paper_id?.duration_minutes || access.exam_id?.duration_minutes || 60,
                         total_marks: access.mock_paper_id?.total_marks || access.exam_id?.total_marks || 0,
-                        question_count: access.mock_paper_id?.questions?.length || access.exam_id?.total_questions || 0
+                        question_count: access.mock_paper_id?.questions?.length || access.exam_id?.total_questions || 0,
+                        scheduled_date: access.scheduled_date || access.mock_paper_id?.scheduled_date || access.exam_id?.scheduled_date
                     } : null
                 };
             });
@@ -3921,7 +4188,7 @@ app.post('/api/manager/grant-exam-access', authenticateToken, requireAdminOrMana
                 assigned_by: req.user.id,
                 granted_at: new Date()
             },
-            { upsert: true, new: true }
+            { upsert: true, returnDocument: 'after' }
         );
 
         res.json({ message: 'Access granted successfully' });
@@ -3954,8 +4221,7 @@ app.get('/api/manager/approved-question-banks', authenticateToken, requireAdminO
 
 app.get('/api/admin/question-bank-summary', authenticateToken, requireAdminOrManager, async (req, res) => {
     try {
-        const [banks, accessCounts, allExams] = await Promise.all([
-            QuestionBank.aggregate([
+        const banks = await QuestionBank.aggregate([
                 { 
                     $group: {
                         _id: { topic: '$topic', status: '$approval_status' },
@@ -3967,16 +4233,36 @@ app.get('/api/admin/question-bank-summary', authenticateToken, requireAdminOrMan
                     }
                 },
                 { $sort: { created_at: -1 } }
-            ]),
-            StudentExamAccess.aggregate([
-                { $group: { _id: '$question_bank_topic', count: { $sum: 1 } } }
-            ]),
-            Exam.find({}).lean()
-        ]);
+            ]);
 
         // Map access counts for quick lookup
         const accessMap = {};
-        accessCounts.forEach(a => { if (a._id) accessMap[a._id] = a.count; });
+        const allExams = await Exam.find({}).lean();
+        
+        // Fetch all exams and mocks grouped by title for count aggregation
+        const [examGroupCounts, mockGroupCounts, topicGroupCounts] = await Promise.all([
+            StudentExamAccess.aggregate([
+                { $lookup: { from: 'exam_schedulings', localField: 'exam_id', foreignField: '_id', as: 'exam' } },
+                { $unwind: '$exam' },
+                { $group: { _id: '$exam.title', count: { $sum: 1 } } }
+            ]),
+            StudentExamAccess.aggregate([
+                { $lookup: { from: 'mockpapers', localField: 'mock_paper_id', foreignField: '_id', as: 'mock' } },
+                { $unwind: '$mock' },
+                { $group: { _id: '$mock.title', count: { $sum: 1 } } }
+            ]),
+            StudentExamAccess.aggregate([
+                { $match: { question_bank_topic: { $ne: null } } },
+                { $group: { _id: '$question_bank_topic', count: { $sum: 1 } } }
+            ])
+        ]);
+
+        [...examGroupCounts, ...mockGroupCounts, ...topicGroupCounts].forEach(item => {
+            if (item._id) {
+                const topicKey = item._id.toString().trim().toLowerCase();
+                accessMap[topicKey] = (accessMap[topicKey] || 0) + item.count;
+            }
+        });
 
         // Map exams for quick lookup by title/topic
         const examMap = {};
@@ -3984,6 +4270,7 @@ app.get('/api/admin/question-bank-summary', authenticateToken, requireAdminOrMan
 
         // Format the summary response from Question Banks
         const bankSummary = banks.map(b => {
+            const topicKey = b.topic.toString().trim().toLowerCase();
             const exam = examMap[b.topic];
             return {
                 topic: b.topic,
@@ -3991,7 +4278,7 @@ app.get('/api/admin/question-bank-summary', authenticateToken, requireAdminOrMan
                 count: b.count,
                 created_by: b.created_by,
                 created_at: b.created_at,
-                access_count: accessMap[b.topic] || 0,
+                access_count: accessMap[topicKey] || 0,
                 assigned_image: exam?.assigned_image || b.assigned_image || null,
                 duration: exam?.duration_minutes || b.duration || 60,
                 total_marks: exam?.total_marks || b.total_marks || 0,
@@ -4005,20 +4292,23 @@ app.get('/api/admin/question-bank-summary', authenticateToken, requireAdminOrMan
         const bankTopics = new Set(bankSummary.map(s => s.topic));
         const examOnlySummary = allExams
             .filter(e => !bankTopics.has(e.title))
-            .map(e => ({
-                topic: e.title,
-                approval_status: 'approved', // Automatically treat as approved
-                count: e.total_questions || 0,
-                created_by: e.created_by,
-                created_at: e.created_at,
-                access_count: accessMap[e.title] || 0,
+            .map(e => {
+                const topicKey = e.title.toString().trim().toLowerCase();
+                return {
+                    topic: e.title,
+                    approval_status: 'approved', // Automatically treat as approved
+                    count: e.total_questions || 0,
+                    created_by: e.created_by,
+                    created_at: e.created_at,
+                    access_count: accessMap[topicKey] || 0,
                 assigned_image: e.assigned_image || null,
                 duration: e.duration_minutes || 60,
                 total_marks: e.total_marks || 0,
                 shuffle: e.shuffle_questions ?? true,
                 retakes: e.max_attempts || 1,
                 custom_fields: []
-            }));
+                };
+            });
 
         res.json([...bankSummary, ...examOnlySummary]);
     } catch (err) {
@@ -4060,54 +4350,64 @@ app.get('/api/admin/platform-stats', authenticateToken, requireAdminOrManager, a
 app.get('/api/admin/question-bank/:topic/access-list', authenticateToken, requireAdminOrManager, async (req, res) => {
     try {
         const { topic } = req.params;
+        require('fs').appendFileSync('Backend/api_debug.log', `[${new Date().toISOString()}] Access list for: "${topic}"\n`);
         
-        // 1. Get explicit access from StudentExamAccess
+        // 1. Find all identifiers that could represent this topic
+        const matchingExams = await Exam.find({ title: topic }).select('_id').lean();
+        const matchingMocks = await MockPaper.find({ title: topic }).select('_id').lean();
+        const examIds = matchingExams.map(e => e._id);
+        const mockIds = matchingMocks.map(m => m._id);
+
+        // 2. Get explicit access from StudentExamAccess using all possible triggers
+        // Use a very flexible regex that handles spaces and case
+        const topicClean = topic.trim();
+        const safeTopicReg = topicClean.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape regex chars
+        const flexibleTopicRegex = new RegExp(`^\\s*${safeTopicReg.replace(/\\ /g, '\\s*')}\\s*$`, 'i');
+        
         const explicitAccess = await StudentExamAccess.find({ 
-            question_bank_topic: topic,
-            access_type: 'question_bank'
+            $or: [
+                { question_bank_topic: flexibleTopicRegex },
+                { exam_id: { $in: examIds } },
+                { mock_paper_id: { $in: mockIds } }
+            ]
         })
         .populate('student_id', 'full_name email avatar_url')
-        .populate('assigned_by', 'full_name')
-        .lean();
-
-        // 2. Get implicit access via courses
-        // Find courses where this topic is used in QuestionBank
-        const qbs = await QuestionBank.find({ topic, approval_status: 'approved', course_id: { $ne: null } }).select('course_id').lean();
-        const courseIds = qbs.map(q => q.course_id).filter(id => id);
-        
-        const courseEnrollments = await Enrollment.find({ 
-            course_id: { $in: courseIds },
-            status: 'active'
-        })
-        .populate('user_id', 'full_name email avatar_url')
-        .lean();
+        .populate('assigned_by', 'full_name');
 
         // 3. Combine and Deduplicate
         const studentMap = new Map();
 
         explicitAccess.forEach(a => {
-            if (a.student_id) {
-                studentMap.set(a.student_id._id.toString(), {
-                    student_id: a.student_id._id,
-                    student_name: a.student_id.full_name || 'Unknown Student',
-                    student_email: a.student_id.email || 'N/A',
-                    student_avatar: a.student_id.avatar_url,
-                    assigned_by: a.assigned_by?.full_name || 'System',
-                    granted_at: a.granted_at
-                });
+            // Support both populated and raw ObjectId fields
+            const sid = a.student_id?._id || a.student_id;
+            if (sid) {
+                const sidStr = sid.toString();
+                if (!studentMap.has(sidStr)) {
+                    studentMap.set(sidStr, {
+                        student_id: sid,
+                        student_name: a.student_id?.full_name || 'Student (Identity Hidden)',
+                        student_email: a.student_id?.email || 'private@aotms.edu',
+                        student_avatar: a.student_id?.avatar_url,
+                        assigned_by: a.assigned_by?.full_name || 'System Auto-Grant',
+                        granted_at: a.granted_at,
+                        scheduled_date: a.scheduled_date
+                    });
+                }
             }
         });
 
-        courseEnrollments.forEach(e => {
-            if (e.user_id && !studentMap.has(e.user_id._id.toString())) {
-                studentMap.set(e.user_id._id.toString(), {
-                    student_id: e.user_id._id,
-                    student_name: e.user_id.full_name || 'Unknown Student',
-                    student_email: e.user_id.email || 'N/A',
-                    student_avatar: e.user_id.avatar_url,
-                    assigned_by: 'Course Enrollment',
-                    granted_at: e.enrolled_at
-                });
+        // 4. Enrich with Profile data
+        const studentIds = Array.from(studentMap.keys());
+        const profiles = await Profile.find({ user_id: { $in: studentIds } }).select('user_id college_name institute_name registration_date registration_time').lean();
+        
+        profiles.forEach(p => {
+            const sid = p.user_id.toString();
+            if (studentMap.has(sid)) {
+                const student = studentMap.get(sid);
+                student.college_name = p.college_name;
+                student.institute_name = p.institute_name;
+                student.reg_date = p.registration_date;
+                student.reg_time = p.registration_time;
             }
         });
 
@@ -4117,8 +4417,36 @@ app.get('/api/admin/question-bank/:topic/access-list', authenticateToken, requir
     }
 });
 
+app.delete('/api/admin/question-bank/:topic/revoke-access/:studentId', authenticateToken, requireAdminOrManager, async (req, res) => {
+    try {
+        const { topic, studentId } = req.params;
+        
+        // Find matching exams/mocks for this topic to ensure complete revocation
+        const matchingExams = await Exam.find({ title: topic }).select('_id').lean();
+        const matchingMocks = await MockPaper.find({ title: topic }).select('_id').lean();
+        const examIds = matchingExams.map(e => e._id);
+        const mockIds = matchingMocks.map(m => m._id);
+
+        const topicClean = topic.trim();
+        const safeTopicReg = topicClean.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const flexibleTopicRegex = new RegExp(`^\\s*${safeTopicReg.replace(/\\ /g, '\\s*')}\\s*$`, 'i');
+
+        await StudentExamAccess.deleteMany({ 
+            student_id: studentId, 
+            $or: [
+                { question_bank_topic: flexibleTopicRegex },
+                { exam_id: { $in: examIds } },
+                { mock_paper_id: { $in: mockIds } }
+            ]
+        });
+        res.json({ message: 'Access revoked successfully' });
+    } catch (err) {
+        handleError(res, err, 'revoke-qb-access');
+    }
+});
+
 app.post('/api/admin/question-bank/grant-access', authenticateToken, requireAdminOrManager, async (req, res) => {
-    const { userId, student_id, userIds, topic, batchId, type } = req.body;
+    const { userId, student_id, userIds, topic, batchId, type, scheduled_date } = req.body;
     const targetUserId = userId || student_id;
     if (!topic) return res.status(400).json({ error: 'Topic required' });
 
@@ -4149,7 +4477,8 @@ app.post('/api/admin/question-bank/grant-access', authenticateToken, requireAdmi
                 ? (matchingExam.exam_type === 'live' ? 'exam' : 'mock') 
                 : 'question_bank',
             assigned_by: req.user.id,
-            granted_at: new Date()
+            granted_at: new Date(),
+            scheduled_date: scheduled_date || matchingExam?.scheduled_date || new Date()
         }));
 
         // Use bulkWrite for efficiency
@@ -4203,7 +4532,7 @@ app.post('/api/manager/grant-question-bank-access', authenticateToken, requireIn
                 assigned_by: req.user.id,
                 granted_at: new Date()
             },
-            { upsert: true, new: true }
+            { upsert: true, returnDocument: 'after' }
         );
         
         sendNotification(studentId.toString(), {
@@ -4545,7 +4874,7 @@ const createCourseResourceRoutes = (resourceName, Model) => {
             // const course = await Course.findById(doc.course_id);
             // if (course.instructor_id !== req.user.id) throw new Error('Forbidden');
             
-            const item = await Model.findByIdAndUpdate(req.params.id, req.body, { new: true });
+            const item = await Model.findByIdAndUpdate(req.params.id, req.body, { returnDocument: 'after' });
             res.json(item);
         } catch (err) {
             handleError(res, err, `update-${resourceName}`);
@@ -4814,6 +5143,9 @@ app.get('/api/admin/students', authenticateToken, requireAdminOrManager, async (
                     avatar_url: 1,
                     college_name: '$profile.college_name',
                     institute_name: '$profile.institute_name',
+                    last_login_at: 1,
+                    registration_date: 1,
+                    registration_time: 1,
                     role: { $literal: 'student' }
                 }
             }
@@ -4823,6 +5155,10 @@ app.get('/api/admin/students', authenticateToken, requireAdminOrManager, async (
     } catch (err) {
         handleError(res, err, 'get-admin-students');
     }
+});
+
+app.get('/api/system/time', (req, res) => {
+    res.json({ serverTime: new Date().toISOString() });
 });
 
 app.get('/api/data/:table', authenticateToken, async (req, res) => {
@@ -5149,7 +5485,7 @@ app.put('/api/data/:table/:id', authenticateToken, async (req, res) => {
             }
         }
 
-        const item = await Model.findByIdAndUpdate(id, req.body, { new: true });
+        const item = await Model.findByIdAndUpdate(id, req.body, { returnDocument: 'after' });
 
         // Side-effect: If an exam is approved, auto-approve the questions for that topic
         if (table === 'exams' && req.body.approval_status === 'approved') {
@@ -5272,9 +5608,39 @@ app.delete('/api/data/:table/:id', authenticateToken, async (req, res) => {
 // Create a batch (admin / manager / instructor)
 app.post('/api/batches', authenticateToken, requireInstructor, async (req, res) => {
     try {
-        const batch = await Batch.create({ ...req.body });
+        if (!req.body.course_id || req.body.course_id === 'Catalogue' || req.body.course_id === 'all') {
+            return res.status(400).json({ error: 'Valid Course ID is required to create a batch' });
+        }
+        
+        if (req.body.batch_type === 'all') {
+            const totalCap = req.body.max_students || 120;
+            const m = Math.floor(totalCap/3), a = Math.floor(totalCap/3), e = totalCap - 2*m;
+            
+            const batch = await Batch.create({ 
+                batch_name: req.body.batch_name,
+                batch_type: 'all',
+                course_id: req.body.course_id,
+                instructor_id: req.body.instructor_id || req.user.id,
+                batches: [
+                    { batch_name: `${req.body.batch_name || 'Batch'} (Morning)`, batch_type: 'morning', max_students: m, is_active: true, status: 'approved' },
+                    { batch_name: `${req.body.batch_name || 'Batch'} (Afternoon)`, batch_type: 'afternoon', max_students: a, is_active: true, status: 'approved' },
+                    { batch_name: `${req.body.batch_name || 'Batch'} (Evening)`, batch_type: 'evening', max_students: e, is_active: true, status: 'approved' }
+                ]
+            });
+            return res.json(batch);
+        }
+        
+        const batch = await Batch.create({ 
+            ...req.body, 
+            is_active: true, 
+            status: 'approved',
+            instructor_id: req.body.instructor_id || req.user.id 
+        });
         res.json(batch);
     } catch (err) {
+        if (err.name === 'CastError') {
+            return res.status(400).json({ error: `Invalid ${err.path}: ${err.value}` });
+        }
         handleError(res, err, 'create-batch');
     }
 });
@@ -5305,8 +5671,15 @@ app.get('/api/batches/student-assignments', authenticateToken, requireInstructor
 app.get('/api/batches', authenticateToken, async (req, res) => {
     try {
         const filter = {};
-        if (req.query.course_id) filter.course_id = req.query.course_id;
+        if (req.query.course_id) {
+            if (req.query.course_id === 'Catalogue' || req.query.course_id === 'all') {
+                return res.json([]); // Return empty for invalid IDs
+            }
+            filter.course_id = req.query.course_id;
+        }
+        if (req.user.role === 'instructor') filter.instructor_id = req.user.id;
         if (req.query.is_active !== undefined) filter.is_active = req.query.is_active === 'true';
+        
         const batches = await Batch.find(filter).sort({ batch_type: 1, batch_name: 1 }).lean();
         const batchesWithCount = await Promise.all(batches.map(async (b) => {
             const count = await StudentBatch.countDocuments({ batch_id: b._id });
@@ -5314,6 +5687,7 @@ app.get('/api/batches', authenticateToken, async (req, res) => {
         }));
         res.json(batchesWithCount);
     } catch (err) {
+        if (err.name === 'CastError') return res.json([]); 
         handleError(res, err, 'list-batches');
     }
 });
@@ -5333,7 +5707,43 @@ app.get('/api/batches/:id', authenticateToken, async (req, res) => {
 // Update batch
 app.put('/api/batches/:id', authenticateToken, requireInstructor, async (req, res) => {
     try {
-        const batch = await Batch.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const updateData = { ...req.body };
+
+        // If updating an "all" batch (syncing all 3), remove root parameters after split
+        if (updateData.batch_type === 'all' && updateData.max_students) {
+            const totalCap = updateData.max_students;
+            const m = Math.floor(totalCap/3), a = Math.floor(totalCap/3), e = totalCap - 2*m;
+            
+            updateData.batches = [
+                { batch_name: `${updateData.batch_name || 'Batch'} (Morning)`, batch_type: 'morning', max_students: m, is_active: true, status: 'approved' },
+                { batch_name: `${updateData.batch_name || 'Batch'} (Afternoon)`, batch_type: 'afternoon', max_students: a, is_active: true, status: 'approved' },
+                { batch_name: `${updateData.batch_name || 'Batch'} (Evening)`, batch_type: 'evening', max_students: e, is_active: true, status: 'approved' }
+            ];
+
+            // Remove root fields for "all" type as requested
+            delete updateData.max_students;
+            delete updateData.is_active;
+            delete updateData.status;
+            delete updateData.batch_category;
+        }
+
+        // If editing a specific sub-session card from an "all" batch
+        const isSubSession = updateData.batch_type === 'morning' || updateData.batch_type === 'afternoon' || updateData.batch_type === 'evening';
+        
+        if (isSubSession) {
+             const parentBatch = await Batch.findById(req.params.id);
+             if (parentBatch && parentBatch.batches) {
+                 const sessionIdx = parentBatch.batches.findIndex(s => s.batch_type === updateData.batch_type);
+                 if (sessionIdx > -1) {
+                     parentBatch.batches[sessionIdx].batch_name = updateData.batch_name;
+                     parentBatch.batches[sessionIdx].max_students = updateData.max_students;
+                     await parentBatch.save();
+                     return res.json(parentBatch);
+                 }
+             }
+        }
+
+        const batch = await Batch.findByIdAndUpdate(req.params.id, updateData, { returnDocument: 'after' });
         res.json(batch);
     } catch (err) {
         handleError(res, err, 'update-batch');
@@ -5359,10 +5769,17 @@ app.get('/api/batches/my-batch/:courseId', authenticateToken, async (req, res) =
         }).populate('batch_id').lean();
         
         if (!assignment) return res.json(null);
+
+        const enrollment = await Enrollment.findOne({
+            user_id: req.user.id,
+            course_id: req.params.courseId
+        }).select('requested_batch_type').lean();
+
         res.json({
             ...assignment.batch_id,
             id: assignment.batch_id._id.toString(),
-            assigned_at: assignment.assigned_at
+            assigned_at: assignment.assigned_at,
+            requested_batch_type: enrollment?.requested_batch_type || 'morning'
         });
     } catch (err) {
         handleError(res, err, 'my-batch');
@@ -5372,55 +5789,81 @@ app.get('/api/batches/my-batch/:courseId', authenticateToken, async (req, res) =
 // Get full course roster for instructors, grouped by batch type
 app.get('/api/batches/course-roster/:courseId', authenticateToken, requireInstructor, async (req, res) => {
     try {
-        // Get all course enrollments (students)
+        // Get all course enrollments (students) regardless of status
         const enrollments = await Enrollment.find({ 
-            course_id: req.params.courseId,
-            status: { $in: ['active', 'completed'] }
+            course_id: req.params.courseId
         }).lean();
         
-        const studentIds = enrollments.map(e => e.user_id);
+        const studentIds = enrollments.map(e => e.user_id).filter(id => id);
         
         // Get all batch assignments for these students
         const assignments = await StudentBatch.find({ 
             course_id: req.params.courseId,
             student_id: { $in: studentIds }
         }).populate('batch_id').lean();
-        
+
         // Get profiles and roles
         const profiles = await Profile.find({ user_id: { $in: studentIds } }).lean();
-        const profileMap = profiles.reduce((acc, p) => { acc[p.user_id?.toString()] = p; return acc; }, {});
+        const users = await User.find({ _id: { $in: studentIds } }).select('full_name email role').lean();
+        
+        const profileMap = profiles.reduce((acc, p) => { 
+            if (p.user_id) acc[p.user_id.toString()] = p; 
+            return acc; 
+        }, {});
+        
+        const userMap = users.reduce((acc, u) => { 
+            acc[u._id.toString()] = u; 
+            return acc; 
+        }, {});
         
         const roles = await UserRole.find({ user_id: { $in: studentIds } }).lean();
         const roleMap = roles.reduce((acc, r) => { acc[r.user_id?.toString()] = r.role; return acc; }, {});
         
         const assignmentMap = assignments.reduce((acc, a) => {
-            acc[a.student_id?.toString()] = a.batch_id;
+            acc[a.student_id?.toString()] = {
+                batch: a.batch_id,
+                session: a.assigned_session
+            };
             return acc;
         }, {});
         
         const rosterData = enrollments.map(e => {
-            const uid = e.user_id?.toString();
+            const uid = e.user_id ? e.user_id.toString() : null;
+            if (!uid) return null;
+
+            const user = userMap[uid];
+            const assigned = assignmentMap[uid];
+            const profile = profileMap[uid];
+            const role = roleMap[uid] || user?.role || 'student';
+
+            // Still filter instructors out from student roster
+            if (role === 'instructor' || role === 'admin') return null;
+
             return {
                 student_id: uid,
-                full_name: profileMap[uid]?.full_name || 'Student',
-                email: profileMap[uid]?.email || profileMap[uid]?.email,
-                avatar_url: profileMap[uid]?.avatar_url,
-                role: roleMap[uid] || 'student',
-                batch: assignmentMap[uid] ? {
-                    id: assignmentMap[uid]._id.toString(),
-                    name: assignmentMap[uid].batch_name,
-                    type: assignmentMap[uid].batch_type
+                full_name: profile?.full_name || user?.full_name || 'Enrolled Student',
+                email: profile?.email || user?.email || 'No email',
+                avatar_url: profile?.avatar_url,
+                role: role,
+                batch: (assigned && assigned.batch) ? {
+                    id: assigned.batch._id.toString(),
+                    name: assigned.batch.batch_name || 'Legacy Batch',
+                    type: assigned.batch.batch_type || 'all',
+                    session: assigned.session
                 } : null
             };
-        }).filter(s => s.role === 'student'); // Exclude instructors/admins
+        }).filter(s => s !== null);
         
-        // Group by batch type
+        // Group by session type or batch type
         const grouped = {
-            morning: rosterData.filter(s => s.batch?.type === 'morning'),
-            afternoon: rosterData.filter(s => s.batch?.type === 'afternoon'),
-            evening: rosterData.filter(s => s.batch?.type === 'evening'),
-            unassigned: rosterData.filter(s => !s.batch)
+            morning: rosterData.filter(s => s.batch?.session === 'morning' || (s.batch?.type === 'morning' && !s.batch?.session)),
+            afternoon: rosterData.filter(s => s.batch?.session === 'afternoon' || (s.batch?.type === 'afternoon' && !s.batch?.session)),
+            evening: rosterData.filter(s => s.batch?.session === 'evening' || (s.batch?.type === 'evening' && !s.batch?.session)),
+            unassigned: rosterData.filter(s => !s.batch || (!s.batch.session && s.batch.type === 'all'))
         };
+        
+        // Add 'all' for the tab view if needed, but the columns strictly use the above
+        grouped.all = rosterData;
         
         res.json(grouped);
     } catch (err) {
@@ -5434,13 +5877,26 @@ app.get('/api/batches/:batchId/students', authenticateToken, requireInstructor, 
     try {
         const assignments = await StudentBatch.find({ batch_id: req.params.batchId }).lean();
         const studentIds = assignments.map(a => a.student_id);
-        const profiles = await Profile.find({ user_id: { $in: studentIds } }).lean();
+        
+        const [profiles, users] = await Promise.all([
+            Profile.find({ user_id: { $in: studentIds } }).lean(),
+            User.find({ _id: { $in: studentIds } }).select('full_name email').lean()
+        ]);
+
         const profileMap = profiles.reduce((acc, p) => { acc[p.user_id?.toString()] = p; return acc; }, {});
-        const result = assignments.map(a => ({
-            ...a,
-            id: a._id.toString(),
-            profile: profileMap[a.student_id?.toString()] || null
-        }));
+        const userMap = users.reduce((acc, u) => { acc[u._id.toString()] = u; return acc; }, {});
+
+        const result = assignments.map(a => {
+            const userIdStr = a.student_id?.toString();
+            const user = userMap[userIdStr];
+            return {
+                ...a,
+                id: a._id.toString(),
+                student_name: user?.full_name,
+                student_email: user?.email,
+                profile: profileMap[userIdStr] || null
+            };
+        });
         res.json(result);
     } catch (err) {
         handleError(res, err, 'batch-students');
@@ -5454,21 +5910,38 @@ app.post('/api/batches/:batchId/students', authenticateToken, requireInstructor,
         const batch = await Batch.findById(req.params.batchId).lean();
         if (!batch) return res.status(404).json({ error: 'Batch not found' });
 
-        // Check capacity
-        const currentCount = await StudentBatch.countDocuments({ batch_id: req.params.batchId });
-        if (currentCount >= batch.max_students) {
-            return res.status(400).json({ error: `Batch is full (max ${batch.max_students} students)` });
+        // Check capacity (session-aware)
+        const session = req.body.session || 'all';
+        const query = { batch_id: req.params.batchId };
+        if (session && session !== 'all') {
+            query.assigned_session = session;
+        }
+        
+        const currentCount = await StudentBatch.countDocuments(query);
+        
+        // Find capacity for this specific section or default to root batch capacity
+        let capacity = batch.max_students;
+        if (session && session !== 'all' && batch.batches) {
+            const section = batch.batches.find(b => b.batch_type === session);
+            if (section && section.max_students) {
+                capacity = section.max_students;
+            }
+        }
+
+        if (currentCount >= capacity) {
+            return res.status(400).json({ error: `${session} section is full (max ${capacity} students)` });
         }
 
         const assignment = await StudentBatch.findOneAndUpdate(
             { student_id, course_id },
             {
                 batch_id: req.params.batchId,
+                assigned_session: req.body.session || 'all',
                 assigned_by: req.user.id,
                 assigned_at: new Date(),
                 updated_at: new Date()
             },
-            { upsert: true, new: true }
+            { upsert: true, returnDocument: 'after' }
         );
         res.json(assignment);
     } catch (err) {
@@ -5510,7 +5983,7 @@ app.put('/api/batches/students/reassign', authenticateToken, requireInstructor, 
                 assigned_by: req.user.id,
                 updated_at: new Date()
             },
-            { upsert: true, new: true }
+            { upsert: true, returnDocument: 'after' }
         );
         res.json(assignment);
     } catch (err) {
@@ -5523,7 +5996,7 @@ app.put('/api/batches/students/reassign', authenticateToken, requireInstructor, 
 // Get available batches for a course (student view)
 app.get('/api/batches/course/:courseId', authenticateToken, async (req, res) => {
     try {
-        const batches = await Batch.find({ course_id: req.params.courseId, is_active: true }).lean();
+        const batches = await Batch.find({ course_id: req.params.courseId, status: { $ne: 'rejected' } }).lean();
         res.json(batches.map(b => ({ ...b, id: b._id.toString() })));
     } catch (err) {
         handleError(res, err, 'get-course-batches');
@@ -5588,6 +6061,9 @@ app.post('/api/batches/student-request', authenticateToken, async (req, res) => 
         // Check if student already has a batch
         const existingAssignment = await StudentBatch.findOne({ student_id: userId, course_id: courseId }).populate('batch_id').lean();
 
+        const student = await Profile.findOne({ user_id: userId }).lean();
+        const instructorIds = (course.instructor_ids || []).filter(id => id);
+
         if (!existingAssignment) {
             // Initial Assignment - Auto Approve but Notify Instructor
             const assignment = await StudentBatch.create({
@@ -5598,26 +6074,26 @@ app.post('/api/batches/student-request', authenticateToken, async (req, res) => 
                 assigned_by: userId // Self assigned for initial
             });
 
-            // Notify Instructor
-            const student = await Profile.findOne({ user_id: userId }).lean();
-            const notification = new Notification({
-                user_id: course.instructor_id,
-                title: "New Batch Assignment",
-                message: `${student?.full_name || 'A student'} joined ${batch.batch_name} for ${course.title}`,
-                type: "batch_assignment",
-                data: { 
-                    student_id: userId, 
-                    course_id: courseId, 
-                    batch_id: batchId,
-                    actor_avatar: student?.avatar_url,
-                    actor_name: student?.full_name
-                },
-                created_at: new Date()
-            });
-            await notification.save();
+            // Notify All Instructors
+            if (instructorIds.length > 0) {
+                const notifications = instructorIds.map(instId => ({
+                    user_id: instId,
+                    title: "New Batch Assignment",
+                    message: `${student?.full_name || 'A student'} joined ${batch.batch_name} for ${course.title}`,
+                    type: "batch_assignment",
+                    data: { 
+                        student_id: userId, 
+                        course_id: courseId, 
+                        batch_id: batchId,
+                        actor_avatar: student?.avatar_url,
+                        actor_name: student?.full_name
+                    },
+                    created_at: new Date()
+                }));
+                await Notification.insertMany(notifications);
 
-            if (course.instructor_ids && course.instructor_ids.length > 0) {
-                course.instructor_ids.forEach(instId => {
+                // Socket notifications
+                instructorIds.forEach(instId => {
                     sendNotification(instId.toString(), {
                         title: "New Batch Assignment",
                         message: `${student?.full_name || 'A student'} joined ${batch.batch_name} for ${course.title}`,
@@ -5636,7 +6112,8 @@ app.post('/api/batches/student-request', authenticateToken, async (req, res) => 
             res.json({ message: 'Batch assigned successfully', assignment });
         } else {
             // Change Request - Needs Permission
-            if (existingAssignment.batch_id._id.toString() === batchId) {
+            const currentBatchId = existingAssignment?.batch_id?._id?.toString() || existingAssignment?.batch_id?.toString();
+            if (currentBatchId === batchId) {
                 return res.status(400).json({ error: 'You are already in this batch' });
             }
 
@@ -5648,18 +6125,17 @@ app.post('/api/batches/student-request', authenticateToken, async (req, res) => 
                     type: 'change',
                     requested_at: new Date()
                 },
-                { upsert: true, new: true }
+                { upsert: true, returnDocument: 'after' }
             );
 
             // Notify Instructor for Permission
-            const student = await Profile.findOne({ user_id: userId }).lean();
             // Create persistent notifications for all Instructors
-            if (course.instructor_ids && course.instructor_ids.length > 0) {
-                for (const instId of course.instructor_ids) {
-                    await new Notification({
+            if (instructorIds.length > 0) {
+                for (const instId of instructorIds) {
+                    await Notification.create({
                         user_id: instId,
                         title: "Batch Change Request",
-                        message: `${student?.full_name || 'A student'} requested to move from ${existingAssignment.batch_id.batch_name} to ${batch.batch_name}`,
+                        message: `${student?.full_name || 'A student'} requested to move from ${existingAssignment?.batch_id?.batch_name || 'Current Batch'} to ${batch?.batch_name || 'Target Batch'}`,
                         type: "batch_request",
                         data: { 
                             request_id: request._id, 
@@ -5669,14 +6145,14 @@ app.post('/api/batches/student-request', authenticateToken, async (req, res) => 
                             actor_name: student?.full_name
                         },
                         created_at: new Date()
-                    }).save();
+                    });
                 }
             }
-            if (course.instructor_ids && course.instructor_ids.length > 0) {
-                course.instructor_ids.forEach(instId => {
+            if (instructorIds.length > 0) {
+                instructorIds.forEach(instId => {
                     sendNotification(instId.toString(), {
                         title: "Batch Change Request",
-                        message: `${student?.full_name || 'A student'} requested to move from ${existingAssignment.batch_id.batch_name} to ${batch.batch_name}`,
+                        message: `${student?.full_name || 'A student'} requested to move from ${existingAssignment?.batch_id?.batch_name || 'Current Batch'} to ${batch?.batch_name || 'Target Batch'}`,
                         type: "batch_request",
                         data: { 
                             request_id: request._id, 
@@ -5706,10 +6182,15 @@ app.get('/api/batches/requests/pending', authenticateToken, requireInstructor, a
             .lean();
         
         // Filter by instructor's courses
-        const instructorCourses = await Course.find({ instructor_id: req.user.id }).select('_id').lean();
+        const instructorCourses = await Course.find({ 
+            $or: [
+                { instructor_id: req.user.id },
+                { instructor_ids: req.user.id }
+            ]
+        }).select('_id').lean();
         const courseIds = instructorCourses.map(c => c._id.toString());
         
-        const filtered = requests.filter(r => courseIds.includes(r.course_id._id.toString()));
+        const filtered = requests.filter(r => r.course_id && r.course_id._id && courseIds.includes(r.course_id._id.toString()));
         res.json(filtered.map(r => ({ ...r, id: r._id.toString() })));
     } catch (err) {
         handleError(res, err, 'get-pending-requests');
@@ -5725,15 +6206,17 @@ app.post('/api/batches/requests/:requestId/approve', authenticateToken, requireI
         // Update Assignment
         const previous = await StudentBatch.findOne({ student_id: request.student_id, course_id: request.course_id }).lean();
         
+        // Update or create student batch assignment with the requested session
         await StudentBatch.findOneAndUpdate(
             { student_id: request.student_id, course_id: request.course_id },
             {
                 batch_id: request.batch_id,
+                assigned_session: request.requested_session || 'all',
                 previous_batch_id: previous ? previous.batch_id : null,
                 assigned_by: req.user.id,
                 updated_at: new Date()
             },
-            { upsert: true }
+            { upsert: true, returnDocument: 'after' }
         );
 
         request.status = 'approved';
@@ -5741,23 +6224,25 @@ app.post('/api/batches/requests/:requestId/approve', authenticateToken, requireI
         request.processed_by = req.user.id;
         await request.save();
 
+        const sessionName = request.requested_session ? (request.requested_session.charAt(0).toUpperCase() + request.requested_session.slice(1)) : 'Requested';
+
         // Notify Student
         await Notification.create({
             user_id: request.student_id,
             title: "Batch Request Approved",
-            message: `Your request to join the new batch was approved.`,
+            message: `Your request to join the ${sessionName} session was approved.`,
             type: "batch_approved",
             data: { course_id: request.course_id }
         });
 
         sendNotification(request.student_id.toString(), {
             title: "Batch Request Approved",
-            message: `Your request to join the new batch has been approved.`,
+            message: `Your request to join the ${sessionName} session has been approved.`,
             type: "batch_approved",
             data: { course_id: request.course_id }
         });
 
-        res.json({ success: true });
+        res.json({ success: true, message: `Student assigned to ${sessionName} session.` });
     } catch (err) {
         handleError(res, err, 'approve-request');
     }
@@ -5902,6 +6387,22 @@ app.post('/api/batches/auto-split/:courseId', authenticateToken, requireInstruct
         });
     } catch (err) {
         handleError(res, err, 'auto-split-batches');
+    }
+});
+
+// Create batch request with specific session info
+app.post('/api/batches/request/:courseId', authenticateToken, async (req, res) => {
+    try {
+        const request = await BatchRequest.create({
+            student_id: req.user.id,
+            course_id: req.params.courseId,
+            batch_id: req.body.batch_id,
+            requested_session: req.body.session_type || 'all',
+            type: 'initial'
+        });
+        res.json(request);
+    } catch (err) {
+        handleError(res, err, 'create-batch-request');
     }
 });
 

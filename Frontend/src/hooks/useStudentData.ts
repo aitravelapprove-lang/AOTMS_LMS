@@ -231,6 +231,11 @@ export interface StudentCourse extends Course {
     remaining_balance?: number;
     enrolled_at?: string;
     category: string | null;
+    // Flattened fields from backend /student/my-courses
+    course_id?: string | { id?: string; _id?: string; title?: string; thumbnail_url?: string }; // To support both flat and legacy nested
+    instructor_id?: string;
+    instructor_name?: string;
+    instructor_avatar?: string;
 }
 
 export function useEnrolledCourses() {

@@ -78,6 +78,7 @@ import {
   Zap,
   Sparkles,
   LayoutGrid,
+  Star,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { CouponManager } from "@/components/admin/CouponManager";
@@ -96,6 +97,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { CourseBuilder } from "@/components/instructor/courses/CourseBuilder";
+import { PulseRatingsManager } from "@/components/admin/PulseRatingsManager";
 
 import { Course as AdminCourse } from "@/hooks/useAdminData";
 
@@ -648,6 +650,12 @@ export default function AdminDashboard() {
                         key: "tab-enrollments",
                       },
                       {
+                        id: "pulse-ratings",
+                        label: "Pulse Ratings",
+                        icon: Star,
+                        key: "tab-pulse-ratings",
+                      },
+                      {
                         id: "student-performance",
                         label: "Student Performance",
                         icon: BarChart3,
@@ -836,7 +844,7 @@ export default function AdminDashboard() {
                       onUpdateStatus={updateUserStatus}
                       onUpdateRole={updateUserRole}
                       onSendEmail={sendApprovalEmail}
-                      onUpdateEnrollmentStatus={updateEnrollmentStatus}
+                      onUpdateEnrollmentStatus={async (id, status) => { await _updateEnrollmentStatus(id, status); }}
                       onResetATS={async (userId) => { await _resetStudentATS(userId); }}
                     />
                   </motion.div>
@@ -855,9 +863,9 @@ export default function AdminDashboard() {
                     <EnrollmentsList
                       enrollments={enrollments}
                       loading={enrollmentsLoading}
-                      onUpdateStatus={updateEnrollmentStatus}
-                      onUpdatePayment={updateEnrollmentPayment}
-                      onDelete={deleteEnrollment}
+                      onUpdateStatus={async (id, status) => { await _updateEnrollmentStatus(id, status); }}
+                      onUpdatePayment={async (id, term) => { await updateEnrollmentPayment(id, term); }}
+                      onDelete={async (id) => { await _deleteEnrollment(id); }}
                       onResetATS={async (userId) => { await _resetStudentATS(userId); }}
                     />
                   </motion.div>
@@ -933,6 +941,20 @@ export default function AdminDashboard() {
                     animate={{ opacity: 1 }}
                   >
                     <InstructorAccessAdmin />
+                  </motion.div>
+                </TabsContent>
+
+                <TabsContent
+                  key="tab-pulse-ratings"
+                  value="pulse-ratings"
+                  className="mt-0 outline-none"
+                >
+                  <motion.div
+                    key="motion-pulse-ratings"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <PulseRatingsManager />
                   </motion.div>
                 </TabsContent>
 

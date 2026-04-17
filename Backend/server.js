@@ -445,6 +445,10 @@ app.put('/api/admin/update-enrollment-payment', authenticateToken, requireAdminO
         if (payment_term === 'full') {
             enrollment.payment_term = 'full';
             enrollment.remaining_balance = 0;
+            // When moving to active for the first time or via admin, reset enrolled_at to start drip timer
+            if (enrollment.status !== 'active') {
+                enrollment.enrolled_at = new Date();
+            }
             enrollment.status = 'active';
             // Mark full payment as approved if exists
             if (enrollment.payment && enrollment.payment.length > 0) {
@@ -454,6 +458,9 @@ app.put('/api/admin/update-enrollment-payment', authenticateToken, requireAdminO
         } else if (payment_term === 'term1') {
              enrollment.payment_term = 'term1';
              enrollment.remaining_balance = Math.round((enrollment.final_price || 0) * 0.4);
+             if (enrollment.status !== 'active') {
+                 enrollment.enrolled_at = new Date();
+             }
              enrollment.status = 'active';
              // Mark term1 payment as approved if exists
              if (enrollment.payment && enrollment.payment.length > 0) {
@@ -1276,6 +1283,47 @@ app.post('/api/auth/admin-resend-otp', async (req, res) => {
 });
 
 // --- Attendance Routes ---
+
+app.post('/api/student/pulse-rating', authenticateToken, async (req, res) => {
+    try {
+        const { course_id, instructor_id, rating, review } = req.body;
+        if (!course_id || !rating) return res.status(400).json({ error: 'Course and rating are required' });
+
+        await CourseRating.findOneAndUpdate(
+            { user_id: req.user.id, course_id },
+            { 
+                user_id: req.user.id, 
+                course_id, 
+                instructor_id,
+                rating, 
+                review,
+                created_at: new Date()
+            },
+            { upsert: true, new: true }
+        );
+        res.json({ message: 'Rating pulsed successfully!' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/instructor/pulse-ratings', authenticateToken, async (req, res) => {
+    try {
+        if (!['instructor', 'manager', 'admin'].includes(req.user.role)) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+
+        const filter = req.user.role === 'instructor' ? { instructor_id: req.user.id } : {};
+        
+        const ratings = await CourseRating.find(filter)
+            .populate('user_id', 'full_name avatar_url email')
+            .populate('course_id', 'title thumbnail_url')
+            .sort({ created_at: -1 });
+        res.json(ratings);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
 app.post('/api/student/mark-attendance', authenticateToken, async (req, res) => {
     try {
@@ -3414,7 +3462,10 @@ app.get('/api/student/my-courses', authenticateToken, async (req, res) => {
         // Fetch enrollments and student batch assignments
         const [enrollments, studentBatches] = await Promise.all([
             Enrollment.find({ user_id: req.user.id })
-                .populate('course_id')
+                .populate({
+                    path: 'course_id',
+                    populate: { path: 'instructor_ids', select: 'full_name avatar_url' }
+                })
                 .sort({ enrolled_at: -1 })
                 .lean(),
             StudentBatch.find({ student_id: req.user.id }).lean()
@@ -3442,7 +3493,9 @@ app.get('/api/student/my-courses', authenticateToken, async (req, res) => {
                 status: course.status || 'published',
                 level: course.level || 'Beginner',
                 duration: course.duration || '0h',
-                instructor_id: course.instructor_id,
+                instructor_id: course.instructor_id || (course.instructor_ids && course.instructor_ids.length > 0 ? course.instructor_ids[0]._id : null),
+                instructor_name: (course.instructor_ids && course.instructor_ids.length > 0) ? course.instructor_ids[0].full_name : null,
+                instructor_avatar: (course.instructor_ids && course.instructor_ids.length > 0) ? course.instructor_ids[0].avatar_url : null,
                 enrollmentStatus: e.status, // active, pending, rejected
                 progress: e.progress_percentage || 0,
                 enrolled_at: e.enrolled_at,

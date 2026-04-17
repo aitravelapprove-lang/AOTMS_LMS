@@ -85,6 +85,7 @@ const ModuleSchema = new Schema({
     // Batch access control: empty = visible to all enrolled students
     allowed_batches: [{ type: Schema.Types.Mixed, ref: 'Batch' }],
     batch_type: { type: String }, // e.g., 'morning', 'afternoon', 'evening'
+    unlock_after_days: { type: Number, default: 1 }, // Drip content
     created_at: { type: Date, default: Date.now }
 });
 ModuleSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
@@ -102,6 +103,7 @@ const VideoSchema = new Schema({
     // Batch access control: empty = visible to all enrolled students
     allowed_batches: [{ type: Schema.Types.Mixed, ref: 'Batch' }],
     batch_type: { type: String }, // e.g., 'morning', 'afternoon', 'evening'
+    unlock_after_days: { type: Number, default: 1 }, // Optional video-level drip
     created_at: { type: Date, default: Date.now }
 });
 VideoSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
@@ -163,7 +165,8 @@ InstructorProgressSchema.set('toJSON', { virtuals: true, versionKey: false, tran
 
 const CourseRatingSchema = new Schema({
     user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    course_id: { type: mongoose.Schema.Types.Mixed, ref: 'Course', required: true },
+    course_id: { type: Schema.Types.ObjectId, ref: 'Course', required: true },
+    instructor_id: { type: Schema.Types.ObjectId, ref: 'User' }, // Specifically for instructor pulse
     rating: { type: Number, required: true, min: 1, max: 5 },
     review: { type: String },
     created_at: { type: Date, default: Date.now }

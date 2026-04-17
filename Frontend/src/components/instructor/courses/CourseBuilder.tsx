@@ -48,7 +48,8 @@ function ModuleItem({ module, course }: { module: CourseModule, course: Course }
     const [editData, setEditData] = useState({ 
         title: module.title, 
         allowed_batches: module.allowed_batches || [],
-        batch_type: module.batch_type || 'all'
+        batch_type: module.batch_type || 'all',
+        unlock_after_days: module.unlock_after_days || 1
     });
     const [batches, setBatches] = useState<{ id: string, batch_name: string, batch_type: string }[]>([]);
 
@@ -75,7 +76,8 @@ function ModuleItem({ module, course }: { module: CourseModule, course: Course }
                 course_id: course.id,
                 title: editData.title,
                 allowed_batches: editData.allowed_batches,
-                batch_type: editData.batch_type
+                batch_type: editData.batch_type,
+                unlock_after_days: editData.unlock_after_days
             });
             setIsEditing(false);
             toast({ title: "Module Updated", description: "Changes have been saved." });
@@ -143,7 +145,11 @@ function ModuleItem({ module, course }: { module: CourseModule, course: Course }
                                 {copiedModule ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
                             </Button>
                         </div>
-                        <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">Section {module.order_index + 1}</p>
+                        <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">
+                            Section {module.order_index + 1} 
+                            <span className="mx-2 text-primary/50 text-xs">•</span>
+                            <span className="text-primary/70">Unlocks on Day {module.unlock_after_days || 1}</span>
+                        </p>
                     </div>
                 </div>
 
@@ -213,12 +219,25 @@ function ModuleItem({ module, course }: { module: CourseModule, course: Course }
                             </DialogHeader>
                             <div className="space-y-4 py-4">
                                 <div className="space-y-2">
-                                    <Label className="text-xs font-bold uppercase">Title</Label>
                                     <Input 
                                         value={editData.title}
                                         onChange={(e) => setEditData(prev => ({ ...prev, title: e.target.value }))}
-                                        className="rounded-xl border-slate-200"
+                                        className="rounded-xl border-slate-200 shadow-sm"
                                     />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-xs font-bold uppercase flex items-center gap-2">
+                                        <Clock className="h-3 w-3 text-primary" />
+                                        Unlock on Day (Drip)
+                                    </Label>
+                                    <Input 
+                                        type="number"
+                                        min="1"
+                                        value={editData.unlock_after_days}
+                                        onChange={(e) => setEditData(prev => ({ ...prev, unlock_after_days: parseInt(e.target.value) || 1 }))}
+                                        className="rounded-xl border-slate-200 shadow-sm"
+                                    />
+                                    <p className="text-[10px] text-slate-400 italic">Day 1 = Immediate access on joining.</p>
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-xs font-bold uppercase">Batch Access Control</Label>
@@ -341,6 +360,7 @@ export function CourseBuilder({ course, onBack }: CourseBuilderProps) {
     const [copiedCourse, setCopiedCourse] = useState(false);
     const [isAddModuleDialogOpen, setIsAddModuleDialogOpen] = useState(false);
     const [newModuleTitle, setNewModuleTitle] = useState('');
+    const [newModuleUnlockDay, setNewModuleUnlockDay] = useState(1);
     const [newModuleBatches, setNewModuleBatches] = useState<string[]>([]);
     const [newModuleType, setNewModuleType] = useState('all');
     const [courseBatches, setCourseBatches] = useState<{ id: string, batch_name: string, batch_type: string }[]>([]);
@@ -395,9 +415,11 @@ export function CourseBuilder({ course, onBack }: CourseBuilderProps) {
                 title: newModuleTitle.trim(),
                 order_index: modules?.length || 0,
                 allowed_batches: newModuleBatches,
-                batch_type: newModuleType
+                batch_type: newModuleType,
+                unlock_after_days: newModuleUnlockDay
             });
             setNewModuleTitle('');
+            setNewModuleUnlockDay(1);
             setNewModuleBatches([]);
             setIsAddModuleDialogOpen(false);
             toast({ title: "Module Created", description: `"${newModuleTitle}" has been added to the syllabus.` });
@@ -476,6 +498,20 @@ export function CourseBuilder({ course, onBack }: CourseBuilderProps) {
                                         placeholder="Module name"
                                         value={newModuleTitle}
                                         onChange={(e) => setNewModuleTitle(e.target.value)}
+                                        className="h-8 text-sm rounded-lg"
+                                    />
+                                </div>
+                                <div className="space-y-2 mt-3">
+                                    <Label htmlFor="module-day" className="text-xs flex items-center gap-2">
+                                        <Clock className="h-3 w-3 text-primary" />
+                                        Unlock on Day
+                                    </Label>
+                                    <Input
+                                        id="module-day"
+                                        type="number"
+                                        min="1"
+                                        value={newModuleUnlockDay}
+                                        onChange={(e) => setNewModuleUnlockDay(parseInt(e.target.value) || 1)}
                                         className="h-8 text-sm rounded-lg"
                                     />
                                 </div>

@@ -1,15 +1,24 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { InstructorSidebar } from "@/components/instructor/InstructorSidebar";
 import { InstructorHeader } from "@/components/instructor/InstructorHeader";
 import { useAuth } from "@/hooks/useAuth";
+import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 import {
   useInstructorCourses,
   useInstructorStats,
   useInstructorRatings,
-  Course,
-  CourseRating,
+  useInstructorAllStudents,
+  useStudentVideoProgress,
+  useVideos,
+  type InstructorStudent,
+  type Course,
+  type CourseRating,
+  type CourseVideo,
+  type VideoProgressDetail,
 } from "@/hooks/useInstructorData";
 import { useSocket } from "@/hooks/useSocket";
 import { useToast } from "@/hooks/use-toast";
@@ -53,6 +62,8 @@ import {
   Star,
   Eye,
   MessageSquare,
+  CheckCircle2,
+  PlayCircle,
 } from "lucide-react";
 import {
   Dialog,
@@ -73,15 +84,16 @@ interface DashboardStats {
   totalEarnings?: number;
 }
 
-// ─── Feedback Modal Component ──────────────────────────────────────────────
 function FeedbackModal({ 
   ratings, 
   isOpen, 
-  onOpenChange 
+  onOpenChange,
+  onStudentClick
 }: { 
   ratings: CourseRating[], 
   isOpen: boolean, 
-  onOpenChange: (open: boolean) => void 
+  onOpenChange: (open: boolean) => void,
+  onStudentClick: (userId: string) => void
 }) {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -107,15 +119,23 @@ function FeedbackModal({
             <div className="grid gap-6 sm:gap-8 grid-cols-1 sm:grid-cols-2 text-left">
               {ratings.map((r: CourseRating) => (
                 <div key={r.id} className="p-8 rounded-[2rem] bg-slate-50 border border-slate-100 group hover:bg-white hover:shadow-2xl hover:border-transparent transition-all duration-500">
-                  <div className="flex items-center gap-5 mb-6">
+                  <div className="flex items-center gap-5 mb-6 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => {
+                    const uid = typeof r.user_id === 'string' 
+                      ? r.user_id 
+                      : (r.user_id?.id || r.user_id?._id);
+                    if (uid) onStudentClick(uid);
+                  }}>
                     <Avatar className="h-14 w-14 border-4 border-white shadow-xl">
-                        <AvatarImage src={r.user_avatar} />
+                        <AvatarImage src={r.user_avatar || ''} />
                         <AvatarFallback className="bg-slate-100 text-slate-900 font-bold uppercase">{r.user_name?.charAt(0) || 'U'}</AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">
                        <h5 className="font-black text-xl text-slate-900 truncate">{r.user_name}</h5>
                        <p className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] truncate">{r.course_title}</p>
                     </div>
+                    <Button variant="ghost" size="icon" className="ml-auto h-8 w-8 rounded-full bg-white/50 border border-slate-100 shadow-sm" title="View Detailed Profile">
+                      <User className="h-4 w-4 text-slate-400" />
+                    </Button>
                   </div>
                   <div className="flex gap-1 mb-5">
                     {[1, 2, 3, 4, 5].map((star) => (
@@ -138,6 +158,126 @@ function FeedbackModal({
     </Dialog>
   );
 }
+
+// ─── Student Course Details Component (Internal) ───────────────────────────
+function StudentCourseDetails({ 
+    studentId, 
+    courseId, 
+    courseName, 
+    progress,
+    batchType,
+    batchName 
+}: { 
+    studentId: string; 
+    courseId: string; 
+    courseName: string; 
+    progress: number;
+    batchType?: string;
+    batchName?: string;
+}) {
+  const { data: videoProgress } = useStudentVideoProgress(studentId, courseId);
+  const { data: videos } = useVideos(courseId);
+  const [expanded, setExpanded] = useState(false);
+
+  const formatWatchTime = (minutes: number): string => {
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+  };
+
+  const formatTimeAgo = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+  
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return date.toLocaleDateString();
+  };
+
+  // Merge video data with progress
+  const videoList = useMemo(() => {
+    if (!videos) return [];
+    const vds = videos as CourseVideo[];
+    return vds.map((video: CourseVideo) => {
+      const vps = videoProgress as VideoProgressDetail[];
+      const p = vps?.find((vp: VideoProgressDetail) => vp.video_id === video.id);
+      return {
+        ...video,
+        watched: p?.watched_seconds || 0,
+        total: p?.total_seconds || video.duration_seconds || 0,
+        completed: p?.completed || false,
+        lastWatched: p?.last_watched_at
+      };
+    }).sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+  }, [videos, videoProgress]);
+
+  return (
+    <div className="p-4 rounded-xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition-all">
+      <div 
+        className="flex items-center justify-between mb-2 cursor-pointer"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div className="flex items-center gap-2 overflow-hidden">
+            <Button variant="ghost" size="icon" className="h-6 w-6 p-0 hover:bg-slate-100">
+                {expanded ? <ChevronRight className="h-4 w-4 rotate-90 transition-transform" /> : <ChevronRight className="h-4 w-4 transition-transform" />}
+            </Button>
+            <div className="flex flex-col min-w-0 pr-4">
+                <span className="text-sm font-bold text-slate-800 truncate">{courseName}</span>
+                {batchName && (
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <Badge variant="outline" className={cn(
+                        "text-[8px] h-4 px-1.5 border-none uppercase font-black",
+                        batchType === 'morning' ? 'bg-amber-50 text-amber-600' :
+                        batchType === 'afternoon' ? 'bg-blue-50 text-blue-600' :
+                        batchType === 'evening' ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-400'
+                    )}>
+                        {batchType}
+                    </Badge>
+                    <span className="text-[10px] text-slate-400 font-medium truncate italic">{batchName}</span>
+                  </div>
+                )}
+            </div>
+        </div>
+        <span className="text-xs font-black text-primary whitespace-nowrap">{progress}%</span>
+      </div>
+      <Progress value={progress} className="h-1.5 mb-2" indicatorClassName={progress === 100 ? 'bg-green-500' : 'bg-primary'} />
+      
+      {expanded && (
+        <div className="mt-4 space-y-2 pl-2 border-l-2 border-slate-100 ml-2 animate-in slide-in-from-top-2 duration-300">
+            {videoList.length > 0 ? (
+                videoList.map((video) => (
+                    <div key={video.id} className="flex items-center gap-3 text-xs py-1">
+                        <div className={cn(
+                            "h-4 w-4 rounded-full flex items-center justify-center flex-shrink-0",
+                            video.completed ? "bg-green-100 text-green-600" : "bg-slate-100 text-slate-400"
+                        )}>
+                            {video.completed ? <CheckCircle2 className="h-3 w-3" /> : <PlayCircle className="h-3 w-3" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="font-medium text-slate-700 truncate">{video.title}</p>
+                            <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                                <span>{formatWatchTime(Math.round(video.watched / 60))} / {formatWatchTime(Math.round(video.total / 60))}</span>
+                                {video.lastWatched && (
+                                    <span>• {formatTimeAgo(video.lastWatched)}</span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                ))
+            ) : (
+                <p className="text-xs text-muted-foreground italic pl-2">No videos found for this course.</p>
+            )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 interface LiveClass {
   id: string;
@@ -292,8 +432,9 @@ export default function InstructorDashboard() {
     data: courses = [] as Course[],
     isLoading: coursesLoading,
     refetch,
-  } = useInstructorCourses() as { data: Course[]; isLoading: boolean; refetch: () => void };
-  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useInstructorStats() as { 
+  } = (useInstructorCourses() || { data: [] }) as { data: Course[]; isLoading: boolean; refetch: () => void };
+  const { data: allStudents } = useInstructorAllStudents();
+  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = (useInstructorStats() || { data: { totalStudents: 0 } }) as { 
     data: DashboardStats; 
     isLoading: boolean; 
     refetch: () => void 
@@ -302,6 +443,22 @@ export default function InstructorDashboard() {
   const { toast } = useToast();
   const { data: ratings = [] } = useInstructorRatings();
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [selectedStudentPulse, setSelectedStudentPulse] = useState<InstructorStudent | null>(null);
+  const [isPulseStudentDetailOpen, setIsPulseStudentDetailOpen] = useState(false);
+
+  const handlePulseStudentClick = (userId: string) => {
+    const student = allStudents?.find(s => s.userId === userId);
+    if (student) {
+      setSelectedStudentPulse(student);
+      setIsPulseStudentDetailOpen(true);
+    } else {
+      toast({
+        title: "Student details not found",
+        description: "Could not locate this student in the roster.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const avgRating = ratings.length > 0 
     ? (ratings.reduce((acc, r) => acc + (r.rating || 0), 0) / ratings.length).toFixed(1)
@@ -428,6 +585,7 @@ export default function InstructorDashboard() {
                              ratings={ratings} 
                              isOpen={isFeedbackOpen} 
                              onOpenChange={setIsFeedbackOpen} 
+                             onStudentClick={handlePulseStudentClick}
                            />
                         </div>
                         <Badge variant="secondary" className="w-fit bg-slate-900/10 text-slate-900 border-none text-[12px] uppercase font-black tracking-widest px-4 py-2 rounded-lg">
@@ -573,6 +731,87 @@ export default function InstructorDashboard() {
           </div>
         </main>
       </SidebarInset>
+
+      {/* ── Student Profile Detail Dialog ─────────────────────────────── */}
+      <Dialog open={isPulseStudentDetailOpen} onOpenChange={setIsPulseStudentDetailOpen}>
+        <DialogContent className="w-[95vw] sm:max-w-[500px] p-0 overflow-hidden border-none shadow-2xl rounded-2xl sm:rounded-[2rem] bg-white">
+          {selectedStudentPulse && (
+            <div className="bg-white">
+              <DialogHeader className="sr-only">
+                <DialogTitle>Student Profile</DialogTitle>
+                <DialogDescription>Details for {selectedStudentPulse.name}</DialogDescription>
+              </DialogHeader>
+              <div className="bg-slate-900 h-24 relative">
+                <div className="absolute -bottom-8 left-8">
+                  <Avatar className="h-20 w-20 border-4 border-white shadow-xl">
+                    <AvatarImage src={selectedStudentPulse.avatarUrl ? (selectedStudentPulse.avatarUrl.startsWith('http') ? selectedStudentPulse.avatarUrl : `${import.meta.env.VITE_API_URL || '/api'}/s3/public/${selectedStudentPulse.avatarUrl}`) : `https://api.dicebear.com/9.x/avataaars/svg?seed=${selectedStudentPulse.userId}`} />
+                    <AvatarFallback className="bg-primary/10 text-primary text-xl font-black">
+                      {selectedStudentPulse.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+              </div>
+              <div className="pt-12 px-8 pb-8 space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight mb-1">{selectedStudentPulse.name}</h3>
+                    <div className="flex flex-wrap gap-2 items-center">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">ID: {selectedStudentPulse.userId.slice(-6).toUpperCase()}</p>
+                    </div>
+                  </div>
+                  <Badge className="bg-emerald-50 text-emerald-600 h-8 px-4 rounded-full font-bold border-none uppercase text-[10px] tracking-widest">
+                    {selectedStudentPulse.status}
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 rounded-2xl bg-slate-50 space-y-1">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Email Address</p>
+                    <p className="text-sm font-bold text-slate-700 truncate">{selectedStudentPulse.email}</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-slate-50 space-y-1">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Mobile Number</p>
+                    <p className="text-sm font-bold text-slate-700">{selectedStudentPulse.mobileNumber || 'Not provided'}</p>
+                  </div>
+                </div>
+
+                  <div className="space-y-4 pt-2 border-t border-slate-100">
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2 mb-4">
+                      <BookOpen className="h-3 w-3 text-primary" /> Learning Pathways
+                    </h4>
+                    <ScrollArea className="h-[280px] -mx-2 px-2">
+                       <div className="space-y-4 pb-4">
+                        {selectedStudentPulse.courseEnrollments.map((course) => (
+                          <div key={course.courseId} className="group transition-all">
+                            <StudentCourseDetails
+                                studentId={selectedStudentPulse.userId}
+                                courseId={course.courseId}
+                                courseName={course.courseTitle}
+                                progress={course.progress}
+                                batchType={course.batchType}
+                                batchName={course.batchName}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+
+                <div className="pt-2 flex gap-3">
+                   <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold border-slate-200" onClick={() => setIsPulseStudentDetailOpen(false)}>Close</Button>
+                   <Button className="flex-1 h-12 rounded-xl bg-slate-900 text-white font-black gap-2" onClick={() => {
+                     setIsPulseStudentDetailOpen(false);
+                     setIsFeedbackOpen(false);
+                     navigate(`/instructor/chat?recipientId=${selectedStudentPulse.userId}&showProfile=true`);
+                   }}>
+                     <MessageSquare className="h-4 w-4" /> Message
+                   </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </SidebarProvider>
   );
 }

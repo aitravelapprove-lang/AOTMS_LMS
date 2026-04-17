@@ -987,7 +987,8 @@ function DashboardHome() {
             Elevate your skills and track your learning journey.
           </p>
         </div>
-        <div className="hidden md:flex gap-3">
+        <div className="hidden md:flex items-center gap-4">
+           <RatingPulse />
            <AttendancePulse />
         </div>
       </div>
@@ -1287,6 +1288,7 @@ const routeConfig: Record<string, { title: string; description: string; icon: Re
 };
 
 import { RatingModal } from "./RatingModal";
+import { RatingPulse } from "./RatingPulse";
 
 export function DashboardContent() {
   const location = useLocation();
@@ -1350,17 +1352,7 @@ export function DashboardContent() {
                     <div className="flex-1 min-w-0 overflow-hidden">
                       <StudentBatchSelector />
                     </div>
-                    <Button 
-                      variant="outline"
-                      onClick={() => {
-                        setSelectedCourseForRating({ id: 'GENERAL', title: 'AOTMS Pro Academy' });
-                        setRatingModalOpen(true);
-                      }}
-                      className="bg-white border-2 border-slate-100 text-slate-900 font-black rounded-xl px-4 sm:px-6 h-10 sm:h-12 shadow-sm hover:border-yellow-400 hover:text-yellow-600 transition-all gap-2 text-[10px] sm:text-xs uppercase shrink-0 w-full sm:w-auto"
-                    >
-                      <Star className="h-4 w-4 fill-current" />
-                      Pulse Your Rating
-                    </Button>
+                    <RatingPulse />
                 </div>
               )}
 

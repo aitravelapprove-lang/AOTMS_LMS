@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { fetchWithAuth } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -69,7 +69,7 @@ export function ExamReview({ resultId, onClose }: ExamReviewProps) {
     const [reevaluationReason, setReevaluationReason] = useState("");
     const [isSubmittingReevaluation, setIsSubmittingReevaluation] = useState(false);
 
-    const fetchReview = async () => {
+    const fetchReview = useCallback(async () => {
         setLoading(true);
         try {
             const data = await fetchWithAuth<ReviewResult>(`/student/exam-review/${resultId}`);
@@ -79,11 +79,11 @@ export function ExamReview({ resultId, onClose }: ExamReviewProps) {
         } finally {
             setLoading(false);
         }
-    };
+    }, [resultId]);
 
     useEffect(() => {
         fetchReview();
-    }, [resultId]);
+    }, [resultId, fetchReview]);
 
     const handleRequestReevaluation = async () => {
       if (!reevaluationReason.trim()) {

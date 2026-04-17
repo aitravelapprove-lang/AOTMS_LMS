@@ -17,7 +17,7 @@ export interface Course {
   status: string | null;
   thumbnail_url: string | null;
   image?: string | null;
-  instructor_id: string | null; // Legacy
+  instructor_id?: string | null; // Legacy
   instructor_ids?: string[]; // New array
   instructors?: { id: string; full_name: string; avatar_url: string }[]; // New populated format
   created_at: string | null;
@@ -113,8 +113,8 @@ export interface CourseAnnouncement {
 
 export interface CourseRating {
   id: string;
-  course_id: string;
-  user_id: string | { full_name?: string; avatar_url?: string };
+  course_id: string | { id?: string; _id?: string; title?: string; thumbnail_url?: string };
+  user_id: string | { id?: string; _id?: string; full_name?: string; avatar_url?: string };
   rating: number;
   review: string | null;
   created_at: string;
@@ -1955,36 +1955,31 @@ export function useCreateTopic() {
     return useQuery({
       queryKey: ["instructor-ratings", user?.id],
       queryFn: async (): Promise<CourseRating[]> => {
-        if (!courses || courses.length === 0) return [];
-        const courseIds = [...courses.map((c: Course) => c.id), "GENERAL"].join(
-          ",",
-        );
-
-        const ratings =
-          (await fetchWithAuth<CourseRating[]>(
-            `/data/course_ratings?course_id=in.(${courseIds})&order=created_at.desc`,
-          )) || [];
-
-        const enriched = ratings.map((r: CourseRating) => {
-          const course = (courses as Course[]).find(
-            (c: Course) => c.id === r.course_id,
-          );
-          const userData = typeof r.user_id === "object" ? r.user_id : {};
-
+        if (!user?.id) return [];
+        
+        // Use the new dedicated endpoint for instructor-specific pulse ratings
+        const ratings = await fetchWithAuth<CourseRating[]>('/instructor/pulse-ratings');
+        
+        return ratings.map((r: CourseRating & { _id?: string }) => {
+          // Convert to unknown first to allow casting to Record for raw field access
+          const raw = r as unknown as Record<string, unknown>;
+          const courseData = typeof r.course_id === 'object' ? r.course_id : null;
+          const userData = typeof r.user_id === 'object' ? r.user_id : null;
+          
           return {
             ...r,
             id: r._id || r.id,
-            course_title:
-              course?.title ||
-              (r.course_id === "GENERAL" ? "Academy Pulse" : "Course"),
-            user_name: userData.full_name || "Scholar",
-            user_avatar: userData.avatar_url,
+            course_title: courseData?.title || (r.course_id && r.course_id === "GENERAL" ? "Academy Pulse" : "Course Feedback"),
+            user_name: userData?.full_name || "Scholar",
+            user_avatar: userData?.avatar_url,
+            user_id: userData?._id || userData?.id || (typeof r.user_id === 'string' ? r.user_id : ''),
+            created_at: (raw.created_at && typeof raw.created_at === 'object' && '$date' in (raw.created_at as object)) 
+              ? (raw.created_at as { $date: string }).$date 
+              : (raw.created_at as string || new Date().toISOString())
           };
-        });
-
-        return enriched as CourseRating[];
+        }) as CourseRating[];
       },
-      enabled: !!courses && (courses as Course[]).length > 0 && !!user?.id,
+      enabled: !!user?.id,
       staleTime: 60000 * 5,
     });
   }

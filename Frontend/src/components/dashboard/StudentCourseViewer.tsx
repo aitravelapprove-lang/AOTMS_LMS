@@ -19,14 +19,30 @@ interface StudentCourseViewerProps {
     onBack: () => void;
 }
 
+import { useAuth } from '@/hooks/useAuth';
+
 export function StudentCourseViewer({ course, isEnrolled = true, onBack }: StudentCourseViewerProps) {
     const navigate = useNavigate();
+    const { userRole } = useAuth();
     const { data: modules, isLoading: modulesLoading } = useCourseModules(course.id);
     const [selectedVideo, setSelectedVideo] = useState<S3CourseVideo | null>(null);
     const enrollMutation = useEnrollCourse();
     const [localIsEnrolled, setLocalIsEnrolled] = useState(isEnrolled);
     const [hasRequestedEnrollment, setHasRequestedEnrollment] = useState(false);
     const { toast } = useToast();
+
+    // Drip Logic: Calculate days since enrollment
+    const daysSinceEnrollment = React.useMemo(() => {
+        if (!course.enrolled_at) return 1;
+        const enrolled = new Date(course.enrolled_at);
+        const now = new Date();
+        const diffMs = now.getTime() - enrolled.getTime();
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
+        return diffDays;
+    }, [course.enrolled_at]);
+
+    // Admin/Manager/Instructor should see all modules regardless of drip
+    const isPrivilegedUser = ['admin', 'manager', 'instructor'].includes(userRole || '');
 
     // Payment Modal States
     const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -103,6 +119,10 @@ export function StudentCourseViewer({ course, isEnrolled = true, onBack }: Stude
                     <ArrowLeft className="h-4 w-4" /> Back to Library
                 </Button>
                 <div className="flex items-center gap-3">
+                    <div className="px-5 py-1.5 bg-slate-900/5 backdrop-blur-md rounded-full border border-slate-200 shadow-sm flex items-center gap-3">
+                        <Clock className="h-4 w-4 text-primary" />
+                        <span className="text-xs font-black uppercase text-slate-500 tracking-widest">Enrollment Day {daysSinceEnrollment}</span>
+                    </div>
                     {course.instructor_id && (
                         <Button 
                             variant="outline" 
@@ -454,6 +474,9 @@ export function StudentCourseViewer({ course, isEnrolled = true, onBack }: Stude
                                             selectedVideoId={selectedVideo?.id}
                                             onSelectVideo={setSelectedVideo}
                                             isEnrolled={localIsEnrolled}
+                                            daysSinceEnrollment={daysSinceEnrollment}
+                                            isPrivileged={isPrivilegedUser}
+                                            enrolledAt={course.enrolled_at}
                                         />
                                     ))}
                                 </div>
@@ -466,55 +489,129 @@ export function StudentCourseViewer({ course, isEnrolled = true, onBack }: Stude
     );
 }
 
-function ModuleVideoList({ module, selectedVideoId, onSelectVideo, isEnrolled }: {
+function DripCountdown({ unlockAt }: { unlockAt: Date }) {
+    const [timeLeft, setTimeLeft] = useState<{ h: number, m: number, s: number } | null>(null);
+
+    useEffect(() => {
+        const calculateTime = () => {
+            const now = new Date().getTime();
+            const target = unlockAt.getTime();
+            const diff = target - now;
+
+            if (diff <= 0) {
+                setTimeLeft(null);
+                return true; // Finished
+            }
+
+            const h = Math.floor(diff / (1000 * 60 * 60));
+            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((diff % (1000 * 60)) / 1000);
+
+            setTimeLeft({ h, m, s });
+            return false;
+        };
+
+        calculateTime();
+        const timer = setInterval(() => {
+            if (calculateTime()) clearInterval(timer);
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [unlockAt]);
+
+    if (!timeLeft) return null;
+
+    const pad = (n: number) => n.toString().padStart(2, '0');
+
+    return (
+        <span className="text-[10px] text-primary font-black tabular-nums bg-primary/5 px-2 py-0.5 rounded-md border border-primary/10 flex items-center gap-1.5 animate-pulse w-fit">
+            <Clock className="h-2.5 w-2.5" />
+            Unlocks in {pad(timeLeft.h)}h : {pad(timeLeft.m)}m : {pad(timeLeft.s)}s
+        </span>
+    );
+}
+
+function ModuleVideoList({ module, selectedVideoId, onSelectVideo, isEnrolled, daysSinceEnrollment, isPrivileged, enrolledAt }: {
     module: CourseModule;
     selectedVideoId?: string;
     onSelectVideo: (vid: S3CourseVideo) => void;
     isEnrolled: boolean;
+    daysSinceEnrollment: number;
+    isPrivileged: boolean;
+    enrolledAt?: string;
 }) {
     const { data: videos, isLoading } = useModuleVideos(module.id, module.course_id);
 
+    // Drip calculation: if module unlock day > days student has been enrolled
+    const isLockedByDrip = !isPrivileged && (module.unlock_after_days || 1) > daysSinceEnrollment;
+
+    const unlockAtDate = React.useMemo(() => {
+        if (!enrolledAt || !module.unlock_after_days) return null;
+        const base = new Date(enrolledAt);
+        const target = new Date(base.getTime() + (module.unlock_after_days - 1) * 24 * 60 * 60 * 1000);
+        return target;
+    }, [enrolledAt, module.unlock_after_days]);
+
     return (
-        <div className="mb-1">
-            <div className="px-5 py-4 bg-muted/30 font-semibold text-sm border-y border-border/50 sticky top-0 backdrop-blur-md z-10 flex items-center gap-3">
-                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary text-xs shrink-0">
-                    {module.order_index}
-                </span>
-                <span className="truncate">{module.title}</span>
+        <div className={`mb-1 transition-all duration-300 ${isLockedByDrip ? 'opacity-50 grayscale' : ''}`}>
+            <div className={`px-5 py-4 font-semibold text-sm border-y border-border/50 sticky top-0 backdrop-blur-md z-10 flex items-center justify-between gap-3 ${isLockedByDrip ? 'bg-slate-100/50' : 'bg-muted/30'}`}>
+                <div className="flex items-center gap-3 overflow-hidden">
+                    <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs shrink-0 ${isLockedByDrip ? 'bg-slate-200 text-slate-500' : 'bg-primary/20 text-primary'}`}>
+                        {module.order_index + 1}
+                    </span>
+                    <span className="truncate">{module.title}</span>
+                </div>
+                
+                {isLockedByDrip && (
+                    <div className="flex items-center gap-2 shrink-0">
+                        <Lock className="h-3 w-3 text-slate-400" />
+                        <span className="text-[9px] font-black uppercase text-slate-500 whitespace-nowrap">Day {module.unlock_after_days}</span>
+                    </div>
+                )}
             </div>
+            
             {isLoading ? (
                 <div className="px-5 py-2 text-xs text-muted-foreground">Loading...</div>
             ) : videos?.length === 0 ? (
                 <div className="px-5 py-2 text-xs text-muted-foreground">No videos</div>
             ) : (
                 <div className="flex flex-col py-1">
-                    {videos?.map((vid: S3CourseVideo) => (
-                        <button
-                            key={vid.id}
-                            onClick={() => isEnrolled && onSelectVideo(vid)}
-                            disabled={!isEnrolled}
-                            className={`group flex items-start gap-4 px-6 py-4 text-left transition-all duration-200 ${!isEnrolled
-                                ? 'opacity-60 cursor-not-allowed hover:bg-transparent'
-                                : 'hover:bg-muted/50 cursor-pointer'
-                                } ${selectedVideoId === vid.id ? 'bg-primary/5 border-l-4 border-l-primary' : 'border-l-4 border-l-transparent'}`}
-                        >
-                            <div className="mt-1 shrink-0">
-                                {selectedVideoId === vid.id ? (
-                                    <div className="relative">
-                                        <PlayCircle className="h-5 w-5 text-primary" />
-                                        <span className="absolute -inset-1 rounded-full bg-primary/20 animate-ping"></span>
-                                    </div>
-                                ) : !isEnrolled ? (
-                                    <Lock className="h-5 w-5 text-muted-foreground/60" />
-                                ) : (
-                                    <Video className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                                )}
-                            </div>
-                            <span className={`text-sm ${selectedVideoId === vid.id ? 'font-bold text-foreground' : 'text-muted-foreground font-medium'} leading-relaxed`}>
-                                {vid.title}
-                            </span>
-                        </button>
-                    ))}
+                    {videos?.map((vid: S3CourseVideo) => {
+                        const canAccess = isEnrolled && !isLockedByDrip;
+                        
+                        return (
+                            <button
+                                key={vid.id}
+                                onClick={() => canAccess && onSelectVideo(vid)}
+                                disabled={!canAccess}
+                                className={`group flex items-start gap-4 px-6 py-4 text-left transition-all duration-200 ${!canAccess
+                                    ? 'opacity-60 cursor-not-allowed hover:bg-transparent'
+                                    : 'hover:bg-muted/50 cursor-pointer'
+                                    } ${selectedVideoId === vid.id ? 'bg-primary/5 border-l-4 border-l-primary' : 'border-l-4 border-l-transparent'}`}
+                            >
+                                <div className="mt-1 shrink-0">
+                                    {selectedVideoId === vid.id ? (
+                                        <div className="relative">
+                                            <PlayCircle className="h-5 w-5 text-primary" />
+                                            <span className="absolute -inset-1 rounded-full bg-primary/20 animate-ping"></span>
+                                        </div>
+                                    ) : !canAccess ? (
+                                        <Lock className="h-5 w-5 text-muted-foreground/40" />
+                                    ) : (
+                                        <Video className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                    )}
+                                </div>
+                                <div className="flex flex-col gap-1.5 flex-1 overflow-hidden">
+                                    <span className={`text-sm ${selectedVideoId === vid.id ? 'font-bold text-foreground' : 'text-muted-foreground font-medium'} leading-relaxed truncate`}>
+                                        {vid.title}
+                                    </span>
+                                    {isLockedByDrip && unlockAtDate && (
+                                        <DripCountdown unlockAt={unlockAtDate} />
+                                    )}
+                                </div>
+                            </button>
+                        );
+                    })}
                 </div>
             )}
         </div>

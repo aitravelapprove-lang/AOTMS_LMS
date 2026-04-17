@@ -10,6 +10,7 @@ export interface CourseModule {
     order_index: number;
     allowed_batches?: string[];
     batch_type?: string;
+    unlock_after_days?: number;
     created_at: string;
 }
 
@@ -140,7 +141,7 @@ export function useCreateCourseModule() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ course_id, title, order_index, allowed_batches, batch_type }: Partial<CourseModule>) => {
+        mutationFn: async ({ course_id, title, order_index, allowed_batches, batch_type, unlock_after_days }: Partial<CourseModule>) => {
             if (!course_id) throw new Error('Course ID is required');
             return fetchWithAuth(`/courses/${course_id}/modules`, {
                 method: 'POST',
@@ -149,7 +150,8 @@ export function useCreateCourseModule() {
                     title,
                     order_index: order_index || 0,
                     allowed_batches,
-                    batch_type
+                    batch_type,
+                    unlock_after_days: unlock_after_days || 1
                 }),
             });
         },

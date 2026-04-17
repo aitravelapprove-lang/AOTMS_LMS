@@ -31,7 +31,7 @@ import {
   RotateCcw
 } from "lucide-react";
 import { CourseEnrollment } from "@/hooks/useCourses";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -51,11 +51,19 @@ interface EnrollmentsListProps {
   enrollments: CourseEnrollment[];
   loading: boolean;
   onUpdateStatus?: (id: string, status: 'active' | 'rejected') => Promise<void>;
+  onUpdatePayment?: (id: string, term: string) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
   onResetATS?: (userId: string) => Promise<void>;
 }
 
-export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete, onResetATS }: EnrollmentsListProps) {
+export function EnrollmentsList({ 
+  enrollments, 
+  loading, 
+  onUpdateStatus, 
+  onUpdatePayment, 
+  onDelete, 
+  onResetATS 
+}: EnrollmentsListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCourse, setFilterCourse] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -126,6 +134,8 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
       setProcessingId(null);
     }
   };
+
+
 
   const handleDelete = async (id: string) => {
     if (!onDelete) return;
@@ -543,8 +553,8 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end" className="rounded-2xl p-2 border-none shadow-2xl w-52 bg-white/95 backdrop-blur-md">
-                                    <DropdownMenuItem onClick={() => setSelectedEnrollment(enrollment)} className="rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-600 focus:bg-slate-900 focus:text-white transition-colors cursor-pointer">
-                                      <Eye className="h-4 w-4 mr-3 text-indigo-500" /> View Assets
+                                    <DropdownMenuItem onClick={() => setSelectedEnrollment(enrollment)} className="rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-800 focus:bg-slate-900 focus:text-white transition-colors cursor-pointer">
+                                      <Eye className="h-4 w-4 mr-3 text-indigo-500" /> View Details
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => handleUpdateStatus(enrollment.id, 'active')} className="rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest text-emerald-600 focus:bg-emerald-600 focus:text-white transition-colors cursor-pointer">
                                       <ShieldCheck className="h-4 w-4 mr-3" /> Approve Access
@@ -724,6 +734,75 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
                                 </div>
                             </div>
                         </div>
+
+                        {/* Payment Breakdown in Dialog */}
+                        <div className="space-y-5 pt-4 border-t border-slate-100">
+                           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Financial Breakdown (60/40)</p>
+                           <div className="grid grid-cols-1 gap-4">
+                              {(() => {
+                                 const full = safeParsePrice(selectedEnrollment?.final_price || selectedEnrollment?.price);
+                                 const term1 = Math.round(full * 0.6);
+                                 const term2 = Math.round(full * 0.4);
+                                 const pTerm = selectedEnrollment?.payment_term;
+                                 
+                                 return (
+                                    <>
+                                       <div className="flex items-center justify-between p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100/50">
+                                          <div className="space-y-1">
+                                             <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Term 01 (60%)</p>
+                                             <p className="text-lg font-black text-indigo-900 italic">₹{term1.toLocaleString('en-IN')}</p>
+                                          </div>
+                                          <Badge className={cn(
+                                            "rounded-lg px-2 py-1 text-[8px] font-black uppercase tracking-widest border-none",
+                                            (pTerm === 'full' || pTerm === 'term1' || pTerm === 'term2') ? "bg-indigo-600 text-white" : "bg-slate-200 text-slate-400"
+                                          )}>
+                                            {(pTerm === 'full' || pTerm === 'term1' || pTerm === 'term2') ? "Cleared" : "Pending"}
+                                          </Badge>
+                                       </div>
+                                       <div className="flex items-center justify-between p-4 rounded-2xl bg-amber-50/50 border border-amber-100/50">
+                                          <div className="space-y-1">
+                                             <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Term 02 (40%)</p>
+                                             <p className="text-lg font-black text-amber-900 italic">₹{term2.toLocaleString('en-IN')}</p>
+                                          </div>
+                                          <Badge 
+                                             onClick={() => {
+                                                if (pTerm === 'term1' || (pTerm === 'term2' && selectedEnrollment.status === 'pending')) {
+                                                   const msg = pTerm === 'term1' ? 
+                                                     'Trigger Term 2 payment requirement for this student?' : 
+                                                     'Confirm final payment receipt and Activate student?';
+                                                   
+                                                   if (window.confirm(msg)) {
+                                                      onUpdatePayment?.(selectedEnrollment.id, 'term2');
+                                                      // Optimistically update local selected state
+                                                      setSelectedEnrollment({ 
+                                                        ...selectedEnrollment, 
+                                                        payment_term: 'term2',
+                                                        status: pTerm === 'term1' ? 'deactivate' : 'active'
+                                                      });
+                                                   }
+                                                }
+                                             }}
+                                             className={cn(
+                                               "rounded-lg px-2 py-1 text-[8px] font-black uppercase tracking-widest border-none transition-all",
+                                               (pTerm === 'full' || (pTerm === 'term2' && selectedEnrollment.status === 'active')) ? "bg-emerald-600 text-white" : 
+                                               (pTerm === 'term1') ? "bg-amber-600 text-white animate-pulse cursor-pointer hover:scale-105 active:scale-95" : 
+                                               (pTerm === 'term2' && selectedEnrollment.status === 'pending') ? "bg-blue-600 text-white animate-pulse cursor-pointer hover:scale-105 active:scale-95" :
+                                               (pTerm === 'term2' && selectedEnrollment.status === 'deactivate') ? "bg-rose-500 text-white" :
+                                               "bg-slate-200 text-slate-400"
+                                             )}
+                                           >
+                                             {(pTerm === 'full' || (pTerm === 'term2' && selectedEnrollment.status === 'active')) ? "Cleared" : 
+                                              (pTerm === 'term1') ? "Confirm Pay?" : 
+                                              (pTerm === 'term2' && selectedEnrollment.status === 'pending') ? "Clear Now?" :
+                                              (pTerm === 'term2' && selectedEnrollment.status === 'deactivate') ? "Awaiting Pay" :
+                                              "Locked"}
+                                           </Badge>
+                                       </div>
+                                    </>
+                                 );
+                              })()}
+                           </div>
+                        </div>
                     </div>
                   </div>
               </div>
@@ -769,6 +848,7 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
           </div>
 
           <div className="absolute bottom-0 left-0 right-0 p-8 bg-white/80 backdrop-blur-xl border-t border-slate-100 flex flex-wrap justify-end gap-5 rounded-b-[3rem] z-20">
+
               <Button variant="ghost" onClick={() => setSelectedEnrollment(null)} className="text-slate-400 font-black uppercase tracking-widest text-[10px] h-14 px-8 rounded-2xl hover:bg-slate-50 transition-all">Close Viewer</Button>
               
               {selectedEnrollment?.status === 'pending' && (
@@ -799,6 +879,8 @@ export function EnrollmentsList({ enrollments, loading, onUpdateStatus, onDelete
           </div>
         </DialogContent>
       </Dialog>
+
+
     </div>
   );
 }

@@ -387,6 +387,62 @@ app.post('/api/zoom/signature', (req, res) => {
     }
 });
 
+app.put('/api/admin/update-enrollment-payment', authenticateToken, requireAdminOrManager, async (req, res) => {
+    const { enrollmentId, payment_term } = req.body;
+    try {
+        const { Enrollment } = require('./models/Course');
+        const enrollment = await Enrollment.findById(enrollmentId);
+        if (!enrollment) return res.status(404).json({ error: 'Enrollment not found' });
+
+        enrollment.category = 'approve'; // Auto-approve visibility when payment progresses
+        
+        if (payment_term === 'full') {
+            enrollment.payment_term = 'full';
+            enrollment.remaining_balance = 0;
+            enrollment.status = 'active';
+            // Mark full payment as approved if exists
+            if (enrollment.payment && enrollment.payment.length > 0) {
+                const p = enrollment.payment.find(r => r.term === 'full' && r.status === 'pending');
+                if (p) { p.status = 'approved'; p.approved_at = new Date(); }
+            }
+        } else if (payment_term === 'term1') {
+             enrollment.payment_term = 'term1';
+             enrollment.remaining_balance = Math.round((enrollment.final_price || 0) * 0.4);
+             enrollment.status = 'active';
+             // Mark term1 payment as approved if exists
+             if (enrollment.payment && enrollment.payment.length > 0) {
+                 const p = enrollment.payment.find(r => (r.term === 'term1' || !r.term) && r.status === 'pending');
+                 if (p) { p.status = 'approved'; p.approved_at = new Date(); }
+             }
+        } else if (payment_term === 'term2') {
+             // Admin triggers Term 2 payment requirement OR clears final pay
+             if (enrollment.payment_term === 'term2' && enrollment.status === 'pending') {
+                 enrollment.status = 'active';
+                 enrollment.remaining_balance = 0;
+                 if (enrollment.payment && enrollment.payment.length > 0) {
+                     const p = enrollment.payment.find(r => r.term === 'term2' && r.status === 'pending');
+                     if (p) { p.status = 'approved'; p.approved_at = new Date(); }
+                 }
+             } else {
+                 // Trigger Term 2 requirement - KEEP payment_term as what it is (likely term1)
+                 enrollment.remaining_balance = Math.round((enrollment.final_price || 0) * 0.4);
+                 enrollment.status = 'deactivate'; 
+                 enrollment.category = 'approve';
+             }
+        }
+        
+        enrollment.updated_at = new Date();
+        await enrollment.save();
+
+        // Broadcast change
+        io.emit('course_enrollments_changed', { userId: enrollment.user_id, courseId: enrollment.course_id });
+
+        res.json({ message: 'Payment term updated and category approved', enrollment });
+    } catch (err) {
+        handleError(res, err, 'update-enrollment-payment');
+    }
+});
+
 app.post('/api/zoom/webhook', async (req, res) => {
     try {
         const { event, payload } = req.body;
@@ -2489,7 +2545,7 @@ app.get('/api/chat/contacts', authenticateToken, async (req, res) => {
         const role = await getUserRole(req.user.id);
         let contacts = [];
 
-        if (role === 'student') {
+        if (role?.toLowerCase() === 'student') {
             // Students see instructors of courses they are enrolled in
             const enrollments = await Enrollment.find({ 
                 user_id: req.user.id, 
@@ -3213,16 +3269,29 @@ app.post('/api/courses/enroll', authenticateToken, async (req, res) => {
         await Enrollment.findOneAndUpdate(
             { user_id: req.user.id, course_id: finalCourseId },
             { 
-                status: 'pending', 
-                enrolled_at: new Date(),
-                progress_percentage: 0,
-                payment_proof_url: payment_proof_url || null,
-                utr_number: utr_number || null,
-                applied_coupon: couponApplied,
-                final_price: amountToPay,
-                payment_term: payment_term,
-                requested_batch_type: req.body.requested_batch_type || 'morning',
-                remaining_balance: balance
+                $set: {
+                    status: 'pending', 
+                    enrolled_at: new Date(),
+                    progress_percentage: 0,
+                    payment_proof_url: payment_proof_url || null,
+                    utr_number: utr_number || null,
+                    applied_coupon: couponApplied,
+                    final_price: basePrice,
+                    payment_term: payment_term,
+                    requested_batch_type: req.body.requested_batch_type || 'morning',
+                    remaining_balance: balance,
+                    category: 'remove'
+                },
+                $push: {
+                    payment: {
+                        term: payment_term,
+                        proof_url: payment_proof_url,
+                        utr: utr_number,
+                        amount: amountToPay,
+                        status: 'pending',
+                        submitted_at: new Date()
+                    }
+                }
             },
             { upsert: true, returnDocument: 'after' }
         );
@@ -3777,6 +3846,33 @@ app.put('/api/courses/enrollment-status', authenticateToken, requireAdminOrManag
         }
     } catch (err) {
         handleError(res, err, 'update-enrollment-status');
+    }
+});
+
+app.put('/api/admin/update-enrollment-payment', authenticateToken, requireAdminOrManager, async (req, res) => {
+    const { enrollmentId, payment_term } = req.body;
+    try {
+        const enrollment = await Enrollment.findById(enrollmentId);
+        if (!enrollment) return res.status(404).json({ error: 'Enrollment not found' });
+
+        const fullPrice = enrollment.final_price || 0;
+        let balance = 0;
+
+        if (payment_term === 'term1') {
+            balance = Math.round(fullPrice * 0.4);
+        } else {
+            balance = 0;
+        }
+
+        await Enrollment.findByIdAndUpdate(enrollmentId, { 
+            payment_term, 
+            remaining_balance: balance,
+            updated_at: new Date() 
+        });
+
+        res.json({ success: true, message: `Payment term updated for enrollment ${enrollmentId}` });
+    } catch (err) {
+        handleError(res, err, 'update-enrollment-payment');
     }
 });
 
@@ -4756,29 +4852,62 @@ const createCourseResourceRoutes = (resourceName, Model) => {
             }
 
             // Batch access control: students only see content assigned to their batch
-            // (or content with no batch restriction — empty allowed_batches = global)
-            if (userId && userRole === 'student' && ['videos', 'resources', 'announcements', 'timeline'].includes(resourceName)) {
-                const studentBatch = await StudentBatch.findOne({
-                    student_id: userId,
-                    course_id: req.params.courseId
-                }).lean();
+            // (or content with no batch restriction - empty allowed_batches = global)
+            const normalizedRole = userRole?.toLowerCase();
+            if (userId && normalizedRole === 'student' && ['modules', 'videos', 'resources', 'announcements', 'timeline'].includes(resourceName)) {
+                try {
+                    const studentIdObj = mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId;
+                    const courseIdObj = mongoose.Types.ObjectId.isValid(req.params.courseId) ? new mongoose.Types.ObjectId(req.params.courseId) : req.params.courseId;
 
-                const globalFilter = [
-                    { allowed_batches: { $exists: false } },
-                    { allowed_batches: null },
-                    { allowed_batches: { $size: 0 } }
-                ];
+                    const studentBatch = await StudentBatch.findOne({
+                        student_id: studentIdObj,
+                        course_id: courseIdObj
+                    }).lean();
 
-                if (studentBatch) {
-                    filter.$or = [
-                        ...globalFilter,
-                        { allowed_batches: studentBatch.batch_id }
+                    const globalFilter = [
+                        { allowed_batches: { $exists: false } },
+                        { allowed_batches: null },
+                        { allowed_batches: { $size: 0 } }
                     ];
-                } else {
-                    // Student has no batch assignment — only show global items
-                    filter.$or = globalFilter;
+
+                    if (studentBatch) {
+                        const batchIds = [studentBatch.batch_id.toString()];
+                        
+                        // Handle session-specific slots in "all" type courses
+                        if (studentBatch.assigned_session && studentBatch.assigned_session !== 'all') {
+                            const parentBatch = await Batch.findById(studentBatch.batch_id).lean();
+                            if (parentBatch && parentBatch.batches) {
+                                const sub = parentBatch.batches.find(b => 
+                                    b.batch_type && b.batch_type.toLowerCase() === studentBatch.assigned_session.toLowerCase()
+                                );
+                                if (sub) {
+                                    const subId = sub._id ? sub._id.toString() : `${studentBatch.batch_id.toString()}_${sub.batch_type}`;
+                                    batchIds.push(subId);
+                                }
+                            }
+                        }
+
+                        // Use the combined IDs (Parent + Session) for the match
+                        // Use Mixed matching (support both ObjectId and string matches if possible)
+                        const objectIds = batchIds
+                            .filter(id => mongoose.Types.ObjectId.isValid(id))
+                            .map(id => new mongoose.Types.ObjectId(id));
+                        
+                        const stringIds = batchIds.map(id => id.toString());
+
+                        filter.$or = [
+                            ...globalFilter,
+                            { allowed_batches: { $in: [...objectIds, ...stringIds] } }
+                        ];
+                        
+                        console.log(`[ACL] Enabled for ${resourceName}. Found batch(es): ${batchIds.join(', ')}`);
+                    } else {
+                        filter.$or = globalFilter;
+                        console.log(`[ACL] No batch assignment for student ${userId}. Showing global ${resourceName} only.`);
+                    }
+                } catch (accessErr) {
+                    console.error('[ACL Error] Setting up batch filter:', accessErr.message);
                 }
-                console.log(`[ACL] Resource ${resourceName} scoped for student. Batch: ${studentBatch?.batch_id || 'Global Only'}`);
             }
 
             // Support basic filtering (e.g., ?module_id=eq.123)
@@ -5194,7 +5323,7 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
         }
 
         // Student-specific scoping logic - only apply to students
-        if (role === 'student') {
+        if (role?.toLowerCase() === 'student') {
             const studentScopedTables = {
                 'exam_results': 'student_id',
                 'resumescans': 'user_id',
@@ -5213,7 +5342,7 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
             }
 
             // Batch-wise and Enrollment-wise scoping for content
-            if (['course_videos', 'course_resources', 'live_classes', 'course_announcements', 'course_timeline'].includes(table)) {
+            if (['course_modules', 'course_videos', 'course_resources', 'live_classes', 'course_announcements', 'course_timeline'].includes(table)) {
                 // 1. Get all active enrollment IDs for this student
                 const enrollments = await Enrollment.find({ user_id: req.user.id, status: 'active' }).select('course_id').lean();
                 const enrolledCourseIds = enrollments.map(e => e.course_id.toString());
@@ -5237,12 +5366,33 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
                     };
                     contentFilter = { $and: [enrollmentFilter, batchFilter] };
                 } else {
-                    const studentBatchIds = studentBatches.map(sb => sb.batch_id?._id?.toString()).filter(Boolean);
+                    const studentBatchIds = [];
+                    for (const sb of studentBatches) {
+                        if (sb.batch_id && sb.batch_id._id) {
+                            studentBatchIds.push(sb.batch_id._id.toString());
+                            
+                            // Check for sub-batch ID matching the student's assigned session
+                            if (sb.assigned_session && sb.assigned_session !== 'all') {
+                                // Find the specific sub-batch ID from the batch document
+                                // Since we populated batch_id, we can check if it has the batches array
+                                // Or we find it from the DB
+                                const fullBatch = await Batch.findById(sb.batch_id._id).lean();
+                                if (fullBatch && fullBatch.batches) {
+                                    const sub = fullBatch.batches.find(b => b.batch_type.toLowerCase() === sb.assigned_session.toLowerCase());
+                                    if (sub && sub._id) {
+                                        studentBatchIds.push(sub._id.toString());
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     const batchFilter = {
                         $or: [
                             { allowed_batches: { $exists: false } }, 
+                            { allowed_batches: null },      
                             { allowed_batches: { $size: 0 } },      
-                            { allowed_batches: { $in: studentBatchIds } } 
+                            { allowed_batches: { $in: studentBatchIds.map(id => mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : id) } } 
                         ]
                     };
                     contentFilter = { $and: [enrollmentFilter, batchFilter] };
@@ -5486,11 +5636,12 @@ app.delete('/api/data/:table/:id', authenticateToken, async (req, res) => {
 
     try {
         const role = await getUserRole(req.user.id);
+        const itemToDelete = await Model.findById(id);
+        if (!itemToDelete) return res.status(404).json({ error: 'Item not found' });
 
         // Security: Restrict deletions
         if (role !== 'admin' && role !== 'manager') {
-            const item = await Model.findById(id);
-            if (!item) return res.status(404).json({ error: 'Item not found' });
+            const item = itemToDelete; // Rename for existing logic compatibility
 
             // Instructors
             if (role === 'instructor') {
@@ -5508,8 +5659,13 @@ app.delete('/api/data/:table/:id', authenticateToken, async (req, res) => {
                         
                         if (courseId) {
                             const course = await Course.findById(courseId);
-                            if (!course || course.instructor_id?.toString() !== req.user.id) {
-                                return res.status(403).json({ error: 'Forbidden: You must be the assigned instructor of this course' });
+                            const authorizedInstructors = [
+                                course?.instructor_id?.toString(),
+                                ...(course?.instructor_ids || []).map(id => id.toString())
+                            ];
+                            
+                            if (!course || !authorizedInstructors.includes(req.user.id)) {
+                                return res.status(403).json({ error: 'Forbidden: You must be an assigned instructor of this course' });
                             }
                         } else if (table === 'live_classes') {
                              return res.status(403).json({ error: 'Forbidden: You are not the host of this session' });
@@ -5534,14 +5690,82 @@ app.delete('/api/data/:table/:id', authenticateToken, async (req, res) => {
 
         // --- CUSTOM HOOKS FOR CASCADE DELETION ---
         if (table === 'exams') {
-            const examToDelete = await Exam.findById(id);
-            if (examToDelete) {
-                const topic = examToDelete.title;
+            const topic = itemToDelete.title;
+            if (topic) {
                 console.log(`[CASCADE] Deleting legacy exam: "${topic}". Syncing Question Bank...`);
                 await QuestionBank.deleteMany({ topic });
             }
         }
         // ----------------------------------------
+        
+        // --- S3 PERMANENT DELETION ---
+        const extractS3Key = (url) => {
+            if (!url) return null;
+            try {
+                // If it's a full S3 URL
+                if (url.includes('.amazonaws.com/')) {
+                    return url.split('.amazonaws.com/')[1].split('?')[0];
+                }
+                // If it's a proxied path
+                if (url.startsWith('/s3/public/')) {
+                    return url.replace('/s3/public/', '').split('?')[0];
+                }
+                // If it's just the key
+                if (!url.startsWith('http') && !url.startsWith('/')) {
+                    return url.split('?')[0];
+                }
+            } catch (e) {
+                console.error("[S3] Error extracting key from:", url);
+            }
+            return null;
+        };
+
+        const deleteFromS3 = async (url) => {
+            const key = extractS3Key(url);
+            if (key) {
+                try {
+                    await deleteObject(key);
+                    console.log(`[S3] Permanently deleted: ${key}`);
+                } catch (err) {
+                    console.error(`[S3] Failed to delete key ${key}:`, err.message);
+                }
+            }
+        };
+
+        if (table === 'course_videos') {
+            await deleteFromS3(itemToDelete.video_url);
+            await deleteFromS3(itemToDelete.thumbnail_url);
+            
+            // Cascade: Delete the entire unit (Module + siblings) as requested
+            if (itemToDelete.module_id) {
+                console.log(`[CASCADE] Video deleted, purging entire unit for module ${itemToDelete.module_id}`);
+                const siblings = await Model.find({ module_id: itemToDelete.module_id });
+                for (const sib of siblings) {
+                    if (sib._id.toString() !== id) { // Don't try to delete the one we just deleted again
+                        await deleteFromS3(sib.video_url);
+                        await deleteFromS3(sib.thumbnail_url);
+                        await Model.findByIdAndDelete(sib._id);
+                    }
+                }
+                const parentModuleModel = Model.db.model('Module');
+                await parentModuleModel.findByIdAndDelete(itemToDelete.module_id);
+            }
+        } else if (table === 'course_resources') {
+            await deleteFromS3(itemToDelete.file_url);
+        } else if (table === 'course_modules') {
+            // Cascade: Delete all videos in this module
+            const moduleVideos = await Video.find({ module_id: id });
+            console.log(`[CASCADE] Deleting module ${id}: Found ${moduleVideos.length} associated videos.`);
+            
+            for (const vid of moduleVideos) {
+                await deleteFromS3(vid.video_url);
+                await deleteFromS3(vid.thumbnail_url);
+                await Video.findByIdAndDelete(vid._id);
+                console.log(`[CASCADE] Deleted video from DB and S3: ${vid.title}`);
+            }
+        }
+        // -----------------------------
+        // -----------------------------
 
         // Special handling for live classes: Delete from Zoom API first
         if (table === 'live_classes') {
@@ -5644,15 +5868,67 @@ app.get('/api/batches', authenticateToken, async (req, res) => {
             }
             filter.course_id = req.query.course_id;
         }
-        if (req.user.role === 'instructor') filter.instructor_id = req.user.id;
+        if (req.user.role === 'instructor') {
+            if (req.query.course_id) {
+                // Check if they are authorized for this course
+                const course = await Course.findById(req.query.course_id);
+                if (course && (course.instructor_ids || []).includes(req.user.id)) {
+                    filter.course_id = req.query.course_id;
+                } else {
+                    filter.instructor_id = req.user.id;
+                }
+            } else {
+                filter.instructor_id = req.user.id;
+            }
+        }
         if (req.query.is_active !== undefined) filter.is_active = req.query.is_active === 'true';
         
         const batches = await Batch.find(filter).sort({ batch_type: 1, batch_name: 1 }).lean();
-        const batchesWithCount = await Promise.all(batches.map(async (b) => {
-            const count = await StudentBatch.countDocuments({ batch_id: b._id });
-            return { ...b, id: b._id.toString(), student_count: count };
+        
+        let processedBatches = [];
+        
+        await Promise.all(batches.map(async (b) => {
+            // If it has sub-batches, we return the sub-batches as "real" items
+            if (b.batches && b.batches.length > 0) {
+                await Promise.all(b.batches.map(async (nb) => {
+                    // Calculate count specifically for this session
+                    const subCount = await StudentBatch.countDocuments({ 
+                        batch_id: b._id, 
+                        assigned_session: nb.batch_type 
+                    });
+
+                    processedBatches.push({
+                        ...nb,
+                        id: nb._id ? nb._id.toString() : `${b._id.toString()}_${nb.batch_type}`,
+                        _id: nb._id || `${b._id.toString()}_${nb.batch_type}`,
+                        course_id: b.course_id,
+                        instructor_id: b.instructor_id,
+                        is_sub_batch: true,
+                        parent_batch_id: b._id,
+                        student_count: subCount,
+                        created_at: b.created_at // Carry over parent metadata
+                    });
+                }));
+                
+                // DO NOT include the parent 'all' batch if it has sub-batches, 
+                // as the frontend should show only the granular sessions
+                // UNLESS explicitly requested otherwise (but for BatchManager we want it clean)
+            } else {
+                const count = await StudentBatch.countDocuments({ batch_id: b._id });
+                processedBatches.push({ ...b, id: b._id.toString(), student_count: count });
+            }
         }));
-        res.json(batchesWithCount);
+        
+        // Final deduplication based on ID and type to satisfy BatchManager's fragile rendering
+        const seen = new Set();
+        const finalBatches = processedBatches.filter(b => {
+            const key = `${b.id}-${b.batch_type}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+
+        res.json(finalBatches);
     } catch (err) {
         if (err.name === 'CastError') return res.json([]); 
         handleError(res, err, 'list-batches');
@@ -5746,7 +6022,8 @@ app.get('/api/batches/my-batch/:courseId', authenticateToken, async (req, res) =
             ...assignment.batch_id,
             id: assignment.batch_id._id.toString(),
             assigned_at: assignment.assigned_at,
-            requested_batch_type: enrollment?.requested_batch_type || 'morning'
+            assigned_session: assignment.assigned_session || 'all',
+            requested_batch_type: enrollment?.requested_batch_type || assignment.assigned_session || 'morning'
         });
     } catch (err) {
         handleError(res, err, 'my-batch');
@@ -5874,12 +6151,27 @@ app.get('/api/batches/:batchId/students', authenticateToken, requireInstructor, 
 app.post('/api/batches/:batchId/students', authenticateToken, requireInstructor, async (req, res) => {
     try {
         const { student_id, course_id } = req.body;
-        const batch = await Batch.findById(req.params.batchId).lean();
+        let batch = await Batch.findById(req.params.batchId).lean();
+        let targetBatchId = req.params.batchId;
+        let session = req.body.session || 'all';
+        
+        // If not found by direct ID, it might be a sub-batch ID from the nested array
+        if (!batch) {
+            batch = await Batch.findOne({ "batches._id": req.params.batchId }).lean();
+            if (batch) {
+                targetBatchId = batch._id.toString(); // Use the parent ID for storing
+                // Find the specific session type from the sub-batch
+                const subBatch = batch.batches.find(sb => sb._id.toString() === req.params.batchId);
+                if (subBatch && !req.body.session) {
+                    session = subBatch.batch_type;
+                }
+            }
+        }
+
         if (!batch) return res.status(404).json({ error: 'Batch not found' });
 
         // Check capacity (session-aware)
-        const session = req.body.session || 'all';
-        const query = { batch_id: req.params.batchId };
+        const query = { batch_id: targetBatchId };
         if (session && session !== 'all') {
             query.assigned_session = session;
         }
@@ -5902,8 +6194,8 @@ app.post('/api/batches/:batchId/students', authenticateToken, requireInstructor,
         const assignment = await StudentBatch.findOneAndUpdate(
             { student_id, course_id },
             {
-                batch_id: req.params.batchId,
-                assigned_session: req.body.session || 'all',
+                batch_id: targetBatchId,
+                assigned_session: session,
                 assigned_by: req.user.id,
                 assigned_at: new Date(),
                 updated_at: new Date()

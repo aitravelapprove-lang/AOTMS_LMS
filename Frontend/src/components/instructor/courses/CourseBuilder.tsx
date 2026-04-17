@@ -10,7 +10,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { useCourseModules, useCreateCourseModule, useModuleVideos, useCreateCourseVideo, useS3Upload, useUpdateCourseStatus, CourseModule, S3CourseVideo, useDeleteCourseVideo, useDeleteCourseModule } from '@/hooks/useCourseBuilder';
+import { useCourseModules, useCreateCourseModule, useUpdateCourseModule, useModuleVideos, useCreateCourseVideo, useS3Upload, useUpdateCourseStatus, CourseModule, S3CourseVideo, useDeleteCourseVideo, useDeleteCourseModule } from '@/hooks/useCourseBuilder';
+import { fetchWithAuth } from '@/lib/api';
 import { Course } from '@/hooks/useInstructorData';
 import { VideoUploader } from '../VideoUploader';
 import { BatchManager } from '../BatchManager';
@@ -20,6 +21,16 @@ interface CourseBuilderProps {
     course: Course;
     onBack: () => void;
 }
+
+const deriveBatchType = (selectedIds: string[], allBatches: {id: string, batch_type: string}[]) => {
+    if (selectedIds.length === 0) return 'all';
+    const selectedBatchTypes = allBatches
+        .filter(b => selectedIds.includes(b.id))
+        .map(b => b.batch_type);
+    const uniqueTypes = [...new Set(selectedBatchTypes)];
+    if (uniqueTypes.length === 1) return uniqueTypes[0];
+    return 'all';
+};
 
 function ModuleItem({ module, course }: { module: CourseModule, course: Course }) {
     const { data: videosData, refetch } = useModuleVideos(module.id, course.id);
@@ -33,6 +44,45 @@ function ModuleItem({ module, course }: { module: CourseModule, course: Course }
     const [isVideoUploadOpen, setIsVideoUploadOpen] = useState(false);
     const [copiedModule, setCopiedModule] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editData, setEditData] = useState({ 
+        title: module.title, 
+        allowed_batches: module.allowed_batches || [],
+        batch_type: module.batch_type || 'all'
+    });
+    const [batches, setBatches] = useState<{ id: string, batch_name: string, batch_type: string }[]>([]);
+
+    const updateModule = useUpdateCourseModule();
+
+    useEffect(() => {
+        if (isEditing) {
+            const loadBatches = async () => {
+                try {
+                    const data = await fetchWithAuth(`/batches?course_id=${course.id}`) as { id: string, batch_name: string, batch_type: string }[];
+                    setBatches(data || []);
+                } catch (e) {
+                    console.error("Failed to load batches", e);
+                }
+            };
+            loadBatches();
+        }
+    }, [isEditing, course.id]);
+
+    const handleUpdateModule = async () => {
+        try {
+            await updateModule.mutateAsync({
+                id: module.id,
+                course_id: course.id,
+                title: editData.title,
+                allowed_batches: editData.allowed_batches,
+                batch_type: editData.batch_type
+            });
+            setIsEditing(false);
+            toast({ title: "Module Updated", description: "Changes have been saved." });
+        } catch (err) {
+            toast({ title: "Update Failed", variant: "destructive" });
+        }
+    };
 
     const handleCopyModuleId = () => {
         try {
@@ -101,6 +151,15 @@ function ModuleItem({ module, course }: { module: CourseModule, course: Course }
                     <Button 
                         variant="ghost" 
                         size="icon"
+                        onClick={() => setIsEditing(true)}
+                        className="h-10 w-10 rounded-xl text-slate-400 hover:text-primary hover:bg-primary/5 transition-all shrink-0"
+                    >
+                        <Edit className="h-5 w-5" />
+                    </Button>
+
+                    <Button 
+                        variant="ghost" 
+                        size="icon"
                         onClick={handleDeleteModule}
                         disabled={isDeleting}
                         className="h-10 w-10 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all shrink-0"
@@ -142,6 +201,70 @@ function ModuleItem({ module, course }: { module: CourseModule, course: Course }
                                     />
                                 </div>
                             </div>
+                        </DialogContent>
+                    </Dialog>
+
+                    {/* Module Edit Dialog */}
+                    <Dialog open={isEditing} onOpenChange={setIsEditing}>
+                        <DialogContent className="sm:max-w-md rounded-3xl">
+                            <DialogHeader>
+                                <DialogTitle>Edit Module Settings</DialogTitle>
+                                <DialogDescription>Update title and access restrictions for this module.</DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                    <Label className="text-xs font-bold uppercase">Title</Label>
+                                    <Input 
+                                        value={editData.title}
+                                        onChange={(e) => setEditData(prev => ({ ...prev, title: e.target.value }))}
+                                        className="rounded-xl border-slate-200"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-xs font-bold uppercase">Batch Access Control</Label>
+                                    <div className="space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-100 max-h-40 overflow-y-auto">
+                                        {batches.length === 0 ? (
+                                            <p className="text-[10px] text-slate-400 italic">No batches found for this course.</p>
+                                        ) : (
+                                            batches.map(batch => (
+                                                <div key={batch.id} className="flex items-center gap-3">
+                                                    <input 
+                                                        type="checkbox"
+                                                        id={`edit-batch-${batch.id}`}
+                                                        checked={editData.allowed_batches.includes(batch.id)}
+                                                        onChange={(e) => {
+                                                            let nextBatches = [...editData.allowed_batches];
+                                                            if (e.target.checked) {
+                                                                nextBatches.push(batch.id);
+                                                            } else {
+                                                                nextBatches = nextBatches.filter(id => id !== batch.id);
+                                                            }
+                                                            setEditData(p => ({ 
+                                                                ...p, 
+                                                                allowed_batches: nextBatches,
+                                                                batch_type: deriveBatchType(nextBatches, batches)
+                                                            }));
+                                                        }}
+                                                        className="h-4 w-4 rounded border-slate-300 text-primary"
+                                                    />
+                                                    <label htmlFor={`edit-batch-${batch.id}`} className="text-xs font-medium cursor-pointer">
+                                                        {batch.batch_name} ({batch.batch_type})
+                                                    </label>
+                                                </div>
+                                            ))
+                                        )}
+                                        <div className="pt-2 mt-2 border-t border-slate-200">
+                                            <p className="text-[9px] text-slate-400 italic">If no batches are selected, the module is visible to ALL enrolled students.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button variant="ghost" onClick={() => setIsEditing(false)}>Cancel</Button>
+                                <Button onClick={handleUpdateModule} disabled={updateModule.isPending} className="rounded-xl px-6">
+                                    {updateModule.isPending ? "Saving..." : "Save Changes"}
+                                </Button>
+                            </DialogFooter>
                         </DialogContent>
                     </Dialog>
                 </div>
@@ -218,8 +341,25 @@ export function CourseBuilder({ course, onBack }: CourseBuilderProps) {
     const [copiedCourse, setCopiedCourse] = useState(false);
     const [isAddModuleDialogOpen, setIsAddModuleDialogOpen] = useState(false);
     const [newModuleTitle, setNewModuleTitle] = useState('');
+    const [newModuleBatches, setNewModuleBatches] = useState<string[]>([]);
+    const [newModuleType, setNewModuleType] = useState('all');
+    const [courseBatches, setCourseBatches] = useState<{ id: string, batch_name: string, batch_type: string }[]>([]);
     const [isUploaderOpen, setIsUploaderOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'syllabus' | 'batches'>('syllabus');
+
+    useEffect(() => {
+        if (isAddModuleDialogOpen) {
+            const loadBatches = async () => {
+                try {
+                    const data = await fetchWithAuth(`/batches?course_id=${course.id}`) as { id: string, batch_name: string, batch_type: string }[];
+                    setCourseBatches(data || []);
+                } catch (e) {
+                    console.error("Failed to load course batches", e);
+                }
+            };
+            loadBatches();
+        }
+    }, [isAddModuleDialogOpen, course.id]);
 
     useEffect(() => {
         if (!modulesLoading && modules && modules.length === 0) {
@@ -253,9 +393,12 @@ export function CourseBuilder({ course, onBack }: CourseBuilderProps) {
             await createModule.mutateAsync({
                 course_id: course.id,
                 title: newModuleTitle.trim(),
-                order_index: modules?.length || 0
+                order_index: modules?.length || 0,
+                allowed_batches: newModuleBatches,
+                batch_type: newModuleType
             });
             setNewModuleTitle('');
+            setNewModuleBatches([]);
             setIsAddModuleDialogOpen(false);
             toast({ title: "Module Created", description: `"${newModuleTitle}" has been added to the syllabus.` });
         } catch (err: unknown) {
@@ -336,9 +479,42 @@ export function CourseBuilder({ course, onBack }: CourseBuilderProps) {
                                         className="h-8 text-sm rounded-lg"
                                     />
                                 </div>
+                                <div className="space-y-2 mt-3">
+                                    <Label className="text-xs font-bold uppercase">Batch Restrictions</Label>
+                                    <div className="space-y-1.5 bg-slate-50 p-2.5 rounded-xl border border-slate-100 max-h-32 overflow-y-auto">
+                                        {courseBatches.length === 0 ? (
+                                            <p className="text-[9px] text-slate-400 italic">No batches found.</p>
+                                        ) : (
+                                            courseBatches.map(batch => (
+                                                <div key={batch.id} className="flex items-center gap-2">
+                                                    <input 
+                                                        type="checkbox"
+                                                        id={`new-batch-${batch.id}`}
+                                                        checked={newModuleBatches.includes(batch.id)}
+                                                        onChange={(e) => {
+                                                            let nextBatches = [...newModuleBatches];
+                                                            if (e.target.checked) {
+                                                                nextBatches.push(batch.id);
+                                                            } else {
+                                                                nextBatches = nextBatches.filter(id => id !== batch.id);
+                                                            }
+                                                            setNewModuleBatches(nextBatches);
+                                                            setNewModuleType(deriveBatchType(nextBatches, courseBatches));
+                                                        }}
+                                                        className="h-3.5 w-3.5 rounded border-slate-300 text-primary"
+                                                    />
+                                                    <label htmlFor={`new-batch-${batch.id}`} className="text-[11px] font-medium cursor-pointer">
+                                                        {batch.batch_name} ({batch.batch_type})
+                                                    </label>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                    <p className="text-[8px] text-slate-400 mt-1 italic leading-tight">Leave empty to show to all enrolled batches.</p>
+                                </div>
                             </div>
                             <DialogFooter className="flex-row gap-2 justify-end">
-                                <Button variant="ghost" className="h-8 text-xs" onClick={() => setIsAddModuleDialogOpen(false)}>Cancel</Button>
+                                <Button variant="ghost" className="h-8 text-xs px-3" onClick={() => setIsAddModuleDialogOpen(false)}>Cancel</Button>
                                 <Button 
                                     onClick={handleAddModule} 
                                     className="pro-button-primary rounded-lg h-8 text-xs px-4"

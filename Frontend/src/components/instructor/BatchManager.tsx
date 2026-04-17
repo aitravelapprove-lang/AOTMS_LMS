@@ -64,6 +64,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface Batch {
   id: string;
+  _id?: string;
   batch_name: string;
   batch_type: 'morning' | 'afternoon' | 'evening' | 'all';
   start_time?: string;
@@ -75,6 +76,7 @@ interface Batch {
   batch_category?: string;
   original?: Batch;
   students?: RosterStudent[];
+  parent_batch_id?: string;
 }
 
 interface RosterStudent {
@@ -523,9 +525,31 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
         </div>
       ) : viewMode === 'batches' ? (
         (() => {
-          const filteredBatches = assignedSession && assignedSession !== 'all' 
-            ? batches.filter(b => b.batch_type === assignedSession) 
-            : batches;
+          const processedBatches: Batch[] = [];
+          
+          batches.forEach(b => {
+            // Include all active batches, even if batch_category is 'remove' (standalone batches)
+            if (b.batch_type === 'all' && b.batches && b.batches.length > 0) {
+              // Flatten: show sub-batches instead of the container 'all' batch
+              b.batches.forEach(sub => {
+                processedBatches.push({
+                  ...sub,
+                  parent_batch_id: b.id,
+                  // Combine parent name with sub-batch type for clarity if needed
+                  batch_name: `${b.batch_name} (${sub.batch_type.charAt(0).toUpperCase() + sub.batch_type.slice(1)})`,
+                  original: sub // keep reference to sub
+                } as Batch);
+              });
+            } else {
+              // Standard specific batch type (morning/afternoon/evening) or 'all' without sub-entries
+              processedBatches.push(b);
+            }
+          });
+
+          // Apply session filter if active
+          const filteredBatches = (assignedSession && assignedSession !== 'all')
+            ? processedBatches.filter(b => b.batch_type === assignedSession)
+            : processedBatches;
 
           if (filteredBatches.length === 0) {
             return (
@@ -558,19 +582,11 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
           return (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               <AnimatePresence>
-                {(() => {
-                  const items = (filteredBatches as Batch[]).flatMap(b => {
-                    if (b.batches && b.batches.length > 0) {
-                      return b.batches.map(sub => ({ ...sub, id: b.id, original: b }));
-                    }
-                    return [b];
-                  });
-
-                  return items.map((batch, idx: number) => {
-                    const b = batch as Batch & { original?: Batch }; 
-                    return (
+                {filteredBatches.map((batch: Batch, idx: number) => {
+                  const displayId = batch.id || batch._id;
+                  return (
                     <motion.div
-                      key={b.batch_type === 'morning' || b.batch_type === 'afternoon' || b.batch_type === 'evening' ? `${b.id}-${b.batch_type}` : b.id}
+                      key={`${displayId}-${batch.batch_type}-${idx}`}
                       initial={{ opacity: 0, y: 30 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.05 }}
@@ -592,17 +608,20 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
                                    {formatDate(batch.created_at || batch.original?.created_at)}
                                  </span>
                                  <Button 
-                                  variant="ghost" 
-                                  size="icon" 
+                                   variant="ghost" 
+                                   size="icon" 
                                    onClick={() => {
-                                     const target = batch.original || batch;
-                                     setEditingBatch(target);
-                                     setNewBatch({
-                                       batch_name: batch.batch_name,
-                                       batch_type: batch.batch_type, // Crucial: use the card's session type
-                                       max_students: batch.max_students
-                                     });
-                                     setShowCreateModal(true);
+                                      const isSub = !!batch.parent_batch_id;
+                                      setEditingBatch({
+                                        ...batch,
+                                        id: isSub ? batch.parent_batch_id : (batch.id || batch._id)
+                                      });
+                                      setNewBatch({
+                                        batch_name: batch.batch_name,
+                                        batch_type: batch.batch_type,
+                                        max_students: batch.max_students
+                                      });
+                                      setShowCreateModal(true);
                                    }}
                                    className="h-9 w-9 rounded-xl hover:bg-primary/5 hover:text-primary text-slate-300 opacity-20 group-hover:opacity-100 transition-all border border-transparent mr-1"
                                  >
@@ -662,7 +681,10 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
                              </div>
                              <Button 
                                variant="ghost" 
-                               onClick={() => setViewMode('roster')}
+                               onClick={() => {
+                                 setRosterFilter(batch.batch_type);
+                                 setViewMode('roster');
+                               }}
                                className="h-auto p-0 text-primary font-black text-[10px] uppercase tracking-[0.15em] hover:bg-transparent hover:translate-x-1 transition-all"
                              >
                                 Check Unit Roster <ArrowRight className="h-3 w-3 ml-1" />
@@ -672,8 +694,7 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
                       </Card>
                     </motion.div>
                     );
-                  });
-                })()}
+                })}
               </AnimatePresence>
             </div>
           );
@@ -768,7 +789,12 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
                   { id: 'afternoon', label: 'Afternoon Session', icon: Clock },
                   { id: 'evening', label: 'Evening Session', icon: Clock },
                   { id: 'unassigned', label: 'Unassigned', icon: X }
-                ].map((f) => (
+                ].filter(f => {
+                  if (f.id === 'unassigned') return true;
+                  if (!assignedSession || assignedSession === 'all') return true;
+                  // Strictly only show the assigned session and unassigned
+                  return f.id === assignedSession;
+                }).map((f) => (
                   <Button
                     key={f.id}
                     onClick={() => setRosterFilter(f.id as typeof rosterFilter)}
@@ -790,7 +816,7 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
               </div>
             </div>
 
-            <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-${rosterFilter === 'all' ? '4' : '1'} gap-6`}>
+            <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-${rosterFilter === 'all' ? '4' : (['morning', 'afternoon', 'evening'].includes(rosterFilter) ? '2' : '1')} gap-6`}>
               {(rosterFilter === 'all' || rosterFilter === 'morning') && (
                 <DroppableRosterColumn 
                   title="Morning Batch" 
@@ -818,7 +844,7 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
                   onRemove={handleRemoveStudent}
                 />
               )}
-              {(rosterFilter === 'all' || rosterFilter === 'unassigned') && (
+              {(rosterFilter === 'all' || rosterFilter === 'unassigned' || ['morning', 'afternoon', 'evening'].includes(rosterFilter)) && (
                 <DroppableRosterColumn 
                   title="Unassigned" 
                   students={roster?.unassigned || []} 

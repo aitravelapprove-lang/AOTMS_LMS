@@ -42,6 +42,18 @@ const EnrollmentSchema = new Schema({
     payment_term: { type: String, default: 'full' }, // full, term1, term2
     remaining_balance: { type: Number, default: 0 },
     requested_batch_type: { type: String, enum: ['morning', 'afternoon', 'evening'], default: 'morning' },
+    category: { type: String, default: 'remove' }, // approve, remove
+    payment: [
+        {
+            term: String,
+            proof_url: String,
+            utr: String,
+            amount: Number,
+            status: { type: String, default: 'pending' },
+            submitted_at: { type: Date, default: Date.now },
+            approved_at: Date
+        }
+    ],
     enrolled_at: { type: Date, default: Date.now },
     completed_at: { type: Date },
     last_accessed_at: { type: Date }
@@ -70,6 +82,9 @@ const ModuleSchema = new Schema({
     video_url: { type: String }, // Optional direct video link
     duration_minutes: { type: Number },
     is_free_preview: { type: Boolean, default: false },
+    // Batch access control: empty = visible to all enrolled students
+    allowed_batches: [{ type: Schema.Types.Mixed, ref: 'Batch' }],
+    batch_type: { type: String }, // e.g., 'morning', 'afternoon', 'evening'
     created_at: { type: Date, default: Date.now }
 });
 ModuleSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
@@ -85,7 +100,8 @@ const VideoSchema = new Schema({
     order_index: { type: Number, default: 0 },
     is_published: { type: Boolean, default: true },
     // Batch access control: empty = visible to all enrolled students
-    allowed_batches: [{ type: Schema.Types.ObjectId, ref: 'Batch' }],
+    allowed_batches: [{ type: Schema.Types.Mixed, ref: 'Batch' }],
+    batch_type: { type: String }, // e.g., 'morning', 'afternoon', 'evening'
     created_at: { type: Date, default: Date.now }
 });
 VideoSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
@@ -96,7 +112,7 @@ const AnnouncementSchema = new Schema({
     content: { type: String, required: true },
     is_pinned: { type: Boolean, default: false },
     // Batch access control: empty = visible to all enrolled students
-    allowed_batches: [{ type: Schema.Types.ObjectId, ref: 'Batch' }],
+    allowed_batches: [{ type: Schema.Types.Mixed, ref: 'Batch' }],
     created_at: { type: Date, default: Date.now },
     updated_at: { type: Date }
 });
@@ -109,7 +125,7 @@ const TimelineSchema = new Schema({
     scheduled_date: { type: Date, required: true },
     type: { type: String, default: 'lecture' }, // lecture, assignment, quiz, exam
     // Batch access control: empty = visible to all enrolled students
-    allowed_batches: [{ type: Schema.Types.ObjectId, ref: 'Batch' }],
+    allowed_batches: [{ type: Schema.Types.Mixed, ref: 'Batch' }],
     created_at: { type: Date, default: Date.now }
 });
 TimelineSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
@@ -125,7 +141,7 @@ const ResourceSchema = new Schema({
     short_description: { type: String },
     category: { type: String },
     // Batch access control: empty = visible to all enrolled students
-    allowed_batches: [{ type: Schema.Types.ObjectId, ref: 'Batch' }],
+    allowed_batches: [{ type: Schema.Types.Mixed, ref: 'Batch' }],
     created_at: { type: Date, default: Date.now }
 });
 ResourceSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });

@@ -63,6 +63,10 @@ export interface CourseEnrollment {
   enrollment_date: string;
   user_name?: string;
   user_email?: string;
+  payment_term?: 'full' | 'term1' | 'term2';
+  category?: 'approve' | 'remove';
+  final_price?: number;
+  remaining_balance?: number;
 }
 
 export interface SecurityEvent {
@@ -372,10 +376,21 @@ export function useAdminData(userRole?: string | null) {
       await fetchWithAuth('/courses/enrollment-status', { method: 'PUT', body: JSON.stringify({ enrollmentId, status }) });
       toast({ title: 'Success', description: `Enrollment ${status}` });
       fetchAllData();
-      return true;
     } catch (error) {
       toast({ title: 'Error', description: 'Failed enrollment update', variant: 'destructive' });
-      return false;
+    }
+  };
+
+  const updateEnrollmentPayment = async (enrollmentId: string, payment_term: string) => {
+    try {
+      await fetchWithAuth('/admin/update-enrollment-payment', { 
+        method: 'PUT', 
+        body: JSON.stringify({ enrollmentId, payment_term }) 
+      });
+      toast({ title: 'Success', description: `Payment method updated to ${payment_term}` });
+      fetchAllData();
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed payment update', variant: 'destructive' });
     }
   };
 
@@ -384,10 +399,8 @@ export function useAdminData(userRole?: string | null) {
       await fetchWithAuth(`/courses/enrollment/${enrollmentId}`, { method: 'DELETE' });
       toast({ title: 'Deleted', description: 'Enrollment removed' });
       fetchAllData();
-      return true;
     } catch (error) {
       toast({ title: 'Error', description: 'Delete failed', variant: 'destructive' });
-      return false;
     }
   };
 
@@ -475,6 +488,7 @@ export function useAdminData(userRole?: string | null) {
     updateUserStatus,
     updateUserRole,
     updateEnrollmentStatus,
+    updateEnrollmentPayment,
     deleteEnrollment,
     resolveSecurityEvent,
     sendApprovalEmail,

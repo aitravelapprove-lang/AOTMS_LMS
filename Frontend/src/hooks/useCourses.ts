@@ -45,7 +45,7 @@ export interface CourseEnrollment {
   course_name: string;
   price: string;
   source: string;
-  status: 'pending' | 'active' | 'rejected';
+  status: 'pending' | 'active' | 'rejected' | 'deactivate';
   enrollment_date: string;
   created_at: string;
   final_price?: number;

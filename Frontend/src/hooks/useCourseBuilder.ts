@@ -8,6 +8,8 @@ export interface CourseModule {
     course_id: string;
     title: string;
     order_index: number;
+    allowed_batches?: string[];
+    batch_type?: string;
     created_at: string;
 }
 
@@ -21,6 +23,8 @@ export interface S3CourseVideo {
     thumbnail_url?: string;
     is_published?: boolean;
     order_index: number;
+    allowed_batches?: string[];
+    batch_type?: string;
     created_at: string;
 }
 
@@ -136,14 +140,16 @@ export function useCreateCourseModule() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ course_id, title, order_index }: Partial<CourseModule>) => {
+        mutationFn: async ({ course_id, title, order_index, allowed_batches, batch_type }: Partial<CourseModule>) => {
             if (!course_id) throw new Error('Course ID is required');
             return fetchWithAuth(`/courses/${course_id}/modules`, {
                 method: 'POST',
                 body: JSON.stringify({
                     course_id,
                     title,
-                    order_index: order_index || 0
+                    order_index: order_index || 0,
+                    allowed_batches,
+                    batch_type
                 }),
             });
         },
@@ -157,7 +163,7 @@ export function useCreateCourseVideo() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ moduleId, courseId, ...video }: { moduleId: string, courseId?: string, title: string, video_type: string, video_url: string, thumbnail_url?: string, order_index: number, allowed_batches?: string[] }) => {
+        mutationFn: async ({ moduleId, courseId, ...video }: { moduleId: string, courseId?: string, title: string, video_type: string, video_url: string, thumbnail_url?: string, order_index: number, allowed_batches?: string[], batch_type?: string }) => {
             // Prefer the course sub-resource endpoint if courseId is provided
             if (courseId) {
                 return fetchWithAuth(`/courses/${courseId}/videos`, {
@@ -203,6 +209,22 @@ export function useDeleteCourseVideo() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['module-videos'] });
+        },
+    });
+}
+
+export function useUpdateCourseModule() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ id, course_id, ...updates }: Partial<CourseModule> & { id: string }) => {
+            return fetchWithAuth(`/data/course_modules/${id}`, {
+                method: 'PUT',
+                body: JSON.stringify(updates),
+            });
+        },
+        onSuccess: (updatedModule, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['course-modules', variables.course_id] });
         },
     });
 }

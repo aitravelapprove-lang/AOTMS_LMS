@@ -227,6 +227,8 @@ export interface StudentCourse extends Course {
     final_price?: number;
     payment_term?: string;
     remaining_balance?: number;
+    enrolled_at?: string;
+    category: string | null;
 }
 
 export function useEnrolledCourses() {

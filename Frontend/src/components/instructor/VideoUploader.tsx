@@ -13,6 +13,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import { useCourseModules, useModuleVideos, useS3Upload, CourseModule, S3CourseVideo, useCreateCourseVideo, useDeleteCourseVideo, useCreateCourseModule } from "@/hooks/useCourseBuilder";
 import { fetchWithAuth } from "@/lib/api";
+import { cn } from "@/lib/utils";
+
+const deriveBatchType = (selectedIds: string[], allBatches: {id: string, batch_type: string}[]) => {
+    if (selectedIds.length === 0) return 'all';
+    const selectedBatchTypes = allBatches
+        .filter(b => selectedIds.includes(b.id))
+        .map(b => b.batch_type);
+    const uniqueTypes = [...new Set(selectedBatchTypes)];
+    if (uniqueTypes.length === 1) return uniqueTypes[0];
+    return 'all';
+};
+
 import { Trash2, Lock, PlayCircle, MoreVertical, CheckCircle, Loader2, Plus, X, Video, Layers, Image as ImageIcon, Camera, Clock } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
@@ -67,7 +79,8 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
     description: "",
     module_id: "",
     is_published: true,
-    allowed_batches: [] as string[]
+    allowed_batches: [] as string[],
+    batch_type: 'all'
   });
 
   const [batches, setBatches] = useState<{ id: string, batch_name: string, batch_type: string }[]>([]);
@@ -181,7 +194,9 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
           const newModule = await createModule.mutateAsync({
               course_id: courseId,
               title: newModuleName,
-              order_index: modules?.length || 0
+              order_index: modules?.length || 0,
+              batch_type: newVideo.batch_type,
+              allowed_batches: newVideo.allowed_batches
           }) as CourseModule;
           targetModuleId = newModule.id;
          console.log('Step 0 complete: Created module', targetModuleId);
@@ -217,7 +232,8 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
         video_url: videoUrl,
         thumbnail_url: thumbnailUrl,
         order_index: videos.length,
-        allowed_batches: newVideo.allowed_batches
+        allowed_batches: newVideo.allowed_batches,
+        batch_type: newVideo.batch_type
       });
       console.log('Step 2 complete: Database saved');
 
@@ -400,11 +416,17 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
                           isSelected ? 'bg-primary text-white scale-105 shadow-lg shadow-primary/20' : 'bg-white text-slate-500 border-slate-300 hover:border-primary hover:text-primary'
                         }`}
                         onClick={() => {
+                          let nextBatches = [...newVideo.allowed_batches];
                           if (isSelected) {
-                            setNewVideo({ ...newVideo, allowed_batches: newVideo.allowed_batches.filter(id => id !== batch.id) });
+                            nextBatches = nextBatches.filter(id => id !== batch.id);
                           } else {
-                            setNewVideo({ ...newVideo, allowed_batches: [...newVideo.allowed_batches, batch.id] });
+                            nextBatches.push(batch.id);
                           }
+                          setNewVideo(prev => ({ 
+                            ...prev, 
+                            allowed_batches: nextBatches,
+                            batch_type: deriveBatchType(nextBatches, batches)
+                          }));
                         }}
                       >
                         {isSelected && <CheckCircle className="h-3 w-3 shrink-0" />}

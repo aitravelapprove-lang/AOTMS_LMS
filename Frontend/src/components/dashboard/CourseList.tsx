@@ -6,6 +6,7 @@ import { useEnrolledCourses, useAvailableCourses, StudentCourse, useStudentBatch
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 interface CourseListProps {
     type?: 'enrolled' | 'available';
@@ -23,7 +24,7 @@ function CourseBatchBadge({ courseId }: { courseId: string }) {
             <div className="flex flex-col">
                 <span className="text-[9px] font-black uppercase tracking-widest text-primary leading-tight">Assigned: {batch.batch_name}</span>
                 <span className="text-[8px] font-bold text-slate-400 leading-tight uppercase">
-                    {batch.batch_type === 'all' ? (batch as any).requested_batch_type || 'Morning' : batch.batch_type} • {batch.start_time}-{batch.end_time}
+                    {batch.batch_type && batch.batch_type !== 'all' ? batch.batch_type : batch.requested_batch_type || 'Selected Session'} • {batch.start_time}-{batch.end_time}
                 </span>
             </div>
         </div>
@@ -103,7 +104,17 @@ export function CourseList({ type = 'enrolled', onSelectCourse }: CourseListProp
                         <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/10 to-accent/10 rounded-[2rem] blur opacity-0 group-hover:opacity-100 transition duration-500"></div>
                         <Card
                             className="pro-card relative flex flex-col h-full overflow-hidden cursor-pointer"
-                            onClick={() => onSelectCourse && onSelectCourse(course)}
+                            onClick={() => {
+                                const isTerm2Pending = course.payment_term === 'term2' && course.category === 'remove';
+                                const isApprovedWithBalance = course.category === 'approve' && (course.remaining_balance || 0) > 0;
+                                const isDeactivated = course.enrollmentStatus === 'deactivate';
+                                
+                                if (type === 'enrolled' && (course.enrollmentStatus === 'active' || isDeactivated) && (isApprovedWithBalance || isTerm2Pending || isDeactivated)) {
+                                    window.dispatchEvent(new CustomEvent('open-payment-modal', { detail: { course } }));
+                                } else if (onSelectCourse) {
+                                    onSelectCourse(course);
+                                }
+                            }}
                         >
                             <div className="aspect-[16/10] relative overflow-hidden bg-muted">
                                 <img
@@ -176,6 +187,13 @@ export function CourseList({ type = 'enrolled', onSelectCourse }: CourseListProp
                                                 </Badge>
                                                 <p className="text-xs text-muted-foreground mt-2">Your enrollment is waiting for admin approval</p>
                                             </div>
+                                        ) : course.enrollmentStatus === 'deactivate' ? (
+                                            <div className="text-center py-2">
+                                                <Badge variant="secondary" className="bg-rose-100 text-rose-700 hover:bg-rose-200 border-rose-200 gap-1 animate-pulse">
+                                                    Payment Pending
+                                                </Badge>
+                                                <p className="text-xs text-muted-foreground mt-2">Access restricted until payment is cleared</p>
+                                            </div>
                                         ) : course.enrollmentStatus === 'rejected' ? (
                                             <div className="text-center py-2">
                                                 <Badge variant="destructive" className="gap-1">
@@ -186,27 +204,38 @@ export function CourseList({ type = 'enrolled', onSelectCourse }: CourseListProp
                                         ) : (
                                             <>
                                                 <div className="flex-1">
-                                                    {course.remaining_balance ? (
+                                                    {((course.remaining_balance || 0) > 0 && course.category === 'approve') || (course.payment_term === 'term2' && course.category === 'remove') || course.enrollmentStatus === 'deactivate' ? (
                                                         <div className="space-y-4 mb-4">
                                                             <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-tight">
-                                                                <span className="text-slate-400">Payment Strategy</span>
-                                                                <span className="text-primary bg-primary/10 px-2 py-0.5 rounded-full text-[9px]">Term-Based (60/40)</span>
-                                                            </div>
-                                                            <div className="grid grid-cols-2 gap-2">
-                                                                <div className="p-2.5 rounded-2xl bg-emerald-50/50 border border-emerald-100/50 flex flex-col items-center justify-center text-center transition-all hover:bg-emerald-50">
-                                                                    <span className="text-[7px] font-extrabold uppercase tracking-widest text-emerald-600/70 mb-1">Term 01</span>
-                                                                    <div className="text-[15px] font-black text-emerald-800 leading-none">₹{Math.round((course.price || 0) * 0.6).toLocaleString('en-IN')}</div>
-                                                                    <div className="text-[7px] font-bold text-emerald-600 uppercase mt-2 bg-emerald-100/50 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                                                        <CheckCircle className="h-2 w-2" /> Cleared
-                                                                    </div>
-                                                                </div>
-                                                                <div className="p-2.5 rounded-2xl bg-amber-50/50 border border-amber-100/50 flex flex-col items-center justify-center text-center transition-all hover:bg-amber-50">
-                                                                    <span className="text-[7px] font-extrabold uppercase tracking-widest text-amber-600/70 mb-1">Term 02</span>
-                                                                    <div className="text-[15px] font-black text-amber-800 leading-none">₹{Math.round((course.price || 0) * 0.4).toLocaleString('en-IN')}</div>
-                                                                    <div className="text-[7px] font-bold text-amber-600 uppercase mt-2 bg-amber-100/50 px-2 py-0.5 rounded-full animate-pulse flex items-center justify-center">
-                                                                        Pending
-                                                                    </div>
-                                                                </div>
+                                                                 <span className="text-slate-400">Payment Strategy</span>
+                                                                 <span className="text-primary bg-primary/10 px-2 py-0.5 rounded-full text-[9px]">Term-Based (60/40)</span>
+                                                             </div>
+                                                             <div className="grid grid-cols-2 gap-2">
+                                                                 <div className="p-2.5 rounded-2xl bg-emerald-50/50 border border-emerald-100/50 flex flex-col items-center justify-center text-center transition-all hover:bg-emerald-50">
+                                                                     <span className="text-[7px] font-extrabold uppercase tracking-widest text-emerald-600/70 mb-1">Term 01</span>
+                                                                     <div className="text-[15px] font-black text-emerald-800 leading-none">₹{Math.round((course.price || 0) * 0.6).toLocaleString('en-IN')}</div>
+                                                                     <div className="text-[7px] font-bold text-emerald-600 uppercase mt-2 bg-emerald-100/50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                                         <CheckCircle className="h-2 w-2" /> Cleared
+                                                                     </div>
+                                                                 </div>
+                                                                 <div 
+                                                                     onClick={(e) => {
+                                                                        if (course.enrollmentStatus === 'active' || course.enrollmentStatus === 'deactivate') {
+                                                                            e.stopPropagation();
+                                                                            window.dispatchEvent(new CustomEvent('open-payment-modal', { detail: { course } }));
+                                                                        }
+                                                                     }}
+                                                                     className={cn(
+                                                                        "p-2.5 rounded-2xl bg-amber-50/50 border border-amber-100/50 flex flex-col items-center justify-center text-center transition-all group/awaited",
+                                                                        (course.enrollmentStatus === 'active' || course.enrollmentStatus === 'deactivate') ? "cursor-pointer hover:bg-amber-100 hover:scale-[1.02] active:scale-95 shadow-sm" : ""
+                                                                     )}
+                                                                 >
+                                                                     <span className="text-[7px] font-extrabold uppercase tracking-widest text-amber-600/70 mb-1">Term 02</span>
+                                                                     <div className="text-[15px] font-black text-amber-800 leading-none">₹{Math.round((course.price || 0) * 0.4).toLocaleString('en-IN')}</div>
+                                                                     <div className="text-[7px] font-bold text-amber-600 uppercase mt-2 bg-amber-100/50 px-2 py-0.5 rounded-full animate-pulse group-hover/awaited:animate-none flex items-center justify-center">
+                                                                         {(course.enrollmentStatus === 'active' || course.enrollmentStatus === 'deactivate') ? "Pay Now" : "Awaited"}
+                                                                     </div>
+                                                                 </div>
                                                             </div>
 
                                                         </div>

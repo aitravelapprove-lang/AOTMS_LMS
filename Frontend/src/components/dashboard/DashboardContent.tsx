@@ -126,6 +126,30 @@ function CoursesTab() {
   const term1Amount = Math.round(getEffectivePrice() * 0.6);
   const term2Amount = getEffectivePrice() - term1Amount;
 
+  useEffect(() => {
+    const handleOpenPayment = (e: CustomEvent<{ course: StudentCourse }>) => {
+      const course = e.detail.course;
+      
+      setPaymentCourse(course);
+      
+      // Determine payment term based on current enrollment status
+      if (course?.enrollmentStatus === 'active' || course?.enrollmentStatus === 'deactivate') {
+        setPaymentTerm('term2');
+      } else {
+        setPaymentTerm('term1'); // Default to term1 for new enrollments if not specified
+      }
+      
+      setCouponCode("");
+      setAppliedPrice(null);
+      setPaymentProof(null);
+      setUtrNumber('');
+      setShowPaymentModal(true);
+    };
+
+    window.addEventListener('open-payment-modal', handleOpenPayment as EventListener);
+    return () => window.removeEventListener('open-payment-modal', handleOpenPayment as EventListener);
+  }, []);
+
   if (viewingCourse) {
     return (
       <StudentCourseViewer
@@ -135,6 +159,8 @@ function CoursesTab() {
       />
     );
   }
+
+  // Hooks are already declared at the top of CoursesTab
 
   const handleApplyCoupon = async () => {
     if (!couponCode) return;
@@ -278,7 +304,11 @@ function CoursesTab() {
                    { id: 'term1', label: 'Term 1', pct: 60, amount: term1Amount },
                    { id: 'term2', label: 'Term 2', pct: 40, amount: term2Amount }
                  ].filter(plan => {
-                   if (paymentCourse?.payment_term === 'term1') return plan.id === 'term2';
+                   // If specifically requested term2, only show term2
+                   if (paymentTerm === 'term2') return plan.id === 'term2';
+                   
+                   const currentStatus = paymentCourse?.payment_term;
+                   if (currentStatus === 'term1') return plan.id === 'term2';
                    return plan.id === 'full' || plan.id === 'term1';
                  }).map((plan) => (
                     <button 
@@ -408,17 +438,24 @@ function CoursesTab() {
 
               // Check for Term 2 Payment if active but has balance
               if (c.enrollmentStatus === 'active' && c.remaining_balance > 0) {
-                 toast({
-                   title: "Balance Dues Found",
-                   description: "Opening payment gateway for your remaining balance.",
-                   className: "bg-amber-50 border-amber-200"
-                 });
-                 setPaymentCourse(c);
-                 setPaymentTerm('term2');
-                 setCouponCode("");
-                 setAppliedPrice(null);
-                 setShowPaymentModal(true);
-                 return;
+                 // Check if the enrollment is more than 30 days old
+                 const enrollmentDate = new Date(c.enrolled_at || Date.now());
+                 const thirtyDaysAgo = new Date();
+                 thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+                 if (enrollmentDate < thirtyDaysAgo) {
+                    toast({
+                      title: "Standard Monthly Access Expired",
+                      description: "Please clear your Term 2 balance to continue learning.",
+                      className: "bg-amber-50 border-amber-200"
+                    });
+                    setPaymentCourse(c);
+                    setPaymentTerm('term2');
+                    setCouponCode("");
+                    setAppliedPrice(null);
+                    setShowPaymentModal(true);
+                    return;
+                 }
               }
               
               setViewingCourse(c);

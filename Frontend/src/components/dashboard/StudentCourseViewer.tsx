@@ -472,7 +472,7 @@ function ModuleVideoList({ module, selectedVideoId, onSelectVideo, isEnrolled }:
     onSelectVideo: (vid: S3CourseVideo) => void;
     isEnrolled: boolean;
 }) {
-    const { data: videos, isLoading } = useModuleVideos(module.id);
+    const { data: videos, isLoading } = useModuleVideos(module.id, module.course_id);
 
     return (
         <div className="mb-1">

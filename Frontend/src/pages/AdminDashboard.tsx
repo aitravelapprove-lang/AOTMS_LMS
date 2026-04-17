@@ -286,6 +286,7 @@ export default function AdminDashboard() {
     rejectCourse,
     updateCourseStatus,
     updateEnrollmentStatus: _updateEnrollmentStatus,
+    updateEnrollmentPayment,
     deleteEnrollment: _deleteEnrollment,
     resetStudentATS: _resetStudentATS,
   } = adminData;
@@ -825,6 +826,7 @@ export default function AdminDashboard() {
                       enrollments={enrollments}
                       loading={enrollmentsLoading}
                       onUpdateStatus={updateEnrollmentStatus}
+                      onUpdatePayment={updateEnrollmentPayment}
                       onDelete={deleteEnrollment}
                       onResetATS={async (userId) => { await _resetStudentATS(userId); }}
                     />

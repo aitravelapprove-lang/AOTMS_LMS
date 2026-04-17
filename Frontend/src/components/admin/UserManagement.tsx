@@ -88,6 +88,20 @@ const DefaultIcon = L.icon({
     iconAnchor: [12, 41]
 });
 L.Marker.prototype.options.icon = DefaultIcon;
+ 
+const formatTime = (timeStr: string) => {
+    if (!timeStr) return '—';
+    if (timeStr.includes('AM') || timeStr.includes('PM')) return timeStr;
+    try {
+        const [hours, minutes] = timeStr.split(':');
+        const h = parseInt(hours);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 || 12;
+        return `${h12}:${minutes} ${ampm}`;
+    } catch {
+        return timeStr;
+    }
+};
 
 interface AttendanceRecord {
   id: string;
@@ -1343,7 +1357,7 @@ export function UserManagement({
                           <p className="text-[13px] font-bold text-slate-900">{record.date}</p>
                           <div className="flex items-center gap-2 mt-0.5">
                             <Clock className="h-3 w-3 text-slate-400" />
-                            <span className="text-[10px] font-bold text-slate-500 uppercase">{record.time}</span>
+                            <span className="text-[10px] font-bold text-slate-500 uppercase">{formatTime(record.time)}</span>
                           </div>
                         </div>
                       </div>

@@ -34,6 +34,20 @@ const DefaultIcon = L.icon({
   iconAnchor: [12, 41],
 });
 L.Marker.prototype.options.icon = DefaultIcon;
+ 
+const formatTime = (timeStr?: string) => {
+  if (!timeStr) return "—";
+  if (timeStr.includes("AM") || timeStr.includes("PM")) return timeStr;
+  try {
+    const [hStr, mStr] = timeStr.split(":");
+    const h = parseInt(hStr);
+    const ampm = h >= 12 ? "PM" : "AM";
+    const h12 = h % 12 || 12;
+    return `${h12}:${mStr} ${ampm}`;
+  } catch {
+    return timeStr;
+  }
+};
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -62,6 +76,8 @@ interface CourseEntry {
   course_name?: string;
   progress?: number;
   status?: string;
+  user_id?: string;
+  progress_percentage?: number;
 }
 
 interface ResultEntry {
@@ -401,7 +417,7 @@ function Sec({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 interface StudentPerformanceProps {
-  enrollments?: any[];
+  enrollments?: CourseEntry[];
 }
 
 export function StudentPerformance({ enrollments: bulkEnrollments = [] }: StudentPerformanceProps) {
@@ -638,7 +654,7 @@ export function StudentPerformance({ enrollments: bulkEnrollments = [] }: Studen
                   const results = detail?.performance?.results || [];
                   const attendance = detail?.attendance || [];
 
-                  const myBulk = bulkEnrollments.filter(e => e.user_id === stu.id);
+                  const myBulk = bulkEnrollments.filter(e => e.user_id === stu.user_id);
                   const coursesCount = myBulk.length;
                   const avgProgress = coursesCount > 0 
                     ? Math.round(myBulk.reduce((acc, curr) => acc + (curr.progress_percentage || 0), 0) / coursesCount)
@@ -897,7 +913,7 @@ export function StudentPerformance({ enrollments: bulkEnrollments = [] }: Studen
                                               {a.day && <span className="text-[8px] text-slate-400">{a.day}</span>}
                                             </div>
                                             <div className="flex items-center gap-1.5">
-                                              {a.time && <span className="text-[8px] text-slate-400">{a.time}</span>}
+                                              {a.time && <span className="text-[8px] text-slate-400">{formatTime(a.time)}</span>}
                                               <Badge className="text-[7px] font-black border-none bg-emerald-50 text-emerald-600">Present</Badge>
                                             </div>
                                           </div>

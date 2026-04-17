@@ -60,6 +60,8 @@ const MODEL_MAP = {
     'assignment_submissions': Submission,
     'playlists': Playlist,
     'live_classes': LiveClass,
+    'live_class': LiveClass,
+    'liveclass': LiveClass,
     'system_logs': SystemLog,
     'security_events': SecurityEvent,
     'leaderboard_stats': LeaderboardStat,
@@ -5932,7 +5934,7 @@ app.get('/api/batches', authenticateToken, async (req, res) => {
             if (req.query.course_id) {
                 // Check if they are authorized for this course
                 const course = await Course.findById(req.query.course_id);
-                if (course && (course.instructor_ids || []).includes(req.user.id)) {
+                if (course && (course.instructor_ids || []).some(id => id.toString() === req.user.id)) {
                     filter.course_id = req.query.course_id;
                 } else {
                     filter.instructor_id = req.user.id;

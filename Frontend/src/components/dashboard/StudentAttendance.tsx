@@ -34,6 +34,22 @@ import {
     History as HistoryIcon,
 } from 'lucide-react';
 import { format, isSameDay, parseISO } from 'date-fns';
+ 
+// Utility to format time to 12h format
+const formatTime = (timeStr: string) => {
+    if (!timeStr) return '—';
+    if (timeStr.includes('AM') || timeStr.includes('PM')) return timeStr;
+    
+    try {
+        const [hours, minutes] = timeStr.split(':');
+        const h = parseInt(hours);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 || 12;
+        return `${h12}:${minutes} ${ampm}`;
+    } catch {
+        return timeStr;
+    }
+};
 
 interface AttendanceRecord {
     id: string;
@@ -294,7 +310,7 @@ export function StudentAttendance() {
                                 </p>
                                 <div className="flex items-center gap-3 mt-1">
                                     <span className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase">
-                                        <Clock className="h-3 w-3" /> {record.time}
+                                        <Clock className="h-3 w-3" /> {formatTime(record.time)}
                                     </span>
                                     {record.ip_address && (
                                         <span className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase">

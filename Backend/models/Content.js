@@ -60,5 +60,5 @@ module.exports = {
     Assignment: mongoose.model('Assignment', AssignmentSchema),
     Submission: mongoose.model('Submission', SubmissionSchema),
     Playlist: mongoose.model('Playlist', PlaylistSchema),
-    LiveClass: mongoose.model('LiveClass', LiveClassSchema)
+    LiveClass: mongoose.model('LiveClass', LiveClassSchema, 'live_classes')
 };

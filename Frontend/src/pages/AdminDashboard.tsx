@@ -18,6 +18,7 @@ import { AllCoursesList } from "@/components/admin/AllCoursesList";
 import { ResumeScanHistory } from "@/components/admin/ResumeScanHistory";
 import { LiveMonitoring } from "@/components/admin/LiveMonitoring";
 import { StudentPerformance } from "@/components/admin/StudentPerformance";
+import { AICommunicationHub } from "@/components/admin/AICommunicationHub";
 import InstructorAccessAdmin from "@/pages/InstructorAccess";
 import { ExamScheduler } from "@/components/manager/ExamScheduler";
 import { QuestionBankManager } from "@/components/manager/QuestionBankManager";
@@ -49,7 +50,6 @@ import {
   FileQuestion,
   ArrowUpRight,
   UserCheck,
-  LayoutGrid,
   Activity,
   ChevronRight,
   GraduationCap,
@@ -75,6 +75,8 @@ import {
   CheckCheck,
   Trophy,
   Zap,
+  Sparkles,
+  LayoutGrid,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { CouponManager } from "@/components/admin/CouponManager";
@@ -739,6 +741,12 @@ export default function AdminDashboard() {
                         icon: ShieldCheck,
                         key: "tab-qa",
                       },
+                      {
+                        id: "ai-hub",
+                        label: "AI Communications",
+                        icon: Zap,
+                        key: "tab-ai-hub",
+                      },
                     ]
 .map((tab) => (
                       <TabsTrigger
@@ -771,7 +779,7 @@ export default function AdminDashboard() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                   >
-                    <StudentPerformance />
+                    <StudentPerformance enrollments={enrollments} />
                   </motion.div>
                 </TabsContent>
 
@@ -1125,6 +1133,23 @@ export default function AdminDashboard() {
                         </div>
                       </CardFooter>
                     </Card>
+                  </motion.div>
+                </TabsContent>
+
+                <TabsContent
+                  key="tab-ai-hub"
+                  value="ai-hub"
+                  className="mt-0 outline-none"
+                >
+                  <motion.div
+                    key="motion-ai-hub"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <AICommunicationHub 
+                      profiles={profiles}
+                      loading={dataLoading}
+                    />
                   </motion.div>
                 </TabsContent>
 

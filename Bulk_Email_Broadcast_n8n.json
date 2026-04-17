@@ -1,0 +1,70 @@
+{
+  "name": "Bulk Email Broadcast",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "Admin-student-Email",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "7f8e9d0c-1b2a-4c3d-bd5e-6f7g8h9i0j1k",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "admin-bulk-email-trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "const recipients = $input.first().json.body.recipients;\nconst subject = $input.first().json.body.subject;\nconst content = $input.first().json.body.content;\n\n// Split the array into individual items for n8n to iterate\nreturn recipients.map(email => ({\n  json: {\n    email,\n    subject,\n    content\n  }\n}));"
+      },
+      "id": "1a2b3c4d-5e6f-7g8h-9i0j-k1l2m3n4o5p6",
+      "name": "Split Recipients",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "subject": "={{ $json.subject }}",
+        "emailType": "html",
+        "message": "={{ $json.content }}",
+        "appendAttributions": false,
+        "recipient": "={{ $json.email }}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
+      "name": "Gmail / SMTP",
+      "type": "n8n-nodes-base.googleGmail",
+      "typeVersion": 2,
+      "position": [650, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Split Recipients",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Recipients": {
+      "main": [
+        [
+          {
+            "node": "Gmail / SMTP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -405,7 +405,16 @@ export function LiveClassManager() {
                                             title="Target Course"
                                             required
                                             value={formData.courseId}
-                                            onChange={e => setFormData({ ...formData, courseId: e.target.value })}
+                                            onChange={e => {
+                                                const courseId = e.target.value;
+                                                const selectedCourse = (courses as Course[]).find(c => c.id === courseId);
+                                                const assignedSession = selectedCourse?.assigned_session;
+                                                setFormData({ 
+                                                    ...formData, 
+                                                    courseId, 
+                                                    targetBatch: (assignedSession && assignedSession !== 'all') ? assignedSession : 'all' 
+                                                });
+                                            }}
                                             className="w-full h-11 px-4 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all appearance-none"
                                         >
                                             <option value="">Select at least one course</option>
@@ -423,10 +432,29 @@ export function LiveClassManager() {
                                             onChange={e => setFormData({ ...formData, targetBatch: e.target.value })}
                                             className="w-full h-11 px-4 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all appearance-none disabled:bg-slate-50 disabled:text-slate-400"
                                         >
-                                            <option value="all">All Batches</option>
-                                            <option value="morning">Morning</option>
-                                            <option value="afternoon">Afternoon</option>
-                                            <option value="evening">Evening</option>
+                                            {(() => {
+                                                const selectedCourse = (courses as Course[]).find(c => c.id === formData.courseId);
+                                                const assignedSession = selectedCourse?.assigned_session;
+                                                
+                                                if (assignedSession && assignedSession !== 'all') {
+                                                    // If instructor is restricted to a specific batch, ONLY show that one
+                                                    return (
+                                                        <option value={assignedSession}>
+                                                            {assignedSession.charAt(0).toUpperCase() + assignedSession.slice(1)} Only
+                                                        </option>
+                                                    );
+                                                }
+                                                
+                                                // Otherwise show all options (Global/All + individual)
+                                                return (
+                                                    <>
+                                                        <option value="all">All Batches</option>
+                                                        <option value="morning">Morning</option>
+                                                        <option value="afternoon">Afternoon</option>
+                                                        <option value="evening">Evening</option>
+                                                    </>
+                                                );
+                                            })()}
                                         </select>
                                     </div>
                                 </div>

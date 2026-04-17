@@ -40,6 +40,7 @@ import {
   Bell,
   ClipboardList,
   RefreshCcw,
+  Zap,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useAuth } from "@/hooks/useAuth";
@@ -93,6 +94,7 @@ const navGroups = [
   {
     label: "System & Tools",
     items: [
+      { title: "AI Hub", url: "/admin/ai-hub", icon: Zap },
       { title: "Settings", url: "/admin/settings", icon: Settings },
       { title: "Notifications", url: "/admin/notifications", icon: Bell },
       { title: "Admin Profile", url: "/admin/profile", icon: User },

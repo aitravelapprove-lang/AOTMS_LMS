@@ -400,8 +400,11 @@ function Sec({
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
+interface StudentPerformanceProps {
+  enrollments?: any[];
+}
 
-export function StudentPerformance() {
+export function StudentPerformance({ enrollments: bulkEnrollments = [] }: StudentPerformanceProps) {
   const [students, setStudents] = useState<StudentProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -431,7 +434,9 @@ export function StudentPerformance() {
         role: rolesMap[p.user_id || p.id] || "student",
         is_approved: p.approval_status === "approved",
       }));
-      setStudents(merged);
+      // Filter to only show students
+      const studentsOnly = merged.filter(s => s.role === 'student');
+      setStudents(studentsOnly);
     } catch {
       toast.error("Failed to load students");
     } finally {
@@ -628,9 +633,16 @@ export function StudentPerformance() {
                   const isDown = downloadingId === stu.id;
                   const isLoadingThis = loadingId === stu.id;
 
+                  // Extract data from detail cache if available
                   const enrollments = detail?.performance?.enrollments || [];
                   const results = detail?.performance?.results || [];
                   const attendance = detail?.attendance || [];
+
+                  const myBulk = bulkEnrollments.filter(e => e.user_id === stu.id);
+                  const coursesCount = myBulk.length;
+                  const avgProgress = coursesCount > 0 
+                    ? Math.round(myBulk.reduce((acc, curr) => acc + (curr.progress_percentage || 0), 0) / coursesCount)
+                    : 0;
 
                   return (
                     <motion.div
@@ -672,20 +684,23 @@ export function StudentPerformance() {
                           </div>
                         </div>
 
-                        {/* Chips */}
-                        <div className="hidden lg:flex items-center gap-1.5 flex-shrink-0">
-                          {stu.college_name && (
-                            <div className="flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded-lg">
-                              <GraduationCap className="h-2.5 w-2.5 text-blue-500" />
-                              <span className="text-[8px] font-black text-blue-600 max-w-[100px] truncate">{stu.college_name}</span>
-                            </div>
-                          )}
-                          <Badge className={`text-[8px] font-black border-none px-2 py-0.5 rounded-full ${stu.is_approved ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
-                            {stu.is_approved ? "Approved" : "Pending"}
-                          </Badge>
-                          <div className="flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-lg">
-                            <Fingerprint className="h-2.5 w-2.5 text-slate-400" />
-                            <span className="font-mono text-[8px] text-slate-500">{stu.id.slice(0, 8)}…</span>
+                        {/* Performance Quick Summary */}
+                        <div className="hidden lg:flex items-center gap-3 flex-shrink-0">
+                          <div className="flex flex-col items-center">
+                            <span className="text-[14px] font-black text-slate-900">{coursesCount}</span>
+                            <span className="text-[7px] font-black text-slate-400 uppercase tracking-tighter">Courses</span>
+                          </div>
+                          <div className="h-8 w-px bg-slate-100" />
+                          <div className="flex flex-col items-center">
+                            <span className={`text-[14px] font-black ${avgProgress >= 70 ? 'text-emerald-500' : avgProgress >= 40 ? 'text-amber-500' : 'text-slate-900'}`}>{avgProgress}%</span>
+                            <span className="text-[7px] font-black text-slate-400 uppercase tracking-tighter">Avg Progress</span>
+                          </div>
+                          <div className="h-8 w-px bg-slate-100" />
+                          <div className="flex flex-col items-end">
+                            <Badge className={`text-[9px] font-black border-none px-2 py-0.5 rounded-full ${stu.is_approved ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
+                              {stu.is_approved ? "Approved" : "Pending"}
+                            </Badge>
+                            <span className="text-[7px] font-black text-slate-300 uppercase tracking-tighter mt-0.5">{sv(stu.college_name).slice(0, 15)}</span>
                           </div>
                         </div>
 

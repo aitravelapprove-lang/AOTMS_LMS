@@ -224,9 +224,7 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-/**
- * Helper to standardise error responses
- */
+// Standard Error Handler
 const handleError = (res, err, context = '') => {
     console.error(`[Error ${context}]`, err);
     res.status(err.status || 500).json({ 
@@ -235,6 +233,13 @@ const handleError = (res, err, context = '') => {
         stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
     });
 };
+
+// --- REQUEST LOGGER (DEBUG) ---
+app.use((req, res, next) => {
+    console.log(`[REQ] ${req.method} ${req.url}`);
+    next();
+});
+
 
 // --- Authentication Middleware ---
 
@@ -307,6 +312,45 @@ const requireAdmin = requireRole(['admin']);
 const requireManager = requireRole(['admin', 'manager']);
 const requireAdminOrManager = requireRole(['admin', 'manager']);
 const requireInstructor = requireRole(['admin', 'manager', 'instructor']);
+
+
+// --- AI HUB LIVE INTEGRATION (BROADCAST & BOOST) ---
+app.post('/api/admin/broadcast', authenticateToken, requireAdminOrManager, async (req, res) => {
+    try {
+        const { type, selectedUsers, category, subject, message } = req.body;
+        console.log('[AI Hub Broadcast] Hit for', selectedUsers?.length, 'users');
+
+        if (!selectedUsers || selectedUsers.length === 0) {
+            return res.status(400).json({ error: 'No recipients selected' });
+        }
+
+        const recipients = await Profile.find({ user_id: { $in: selectedUsers } }).lean();
+        const emails = recipients.map(p => p.email).filter(e => !!e);
+
+        if (emails.length === 0) {
+            return res.status(400).json({ error: 'No valid emails found for selected users' });
+        }
+
+        const n8nWebhookUrl = process.env.N8N_ADMIN_STUDENT_EMAIL_URL || process.env.N8N_EMAIL_WEBHOOK_URL;
+        if (n8nWebhookUrl) {
+            console.log(`[AI Hub Broadcast] Proxying to n8n: ${n8nWebhookUrl}`);
+            await axios.post(n8nWebhookUrl, {
+                broadcast_type: type,
+                category,
+                subject,
+                content: message,
+                recipients: emails,
+                admin_id: req.user.id,
+                timestamp: new Date().toISOString()
+            });
+            console.log('[AI Hub Broadcast] n8n response received successfully');
+        }
+
+        res.json({ success: true, message: `Broadcast initiated for ${emails.length} recipients.` });
+    } catch (err) {
+        handleError(res, err, 'ai-broadcast-proxy');
+    }
+});
 
 // Zoom Routes
 app.post('/api/zoom/meetings', authenticateToken, requireInstructor, async (req, res) => {
@@ -442,6 +486,8 @@ app.put('/api/admin/update-enrollment-payment', authenticateToken, requireAdminO
         handleError(res, err, 'update-enrollment-payment');
     }
 });
+
+
 
 app.post('/api/zoom/webhook', async (req, res) => {
     try {
@@ -1215,7 +1261,7 @@ app.post('/api/student/mark-attendance', authenticateToken, async (req, res) => 
         const userId = req.user.id;
         const now = new Date();
         const dateStr = now.toISOString().split('T')[0];
-        const timeStr = now.toLocaleTimeString('en-US', { hour12: false });
+        const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
         const dayStr = now.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
         const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
@@ -3344,11 +3390,19 @@ app.get('/api/courses/enrollment/:courseId', authenticateToken, async (req, res)
 
 app.get('/api/student/my-courses', authenticateToken, async (req, res) => {
     try {
-        // Fetch enrollments and populate nested course details in one go
-        const enrollments = await Enrollment.find({ user_id: req.user.id })
-            .populate('course_id')
-            .sort({ enrolled_at: -1 })
-            .lean();
+        // Fetch enrollments and student batch assignments
+        const [enrollments, studentBatches] = await Promise.all([
+            Enrollment.find({ user_id: req.user.id })
+                .populate('course_id')
+                .sort({ enrolled_at: -1 })
+                .lean(),
+            StudentBatch.find({ student_id: req.user.id }).lean()
+        ]);
+        
+        const batchMap = new Map();
+        studentBatches.forEach(sb => {
+             if (sb.course_id) batchMap.set(sb.course_id.toString(), sb.assigned_session);
+        });
 
         // Filter out enrollments for courses that are missing or deactivated
         const activeEnrollments = enrollments.filter(e => e.course_id && e.course_id.is_active !== false);
@@ -3356,8 +3410,9 @@ app.get('/api/student/my-courses', authenticateToken, async (req, res) => {
         // Transform into a flat structure for easier frontend consumption
         const data = activeEnrollments.map(e => {
             const course = e.course_id || {};
+            const courseIdStr = course._id?.toString();
             return {
-                id: course._id,
+                id: courseIdStr || course.id,
                 enrollmentId: e._id,
                 title: course.title || 'Untitled Course',
                 description: course.description || '',
@@ -3375,6 +3430,7 @@ app.get('/api/student/my-courses', authenticateToken, async (req, res) => {
                 final_price: e.final_price,
                 payment_term: e.payment_term,
                 remaining_balance: e.remaining_balance,
+                assigned_session: batchMap.get(courseIdStr) || 'all',
                 // Virtual/Helper fields for UI badges
                 is_active: course.is_active !== false
             };
@@ -4391,7 +4447,7 @@ app.get('/api/admin/platform-stats', authenticateToken, requireAdminOrManager, a
             Profile.countDocuments({ updated_at: { $gte: oneDayAgo } }),
             Enrollment.countDocuments({}),
             Enrollment.countDocuments({ status: 'pending' }),
-            mongoose.connection.db.stats()
+            mongoose.connection.db.stats().catch(() => null)
         ]);
 
         const systemHealth = parseFloat((98.5 + Math.random() * 1.4).toFixed(1));
@@ -5357,7 +5413,11 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
                 let contentFilter = {};
 
                 if (table === 'live_classes') {
-                    const studentBatchTypes = studentBatches.map(sb => sb.batch_id?.batch_type).filter(Boolean);
+                    const studentBatchTypes = studentBatches.flatMap(sb => [
+                        sb.batch_id?.batch_type,
+                        sb.assigned_session
+                    ]).filter(Boolean);
+                    
                     const batchFilter = {
                         $or: [
                             { target_batch: 'all' },
@@ -6753,9 +6813,11 @@ app.get(/\/api\/s3\/public\/(.*)/, async (req, res) => {
     }
 });
 
+
 // Start Server
 httpServer.listen(port, () => {
     console.log(`Server running on port ${port} - Socket.io Enabled`);
+    console.log(`[System] Auto-restart triggered at ${new Date().toISOString()}`);
 });
 
 // Trigger nodemon restart

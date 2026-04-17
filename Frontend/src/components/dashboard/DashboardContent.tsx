@@ -640,7 +640,7 @@ function LiveClassesTab() {
     });
   };
 
-  const enrolledIds = new Set(enrolledCourses?.map(c => c.id?.toString()) || []);
+  const enrolledIds = new Set(enrolledCourses?.map(c => (c.id || c._id)?.toString()) || []);
   const filteredClasses = classes?.filter(c => {
     // If no course is associated, it's a general/public meeting
     if (!c.course_id) return true;
@@ -648,7 +648,17 @@ function LiveClassesTab() {
     // If course is associated, verify the student is enrolled in it
     const courseObj = c.course_id as unknown as { _id?: string, id?: string } | string;
     const courseId = typeof courseObj === 'object' && courseObj !== null ? (courseObj._id || courseObj.id) : courseObj;
-    return enrolledIds.has(courseId?.toString() || '');
+    
+    if (!enrolledIds.has(courseId?.toString() || '')) return false;
+
+    // Batch Filtering: If a target_batch is specified and not 'all', 
+    // verify the student's assigned session matches the session requested for this broadcast
+    if (c.target_batch && c.target_batch !== 'all') {
+      const enrollment = enrolledCourses?.find(e => (e.id || e._id)?.toString() === courseId?.toString());
+      return enrollment?.assigned_session === c.target_batch;
+    }
+    
+    return true;
   }) || [];
 
   return (

@@ -140,7 +140,7 @@ module.exports = {
     Exam: mongoose.model('Exam', ExamSchema, 'exam_schedulings'),
     QuestionBank: mongoose.model('QuestionBank', QuestionBankSchema),
     ExamSchedule: mongoose.model('ExamSchedule', ExamScheduleSchema),
-    StudentExamAccess: mongoose.model('StudentExamAccess', StudentExamAccessSchema),
+    StudentExamAccess: mongoose.model('StudentExamAccess', StudentExamAccessSchema, 'Grant_access'),
     ExamResult: mongoose.model('ExamResult', ExamResultSchema),
     MockPaper: mongoose.model('MockPaper', MockPaperSchema),
     ExamRule: mongoose.model('ExamRule', ExamRuleSchema),

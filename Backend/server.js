@@ -1491,40 +1491,7 @@ app.delete('/api/admin/question-bank/:topic', authenticateToken, requireAdmin, a
     }
 });
 
-// Get Student Access List for Question Bank
-app.get('/api/admin/question-bank/:topic/access-list', authenticateToken, requireAdmin, async (req, res) => {
-    const { topic } = req.params;
-    if (!topic) return res.status(400).json({ error: 'Missing topic' });
 
-    try {
-        const accesses = await StudentExamAccess.find({ 
-            question_bank_topic: topic,
-            access_type: 'question_bank'
-        })
-        .populate('student_id', 'full_name email avatar_url')
-        .populate('assigned_by', 'full_name')
-        .sort({ granted_at: -1 })
-        .lean();
-
-        const data = accesses.map(a => ({
-            student_id: a.student_id?._id,
-            student_name: a.student_id?.full_name || 'Unknown',
-            student_email: a.student_id?.email || 'N/A',
-            student_avatar: a.student_id?.avatar_url || '',
-            assigned_by: a.assigned_by?.full_name || 'System',
-            granted_at: a.granted_at,
-            access_type: a.access_type
-        }));
-
-        res.json({
-            topic,
-            total_count: data.length,
-            students: data
-        });
-    } catch (err) {
-        handleError(res, err, 'get-qb-access-list');
-    }
-});
 
 
 app.get('/api/admin/courses-with-instructors', authenticateToken, requireAdminOrManager, async (req, res) => {
@@ -2532,12 +2499,17 @@ app.get('/api/chat/contacts', authenticateToken, async (req, res) => {
             const courseIds = enrollments.map(e => e.course_id);
             const courses = await Course.find({ 
                 _id: { $in: courseIds }, 
-                instructor_id: { $ne: null } 
+                instructor_ids: { $exists: true, $not: { $size: 0 } } 
             }).lean();
             
-            const instructorIds = [...new Set(courses.map(c => c.instructor_id))];
+            const instructorIds = courses.reduce((acc, c) => {
+                if (c.instructor_ids && Array.isArray(c.instructor_ids)) {
+                    c.instructor_ids.forEach(id => acc.add(id.toString()));
+                }
+                return acc;
+            }, new Set());
             
-            const instructors = await User.find({ _id: { $in: instructorIds } })
+            const instructors = await User.find({ _id: { $in: Array.from(instructorIds) } })
                 .select('full_name avatar_url email')
                 .lean();
 
@@ -2551,7 +2523,7 @@ app.get('/api/chat/contacts', authenticateToken, async (req, res) => {
 
         } else if (role === 'instructor') {
             // Instructors see students enrolled in their courses
-            const myCourses = await Course.find({ instructor_id: req.user.id }).select('_id').lean();
+            const myCourses = await Course.find({ instructor_ids: req.user.id }).select('_id').lean();
             const courseIds = myCourses.map(c => c._id);
             
             const enrollments = await Enrollment.find({ 
@@ -4235,36 +4207,32 @@ app.get('/api/admin/question-bank-summary', authenticateToken, requireAdminOrMan
                 { $sort: { created_at: -1 } }
             ]);
 
-        // Map access counts for quick lookup
-        const accessMap = {};
-        const allExams = await Exam.find({}).lean();
-        
-        // Fetch all exams and mocks grouped by title for count aggregation
-        const [examGroupCounts, mockGroupCounts, topicGroupCounts] = await Promise.all([
-            StudentExamAccess.aggregate([
-                { $lookup: { from: 'exam_schedulings', localField: 'exam_id', foreignField: '_id', as: 'exam' } },
-                { $unwind: '$exam' },
-                { $group: { _id: '$exam.title', count: { $sum: 1 } } }
-            ]),
-            StudentExamAccess.aggregate([
-                { $lookup: { from: 'mockpapers', localField: 'mock_paper_id', foreignField: '_id', as: 'mock' } },
-                { $unwind: '$mock' },
-                { $group: { _id: '$mock.title', count: { $sum: 1 } } }
-            ]),
-            StudentExamAccess.aggregate([
-                { $match: { question_bank_topic: { $ne: null } } },
-                { $group: { _id: '$question_bank_topic', count: { $sum: 1 } } }
-            ])
-        ]);
+        // 2. Fetch all access records to calculate unique student counts per topic
+        const allAccessRecords = await StudentExamAccess.find()
+            .populate('exam_id', 'title')
+            .populate('mock_paper_id', 'title')
+            .lean();
 
-        [...examGroupCounts, ...mockGroupCounts, ...topicGroupCounts].forEach(item => {
-            if (item._id) {
-                const topicKey = item._id.toString().trim().toLowerCase();
-                accessMap[topicKey] = (accessMap[topicKey] || 0) + item.count;
+        const accessMap = {};
+        allAccessRecords.forEach(a => {
+            const topicTitle = a.question_bank_topic || a.exam_id?.title || a.mock_paper_id?.title;
+            if (topicTitle) {
+                const topicKey = topicTitle.toString().trim().toLowerCase();
+                // Deduplicate by student identity per topic
+                const studentId = (a.student_id?._id || a.student_id || 'unknown').toString();
+                
+                if (!accessMap[topicKey]) accessMap[topicKey] = new Set();
+                accessMap[topicKey].add(studentId);
             }
         });
 
-        // Map exams for quick lookup by title/topic
+        // Convert the Sets of unique student IDs into simple counts
+        for (const key in accessMap) {
+            accessMap[key] = accessMap[key].size;
+        }
+
+        // 3. Map exams for quick lookup by title/topic
+        const allExams = await Exam.find({}).lean();
         const examMap = {};
         allExams.forEach(e => { examMap[e.title] = e; });
 
@@ -4350,20 +4318,19 @@ app.get('/api/admin/platform-stats', authenticateToken, requireAdminOrManager, a
 app.get('/api/admin/question-bank/:topic/access-list', authenticateToken, requireAdminOrManager, async (req, res) => {
     try {
         const { topic } = req.params;
-        require('fs').appendFileSync('Backend/api_debug.log', `[${new Date().toISOString()}] Access list for: "${topic}"\n`);
         
-        // 1. Find all identifiers that could represent this topic
-        const matchingExams = await Exam.find({ title: topic }).select('_id').lean();
-        const matchingMocks = await MockPaper.find({ title: topic }).select('_id').lean();
-        const examIds = matchingExams.map(e => e._id);
-        const mockIds = matchingMocks.map(m => m._id);
-
-        // 2. Get explicit access from StudentExamAccess using all possible triggers
-        // Use a very flexible regex that handles spaces and case
+        // 1. Setup flexible matching
         const topicClean = topic.trim();
         const safeTopicReg = topicClean.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape regex chars
         const flexibleTopicRegex = new RegExp(`^\\s*${safeTopicReg.replace(/\\ /g, '\\s*')}\\s*$`, 'i');
-        
+
+        // 2. Find all identifiers that could represent this topic
+        const matchingExams = await Exam.find({ title: flexibleTopicRegex }).select('_id').lean();
+        const matchingMocks = await MockPaper.find({ title: flexibleTopicRegex }).select('_id').lean();
+        const examIds = matchingExams.map(e => e._id);
+        const mockIds = matchingMocks.map(m => m._id);
+
+        // 3. Get explicit access from Grant_access
         const explicitAccess = await StudentExamAccess.find({ 
             $or: [
                 { question_bank_topic: flexibleTopicRegex },

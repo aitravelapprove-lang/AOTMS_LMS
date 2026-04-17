@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 export interface Exam {
   id: string;
   course_id: string | null;
+  target_batches?: string[]; // New field for batch tracking
   title: string;
   description: string | null;
   exam_type: string;

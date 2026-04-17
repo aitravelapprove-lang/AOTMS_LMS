@@ -19,6 +19,7 @@ import { ResumeScanHistory } from "@/components/admin/ResumeScanHistory";
 import { LiveMonitoring } from "@/components/admin/LiveMonitoring";
 import { StudentPerformance } from "@/components/admin/StudentPerformance";
 import { AICommunicationHub } from "@/components/admin/AICommunicationHub";
+import SubmissionsGrading from "@/components/admin/SubmissionsGrading";
 import InstructorAccessAdmin from "@/pages/InstructorAccess";
 import { ExamScheduler } from "@/components/manager/ExamScheduler";
 import { QuestionBankManager } from "@/components/manager/QuestionBankManager";
@@ -414,6 +415,7 @@ export default function AdminDashboard() {
       "/admin/settings": "settings",
       "/admin/notifications": "notifications",
       "/admin/student-performance": "student-performance",
+      "/admin/grading": "grading",
       "/admin/resume-scans": "resume-scans",
     };
 
@@ -652,6 +654,12 @@ export default function AdminDashboard() {
                         key: "tab-student-performance",
                       },
                       {
+                        id: "grading",
+                        label: "Manual Grading",
+                        icon: ClipboardList,
+                        key: "tab-grading",
+                      },
+                      {
                         id: "leaderboard",
                         label: "Leaderboard",
                         icon: Trophy,
@@ -780,6 +788,20 @@ export default function AdminDashboard() {
                     animate={{ opacity: 1 }}
                   >
                     <StudentPerformance enrollments={enrollments} />
+                  </motion.div>
+                </TabsContent>
+
+                <TabsContent
+                  key="tab-grading"
+                  value="grading"
+                  className="mt-0 outline-none"
+                >
+                  <motion.div
+                    key="motion-grading"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <SubmissionsGrading />
                   </motion.div>
                 </TabsContent>
 

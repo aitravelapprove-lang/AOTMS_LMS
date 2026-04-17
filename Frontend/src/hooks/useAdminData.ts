@@ -376,8 +376,10 @@ export function useAdminData(userRole?: string | null) {
       await fetchWithAuth('/courses/enrollment-status', { method: 'PUT', body: JSON.stringify({ enrollmentId, status }) });
       toast({ title: 'Success', description: `Enrollment ${status}` });
       fetchAllData();
+      return true;
     } catch (error) {
       toast({ title: 'Error', description: 'Failed enrollment update', variant: 'destructive' });
+      return false;
     }
   };
 
@@ -389,8 +391,10 @@ export function useAdminData(userRole?: string | null) {
       });
       toast({ title: 'Success', description: `Payment method updated to ${payment_term}` });
       fetchAllData();
+      return true;
     } catch (error) {
       toast({ title: 'Error', description: 'Failed payment update', variant: 'destructive' });
+      return false;
     }
   };
 
@@ -399,8 +403,10 @@ export function useAdminData(userRole?: string | null) {
       await fetchWithAuth(`/courses/enrollment/${enrollmentId}`, { method: 'DELETE' });
       toast({ title: 'Deleted', description: 'Enrollment removed' });
       fetchAllData();
+      return true;
     } catch (error) {
       toast({ title: 'Error', description: 'Delete failed', variant: 'destructive' });
+      return false;
     }
   };
 

@@ -8,6 +8,7 @@ const ExamSchema = new Schema({
     description: { type: String },
     exam_type: { type: String, default: 'mock' },
     course_id: { type: Schema.Types.ObjectId, ref: 'Course' }, 
+    target_batches: [{ type: Schema.Types.ObjectId, ref: 'Batch' }], // Link to specific batches for tracking
     duration_minutes: { type: Number, required: true },
     total_marks: { type: Number, required: true },
     passing_marks: { type: Number, required: true },
@@ -46,6 +47,7 @@ const QuestionBankSchema = new Schema({
         enum: ['multiple_choice', 'true_false', 'subjective', 'short_answer', 'long_answer', 'fill_blank', 'coding'], 
         default: 'multiple_choice' 
     },
+    language: { type: String, default: 'javascript' }, // For coding type questions
     marks: { type: Number, default: 1 },
     course_id: { type: Schema.Types.ObjectId, ref: 'Course' }, // Optional course link
     approval_status: { type: String, default: 'pending' }, // pending, approved, rejected
@@ -80,11 +82,27 @@ const ExamResultSchema = new Schema({
     student_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     exam_id: { type: Schema.Types.ObjectId, ref: 'Exam' },
     mock_paper_id: { type: Schema.Types.ObjectId, ref: 'MockPaper' },
-    test_title: { type: String }, // For QB topics or miscellaneous tests
+    course_id: { type: Schema.Types.ObjectId, ref: 'Course' }, // Link to course for instructor access
+    test_title: { type: String, required: true }, // Captured at submission
+    questions_snapshot: [new Schema({
+        question_id: { type: Schema.Types.ObjectId, ref: 'QuestionBank' },
+        question_text: { type: String },
+        type: { type: String },
+        correct_answer: { type: String },
+        marks: { type: Number },
+        student_answer: { type: String }
+    }, { _id: false })],
+    objective_score: { type: Number, default: 0 },
     score: { type: Number, required: true },
     total_questions: { type: Number },
     percentage: { type: Number },
-    answers: { type: Map, of: String }, // Map of questionId -> selectedOptionId
+    answers: { type: Map, of: String }, // Map of questionId -> studentAnswer
+    subjective_grading: { type: Map, of: Schema.Types.Mixed }, // { questionId: { marks, feedback, rubrics: { crit1: true } } }
+    grading_status: { type: String, enum: ['graded', 'pending', 'reevaluation'], default: 'graded' },
+    feedback_audio_url: { type: String },
+    global_feedback: { type: String },
+    is_reevaluation_requested: { type: Boolean, default: false },
+    reevaluation_reason: { type: String },
     time_spent: { type: Number }, // seconds
     submitted_at: { type: Date, default: Date.now, index: true }
 });

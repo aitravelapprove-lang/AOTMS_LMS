@@ -99,10 +99,19 @@ const QUESTION_TYPES = [
   { value: 'coding', label: 'Coding / Practical' },
 ];
 
+const SUPPORTED_LANGUAGES = [
+  { value: 'javascript', label: 'JavaScript' },
+  { value: 'python', label: 'Python 3' },
+  { value: 'java', label: 'Java' },
+  { value: 'cpp', label: 'C++' },
+  { value: 'c', label: 'C' },
+];
+
 const EMPTY_QUESTION = {
   topic: '',
   question_text: '',
   type: 'mcq',
+  language: 'javascript', // Default to JS
   difficulty: 'medium',
   options: ['', '', '', ''],
   correct_answer: '',
@@ -726,6 +735,7 @@ export function QuestionBankManager({
             topic: batchTopic,
             question_text: q.question_text,
             type: finalType,
+            language: q.language || 'javascript', // Ensure language is saved
             difficulty: globalDifficulty,
             options: (finalType === 'multiple_choice' || finalType === 'true_false') ? 
               (Array.isArray(q.options) 
@@ -1079,6 +1089,26 @@ export function QuestionBankManager({
                     {/* Open Answer Layout (Short/Long/Coding) */}
                     {(q.type !== 'mcq' && q.type !== 'true_false') && (
                       <div className="space-y-4">
+                        {q.type === 'coding' && (
+                          <div className="space-y-2">
+                            <Label className="text-[10px] uppercase font-bold text-slate-500">Target Programming Language</Label>
+                            <Select 
+                              value={q.language || 'javascript'} 
+                              onValueChange={(val) => handleUpdateQuestion(idx, 'language', val)}
+                            >
+                              <SelectTrigger className="h-10 rounded-xl bg-slate-50 border-slate-200">
+                                <SelectValue placeholder="Select Language" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {SUPPORTED_LANGUAGES.map(lang => (
+                                  <SelectItem key={lang.value} value={lang.value} className="font-bold text-[10px] uppercase tracking-wider">
+                                    {lang.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
                         <div className="space-y-2">
                           <Label className="flex items-center gap-2">
                             Ideal Answer Logic

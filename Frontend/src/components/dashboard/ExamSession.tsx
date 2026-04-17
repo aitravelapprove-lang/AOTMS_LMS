@@ -142,7 +142,7 @@ export function ExamSession({ examId, examTitle, durationMinutes, onFinish, onEx
         }>('/run-code', {
             method: 'POST',
             body: JSON.stringify({
-                language: 'js', // Force JS for local execution as per backend fix
+                language: currentQuestion.language || 'javascript', 
                 version: '*',
                 files: [{ content: code }]
             })
@@ -414,7 +414,7 @@ export function ExamSession({ examId, examTitle, durationMinutes, onFinish, onEx
                                     {(qType === 'coding' || qType === 'practical') && (
                                         <div className="flex flex-col gap-4 h-full">
                                             <div className="flex items-center justify-between">
-                                                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Code Editor (JavaScript)</span>
+                                                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Code Editor ({currentQuestion.language || 'javascript'})</span>
                                                 <Button 
                                                     size="sm" 
                                                     onClick={runCode} 

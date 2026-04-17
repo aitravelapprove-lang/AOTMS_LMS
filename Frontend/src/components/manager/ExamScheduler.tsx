@@ -46,6 +46,8 @@ import {
   useUpdateExam,
   useDeleteExam,
   useCreateQuestion,
+  useCourses,
+  useBatches,
   type Exam,
 } from "@/hooks/useManagerData";
 import { useInstructorRatings } from "@/hooks/useInstructorData";
@@ -99,6 +101,8 @@ const examSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
   description: z.string().optional(),
   exam_type: z.string().min(1, "Please select an exam category"),
+  course_id: z.string().optional(),
+  target_batches: z.array(z.string()).default([]),
   custom_type: z.string().optional(),
   assigned_image: z.string().optional(),
   scheduled_date: z.string().optional(),
@@ -375,6 +379,10 @@ export function ExamScheduler({ onNavigateToRepository }: { onNavigateToReposito
   const createExam = useCreateExam();
   const updateExam = useUpdateExam();
   const deleteExam = useDeleteExam();
+  const { data: rawCourses } = useCourses();
+  const courses = useMemo(() => Array.isArray(rawCourses) ? rawCourses : [], [rawCourses]);
+  const { data: rawBatches } = useBatches();
+  const batches = useMemo(() => Array.isArray(rawBatches) ? rawBatches : [], [rawBatches]);
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -408,7 +416,9 @@ export function ExamScheduler({ onNavigateToRepository }: { onNavigateToReposito
       question_count: 10,
       marking_scheme: "standard",
       exam_mode: "automated",
-      custom_fields: [{ label: "Batch", value: "Default" }],
+      course_id: "",
+      target_batches: [],
+      custom_fields: [{ label: "Exam Type", value: "Standard" }],
     },
   });
 
@@ -502,7 +512,8 @@ export function ExamScheduler({ onNavigateToRepository }: { onNavigateToReposito
       await createExam.mutateAsync({
         ...(restData as Omit<Exam, "id" | "created_at">),
         exam_type: final_exam_type || restData.exam_type,
-        course_id: null,
+        course_id: data.course_id || null,
+        target_batches: data.target_batches,
         passing_marks,
         status: "draft",
         approval_status: "pending",
@@ -672,6 +683,62 @@ export function ExamScheduler({ onNavigateToRepository }: { onNavigateToReposito
                             </FormItem>
                           )}
                         />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <FormField
+                          control={form.control}
+                          name="course_id"
+                          render={({ field }) => (
+                            <FormItem className="space-y-2">
+                              <FormLabel className="text-[11px] font-black uppercase tracking-widest text-slate-800">Assign to Course</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger className="h-14 rounded-2xl border-slate-300 bg-white font-bold text-sm text-slate-900 shadow-sm">
+                                    <SelectValue placeholder="Select Course (Optional)" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent className="rounded-2xl border-slate-100 shadow-2xl">
+                                  <SelectItem value="none" className="font-bold py-3 uppercase text-[10px] tracking-widest opacity-50">General / None</SelectItem>
+                                  {courses.map(course => (
+                                    <SelectItem key={course.id} value={course.id} className="font-bold py-3 uppercase text-[10px] tracking-widest">
+                                      {course.title}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </FormItem>
+                          )}
+                        />
+
+                        <div className="space-y-2">
+                           <FormLabel className="text-[11px] font-black uppercase tracking-widest text-slate-800">Target Batches</FormLabel>
+                           <div className="flex flex-wrap gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-200 min-h-[56px]">
+                              {batches.length === 0 ? (
+                                <p className="text-[8px] font-bold text-slate-400 uppercase">No batches defined</p>
+                              ) : batches.map(batch => (
+                                <Badge 
+                                  key={batch.id}
+                                  variant="outline"
+                                  onClick={() => {
+                                    const current = form.getValues("target_batches") || [];
+                                    const next = current.includes(batch.id) 
+                                      ? current.filter(id => id !== batch.id)
+                                      : [...current, batch.id];
+                                    form.setValue("target_batches", next);
+                                  }}
+                                  className={cn(
+                                    "cursor-pointer font-black text-[8px] uppercase tracking-widest h-8 px-4 rounded-xl transition-all",
+                                    (form.watch("target_batches") || []).includes(batch.id)
+                                    ? "bg-slate-900 text-white border-slate-900 shadow-lg scale-105"
+                                    : "bg-white text-slate-400 hover:border-slate-400"
+                                  )}
+                                >
+                                  {batch.batch_name}
+                                </Badge>
+                              ))}
+                           </div>
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

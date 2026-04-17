@@ -623,83 +623,102 @@ app.post('/api/manager/generate-questions', authenticateToken, requireInstructor
 });
 
 // --- Code Execution Helper ---
+// --- Code Execution Helper (Judge0 Integration) ---
+const JUDGE0_API_KEY = process.env.JUDGE0_API_KEY;
+const JUDGE0_HOST = process.env.JUDGE0_HOST || 'judge0-extra-ce.p.rapidapi.com';
+
 const executeCode = async (language, sourceCode, stdin = '') => {
-    // 1. Local JavaScript Execution (VM)
-    if (language === 'javascript' || language === 'js' || language === 'node') {
+    const lang = language?.toLowerCase();
+    
+    // 1. Local JavaScript Execution (Fallback/Fast Path)
+    if (lang === 'javascript' || lang === 'js' || lang === 'node') {
+        // ... (Keep existing local VM logic for JS as standard)
         return new Promise((resolve) => {
             const outputBuffer = [];
             const errorBuffer = [];
-            
-            // Capture console.log
             const sandbox = {
                 console: {
                     log: (...args) => outputBuffer.push(args.map(a => String(a)).join(' ')),
                     error: (...args) => errorBuffer.push(args.map(a => String(a)).join(' ')),
                     warn: (...args) => outputBuffer.push('[WARN] ' + args.map(a => String(a)).join(' '))
                 },
-                setTimeout: setTimeout,
-                clearTimeout: clearTimeout,
-                setInterval: setInterval,
-                clearInterval: clearInterval,
-                process: {
-                    exit: (code) => { throw new Error(`Process exited with code ${code}`); }
-                }
+                setTimeout, clearTimeout, setInterval, clearInterval,
+                process: { exit: (code) => { throw new Error(`Process exited with code ${code}`); } }
             };
-
             try {
-                // Create script
                 const script = new vm.Script(sourceCode);
                 const context = vm.createContext(sandbox);
-                
-                // Run with timeout
-                script.runInContext(context, { timeout: 2000 }); // 2s timeout
-                
+                script.runInContext(context, { timeout: 2000 });
                 resolve({
                     run: {
                         stdout: outputBuffer.join('\n'),
                         stderr: errorBuffer.join('\n'),
                         code: 0,
-                        signal: null,
                         output: outputBuffer.join('\n')
                     },
-                    language: 'javascript',
-                    version: process.version
+                    language: 'javascript'
                 });
             } catch (err) {
                 resolve({
-                    run: {
-                        stdout: outputBuffer.join('\n'),
-                        stderr: err.toString(),
-                        code: 1,
-                        signal: null,
-                        output: outputBuffer.join('\n') + '\n' + err.toString()
-                    },
-                    language: 'javascript',
-                    version: process.version
+                    run: { stdout: '', stderr: err.message, code: 1, output: err.message },
+                    language: 'javascript'
                 });
             }
         });
     }
 
-    // 2. Fallback to Piston (for other languages) - May fail if not whitelisted
+    // 2. Judge0 Execution for Other Languages (Python, Java, etc.)
+    if (!JUDGE0_API_KEY) {
+        throw new Error('Judge0 API Key not configured for non-JS languages.');
+    }
+
+    // Map common names to Judge0 Language IDs
+    const langMap = {
+        'python': 71, // Python 3.8.1
+        'python3': 71,
+        'java': 62,   // Java (OpenJDK 13.0.1)
+        'cpp': 54,    // C++ (GCC 9.2.0)
+        'c': 50,      // C (GCC 9.2.0)
+    };
+
+    const languageId = langMap[language.toLowerCase()];
+    if (!languageId) throw new Error(`Language ${language} is not supported by backend compiler yet.`);
+
     try {
-        const response = await axios.post('https://emkc.org/api/v2/piston/execute', {
-            language,
-            version: '*', 
-            files: [{ content: sourceCode }],
-            stdin: stdin
+        console.log(`[Judge0] Submitting ${language} code...`);
+        // Step 1: Submit Code
+        const submitResponse = await axios.post(`https://${JUDGE0_HOST}/submissions`, {
+            source_code: Buffer.from(sourceCode).toString('base64'),
+            language_id: languageId,
+            stdin: Buffer.from(stdin).toString('base64'),
+        }, {
+            params: { wait: true, base64_encoded: true },
+            headers: {
+                'X-RapidAPI-Key': JUDGE0_API_KEY,
+                'X-RapidAPI-Host': JUDGE0_HOST,
+                'Content-Type': 'application/json'
+            }
         });
-        return response.data;
-    } catch (error) {
-        // If Piston fails (400/401/403 whitelist), return a formatted error
-        const msg = error.response?.data?.message || error.message;
+
+        const { stdout, stderr, compile_output, message, status } = submitResponse.data;
+
+        const decodedStdout = stdout ? Buffer.from(stdout, 'base64').toString() : '';
+        const decodedStderr = (stderr || compile_output || message) ? 
+            Buffer.from(stderr || compile_output || message, 'base64').toString() : '';
+
         return {
             run: {
-                stdout: '',
-                stderr: `Execution Failed (External API): ${msg}\nNote: Only JavaScript is currently supported locally.`,
-                code: 1
-            }
+                stdout: decodedStdout,
+                stderr: decodedStderr,
+                code: status.id === 3 ? 0 : 1, // 3 is "Accepted"
+                output: decodedStdout || decodedStderr,
+                status: status.description
+            },
+            language
         };
+    } catch (err) {
+        console.error('[Judge0 Error]', err.message);
+        throw new Error(`Execution failed: ${err.message}`);
     }
 };
 
@@ -4680,6 +4699,7 @@ app.post('/api/student/submit-exam', authenticateToken, async (req, res) => {
         const qIds = Object.keys(answers);
         const questions = await QuestionBank.find({ _id: { $in: qIds } }).lean();
         
+        let hasSubjective = false;
         // Use for...of loop to allow await for async operations (grading coding questions)
         for (const q of questions) {
             const studentAns = answers[q._id.toString()];
@@ -4689,6 +4709,11 @@ app.post('/api/student/submit-exam', authenticateToken, async (req, res) => {
 
             // Normalize question type
             const type = q.type || 'multiple_choice';
+            
+            // Check if this exam needs manual review
+            if (['short', 'long', 'subjective', 'short_answer', 'long_answer'].includes(type)) {
+                hasSubjective = true;
+            }
 
             if (type === 'multiple_choice' || type === 'mcq') {
                 const correctOpt = q.options.find(opt => opt.is_correct);
@@ -4766,15 +4791,51 @@ app.post('/api/student/submit-exam', authenticateToken, async (req, res) => {
 
         const percentage = totalQuestions > 0 ? (score / totalQuestions) * 100 : 0;
 
+        // Resolve title and snapshot for easy viewing/grading
+        let resolvedCourseId = null;
+        let finalTitle = examId.startsWith('qb_') ? examId.replace('qb_', '') : "Mock Test";
+        
+        if (!examId.startsWith('qb_')) {
+            const examDoc = await Exam.findById(examId);
+            if (examDoc) {
+                resolvedCourseId = examDoc.course_id;
+                finalTitle = examDoc.title;
+            } else {
+                const mockDoc = await MockPaper.findById(examId);
+                if (mockDoc) {
+                    finalTitle = mockDoc.title;
+                    if (!resolvedCourseId && questions.length > 0) {
+                        resolvedCourseId = questions.find(q => q.course_id)?.course_id;
+                    }
+                }
+            }
+        } else if (questions.length > 0) {
+            resolvedCourseId = questions.find(q => q.course_id)?.course_id;
+        }
+
+        // Build snapshot
+        const questions_snapshot = questions.map(q => ({
+            question_id: q._id,
+            question_text: q.question_text,
+            type: q.type,
+            correct_answer: q.correct_answer || (q.options ? q.options.find(o => o.is_correct)?.text : ""),
+            marks: q.marks || 1,
+            student_answer: answers[q._id.toString()] || ""
+        }));
+
         const result = await ExamResult.create({
             student_id: req.user.id,
             exam_id: examId.startsWith('qb_') ? null : examId,
             mock_paper_id: examId.startsWith('qb_') ? null : examId, // Alias for now
-            test_title: examId.startsWith('qb_') ? examId.replace('qb_', '') : null,
+            course_id: resolvedCourseId,
+            test_title: finalTitle,
+            questions_snapshot,
+            objective_score: score,
             score,
             total_questions: totalQuestions,
             percentage,
             answers,
+            grading_status: hasSubjective ? 'pending' : 'graded',
             time_spent: timeSpent,
             submitted_at: new Date()
         });
@@ -4797,9 +4858,11 @@ app.post('/api/student/submit-exam', authenticateToken, async (req, res) => {
             if (exam && exam.instructor_id) {
                 const student = await User.findById(req.user.id);
                 sendNotification(exam.instructor_id, {
-                    type: 'exam_submission',
-                    title: 'Exam Submitted',
-                    message: `${student?.full_name || 'A student'} submitted the exam: ${exam.title}`,
+                    type: hasSubjective ? 'exam_submission_pending' : 'exam_submission',
+                    title: hasSubjective ? 'Exam Needs Grading' : 'Exam Submitted',
+                    message: hasSubjective 
+                        ? `${student?.full_name || 'A student'} submitted an exam that requires manual grading: ${exam.title}`
+                        : `${student?.full_name || 'A student'} submitted the exam: ${exam.title}`,
                     score,
                     percentage
                 });
@@ -4807,6 +4870,105 @@ app.post('/api/student/submit-exam', authenticateToken, async (req, res) => {
         }
     } catch (err) {
         handleError(res, err, 'submit-exam');
+    }
+});
+
+// --- SUBJECTIVE GRADING SYSTEM ---
+
+// 1. Get submissions needing grading (Instructor Only)
+app.get('/api/instructor/pending-grading', authenticateToken, async (req, res) => {
+    try {
+        const userRole = await getUserRole(req.user.id);
+        if (!['admin', 'instructor', 'manager'].includes(userRole)) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+
+        let query = { grading_status: { $in: ['pending', 'reevaluation'] } };
+
+        if (userRole !== 'admin') {
+            const instructorCourses = await Course.find({ 
+                $or: [{ instructor_id: req.user.id }, { instructor_ids: req.user.id }] 
+            }).select('_id').lean();
+            const courseIds = instructorCourses.map(c => c._id);
+
+            const exams = await Exam.find({ course_id: { $in: courseIds } }).select('_id').lean();
+            const examIds = exams.map(e => e._id);
+
+            query['$or'] = [
+                { course_id: { $in: courseIds } },
+                { exam_id: { $in: examIds } }, 
+                { mock_paper_id: { $in: examIds } }
+            ];
+        }
+
+        const pendingResults = await ExamResult.find(query)
+        .populate('student_id', 'full_name email avatar_url')
+        .sort({ submitted_at: -1 })
+        .lean();
+
+        res.json(pendingResults);
+    } catch (err) {
+        handleError(res, err, 'pending-grading');
+    }
+});
+
+// 2. Submit Marks for Subjective (Instructor Only)
+app.post('/api/instructor/grade-result/:resultId', authenticateToken, requireInstructor, async (req, res) => {
+    try {
+        const { subjective_grading, global_feedback, feedback_audio_url } = req.body;
+        const resultId = req.params.resultId;
+
+        const result = await ExamResult.findById(resultId);
+        if (!result) return res.status(404).json({ error: 'Result not found' });
+
+        if (subjective_grading) {
+            result.subjective_grading = subjective_grading;
+            let totalSubjectiveMarks = 0;
+            Object.values(subjective_grading).forEach(g => {
+                totalSubjectiveMarks += Number(g.marks || 0);
+            });
+            
+            // Score = Initial objective score + new subjective marks
+            result.score = (result.objective_score || 0) + totalSubjectiveMarks;
+            result.percentage = result.total_questions > 0 ? (result.score / result.total_questions) * 100 : 0;
+        }
+
+        if (global_feedback) result.global_feedback = global_feedback;
+        if (feedback_audio_url) result.feedback_audio_url = feedback_audio_url;
+        
+        result.grading_status = 'graded';
+        result.is_reevaluation_requested = false;
+        
+        await result.save();
+        
+        sendNotification(result.student_id.toString(), {
+            title: "Exam Graded",
+            message: `Your exam "${result.test_title || 'Mock Test'}" has been graded.`,
+            type: "exam_result",
+            data: { resultId: result._id }
+        });
+
+        res.json({ message: 'Result graded successfully', result });
+    } catch (err) {
+        handleError(res, err, 'grade-result');
+    }
+});
+
+// 3. Request Re-evaluation (Student Only)
+app.post('/api/student/request-reevaluation/:resultId', authenticateToken, async (req, res) => {
+    try {
+        const { reason } = req.body;
+        const result = await ExamResult.findOne({ _id: req.params.resultId, student_id: req.user.id });
+        if (!result) return res.status(404).json({ error: 'Result not found' });
+
+        result.grading_status = 'reevaluation';
+        result.is_reevaluation_requested = true;
+        result.reevaluation_reason = reason || 'No reason provided';
+        
+        await result.save();
+        res.json({ message: 'Re-evaluation requested' });
+    } catch (err) {
+        handleError(res, err, 'request-reevaluation');
     }
 });
 
@@ -4833,10 +4995,12 @@ app.get('/api/student/exam-review/:resultId', authenticateToken, async (req, res
             const studentAns = answers[q._id.toString()];
             let isCorrect = false;
             
-            // Re-evaluate correctness for review display
-            // Note: This duplicates logic from submit-exam but is necessary since we don't store per-question results
-            // For Coding, this is imperfect because we can't re-run code here efficiently.
-            
+            // Get manual grading if it exists
+            const sId = q._id.toString();
+            const manualGrade = result.subjective_grading instanceof Map 
+                ? result.subjective_grading.get(sId) 
+                : result.subjective_grading?.[sId];
+
             if (q.type === 'multiple_choice' || q.type === 'mcq') {
                 const correctOpt = q.options.find(opt => opt.is_correct);
                 if (correctOpt && (studentAns === correctOpt._id?.toString() || studentAns === correctOpt.text)) {
@@ -4848,12 +5012,13 @@ app.get('/api/student/exam-review/:resultId', authenticateToken, async (req, res
             } else if (q.type === 'fill_blank') {
                  const correctVal = String(q.correct_answer || q.options.find(o => o.is_correct)?.text).trim().toLowerCase();
                  if (String(studentAns).trim().toLowerCase() === correctVal) isCorrect = true;
+            } else if (['short', 'long', 'subjective', 'short_answer', 'long_answer'].includes(q.type)) {
+                 if (manualGrade) {
+                     isCorrect = manualGrade.marks > 0;
+                 } else {
+                     isCorrect = null; // Pending
+                 }
             } else if (q.type === 'coding') {
-                // Approximate check: If strict match, it's correct. 
-                // If not, we can't easily know without re-running. 
-                // We'll return 'null' to indicate "Manual Review" or "Unknown" status to frontend?
-                // For now, let's just do strict match or check if marks were awarded (impossible to know from here).
-                // We'll default to strict string match or 'review'
                 if (String(studentAns).trim() === String(q.correct_answer).trim()) isCorrect = true;
                 else isCorrect = null; // Unknown/Review
             }
@@ -4870,6 +5035,7 @@ app.get('/api/student/exam-review/:resultId', authenticateToken, async (req, res
                 correct_answer: q.correct_answer,
                 studentAnswerId: studentAns,
                 is_correct: isCorrect,
+                manual_grade: manualGrade,
                 marks: q.marks || 1
             };
         });
@@ -4879,7 +5045,12 @@ app.get('/api/student/exam-review/:resultId', authenticateToken, async (req, res
                 score: result.score,
                 total: result.total_questions,
                 percentage: result.percentage,
-                submitted_at: result.submitted_at
+                submitted_at: result.submitted_at,
+                grading_status: result.grading_status,
+                global_feedback: result.global_feedback,
+                feedback_audio_url: result.feedback_audio_url,
+                is_reevaluation_requested: result.is_reevaluation_requested,
+                reevaluation_reason: result.reevaluation_reason
             },
             questions: review
         });
@@ -5753,10 +5924,22 @@ app.delete('/api/data/:table/:id', authenticateToken, async (req, res) => {
         // --- CUSTOM HOOKS FOR CASCADE DELETION ---
         if (table === 'exams') {
             const topic = itemToDelete.title;
+            // 1. Delete associated student access records
+            await StudentExamAccess.deleteMany({ exam_id: id });
+            // 2. Delete associated exam schedules
+            await ExamSchedule.deleteMany({ exam_id: id });
+            // 3. Delete associated exam results (Grading Data)
+            await ExamResult.deleteMany({ exam_id: id });
+            
             if (topic) {
                 console.log(`[CASCADE] Deleting legacy exam: "${topic}". Syncing Question Bank...`);
                 await QuestionBank.deleteMany({ topic });
             }
+        } else if (table === 'mock_papers') {
+            // 1. Delete associated student access records
+            await StudentExamAccess.deleteMany({ mock_paper_id: id });
+            // 2. Delete associated exam results
+            await ExamResult.deleteMany({ mock_paper_id: id });
         }
         // ----------------------------------------
         

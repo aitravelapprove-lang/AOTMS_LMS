@@ -114,6 +114,7 @@ export interface Question {
     question_type?: string;
     question_text?: string;
     text?: string;
+    language?: string; // New field for coding questions
     options?: (string | { id?: string; text: string })[];
 }
 

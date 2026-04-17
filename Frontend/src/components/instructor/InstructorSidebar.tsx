@@ -57,6 +57,7 @@ const mainNavItems = [
 const contentNavItems = [
   { title: "Video Library", url: "/instructor/videos", icon: Video },
   { title: "Course Resources", url: "/instructor/resources", icon: FolderOpen },
+  { title: "Manual Grading", url: "/instructor/grading", icon: BarChart3 },
   { title: "Assessment Protocols", url: "/instructor/exams", icon: ShieldCheck },
   { title: "Question Bank", url: "/instructor/question-bank", icon: FolderOpen },
   { title: "Resume Scan Logs", url: "/instructor/resume-scans", icon: FileText },

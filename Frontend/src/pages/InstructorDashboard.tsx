@@ -27,6 +27,7 @@ import { StudentResumeScan } from "@/components/dashboard/StudentResumeScan";
 import { InstructorNotifications } from "@/components/instructor/dashboard/InstructorNotifications";
 import { ResourcesDashboard } from "@/components/instructor/dashboard/ResourcesDashboard";
 import Lanyard from "@/components/instructor/dashboard/Lanyard";
+import SubmissionsGrading from "@/components/admin/SubmissionsGrading";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -364,6 +365,7 @@ export default function InstructorDashboard() {
   const isResumeScans = path === "/instructor/resume-scans";
   const isNotifications = path === "/instructor/notifications";
   const isResources = path === "/instructor/resources";
+  const isGrading = path === "/instructor/grading";
 
   return (
     <SidebarProvider className="h-screen w-full overflow-hidden mesh-bg font-sans">
@@ -556,6 +558,15 @@ export default function InstructorDashboard() {
                   animate={{ opacity: 1 }}
                 >
                   <ResourcesDashboard />
+                </motion.div>
+              )}
+              {isGrading && (
+                <motion.div
+                  key="grading"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <SubmissionsGrading />
                 </motion.div>
               )}
             </AnimatePresence>

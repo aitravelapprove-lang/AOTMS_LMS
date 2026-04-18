@@ -38,3 +38,4 @@ Backend/*.json
 !Backend/tsconfig.json
 !Backend/manifest.json
 Backend/service.json
+Frontend/package-lock.json

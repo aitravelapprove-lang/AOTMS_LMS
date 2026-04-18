@@ -650,22 +650,10 @@ export default function AdminDashboard() {
                         key: "tab-enrollments",
                       },
                       {
-                        id: "pulse-ratings",
-                        label: "Pulse Ratings",
-                        icon: Star,
-                        key: "tab-pulse-ratings",
-                      },
-                      {
                         id: "student-performance",
                         label: "Student Performance",
                         icon: BarChart3,
                         key: "tab-student-performance",
-                      },
-                      {
-                        id: "grading",
-                        label: "Manual Grading",
-                        icon: ClipboardList,
-                        key: "tab-grading",
                       },
                       {
                         id: "leaderboard",
@@ -799,19 +787,6 @@ export default function AdminDashboard() {
                   </motion.div>
                 </TabsContent>
 
-                <TabsContent
-                  key="tab-grading"
-                  value="grading"
-                  className="mt-0 outline-none"
-                >
-                  <motion.div
-                    key="motion-grading"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                  >
-                    <SubmissionsGrading />
-                  </motion.div>
-                </TabsContent>
 
                 <TabsContent
                   key="tab-leaderboard"
@@ -944,19 +919,6 @@ export default function AdminDashboard() {
                   </motion.div>
                 </TabsContent>
 
-                <TabsContent
-                  key="tab-pulse-ratings"
-                  value="pulse-ratings"
-                  className="mt-0 outline-none"
-                >
-                  <motion.div
-                    key="motion-pulse-ratings"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                  >
-                    <PulseRatingsManager />
-                  </motion.div>
-                </TabsContent>
 
                 <TabsContent
                   key="tab-all-courses"

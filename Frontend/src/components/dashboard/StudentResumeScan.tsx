@@ -107,7 +107,17 @@ export function StudentResumeScan() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+      const selectedFile = e.target.files[0];
+      if (selectedFile.type !== "application/pdf" && !selectedFile.name.toLowerCase().endsWith(".pdf")) {
+        toast({
+          title: "Invalid File Type",
+          description: "Please upload your resume in PDF format only.",
+          variant: "destructive",
+        });
+        e.target.value = ""; // Clear the input
+        return;
+      }
+      setFile(selectedFile);
     }
   };
 
@@ -158,7 +168,7 @@ export function StudentResumeScan() {
                       id="resume-upload" 
                       hidden 
                       onChange={handleFileChange}
-                      accept=".pdf,.doc,.docx"
+                       accept=".pdf"
                     />
                     <label 
                       htmlFor="resume-upload"
@@ -172,7 +182,7 @@ export function StudentResumeScan() {
                       ) : (
                         <>
                           <Upload className="h-10 w-10 text-slate-300 mb-3 group-hover/upload:text-primary transition-colors" />
-                          <p className="font-black text-slate-900 uppercase text-xs tracking-widest">PDF, Word or Text</p>
+                          <p className="font-black text-slate-900 uppercase text-xs tracking-widest">Only PDF Files Allowed</p>
                           <p className="text-[10px] text-slate-600 font-bold mt-1">Up to 5MB total size</p>
                         </>
                       )}

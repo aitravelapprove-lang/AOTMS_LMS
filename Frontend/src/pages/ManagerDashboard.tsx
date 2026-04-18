@@ -255,7 +255,6 @@ export default function ManagerDashboard() {
     { id: "resume-scans",        title: "Resume Scans",        url: "/manager/resume-scans",        icon: Users },
     { id: "instructor-access",   title: "Instructor Access",   url: "/manager/instructor-access",   icon: ShieldCheck },
     { id: "all-courses",         title: "All Courses",         url: "/manager/all-courses",         icon: Calendar },
-    { id: "pulse-ratings",       title: "Pulse Ratings",       url: "/manager/pulse-ratings",       icon: Star },
     { id: "video-library",       title: "Video Library",       url: "/manager/video-library",       icon: Video },
     { id: "monitoring",          title: "Live Monitoring",     url: "/manager/monitoring",          icon: MonitorPlay },
   ];
@@ -311,8 +310,6 @@ export default function ManagerDashboard() {
         return <LeaderboardManager />;
       case "monitoring":
         return <LiveMonitoring />;
-      case "pulse-ratings":
-        return <PulseRatingsManager />;
       case "video-library":
         return <ManagerVideoLibrary />;
       case "all-courses":

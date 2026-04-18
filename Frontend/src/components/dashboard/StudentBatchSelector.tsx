@@ -92,23 +92,25 @@ export function StudentBatchSelector() {
                             </SelectTrigger>
                             <SelectContent className="rounded-xl border-slate-100">
                                 {(() => {
-                                    const items = (batches || []).flatMap(b => {
-                                        const batch = b as { 
-                                            id: string; 
-                                            batch_name: string; 
-                                            batch_type: string;
-                                            batches?: Array<{ id: string; batch_name: string; batch_type: string }>;
-                                        };
-                                        if (batch.batches && batch.batches.length > 0) {
-                                            return batch.batches.map(sub => ({ ...sub, parentId: b.id }));
-                                        }
-                                        return [{ ...b, parentId: b.id }];
-                                    });
+                                    const items = (batches || []).map(b => ({ ...b, parentId: b.id }));
 
-                                    return items.map((batch: { id: string, parentId: string, batch_name: string, batch_type: string }, idx: number) => {
+                                    return items.map((batch: { id: string, parentId: string, batch_name: string, batch_type: string, start_time?: string, end_time?: string }, idx: number) => {
                                         const isCurrent = currentBatch?.id === batch.parentId && currentBatch?.batch_type === batch.batch_type;
                                         const val = `${batch.parentId}-${batch.batch_type}`;
                                         
+                                        const formatTime = (time?: string) => {
+                                            if (!time) return '';
+                                            const [hours, minutes] = time.split(':');
+                                            const h = parseInt(hours);
+                                            const ampm = h >= 12 ? 'PM' : 'AM';
+                                            const displayH = h % 12 || 12;
+                                            return `${displayH}:${minutes} ${ampm}`;
+                                        };
+
+                                        const timeLabel = batch.start_time && batch.end_time 
+                                            ? ` [${formatTime(batch.start_time)} - ${formatTime(batch.end_time)}]`
+                                            : '';
+
                                         const displayName = batch.batch_name.includes(`(${batch.batch_type.charAt(0).toUpperCase()}`) 
                                             ? batch.batch_name 
                                             : `${batch.batch_name} (${batch.batch_type})`;
@@ -120,7 +122,7 @@ export function StudentBatchSelector() {
                                                 className={`text-[11px] font-medium p-3 ${isCurrent ? 'bg-emerald-50 text-emerald-700 font-black' : ''}`}
                                                 disabled={isCurrent}
                                             >
-                                                {displayName} {isCurrent ? '— Current' : ''}
+                                                {displayName}{timeLabel} {isCurrent ? '— Current' : ''}
                                             </SelectItem>
                                         );
                                     });
@@ -150,7 +152,21 @@ export function StudentBatchSelector() {
                         <div className="flex flex-col">
                             <span className="text-[8px] font-black uppercase tracking-tight text-emerald-600 leading-none">Locked</span>
                             <span className="text-[9px] font-bold text-emerald-700 leading-none mt-0.5 whitespace-nowrap">
-                                {currentBatch.batch_name}
+                                {currentBatch.batch_name} 
+                                {currentBatch.start_time && currentBatch.end_time && (
+                                    <span className="text-[8px] font-medium text-emerald-500 ml-1">
+                                        ({(() => {
+                                            const formatTime = (time: string) => {
+                                                const [hours, minutes] = time.split(':');
+                                                const h = parseInt(hours);
+                                                const ampm = h >= 12 ? 'PM' : 'AM';
+                                                const displayH = h % 12 || 12;
+                                                return `${displayH}:${minutes} ${ampm}`;
+                                            };
+                                            return `${formatTime(currentBatch.start_time)} - ${formatTime(currentBatch.end_time)}`;
+                                        })()})
+                                    </span>
+                                )}
                             </span>
                         </div>
                     </div>

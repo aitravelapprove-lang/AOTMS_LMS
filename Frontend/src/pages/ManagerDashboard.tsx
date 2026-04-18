@@ -14,7 +14,9 @@ import { ExamRulesManager } from "@/components/manager/ExamRulesManager";
 import { ManagerCourses } from "@/components/manager/ManagerCourses";
 import { ManagerVideoLibrary } from "@/components/manager/ManagerVideoLibrary";
 import { AllCoursesList } from "@/components/admin/AllCoursesList";
+import { UserManagement } from "@/components/admin/UserManagement";
 import { QuestionBankApproval } from "@/components/admin/QuestionBankApproval";
+
 import { CourseBuilder } from "@/components/instructor/courses/CourseBuilder";
 import { Course as CatalogCourse, CourseEnrollment } from "@/hooks/useCourses";
 import { Course as InstructorCourse } from "@/hooks/useInstructorData";
@@ -29,7 +31,9 @@ import { ChatMonitor } from "@/components/admin/ChatMonitor";
 import { InstructorManagement } from "@/components/admin/InstructorManagement";
 import { StudentPerformance } from "@/components/admin/StudentPerformance";
 import { PulseRatingsManager } from "@/components/admin/PulseRatingsManager";
+import { AICommunicationHub } from "@/components/admin/AICommunicationHub";
 import InstructorAccessAdmin from "@/pages/InstructorAccess";
+
 import { useNotifications } from "@/hooks/useNotifications";
 import { useCourses } from "@/hooks/useCourses";
 import { useAdminData } from "@/hooks/useAdminData";
@@ -60,8 +64,16 @@ import {
   ShieldCheck,
   BarChart3,
   Bell,
-  Star,
+  Zap,
+  Database as DbIcon,
+  KeyRound,
+
+  ClipboardList,
+  BookOpen,
+  Activity,
 } from "lucide-react";
+
+
 import {
   useExams,
   useQuestions,
@@ -231,7 +243,20 @@ export default function ManagerDashboard() {
     updateEnrollmentStatus,
     deleteEnrollment,
     enrollments,
+    profiles,
+    updateUserStatus,
+    updateUserRole,
+    sendApprovalEmail,
+    resetStudentATS
   } = useAdminData(userRole);
+
+
+  const roleCounts = profiles.reduce((acc, profile) => {
+    const role = profile.role || "student";
+    acc[role] = (acc[role] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
 
   if (authLoading) {
     return (
@@ -247,17 +272,21 @@ export default function ManagerDashboard() {
   }
 
   const navTabs = [
+    { id: "users",               title: "User Management",     url: "/manager/users",                icon: Users },
     { id: "student-performance", title: "Student Performance", url: "/manager/student-performance", icon: BarChart3 },
     { id: "instructors",         title: "Instructors",         url: "/manager/instructors",         icon: Users },
-    { id: "enrollments",         title: "Student Enrollments", url: "/manager/enrollments",         icon: Users },
+    { id: "enrollments",         title: "Enrollments Hub",     url: "/manager/enrollments",         icon: DbIcon },
+
     { id: "coupons",             title: "Rewards & Coupons",   url: "/manager/coupons",             icon: Trophy },
-    { id: "grant-access",        title: "Grant Access",        url: "/manager/grant-access",        icon: ShieldCheck },
-    { id: "resume-scans",        title: "Resume Scans",        url: "/manager/resume-scans",        icon: Users },
+    { id: "grant-access",        title: "Grant Access",        url: "/manager/grant-access",        icon: KeyRound },
+    { id: "resume-scans",        title: "Resume Scans",        url: "/manager/resume-scans",        icon: ClipboardList },
     { id: "instructor-access",   title: "Instructor Access",   url: "/manager/instructor-access",   icon: ShieldCheck },
-    { id: "all-courses",         title: "All Courses",         url: "/manager/all-courses",         icon: Calendar },
+    { id: "all-courses",         title: "All Courses",         url: "/manager/all-courses",         icon: BookOpen },
     { id: "video-library",       title: "Video Library",       url: "/manager/video-library",       icon: Video },
-    { id: "monitoring",          title: "Live Monitoring",     url: "/manager/monitoring",          icon: MonitorPlay },
+    { id: "monitoring",          title: "Live Monitoring",     url: "/manager/monitoring",          icon: Activity },
+    { id: "ai-hub",              title: "AI Communications",   url: "/manager/ai-hub",               icon: Zap },
   ];
+
 
   const renderTabBar = () => (
     <div className="flex flex-col gap-0 border-b border-slate-200">
@@ -302,7 +331,22 @@ export default function ManagerDashboard() {
         return renderOverview();
       case "profile":
         return <UserProfile />;
+      case "users":
+        return (
+          <UserManagement 
+            users={profiles} 
+            loading={dataLoading} 
+            roleCounts={roleCounts}
+            onUpdateStatus={updateUserStatus}
+            onUpdateRole={updateUserRole}
+            onSendEmail={sendApprovalEmail}
+            onUpdateEnrollmentStatus={async (id, status) => { await updateEnrollmentStatus(id, status); }}
+            onResetATS={async (userId) => { await resetStudentATS(userId); }}
+          />
+        );
+
       case "exams":
+
         return <ExamScheduler />;
       case "questions":
         return <QuestionBankManager />;
@@ -360,8 +404,11 @@ export default function ManagerDashboard() {
         return <NotificationSection />;
       case "student-performance":
         return <StudentPerformance />;
+      case "ai-hub":
+        return <AICommunicationHub profiles={profiles} loading={dataLoading} />;
       default:
         return renderOverview();
+
     }
   };
 

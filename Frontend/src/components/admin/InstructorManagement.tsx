@@ -32,6 +32,7 @@ import {
   Unlock as UnlockIcon,
   ExternalLink,
   Calendar,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fetchWithAuth } from "@/lib/api";
@@ -854,13 +855,14 @@ export function InstructorManagement() {
                                 >
                                   {batch.batch_type} Session
                                 </Badge>
-                                <span className="text-[9px] font-bold text-slate-300 hidden sm:block">
-                                  •
-                                </span>
-                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest truncate">
-                                  Active Batch System
-                                </span>
-                              </div>
+                                  <span className="text-[9px] font-bold text-slate-300 hidden sm:block">
+                                    •
+                                  </span>
+                                  <div className="flex items-center gap-1 text-[9px] font-bold text-indigo-500 uppercase tracking-widest bg-indigo-50/50 px-2 py-0.5 rounded-lg border border-indigo-100/50 truncate">
+                                    <Clock className="h-2.5 w-2.5" />
+                                    {batch.start_time && batch.end_time ? `${batch.start_time} — ${batch.end_time}` : 'Full Duration'}
+                                  </div>
+                                </div>
                             </div>
                           </div>
                           <div className="flex items-center justify-between sm:text-right border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100">

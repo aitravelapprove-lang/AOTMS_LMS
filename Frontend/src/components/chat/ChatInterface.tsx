@@ -14,7 +14,6 @@ import {
   Check, 
   CheckCheck, 
   MoreVertical, 
-  Phone, 
   Video, 
   Search,
   Paperclip,
@@ -22,13 +21,15 @@ import {
   Mic,
   ArrowLeft,
   X,
-  Info,
   BookOpen,
   Award,
   Briefcase,
   MessageSquarePlus,
   Image as ImageIcon,
-  MoreHorizontal
+  Sun,
+  Cloud,
+  Moon,
+  Users
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -81,12 +82,35 @@ interface UserProfile {
   };
 }
 
+interface BatchContact {
+  id: string;
+  name: string;
+  avatar: string | null;
+  email: string;
+  role: string;
+  batch_session: string;
+  batch_name: string;
+  batch_id: string | null;
+  course_id: string;
+}
+
+interface BatchGroupedContacts {
+  morning: BatchContact[];
+  afternoon: BatchContact[];
+  evening: BatchContact[];
+  unassigned: BatchContact[];
+  all: BatchContact[];
+}
+
+type BatchTab = 'all' | 'morning' | 'afternoon' | 'evening';
+
 export function ChatInterface() {
-  const { user } = useAuth();
-  const { socket, isConnected } = useSocket();
+  const { user, userRole } = useAuth();
+  const { socket } = useSocket();
   const [searchParams] = useSearchParams();
   const recipientId = searchParams.get('recipientId');
   const shouldShowProfile = searchParams.get('showProfile') === 'true';
+  const isInstructor = userRole === 'instructor' || userRole === 'admin';
   
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [contacts, setContacts] = useState<UserProfile[]>([]);
@@ -102,6 +126,11 @@ export function ChatInterface() {
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Batch-wise state (instructor only)
+  const [batchContacts, setBatchContacts] = useState<BatchGroupedContacts | null>(null);
+  const [activeBatchTab, setActiveBatchTab] = useState<BatchTab>('all');
+  const [loadingBatchContacts, setLoadingBatchContacts] = useState(false);
   
   // Profile Panel State
   const [showProfileInfo, setShowProfileInfo] = useState(shouldShowProfile);
@@ -124,6 +153,19 @@ export function ChatInterface() {
       return [];
     }
   }, []);
+
+  const fetchBatchContacts = useCallback(async () => {
+    if (!isInstructor) return;
+    setLoadingBatchContacts(true);
+    try {
+      const data = await fetchWithAuth('/chat/contacts/by-batch') as BatchGroupedContacts;
+      setBatchContacts(data);
+    } catch (err) {
+      console.error('Failed to load batch contacts:', err);
+    } finally {
+      setLoadingBatchContacts(false);
+    }
+  }, [isInstructor]);
 
   const loadConversations = useCallback(async () => {
     try {
@@ -192,10 +234,11 @@ export function ChatInterface() {
   // Initial Load
   useEffect(() => {
     const initChat = async () => {
-       const [convs, _] = await Promise.all([
+       const [convs] = await Promise.all([
          loadConversations(),
          fetchContacts()
        ]);
+       if (isInstructor) fetchBatchContacts();
        
        if (recipientId) {
           const existing = (convs as Conversation[]).find(c => c.user?.id === recipientId);
@@ -215,7 +258,7 @@ export function ChatInterface() {
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [recipientId, selectConversation, startNewChat, fetchContacts, loadConversations]);
+  }, [recipientId, selectConversation, startNewChat, fetchContacts, loadConversations, isInstructor, fetchBatchContacts]);
 
   // Fetch Profile Info when conversation changes
   useEffect(() => {
@@ -395,6 +438,29 @@ export function ChatInterface() {
     !conversations.some(c => c.user?.id === contact.id)
   );
 
+  // Batch-filtered contacts for instructor view
+  const batchTabStudents: BatchContact[] = batchContacts
+    ? (batchContacts[activeBatchTab] || []).filter(s =>
+        (s.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : [];
+
+  const BATCH_TABS: { key: BatchTab; label: string; icon: React.ReactNode; color: string; bg: string }[] = [
+    { key: 'all',       label: 'All',       icon: <Users className="h-3 w-3" />,  color: 'text-slate-600', bg: 'bg-slate-100' },
+    { key: 'morning',   label: 'Morning',   icon: <Sun className="h-3 w-3" />,    color: 'text-amber-600', bg: 'bg-amber-50' },
+    { key: 'afternoon', label: 'Afternoon', icon: <Cloud className="h-3 w-3" />,  color: 'text-blue-600',  bg: 'bg-blue-50' },
+    { key: 'evening',   label: 'Evening',   icon: <Moon className="h-3 w-3" />,   color: 'text-indigo-600',bg: 'bg-indigo-50' },
+  ];
+
+  const getBatchBadgeStyle = (session: string) => {
+    switch(session) {
+      case 'morning':   return 'bg-amber-50 text-amber-700 border-amber-100';
+      case 'afternoon': return 'bg-blue-50 text-blue-700 border-blue-100';
+      case 'evening':   return 'bg-indigo-50 text-indigo-700 border-indigo-100';
+      default:          return 'bg-slate-50 text-slate-500 border-slate-100';
+    }
+  };
+
   return (
     <div className="flex h-[calc(100vh-4rem)] w-full overflow-hidden bg-[#e9edef]">
       
@@ -433,7 +499,7 @@ export function ChatInterface() {
               <input 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={viewMode === 'contacts' ? "Search contacts" : "Search or start new chat"}
+                placeholder={isInstructor && viewMode === 'contacts' ? "Search students by batch..." : viewMode === 'contacts' ? "Search contacts" : "Search or start new chat"}
                 className="bg-transparent border-none outline-none text-sm w-full placeholder:text-[#54656f] text-[#3b4a54]"
               />
               {searchQuery && (
@@ -444,6 +510,35 @@ export function ChatInterface() {
               )}
            </div>
         </div>
+
+        {/* Batch Tabs — Instructor Only, Contacts Mode */}
+        {isInstructor && viewMode === 'contacts' && (
+          <div className="flex items-center gap-1 px-3 py-2 bg-white border-b border-[#f0f2f5] overflow-x-auto">
+            {BATCH_TABS.map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveBatchTab(tab.key)}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap border',
+                  activeBatchTab === tab.key
+                    ? `${tab.bg} ${tab.color} border-current shadow-sm`
+                    : 'bg-white text-[#54656f] border-[#d1d7db] hover:bg-[#f0f2f5]'
+                )}
+              >
+                {tab.icon}
+                {tab.label}
+                {batchContacts && (
+                  <span className={cn(
+                    'ml-1 px-1.5 py-0.5 rounded-full text-[9px] font-black',
+                    activeBatchTab === tab.key ? 'bg-white/60' : 'bg-slate-100'
+                  )}>
+                    {(batchContacts[tab.key] || []).length}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* List */}
         <ScrollArea className="flex-1 bg-white">
@@ -515,36 +610,82 @@ export function ChatInterface() {
             {/* Contacts Section */}
             {(viewMode === 'contacts' || (searchQuery && filteredContacts.length > 0)) && (
               <>
-                 {(searchQuery || viewMode === 'contacts') && <div className="px-4 py-2 text-xs font-semibold text-[#008069] uppercase tracking-wider mt-2">New Chats</div>}
-                 {filteredContacts.map(contact => (
-                    <div 
-                      key={contact.id}
-                      onClick={() => {
-                        startNewChat(contact.id);
-                        setViewMode('chats');
-                      }}
-                      className="flex items-center gap-3 p-3 pl-4 cursor-pointer hover:bg-[#f5f6f6] transition-colors border-b border-[#f0f2f5]"
-                    >
-                       <div className="relative">
-                           <Avatar className="h-12 w-12 border border-slate-100 shrink-0">
-                              <AvatarImage src={contact.avatar_url || ''} />
-                              <AvatarFallback className="bg-slate-200 text-slate-500">{contact.full_name?.[0]}</AvatarFallback>
-                           </Avatar>
-                           {onlineUsers.has(contact.id) && (
-                                <span className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 rounded-full border-2 border-white"></span>
-                           )}
-                       </div>
-                       <div className="flex-1 min-w-0 flex flex-col justify-center h-full">
+                {/* Instructor: Batch-grouped view */}
+                {isInstructor && viewMode === 'contacts' ? (
+                  loadingBatchContacts ? (
+                    <div className="flex flex-col items-center gap-3 py-10 text-[#667781]">
+                      <div className="w-6 h-6 border-2 border-[#008069] border-t-transparent rounded-full animate-spin" />
+                      <p className="text-sm">Loading batch students...</p>
+                    </div>
+                  ) : batchTabStudents.length === 0 ? (
+                    <div className="p-8 text-center text-[#667781]">
+                      <Users className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                      <p className="text-sm font-medium">No students in this batch</p>
+                      <p className="text-xs mt-1 opacity-70">Students appear here once assigned to your batches</p>
+                    </div>
+                  ) : (
+                    batchTabStudents.map(student => (
+                      <div
+                        key={student.id}
+                        onClick={() => { startNewChat(student.id); setViewMode('chats'); }}
+                        className="flex items-center gap-3 p-3 pl-4 cursor-pointer hover:bg-[#f5f6f6] transition-colors border-b border-[#f0f2f5] group"
+                      >
+                        <div className="relative">
+                          <Avatar className="h-12 w-12 border border-slate-100 shrink-0">
+                            <AvatarImage src={student.avatar || ''} />
+                            <AvatarFallback className="bg-slate-200 text-slate-500">{student.name?.[0]}</AvatarFallback>
+                          </Avatar>
+                          {onlineUsers.has(student.id) && (
+                            <span className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 rounded-full border-2 border-white"></span>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <h3 className="text-[15px] text-[#111b21] font-medium truncate">{student.name}</h3>
+                            <span className={cn(
+                              'text-[9px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full border shrink-0',
+                              getBatchBadgeStyle(student.batch_session)
+                            )}>
+                              {student.batch_session === 'unassigned' ? 'No Batch' : student.batch_session}
+                            </span>
+                          </div>
+                          <p className="text-[12px] text-[#667781] truncate mt-0.5">{student.batch_name}</p>
+                        </div>
+                      </div>
+                    ))
+                  )
+                ) : (
+                  /* Regular contacts for non-instructor / search mode */
+                  <>
+                    {(searchQuery || viewMode === 'contacts') && <div className="px-4 py-2 text-xs font-semibold text-[#008069] uppercase tracking-wider mt-2">New Chats</div>}
+                    {filteredContacts.map(contact => (
+                      <div 
+                        key={contact.id}
+                        onClick={() => { startNewChat(contact.id); setViewMode('chats'); }}
+                        className="flex items-center gap-3 p-3 pl-4 cursor-pointer hover:bg-[#f5f6f6] transition-colors border-b border-[#f0f2f5]"
+                      >
+                        <div className="relative">
+                          <Avatar className="h-12 w-12 border border-slate-100 shrink-0">
+                            <AvatarImage src={contact.avatar_url || ''} />
+                            <AvatarFallback className="bg-slate-200 text-slate-500">{contact.full_name?.[0]}</AvatarFallback>
+                          </Avatar>
+                          {onlineUsers.has(contact.id) && (
+                            <span className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 rounded-full border-2 border-white"></span>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0 flex flex-col justify-center h-full">
                           <h3 className="text-[17px] text-[#111b21] font-normal truncate">{contact.full_name}</h3>
                           <p className="text-[14px] text-[#667781] truncate">{contact.email}</p>
-                       </div>
-                    </div>
-                 ))}
-                 {filteredContacts.length === 0 && viewMode === 'contacts' && (
-                    <div className="p-8 text-center text-[#667781]">
+                        </div>
+                      </div>
+                    ))}
+                    {filteredContacts.length === 0 && viewMode === 'contacts' && (
+                      <div className="p-8 text-center text-[#667781]">
                         <p>No contacts found</p>
-                    </div>
-                 )}
+                      </div>
+                    )}
+                  </>
+                )}
               </>
             )}
 

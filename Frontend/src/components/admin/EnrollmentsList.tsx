@@ -477,7 +477,14 @@ export function EnrollmentsList({
                                   <Globe className="h-2.5 w-2.5 text-slate-400" />
                                   <span className="text-[8px] font-black uppercase text-slate-400 tracking-wider">Course Bundle</span>
                                 </div>
+                                {enrollment.requested_time_slot && (
+                                   <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-50 w-fit border border-indigo-100">
+                                      <Clock className="h-2.5 w-2.5 text-indigo-500" />
+                                      <span className="text-[8px] font-black uppercase text-indigo-700 tracking-wider">Req: {enrollment.requested_time_slot}</span>
+                                   </div>
+                                )}
                               </div>
+
                             </td>
                             <td className="px-4 py-6 text-center">
                               <div className="space-y-1.5">
@@ -618,6 +625,12 @@ export function EnrollmentsList({
                          <p className="text-sm font-black text-slate-800 leading-tight uppercase tracking-tight">
                            {enrollment.course_name || enrollment.course?.title}
                          </p>
+                         {enrollment.requested_time_slot && (
+                            <div className="mt-1 flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-50 w-fit border border-indigo-100">
+                                <Clock className="h-2.5 w-2.5 text-indigo-500" />
+                                <span className="text-[8px] font-black uppercase text-indigo-700 tracking-wider">{enrollment.requested_time_slot}</span>
+                            </div>
+                         )}
                       </div>
                       
                       <div className="grid grid-cols-2 gap-4 pt-1">

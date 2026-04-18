@@ -412,7 +412,6 @@ export default function AdminDashboard() {
       "/admin/question-access": "question-access",
       "/admin/live-monitoring": "live-monitoring",
       "/admin/coupons": "coupons",
-      "/admin/leads": "leads",
       "/admin/profile": "profile",
       "/admin/settings": "settings",
       "/admin/notifications": "notifications",

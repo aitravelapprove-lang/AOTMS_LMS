@@ -10,6 +10,7 @@ import { Loader2, Star, Clock, BookOpen, ArrowRight, ArrowLeft, User, ChevronDow
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { fetchWithAuth } from '@/lib/api';
+import { cn } from '@/lib/utils';
 
 export default function CoursesPage() {
   const { user, userRole } = useAuth();
@@ -23,6 +24,23 @@ export default function CoursesPage() {
   const [paymentCourse, setPaymentCourse] = useState<Course | null>(null);
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  
+  interface Batch {
+    id: string;
+    _id?: string;
+    batch_name?: string;
+    batch_type: string;
+    start_time?: string;
+    end_time?: string;
+    batches?: Batch[];
+    parent_id?: string;
+  }
+
+  // Batch states
+  const [availableBatches, setAvailableBatches] = useState<Batch[]>([]);
+  const [selectedBatch, setSelectedBatch] = useState<string | null>(null);
+  const [loadingBatches, setLoadingBatches] = useState(false);
+
   
   // Check if user is logged in via token
   const isLoggedIn = !!localStorage.getItem('access_token');
@@ -77,7 +95,30 @@ export default function CoursesPage() {
     return () => observer.disconnect();
   }, [handleObserver]);
 
+  const fetchAvailableBatches = async (courseId: string) => {
+    setLoadingBatches(true);
+    try {
+      const data = await fetchWithAuth(`/batches?course_id=${courseId}`) as Batch[];
+      // Flatten batches if they are nested ("all" type container)
+      const flatBatches: Batch[] = [];
+      data.forEach(b => {
+        if (b.batch_type === 'all' && b.batches) {
+           b.batches.forEach((sub: Batch) => flatBatches.push({...sub, id: sub.id || sub._id || '', parent_id: b.id}));
+        } else {
+           flatBatches.push({...b, id: b.id || b._id || ''});
+        }
+      });
+      setAvailableBatches(flatBatches);
+      if (flatBatches.length > 0) setSelectedBatch(flatBatches[0].id);
+    } catch (err) {
+      console.error("Failed to fetch batches:", err);
+    } finally {
+      setLoadingBatches(false);
+    }
+  };
+
   const handleEnroll = async (course: Course) => {
+
     if (!isLoggedIn) {
       navigate('/auth');
       toast({
@@ -109,8 +150,10 @@ export default function CoursesPage() {
     } else {
       // For students, show the payment modal
       setPaymentCourse(course);
+      fetchAvailableBatches(course.id);
       setShowPaymentModal(true);
     }
+
   };
 
   const handleEnrollmentSubmit = async () => {
@@ -136,7 +179,18 @@ export default function CoursesPage() {
 
       // 2. Submit Enrollment Request
       setEnrolling(paymentCourse.id);
-      await enrollCourse(paymentCourse.id, paymentCourse.title, paymentCourse.price, paymentProofUrl);
+      const batchData = availableBatches.find(b => b.id === selectedBatch);
+      const timeSlot = batchData ? `${batchData.start_time || ''} - ${batchData.end_time || ''}` : null;
+      
+      await enrollCourse(
+        paymentCourse.id, 
+        paymentCourse.title, 
+        paymentCourse.price, 
+        paymentProofUrl,
+        selectedBatch || undefined,
+        timeSlot || undefined
+      );
+
       
       toast({
         title: 'Enrollment Pending Approval',
@@ -334,6 +388,58 @@ export default function CoursesPage() {
                 </div>
               </div>
 
+              {/* Batch Selection */}
+              <div className="space-y-4">
+                 <div className="flex items-center justify-between">
+                    <label className="text-xs font-black uppercase tracking-widest text-slate-400">Select Batch/Time Slot</label>
+                    {loadingBatches && <Loader2 className="h-3 w-3 animate-spin text-primary" />}
+                 </div>
+                 
+                 {availableBatches.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-2">
+                      {availableBatches.map(batch => (
+                        <div 
+                          key={batch.id}
+                          onClick={() => setSelectedBatch(batch.id)}
+                          className={cn(
+                            "flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer group",
+                            selectedBatch === batch.id 
+                              ? "border-primary bg-primary/5 shadow-md" 
+                              : "border-slate-100 bg-slate-50 hover:border-slate-200"
+                          )}
+                        >
+                          <div className="flex items-center gap-3">
+                             <div className={cn(
+                               "h-8 w-8 rounded-lg flex items-center justify-center transition-colors",
+                               selectedBatch === batch.id ? "bg-primary text-white" : "bg-white text-slate-400 border border-slate-100"
+                             )}>
+                                <Clock className="h-4 w-4" />
+                             </div>
+                             <div>
+                                <p className="text-xs font-black text-slate-900 uppercase">
+                                  {batch.batch_name || batch.batch_type}
+                                </p>
+                                <p className="text-[10px] font-bold text-slate-500">
+                                  {batch.start_time} — {batch.end_time}
+                                </p>
+                             </div>
+                          </div>
+                          {selectedBatch === batch.id && (
+                             <CheckCircle2 className="h-4 w-4 text-primary" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                 ) : !loadingBatches ? (
+                    <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 flex items-center gap-3">
+                       <div className="h-8 w-8 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600">
+                          <X className="h-4 w-4" />
+                       </div>
+                       <p className="text-[10px] font-black uppercase tracking-widest text-amber-700">No active batches available. Admin will assign you manually.</p>
+                    </div>
+                 ) : null}
+              </div>
+
               {/* Upload Section */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -364,6 +470,7 @@ export default function CoursesPage() {
                     />
                 </div>
               </div>
+
 
               {/* Action Buttons */}
               <div className="grid grid-cols-2 gap-4 pt-4">

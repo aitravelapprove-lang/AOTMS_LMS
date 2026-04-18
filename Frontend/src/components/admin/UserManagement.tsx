@@ -132,15 +132,16 @@ interface UserManagementProps {
 }
 
 export function UserManagement({
-  users,
+  users = [],
   loading,
-  roleCounts,
+  roleCounts = {},
   onUpdateStatus,
   onUpdateRole,
   onSendEmail,
   onUpdateEnrollmentStatus,
   onResetATS,
 }: UserManagementProps) {
+
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);

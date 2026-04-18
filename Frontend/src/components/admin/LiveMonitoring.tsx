@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -300,8 +301,9 @@ export function LiveMonitoring() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {filteredInstructors.map((inst, i) => (
-                                            <>
+                                        {filteredInstructors.map((inst) => (
+                                            <Fragment key={inst.id}>
+
                                                 <tr key={inst.id} className="group hover:bg-slate-50/50 transition-colors cursor-pointer" onClick={() => toggleExpand(inst.id)}>
                                                     <td className="px-8 py-5">
                                                         {expandedInst.includes(inst.id) ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
@@ -433,8 +435,9 @@ export function LiveMonitoring() {
                                                         </td>
                                                     </tr>
                                                 )}
-                                            </>
+                                            </Fragment>
                                         ))}
+
                                     </tbody>
                                 </table>
                             </div>

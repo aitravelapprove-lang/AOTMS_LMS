@@ -6,7 +6,8 @@ import {
   BookOpen, Clock, CheckCircle2, AlertTriangle, PlayCircle,
   TrendingUp, TrendingDown, UserPlus, UserMinus, Activity,
   Eye, FileText, ChevronRight, RefreshCw, Bell, Loader2,
-  Phone, Play, Upload, Link as LinkIcon, Image as ImageIcon, AlertCircle, User, Zap
+  Phone, Play, Upload, Link as LinkIcon, Image as ImageIcon, AlertCircle, User, Zap,
+  Sun, CloudSun, Moon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -470,22 +471,71 @@ export function InstructorStudentDashboard() {
   const [selectedStudent, setSelectedStudent] = useState<InstructorStudent | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
+  // Auto-set batch filter if instructor is restricted to a session
+  useEffect(() => {
+    if (courses && courses.length > 0 && batchFilter === 'all') {
+      const assignedSessions = Array.from(new Set(courses.map(c => c.assigned_session).filter(s => s && s !== 'all')));
+      if (assignedSessions.length === 1) {
+        setBatchFilter(assignedSessions[0] as string);
+      }
+    }
+  }, [courses, batchFilter]);
 
-  const filteredStudents = useMemo(() => {
-    if (!students) return [];
+
+  const groupedStudents = useMemo(() => {
+    if (!students) return {};
     
-    return students.filter(student => {
+    const filtered = students.filter(student => {
       const matchesSearch = 
         student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         student.email.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesStatus = statusFilter === 'all' || student.status === statusFilter;
       const matchesCourse = courseFilter === 'all' || 
         student.courseEnrollments.some(e => e.courseId === courseFilter);
-      const matchesBatch = batchFilter === 'all' ||
-        student.courseEnrollments.some(e => e.batchType === batchFilter);
-      return matchesSearch && matchesStatus && matchesCourse && matchesBatch;
+      return matchesSearch && matchesStatus && matchesCourse;
     });
+
+    const groups: Record<string, InstructorStudent[]> = {
+      'morning': [],
+      'afternoon': [],
+      'evening': [],
+      'unassigned': []
+    };
+
+    filtered.forEach(student => {
+      // Find the most relevant batch type for this student
+      const batchTypes = student.courseEnrollments.map(e => e.batchType).filter(Boolean);
+      
+      if (batchFilter !== 'all') {
+        if (batchTypes.includes(batchFilter)) {
+          groups[batchFilter].push(student);
+        }
+      } else {
+        if (batchTypes.length === 0) {
+          groups['unassigned'].push(student);
+        } else {
+          // If in multiple, prefer the first one found
+          const batch = batchTypes[0]!;
+          if (groups[batch]) {
+            groups[batch].push(student);
+          } else {
+            groups['unassigned'].push(student);
+          }
+        }
+      }
+    });
+
+    // Only return groups that have students or all if no filter
+    if (batchFilter !== 'all') {
+      return { [batchFilter]: groups[batchFilter] };
+    }
+
+    return Object.fromEntries(Object.entries(groups).filter(([_, s]) => s.length > 0));
   }, [students, searchQuery, statusFilter, courseFilter, batchFilter]);
+
+  const totalFilteredCount = useMemo(() => 
+    Object.values(groupedStudents).reduce((acc, current) => acc + current.length, 0)
+  , [groupedStudents]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -578,9 +628,9 @@ export function InstructorStudentDashboard() {
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                 <div>
                   <CardTitle className="text-[13px] font-black uppercase tracking-[0.2em] text-slate-700">
-                    Global Roster ({filteredStudents.length})
+                    Active Session Roster ({totalFilteredCount})
                   </CardTitle>
-                  <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Performance Registry</p>
+                  <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Instructor Personnel Feed</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                   <div className="relative flex-1 min-w-[200px] sm:min-w-[300px]">
@@ -636,15 +686,44 @@ export function InstructorStudentDashboard() {
                       <div className="h-10 w-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Syncing Registry...</p>
                     </div>
-                  ) : filteredStudents.length > 0 ? (
-                    filteredStudents.map((student) => (
-                      <StudentRow
-                        key={student.id}
-                        student={student}
-                        onSendMessage={handleSendMessage}
-                        onViewDetails={handleViewDetails}
-                      />
-                    ))
+                  ) : Object.entries(groupedStudents).length > 0 ? (
+                    <div className="space-y-10">
+                      {Object.entries(groupedStudents).map(([group, sList]) => (
+                        <div key={group} className="space-y-6">
+                           <div className="flex items-center gap-4 px-2">
+                              <div className={cn(
+                                "h-10 w-10 rounded-xl flex items-center justify-center shadow-lg",
+                                group === 'morning' ? "bg-amber-400 text-white shadow-amber-200" :
+                                group === 'afternoon' ? "bg-blue-500 text-white shadow-blue-200" :
+                                group === 'evening' ? "bg-indigo-600 text-white shadow-indigo-200" : "bg-slate-400 text-white shadow-slate-200"
+                              )}>
+                                 {group === 'morning' && <Sun className="h-5 w-5" />}
+                                 {group === 'afternoon' && <CloudSun className="h-5 w-5" />}
+                                 {group === 'evening' && <Moon className="h-5 w-5" />}
+                                 {group === 'unassigned' && <Users className="h-5 w-5" />}
+                              </div>
+                              <div className="flex flex-col">
+                                <h4 className="text-xl font-black text-slate-900 uppercase tracking-tight italic">
+                                  {group} BATCH <span className="text-slate-300 ml-2">[{sList.length}]</span>
+                                </h4>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ongoing Learning Session</p>
+                              </div>
+                              <div className="h-px flex-1 bg-gradient-to-r from-slate-100 to-transparent ml-4" />
+                           </div>
+                           
+                           <div className="space-y-3">
+                            {sList.map((student) => (
+                              <StudentRow
+                                key={student.userId}
+                                student={student}
+                                onSendMessage={handleSendMessage}
+                                onViewDetails={handleViewDetails}
+                              />
+                            ))}
+                           </div>
+                        </div>
+                      ))}
+                    </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center py-32 text-center">
                       <div className="h-20 w-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
@@ -688,16 +767,19 @@ export function InstructorStudentDashboard() {
                     <h3 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight mb-1">{selectedStudent.name}</h3>
                     <div className="flex flex-wrap gap-2 items-center">
                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">ID: {selectedStudent.userId.slice(-6).toUpperCase()}</p>
-                        {Array.from(new Set(selectedStudent.courseEnrollments.map(e => e.batchType).filter(Boolean))).map((bt, i) => (
-                            <Badge key={i} variant="outline" className={cn(
-                                "text-[9px] h-4.5 px-2 border-none uppercase font-black tracking-tighter",
-                                bt === 'morning' ? 'bg-amber-50 text-amber-600' :
-                                bt === 'afternoon' ? 'bg-blue-50 text-blue-600' :
-                                bt === 'evening' ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-400'
-                            )}>
-                                {bt}
-                            </Badge>
-                        ))}
+                        {Array.from(new Set(selectedStudent.courseEnrollments.map(e => e.batchType).filter(Boolean))).map((bt, i) => {
+                            const batchType = bt as string;
+                            return (
+                                <Badge key={i} variant="outline" className={cn(
+                                    "text-[9px] h-4.5 px-2 border-none uppercase font-black tracking-tighter",
+                                    batchType === 'morning' ? 'bg-amber-50 text-amber-600' :
+                                    batchType === 'afternoon' ? 'bg-blue-50 text-blue-600' :
+                                    batchType === 'evening' ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-400'
+                                )}>
+                                    {batchType}
+                                </Badge>
+                            );
+                        })}
                     </div>
                   </div>
                   <Badge className={`${getStatusConfig(selectedStudent.status).bg} ${getStatusConfig(selectedStudent.status).text} h-8 px-4 rounded-full font-bold border-none`}>

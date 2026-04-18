@@ -67,8 +67,9 @@ interface AdminCourse {
   updated_at: string;
   batch_type?: string;
   batch_name?: string;
-  instructor_id?: string;
   row_id: string;
+  processed_by_name?: string | null;
+  processed_at?: string | null;
 }
 
 interface Stats {
@@ -156,7 +157,7 @@ export default function InstructorAccess() {
           : (c.id === courseId);
           
         if (isTarget) {
-          return { ...c, status: "approved" as "approved" };
+          return { ...c, status: "approved" };
         }
         return c;
       }));
@@ -544,12 +545,25 @@ export default function InstructorAccess() {
                        </div>
                     </div>
 
-                    {/* Date Column */}
+                    {/* Date/Audit Column */}
                     <div className="col-span-1 md:col-span-1">
-                       <span className="text-[11px] font-black text-slate-400 uppercase tracking-tighter flex items-center gap-1.5 md:block">
-                          <Calendar className="h-3 w-3 md:hidden text-slate-300" />
-                          {course.created_at ? new Date(course.created_at).toLocaleDateString('en-GB') : 'N/A'}
-                       </span>
+                       <div className="flex flex-col gap-0.5">
+                          <span className="text-[11px] font-black text-slate-400 uppercase tracking-tighter flex items-center gap-1.5 md:block">
+                             <Calendar className="h-3 w-3 md:hidden text-slate-300" />
+                             {course.created_at ? new Date(course.created_at).toLocaleDateString('en-GB') : 'N/A'}
+                          </span>
+                          {course.status === 'approved' && course.processed_by_name && (
+                             <div className="flex flex-col">
+                                <span className="text-[8px] font-bold text-emerald-500 uppercase leading-tight">Approved By:</span>
+                                <span className="text-[9px] font-black text-slate-600 truncate max-w-[80px]">{course.processed_by_name}</span>
+                                {course.processed_at && (
+                                   <span className="text-[8px] font-medium text-slate-400">
+                                      {new Date(course.processed_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                                   </span>
+                                )}
+                             </div>
+                          )}
+                       </div>
                     </div>
 
                     {/* Actions Column */}

@@ -323,7 +323,7 @@ export function useTopics(courseId: string | null) {
     queryKey: ["course-topics", courseId],
     queryFn: async () => {
       if (!courseId) return [];
-      return fetchWithAuth<CourseTopic[]>(`/courses/${courseId}/topics`);
+      return fetchWithAuth<CourseTopic[]>(`/data/course_topics?course_id=eq.${courseId}`);
     },
     enabled: !!courseId,
   });
@@ -334,7 +334,7 @@ export function useVideos(courseId: string | null) {
     queryKey: ["course-videos", courseId],
     queryFn: async () => {
       if (!courseId) return [];
-      return fetchWithAuth<CourseVideo[]>(`/courses/${courseId}/videos`);
+      return fetchWithAuth<CourseVideo[]>(`/data/course_videos?course_id=eq.${courseId}`);
     },
     enabled: !!courseId,
   });
@@ -347,7 +347,7 @@ export function useResources(courseId: string | null) {
     queryKey: ["course-resources", courseId],
     queryFn: async () => {
       if (!courseId) return [];
-      return fetchWithAuth<CourseResource[]>(`/courses/${courseId}/resources`);
+      return fetchWithAuth<CourseResource[]>(`/data/course_resources?course_id=eq.${courseId}`);
     },
     enabled: !!courseId,
   });
@@ -358,7 +358,7 @@ export function useTimeline(courseId: string | null) {
     queryKey: ["course-timeline", courseId],
     queryFn: async () => {
       if (!courseId) return [];
-      return fetchWithAuth<CourseTimeline[]>(`/courses/${courseId}/timeline`);
+      return fetchWithAuth<CourseTimeline[]>(`/data/course_timeline?course_id=eq.${courseId}`);
     },
     enabled: !!courseId,
   });
@@ -370,7 +370,7 @@ export function useAnnouncements(courseId: string | null) {
     queryFn: async () => {
       if (!courseId) return [];
       return fetchWithAuth<CourseAnnouncement[]>(
-        `/courses/${courseId}/announcements`,
+        `/data/course_announcements?course_id=eq.${courseId}`,
       );
     },
     enabled: !!courseId,
@@ -879,7 +879,7 @@ export function useCreateTopic() {
         const courseIdsInFormat = courseIds.join(",");
 
         // Fetch only enrollments/videos/resources for THIS instructor's courses
-        const [enrollments, allVideos, allResources] = await Promise.all([
+        const [enrollments, allVideos, allResources, assignments] = await Promise.all([
           fetchWithAuth<Record<string, unknown>[]>(
             `/data/course_enrollments?course_id=in.(${courseIdsInFormat})`,
           ),
@@ -889,19 +889,31 @@ export function useCreateTopic() {
           fetchWithAuth<Record<string, unknown>[]>(
             `/data/course_resources?course_id=in.(${courseIdsInFormat})`,
           ),
+          fetchWithAuth<any[]>(
+            `/batches/student-assignments?course_id=in.(${courseIdsInFormat})`,
+          ),
         ]);
 
-        const totalStudents = enrollments.length;
+        // --- SECURITY & ACCURACY: Filter students by their batch assignments ---
+        // Since our backend now filters assignments by instructor, this set will only contain
+        // students assigned to THIS instructor's batches.
+        const assignedStudentIds = new Set(assignments.map(a => a.student_id));
+        const myStudents = enrollments.filter(e => {
+            const uid = typeof e.user_id === 'string' ? e.user_id : (e.user_id as any)?.id || (e.user_id as any)?._id;
+            return assignedStudentIds.has(uid);
+        });
+
+        const totalStudents = myStudents.length;
         const contentItems = allVideos.length + allResources.length;
 
         const avgCompletion =
-          enrollments.length > 0
+          myStudents.length > 0
             ? Math.round(
-              enrollments.reduce(
+              myStudents.reduce(
                 (acc: number, e: { progress_percentage: number }) =>
                   acc + (e.progress_percentage || 0),
                 0,
-              ) / enrollments.length,
+              ) / myStudents.length,
             )
             : 0;
 
@@ -1387,6 +1399,11 @@ export function useCreateTopic() {
               (ba) => ba.student_id === userId && ba.course_id === courseId,
             );
 
+            // SECURITY CHECK: If instructor, only show students in YOUR assigned batches
+            if (userRole === 'instructor' && !batchAssignment) {
+              return;
+            }
+
             existing.courseEnrollments.push({
               courseId: courseId,
               courseTitle: courseTitle,
@@ -1408,6 +1425,11 @@ export function useCreateTopic() {
             const batchAssignment = allBatchAssignments?.find(
               (ba) => ba.student_id === userId && ba.course_id === courseId,
             );
+
+            // SECURITY CHECK: If instructor, only show students in YOUR assigned batches
+            if (userRole === 'instructor' && !batchAssignment) {
+              return;
+            }
 
             studentMap.set(userId, {
               id: enrollment.id || enrollment._id || userId,
@@ -1865,6 +1887,7 @@ export function useCreateTopic() {
         courseId?: string;
         poster_url?: string;
         target_batch?: string;
+        batchId?: string;
       }) => {
         if (!user?.id) throw new Error("You must be logged in to schedule meetings");
 
@@ -1896,6 +1919,7 @@ export function useCreateTopic() {
             instructor_id: user.id,
             course_id: payload.courseId || null,
             target_batch: payload.target_batch || 'all',
+            batch_id: payload.batchId || null,
             title: payload.topic,
             description: payload.agenda,
             scheduled_at: payload.startTime,

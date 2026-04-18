@@ -83,6 +83,7 @@ import {
   useEnrolledCourses,
   useEnrollCourse,
   useStudentDashboardData,
+  useAvailableBatches,
   Announcement,
   LeaderboardEntry,
   LiveClass,
@@ -118,6 +119,7 @@ function CoursesTab() {
   const [isUploading, setIsUploading] = useState(false);
   const [paymentTerm, setPaymentTerm] = useState<'full' | 'term1' | 'term2'>('full');
   const [selectedBatchType, setSelectedBatchType] = useState<'morning' | 'afternoon' | 'evening'>('morning');
+  const { data: batches, isLoading: batchesLoading } = useAvailableBatches(paymentCourse?.id || null);
 
   const getEffectivePrice = () => {
     return (appliedPrice !== null ? appliedPrice : (paymentCourse?.price || 0)) as number;
@@ -227,7 +229,8 @@ function CoursesTab() {
           payment_proof_url: paymentProofUrl,
           utr_number: utrNumber,
           coupon_code: appliedPrice ? couponCode : undefined,
-          payment_term: paymentTerm
+          payment_term: paymentTerm,
+          requested_batch_type: selectedBatchType
       });
 
       toast({
@@ -323,6 +326,46 @@ function CoursesTab() {
                </div>
             </div>
 
+            {/* Session Selection */}
+            <div className="space-y-4">
+               <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Select Preferred Session</div>
+               {(() => {
+                 if (batchesLoading) return <div className="text-center py-4"><Loader2 className="h-6 w-6 animate-spin mx-auto text-slate-300" /></div>;
+                 
+                 const formatTime = (time?: string) => {
+                    if (!time) return '';
+                    const [hours, minutes] = time.split(':');
+                    const h = parseInt(hours);
+                    const ampm = h >= 12 ? 'PM' : 'AM';
+                    const displayH = h % 12 || 12;
+                    return `${displayH}:${minutes} ${ampm}`;
+                 };
+
+                 const sessions = (batches || []).flatMap(b => {
+                    if (b.batch_type === 'all') return []; // We want granular sessions
+                    return [b];
+                 });
+
+                 if (sessions.length === 0) return <div className="text-center py-2 text-[10px] font-bold text-slate-400">Standard sessions will be assigned by admin.</div>;
+
+                 return (
+                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                     {sessions.map((s) => (
+                       <button
+                         key={s.id}
+                         onClick={() => setSelectedBatchType(s.batch_type as 'morning' | 'afternoon' | 'evening')}
+                         className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1 ${selectedBatchType === s.batch_type ? 'border-primary bg-primary/5 text-primary shadow-lg shadow-primary/10' : 'border-slate-100 bg-slate-50 hover:bg-slate-100 text-slate-600'}`}
+                       >
+                         <span className="text-[10px] font-black uppercase tracking-tighter">{s.batch_type}</span>
+                         <span className="text-[8px] font-bold opacity-70">
+                           {s.start_time && s.end_time ? `${formatTime(s.start_time)} - ${formatTime(s.end_time)}` : 'Timing TBD'}
+                         </span>
+                       </button>
+                     ))}
+                   </div>
+                 );
+               })()}
+            </div>
 
             {/* Payment Section (Horizontal Mix) */}
             <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 sm:gap-6 items-start">

@@ -18,13 +18,22 @@ function CourseBatchBadge({ courseId }: { courseId: string }) {
 
     if (isLoading || !batch) return null;
 
+    const formatTime = (time?: string) => {
+        if (!time) return '';
+        const [hours, minutes] = time.split(':');
+        const h = parseInt(hours);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const displayH = h % 12 || 12;
+        return `${displayH}:${minutes} ${ampm}`;
+    };
+
     return (
         <div className="flex items-center gap-2 mt-2 px-3 py-1.5 bg-primary/5 border border-primary/10 rounded-xl animate-in fade-in slide-in-from-left-2">
             <Layers className="h-3 w-3 text-primary" />
             <div className="flex flex-col">
                 <span className="text-[9px] font-black uppercase tracking-widest text-primary leading-tight">Assigned: {batch.batch_name}</span>
                 <span className="text-[8px] font-bold text-slate-400 leading-tight uppercase">
-                    {batch.batch_type && batch.batch_type !== 'all' ? batch.batch_type : batch.requested_batch_type || 'Selected Session'} • {batch.start_time}-{batch.end_time}
+                    {batch.batch_type && batch.batch_type !== 'all' ? batch.batch_type : batch.requested_batch_type || 'Selected Session'} • {formatTime(batch.start_time)} - {formatTime(batch.end_time)}
                 </span>
             </div>
         </div>

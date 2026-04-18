@@ -57,14 +57,7 @@ const QuestionBankSchema = new Schema({
 });
 QuestionBankSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
 
-const ExamScheduleSchema = new Schema({
-    exam_id: { type: Schema.Types.ObjectId, ref: 'Exam', required: true },
-    start_time: { type: Date, required: true },
-    end_time: { type: Date, required: true },
-    status: { type: String, default: 'scheduled' }, // scheduled, ongoing, completed
-    created_at: { type: Date, default: Date.now, index: true },
-});
-ExamScheduleSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
+// Exam Schedule removed
 
 const StudentExamAccessSchema = new Schema({
     student_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
@@ -117,22 +110,7 @@ const MockPaperSchema = new Schema({
 });
 MockPaperSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
 
-const ExamRuleSchema = new Schema({
-    exam_id: { type: Schema.Types.ObjectId, ref: 'Exam' },
-    exam_schedule_id: { type: Schema.Types.ObjectId, ref: 'ExamSchedule' },
-    duration_minutes: { type: Number, default: 60 },
-    max_attempts: { type: Number, default: 1 },
-    negative_marking_value: { type: Number, default: 0 },
-    passing_percentage: { type: Number, default: 40 },
-    shuffle_questions: { type: Boolean, default: false },
-    shuffle_options: { type: Boolean, default: false },
-    show_results_immediately: { type: Boolean, default: true },
-    allow_review: { type: Boolean, default: true },
-    proctoring_enabled: { type: Boolean, default: false },
-    created_at: { type: Date, default: Date.now, index: true },
-    updated_at: { type: Date }
-});
-ExamRuleSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
+// Exam Rule removed
 
 const MockTestConfigSchema = new Schema({
     title: { type: String, required: true },
@@ -157,10 +135,8 @@ ExamSchema.pre('save', async function() {
 module.exports = {
     Exam: mongoose.model('Exam', ExamSchema, 'exam_schedulings'),
     QuestionBank: mongoose.model('QuestionBank', QuestionBankSchema),
-    ExamSchedule: mongoose.model('ExamSchedule', ExamScheduleSchema),
     StudentExamAccess: mongoose.model('StudentExamAccess', StudentExamAccessSchema, 'Grant_access'),
     ExamResult: mongoose.model('ExamResult', ExamResultSchema),
     MockPaper: mongoose.model('MockPaper', MockPaperSchema),
-    ExamRule: mongoose.model('ExamRule', ExamRuleSchema),
     MockTestConfig: mongoose.model('MockTestConfig', MockTestConfigSchema)
 };

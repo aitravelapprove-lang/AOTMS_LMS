@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit, ArrowLeft, Trash2, UploadCloud, GripVertical, Loader2, CheckCircle2, XCircle, Copy, Check, AlertTriangle, Clock, CheckCircle, FileVideo, X, Layers, ChevronUp, ChevronDown, Users, Sparkles, TrendingUp, Activity, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +13,13 @@ import { useCourseModules, useCreateCourseModule, useUpdateCourseModule, useModu
 import { fetchWithAuth } from '@/lib/api';
 import { Course } from '@/hooks/useInstructorData';
 import { VideoUploader } from '../VideoUploader';
+import { 
+  Plus, Edit, ArrowLeft, Trash2, UploadCloud, GripVertical, Loader2, 
+  CheckCircle2, XCircle, Copy, Check, AlertTriangle, Clock, CheckCircle, 
+  FileVideo, X, Layers, ChevronUp, ChevronDown, Users, Sparkles, 
+  TrendingUp, Activity, ExternalLink, Lock, PlayCircle, MoreVertical, 
+  Image as ImageIcon, Camera 
+} from 'lucide-react';
 import { BatchManager } from '../BatchManager';
 import { cn } from "@/lib/utils";
 
@@ -613,7 +619,7 @@ export function CourseBuilder({ course, onBack }: CourseBuilderProps) {
                         <BatchManager 
                             courseId={course.id} 
                             courseTitle={course.title} 
-                            assignedSession={course.assigned_session}
+                            assignedSession={course.assigned_session === 'all' ? undefined : course.assigned_session as 'morning' | 'afternoon' | 'evening'}
                         />
                     </motion.div>
                 ) : (

@@ -80,11 +80,37 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
     module_id: "",
     drive_link: "",
     is_published: true,
-    batch_type: "",
+    batch_type: 'all',
     allowed_batches: [] as string[]
   });
-  
-  // Batches not needed here anymore based on new design
+
+  const [batches, setBatches] = useState<{ id: string, batch_name: string, batch_type: string }[]>([]);
+
+  useEffect(() => {
+    const loadBatches = async () => {
+        try {
+            const data = await fetchWithAuth(`/batches?course_id=${courseId}`) as any[];
+            setBatches(data || []);
+        } catch (e) {
+            console.error("Failed to load batches", e);
+        }
+    };
+    if (courseId) loadBatches();
+  }, [courseId]);
+
+  const toggleBatch = (batchId: string) => {
+      const isSelected = newVideo.allowed_batches.includes(batchId);
+      const updatedIds = isSelected 
+          ? newVideo.allowed_batches.filter(id => id !== batchId)
+          : [...newVideo.allowed_batches, batchId];
+      
+      setNewVideo(prev => ({
+          ...prev,
+          allowed_batches: updatedIds,
+          batch_type: deriveBatchType(updatedIds, batches)
+      }));
+  };
+
 
   const isCourseApproved = courseStatus === 'approved' || courseStatus === 'published' || courseStatus === 'draft' || courseStatus === 'rejected' || !courseStatus;
 
@@ -233,6 +259,8 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
         drive_link: newVideo.drive_link,
         thumbnail_url: thumbnailUrl,
         order_index: videos.length,
+        allowed_batches: newVideo.allowed_batches,
+        batch_type: newVideo.batch_type
       });
       console.log('Step 2 complete: Database saved');
 
@@ -421,6 +449,45 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
               </div>
             </div>
 
+            {/* Batch Selection for Video Visibility */}
+            {batches.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 ml-1">
+                    <div className="h-2 w-2 rounded-full bg-indigo-500" />
+                    <Label className="text-xs font-bold uppercase tracking-wider text-slate-600">Restrict Visibility (Optional)</Label>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant={newVideo.allowed_batches.length === 0 ? "default" : "outline"}
+                      onClick={() => setNewVideo(prev => ({ ...prev, allowed_batches: [], batch_type: 'all' }))}
+                      className="rounded-xl h-10 px-4 text-xs font-bold uppercase tracking-wider"
+                    >
+                      All Students
+                    </Button>
+                    {batches.map(batch => (
+                      <Button
+                        key={batch.id}
+                        type="button"
+                        variant={newVideo.allowed_batches.includes(batch.id) ? "default" : "outline"}
+                        onClick={() => toggleBatch(batch.id)}
+                        className={`rounded-xl h-10 px-4 text-xs font-bold uppercase tracking-wider ${
+                            newVideo.allowed_batches.includes(batch.id) 
+                            ? (batch.batch_type === 'morning' ? 'bg-orange-500 hover:bg-orange-600' : 
+                               batch.batch_type === 'afternoon' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-violet-500 hover:bg-violet-600')
+                            : ''
+                        }`}
+                      >
+                        {batch.batch_name} ({batch.batch_type})
+                      </Button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.05em] ml-1">
+                     Selection restricted to chosen batches. Leave blank for "All Enrolled".
+                  </p>
+                </div>
+            )}
+
             {/* 4. Asset Selection Side (Media) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full border-t-2 border-slate-100 pt-10">
               <div className="space-y-4">
@@ -567,7 +634,15 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
                   variant="outline" 
                   onClick={() => {
                     clearFile();
-                    setNewVideo({ title: "", description: "", module_id: "", is_published: true, allowed_batches: [] });
+                    setNewVideo({ 
+                      title: "", 
+                      description: "", 
+                      module_id: "", 
+                      is_published: true, 
+                      allowed_batches: [], 
+                      drive_link: "", 
+                      batch_type: "all" 
+                    });
                     setNewModuleName("");
                   }} 
                   disabled={uploading}

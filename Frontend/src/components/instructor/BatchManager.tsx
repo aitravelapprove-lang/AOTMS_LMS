@@ -553,10 +553,8 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
         </div>
       ) : viewMode === 'batches' ? (
         (() => {
-          // Standard specific batch type (morning/afternoon/evening)
-          const filteredBatches = assignedSession
-            ? batches.filter(b => b.batch_type === assignedSession)
-            : batches;
+          // Show all batches regardless of assigned session so newly created batches are visible
+          const filteredBatches = batches;
 
           if (filteredBatches.length === 0) {
             return (
@@ -824,9 +822,8 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
                   { id: 'unassigned', label: 'Unassigned Queue', icon: Users }
                 ].filter(f => {
                   if (f.id === 'unassigned') return true;
-                  if (!assignedSession) return true;
-                  // Strictly only show the assigned session and unassigned
-                  return f.id === assignedSession;
+                  // Show all sessions so instructor can see all students
+                  return true;
                 }).map((f) => (
                   <Button
                     key={f.id}
@@ -895,11 +892,12 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
                   </div>
                 ) : (
                   <>
-                    {/* Specific Batches Based on Filter */}
+                    {/* Show all batches so instructor can see all assigned students */}
                     {batches.filter(b => {
                       if (b.batch_category === 'remove' && !b.id) return false;
                       if (rosterFilter === 'unassigned') return false;
-                      return b.batch_type === rosterFilter;
+                      // Show all batches regardless of session type so all students are visible
+                      return true;
                     }).map(batch => (
                       <div key={batch.id} className="w-[320px] shrink-0">
                         <DroppableRosterColumn 

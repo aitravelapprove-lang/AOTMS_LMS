@@ -6,6 +6,7 @@ import { useLeaderboard, useVerifyLeaderboardEntry, useBatches, useStudentBatche
 import { useAuth } from '@/hooks/useAuth';
 import { Trophy, Medal, CheckCircle, Shield, User, Filter } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { SyncDataButton } from '@/components/admin/data/SyncDataButton';
 import {
   Select,
   SelectContent,
@@ -14,9 +15,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export function LeaderboardManager() {
+interface LeaderboardManagerProps {
+  onSync?: () => void;
+  loading?: boolean;
+}
+
+export function LeaderboardManager({ onSync, loading: parentLoading = false }: LeaderboardManagerProps) {
   const { user } = useAuth();
-  const { data: leaderboard = [], isLoading: leaderboardLoading } = useLeaderboard();
+  const { data: leaderboard = [], isLoading: leaderboardLoading, refetch } = useLeaderboard();
   const { data: batches = [] } = useBatches();
   const { data: studentBatches = [] } = useStudentBatches();
   const verifyEntry = useVerifyLeaderboardEntry();
@@ -75,13 +81,17 @@ export function LeaderboardManager() {
           <div className="flex items-center gap-2">
             <Badge variant="default" className="gap-1 rounded-lg">
               <CheckCircle className="h-3 w-3" />
-              {verifiedCount} Verified
             </Badge>
-            <Badge variant="secondary" className="gap-1 rounded-lg">
-              <Shield className="h-3 w-3" />
+            <Badge variant="outline" className="gap-1 rounded-lg">
               {unverifiedCount} Pending
             </Badge>
           </div>
+          <div className="h-6 w-[1px] bg-slate-200 mx-1 hidden sm:block" />
+          <SyncDataButton 
+             onSync={onSync || (() => refetch())} 
+             isLoading={parentLoading || leaderboardLoading} 
+             className="h-10 px-4"
+          />
         </div>
       </div>
 

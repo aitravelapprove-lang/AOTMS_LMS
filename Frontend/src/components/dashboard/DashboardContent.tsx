@@ -118,7 +118,8 @@ function CoursesTab() {
   const [utrNumber, setUtrNumber] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [paymentTerm, setPaymentTerm] = useState<'full' | 'term1' | 'term2'>('full');
-  const [selectedBatchType, setSelectedBatchType] = useState<'morning' | 'afternoon' | 'evening'>('morning');
+  const [selectedBatchType, setSelectedBatchType] = useState<'morning' | 'afternoon' | 'evening' | 'all'>('morning');
+  const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const { data: batches, isLoading: batchesLoading } = useAvailableBatches(paymentCourse?.id || null);
 
   const getEffectivePrice = () => {
@@ -145,12 +146,22 @@ function CoursesTab() {
       setAppliedPrice(null);
       setPaymentProof(null);
       setUtrNumber('');
+      setSelectedBatchId(null);
       setShowPaymentModal(true);
     };
 
     window.addEventListener('open-payment-modal', handleOpenPayment as EventListener);
     return () => window.removeEventListener('open-payment-modal', handleOpenPayment as EventListener);
   }, []);
+
+  // Auto-select first batch when batches load
+  useEffect(() => {
+    if (batches && batches.length > 0 && !selectedBatchId) {
+      const firstBatch = batches.find(b => b.batch_type !== 'all') || batches[0];
+      setSelectedBatchId(firstBatch.id);
+      setSelectedBatchType(firstBatch.batch_type as "Morning" | "Afternoon" | "Evening" | "all");
+    }
+  }, [batches, selectedBatchId]);
 
   if (viewingCourse) {
     return (
@@ -230,7 +241,8 @@ function CoursesTab() {
           utr_number: utrNumber,
           coupon_code: appliedPrice ? couponCode : undefined,
           payment_term: paymentTerm,
-          requested_batch_type: selectedBatchType
+          requested_batch_type: selectedBatchType,
+          requested_batch_id: selectedBatchId || undefined
       });
 
       toast({
@@ -353,8 +365,11 @@ function CoursesTab() {
                      {sessions.map((s) => (
                        <button
                          key={s.id}
-                         onClick={() => setSelectedBatchType(s.batch_type as 'morning' | 'afternoon' | 'evening')}
-                         className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1 ${selectedBatchType === s.batch_type ? 'border-primary bg-primary/5 text-primary shadow-lg shadow-primary/10' : 'border-slate-100 bg-slate-50 hover:bg-slate-100 text-slate-600'}`}
+                         onClick={() => {
+                           setSelectedBatchType(s.batch_type as 'morning' | 'afternoon' | 'evening');
+                           setSelectedBatchId(s.id);
+                         }}
+                         className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1 ${selectedBatchId === s.id ? 'border-primary bg-primary/5 text-primary shadow-lg shadow-primary/10' : 'border-slate-100 bg-slate-50 hover:bg-slate-100 text-slate-600'}`}
                        >
                          <span className="text-[10px] font-black uppercase tracking-tighter">{s.batch_type}</span>
                          <span className="text-[8px] font-bold opacity-70">
@@ -438,7 +453,7 @@ function CoursesTab() {
               <Button
                   size="lg"
                   className="h-14 px-12 rounded-[1.25rem] font-black uppercase tracking-[0.1em] text-[12px] shadow-2xl shadow-slate-200 bg-slate-900 hover:bg-black text-white transition-all hover:scale-[1.02] active:scale-95 shrink-0"
-                  disabled={isUploading || !paymentProof || utrNumber.length !== 12}
+                  disabled={isUploading || !paymentProof || utrNumber.length !== 12 || (batches && batches.length > 0 && !selectedBatchId)}
                   onClick={handleEnrollmentSubmit}
               >
                   {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Confirm Enrollment'}

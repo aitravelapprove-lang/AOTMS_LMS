@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { fetchWithAuth } from "@/lib/api";
 import { toast } from "sonner";
+import { SyncDataButton } from "./data/SyncDataButton";
 
 // ── Leaflet (same pattern as UserManagement.tsx) ─────────────────────────────
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
@@ -418,9 +419,15 @@ function Sec({
 // ─── Main Component ───────────────────────────────────────────────────────────
 interface StudentPerformanceProps {
   enrollments?: CourseEntry[];
+  onSync?: () => void;
+  loading?: boolean;
 }
 
-export function StudentPerformance({ enrollments: bulkEnrollments = [] }: StudentPerformanceProps) {
+export function StudentPerformance({ 
+  enrollments: bulkEnrollments = [],
+  onSync,
+  loading: parentLoading = false
+}: StudentPerformanceProps) {
   const [students, setStudents] = useState<StudentProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -430,12 +437,14 @@ export function StudentPerformance({ enrollments: bulkEnrollments = [] }: Studen
   const [detailCache, setDetailCache] = useState<Record<string, StudentDetail>>({});
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => { loadStudents(); }, []);
 
   // ── Load profiles + merge user_id ────────────────────────────────────────────
-  const loadStudents = async () => {
+  const loadStudents = async (showToast = false) => {
     setLoading(true);
+    setIsSyncing(true);
     try {
       const [profilesData, rolesData] = await Promise.all([
         fetchWithAuth<StudentProfile[]>("/data/profiles?sort=created_at&order=desc&limit=500"),
@@ -453,10 +462,12 @@ export function StudentPerformance({ enrollments: bulkEnrollments = [] }: Studen
       // Filter to only show students
       const studentsOnly = merged.filter(s => s.role === 'student');
       setStudents(studentsOnly);
+      if (showToast) toast.success("Performance data synchronized");
     } catch {
       toast.error("Failed to load students");
     } finally {
       setLoading(false);
+      setIsSyncing(false);
     }
   };
 
@@ -551,13 +562,11 @@ export function StudentPerformance({ enrollments: bulkEnrollments = [] }: Studen
             </p>
           </div>
         </div>
-        <Button
-          variant="outline"
-          onClick={loadStudents}
-          className="h-10 rounded-2xl gap-2 font-black text-[10px] uppercase tracking-widest border-slate-200 text-slate-600"
-        >
-          <RefreshCw className="h-3.5 w-3.5" /> Refresh
-        </Button>
+        <SyncDataButton 
+          onSync={onSync || (() => loadStudents(true))}
+          isLoading={parentLoading || isSyncing}
+          className="h-12 px-6 shadow-xl shadow-indigo-200/50"
+        />
       </div>
 
       {/* Stats */}

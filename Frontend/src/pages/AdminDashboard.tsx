@@ -98,14 +98,15 @@ import {
 } from "@/components/ui/dialog";
 import { CourseBuilder } from "@/components/instructor/courses/CourseBuilder";
 import { PulseRatingsManager } from "@/components/admin/PulseRatingsManager";
+import { SyncDataButton } from "@/components/admin/data/SyncDataButton";
 
 import { Course as AdminCourse } from "@/hooks/useAdminData";
 
 type CombinedCourse = AdminCourse;
 
 
-function NotificationSection() {
-  const { notifications, loading, markAllAsRead, unreadCount } =
+function NotificationSection({ onSync, loading }: { onSync: () => void, loading: boolean }) {
+  const { notifications, loading: notifLoading, markAllAsRead, unreadCount } =
     useNotifications();
 
   return (
@@ -141,6 +142,12 @@ function NotificationSection() {
           >
             {notifications.length} Total
           </Badge>
+          <SyncDataButton 
+            onSync={onSync}
+            isLoading={loading}
+            label="Sync Notifications"
+            className="h-10 rounded-xl"
+          />
         </div>
       </div>
 
@@ -227,9 +234,6 @@ export default function AdminDashboard() {
   const { user, loading: authLoading, userRole } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { fetchEnrollments } = useCourses();
-  const [enrollments, setEnrollments] = useState<CourseEnrollment[]>([]);
-  const [enrollmentsLoading, setEnrollmentsLoading] = useState(false);
   const [coursesRefreshKey, setCoursesRefreshKey] = useState(0);
   const location = useLocation();
   const [activeTab, setActiveTab] = useState("users");
@@ -271,6 +275,7 @@ export default function AdminDashboard() {
     loading: dataLoading,
     profiles = [],
     courses = [],
+    enrollments = [],
     securityEvents = [],
     systemLogs = [],
     stats = {
@@ -325,12 +330,7 @@ export default function AdminDashboard() {
     id: string,
     status: "rejected" | "active",
   ) => {
-    const success = await _updateEnrollmentStatus(id, status);
-    if (success) {
-      setEnrollments((prev) =>
-        prev.map((e) => (e.id === id ? { ...e, status } : e)),
-      );
-    }
+    await _updateEnrollmentStatus(id, status);
   };
 
   const deleteEnrollment = async (id: string) => {
@@ -339,38 +339,11 @@ export default function AdminDashboard() {
         "Are you sure you want to delete this enrollment? This action cannot be undone.",
       )
     ) {
-      const success = await _deleteEnrollment(id);
-      if (success) {
-        setEnrollments((prev) => prev.filter((e) => e.id !== id));
-      }
+      await _deleteEnrollment(id);
     }
   };
 
 
-
-  const loadEnrollments = useCallback(async () => {
-    setEnrollmentsLoading(true);
-    try {
-      const data = await fetchEnrollments();
-      setEnrollments(data);
-    } catch (err) {
-      console.error("Failed to load enrollments:", err);
-    } finally {
-      setEnrollmentsLoading(false);
-    }
-  }, [fetchEnrollments]);
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/auth");
-    }
-  }, [user, authLoading, navigate]);
-
-  useEffect(() => {
-    if (user) {
-      loadEnrollments();
-    }
-  }, [user, loadEnrollments]);
 
   // Socket support for real-time enrollment updates
   // (socket is already declared above)
@@ -380,7 +353,7 @@ export default function AdminDashboard() {
 
     const handleEnrollmentChange = () => {
       console.log("[Socket] Enrollments changed, refreshing...");
-      loadEnrollments();
+      refresh();
     };
 
     socket.on("course_enrollments_changed", handleEnrollmentChange);
@@ -388,7 +361,7 @@ export default function AdminDashboard() {
     return () => {
       socket.off("course_enrollments_changed", handleEnrollmentChange);
     };
-  }, [socket, loadEnrollments]);
+  }, [socket, refresh]);
 
   useEffect(() => {
     const tabUrlMap: Record<string, string> = {
@@ -750,6 +723,12 @@ export default function AdminDashboard() {
                         icon: Zap,
                         key: "tab-ai-hub",
                       },
+                      {
+                        id: "grading",
+                        label: "Submissions Grading",
+                        icon: ClipboardList,
+                        key: "tab-grading",
+                      },
                     ]
 .map((tab) => (
                       <TabsTrigger
@@ -782,7 +761,11 @@ export default function AdminDashboard() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                   >
-                    <StudentPerformance enrollments={enrollments} />
+                    <StudentPerformance 
+                      enrollments={enrollments} 
+                      onSync={() => refresh(true)}
+                      loading={dataLoading}
+                    />
                   </motion.div>
                 </TabsContent>
 
@@ -797,7 +780,10 @@ export default function AdminDashboard() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                   >
-                    <LeaderboardManager />
+                    <LeaderboardManager 
+                      onSync={() => refresh(true)}
+                      loading={dataLoading}
+                    />
                   </motion.div>
                 </TabsContent>
 
@@ -836,7 +822,7 @@ export default function AdminDashboard() {
                   >
                     <EnrollmentsList
                       enrollments={enrollments}
-                      loading={enrollmentsLoading}
+                      loading={dataLoading}
                       onUpdateStatus={async (id, status) => { await _updateEnrollmentStatus(id, status); }}
                       onUpdatePayment={async (id, term) => { await updateEnrollmentPayment(id, term); }}
                       onDelete={async (id) => { await _deleteEnrollment(id); }}
@@ -855,7 +841,10 @@ export default function AdminDashboard() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                   >
-                    <CouponManager />
+                    <CouponManager 
+                      onSync={() => refresh(true)}
+                      loading={dataLoading}
+                    />
                   </motion.div>
                 </TabsContent>
 
@@ -872,6 +861,8 @@ export default function AdminDashboard() {
                     <GrantStudentAccess
                       profiles={profiles}
                       enrollments={enrollments}
+                      onSync={() => refresh(true)}
+                      loading={dataLoading}
                     />
                   </motion.div>
                 </TabsContent>
@@ -900,7 +891,10 @@ export default function AdminDashboard() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                   >
-                    <QuestionBankApproval />
+                    <QuestionBankApproval 
+                      onSync={() => refresh(true)}
+                      loading={dataLoading}
+                    />
                   </motion.div>
                 </TabsContent>
 
@@ -914,7 +908,10 @@ export default function AdminDashboard() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                   >
-                    <InstructorAccessAdmin />
+                    <InstructorAccessAdmin 
+                      onSync={() => refresh(true)}
+                      loading={dataLoading}
+                    />
                   </motion.div>
                 </TabsContent>
 
@@ -932,6 +929,7 @@ export default function AdminDashboard() {
                     <AllCoursesList
                       courses={courses}
                       loading={dataLoading}
+                      onSync={() => refresh(true)}
                       onUpdatePrice={adminData.updateCoursePrice}
                       onToggleActive={adminData.toggleCourseActive}
                       onViewSyllabus={(course) => setBuildingCourse(course as CombinedCourse)}
@@ -952,6 +950,7 @@ export default function AdminDashboard() {
                     <CourseApproval
                       courses={courses}
                       loading={dataLoading}
+                      onSync={() => refresh(true)}
                       onApprove={approveCourse}
                       onReject={rejectCourse}
                       onUpdateStatus={updateCourseStatus}
@@ -1001,9 +1000,17 @@ export default function AdminDashboard() {
                   >
                     <Card className="rounded-[2rem] border-slate-200 shadow-sm overflow-hidden bg-white/50 backdrop-blur-md">
                       <CardHeader className="bg-slate-50/50 border-b border-slate-100">
-                        <CardTitle className="flex items-center gap-2 text-slate-900">
-                          <Settings className="h-5 w-5 text-primary" />
-                          System Configuration
+                        <CardTitle className="flex items-center justify-between w-full text-slate-900">
+                          <div className="flex items-center gap-2">
+                            <Settings className="h-5 w-5 text-primary" />
+                            System Configuration
+                          </div>
+                          <SyncDataButton 
+                            onSync={() => refresh(true)}
+                            isLoading={dataLoading}
+                            label="Sync Settings"
+                            className="h-8 px-3"
+                          />
                         </CardTitle>
                         <CardDescription>
                           Manage global platform settings and system health
@@ -1159,11 +1166,31 @@ export default function AdminDashboard() {
                 </TabsContent>
 
                 <TabsContent
+                  key="tab-grading"
+                  value="grading"
+                  className="mt-0 outline-none"
+                >
+                  <motion.div
+                    key="motion-grading"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <SubmissionsGrading 
+                      onSync={() => refresh(true)}
+                      loading={dataLoading}
+                    />
+                  </motion.div>
+                </TabsContent>
+
+                <TabsContent
                   key="tab-notifications"
                   value="notifications"
                   className="mt-0 outline-none"
                 >
-                  <NotificationSection />
+                  <NotificationSection 
+                    onSync={() => refresh(true)}
+                    loading={dataLoading}
+                  />
                 </TabsContent>
 
                 <TabsContent
@@ -1176,7 +1203,10 @@ export default function AdminDashboard() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                   >
-                    <QualityAssurance />
+                    <QualityAssurance 
+                      onSync={() => refresh(true)}
+                      loading={dataLoading}
+                    />
                   </motion.div>
                 </TabsContent>
 
@@ -1190,7 +1220,10 @@ export default function AdminDashboard() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                   >
-                    <InstructorManagement />
+                    <InstructorManagement 
+                      onSync={() => refresh(true)}
+                      loading={dataLoading}
+                    />
                   </motion.div>
                 </TabsContent>
 
@@ -1204,7 +1237,11 @@ export default function AdminDashboard() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                   >
-                    <ChatMonitor />
+                    <ChatMonitor 
+                      onSync={() => refresh(true)}
+                      loading={dataLoading}
+                      profiles={profiles}
+                    />
                   </motion.div>
                 </TabsContent>
 
@@ -1218,7 +1255,11 @@ export default function AdminDashboard() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                   >
-                    <ManagerVideoLibrary showUpload={false} />
+                    <ManagerVideoLibrary 
+                      showUpload={false} 
+                      onSync={() => refresh(true)}
+                      loading={dataLoading}
+                    />
                   </motion.div>
                 </TabsContent>
 
@@ -1232,7 +1273,11 @@ export default function AdminDashboard() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                   >
-                    <ExamScheduler onNavigateToRepository={() => setActiveTab('question-repository')} />
+                    <ExamScheduler 
+                      onNavigateToRepository={() => setActiveTab('question-repository')} 
+                      onSync={() => refresh(true)}
+                      loading={dataLoading}
+                    />
                   </motion.div>
                 </TabsContent>
 
@@ -1247,7 +1292,10 @@ export default function AdminDashboard() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                   >
-                    <QuestionBankManager />
+                    <QuestionBankManager 
+                      onSync={() => refresh(true)}
+                      loading={dataLoading}
+                    />
                   </motion.div>
                 </TabsContent>
 
@@ -1262,7 +1310,10 @@ export default function AdminDashboard() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                   >
-                    <LiveMonitoring />
+                    <LiveMonitoring 
+                      onSync={() => refresh(true)}
+                      loading={dataLoading}
+                    />
                   </motion.div>
                 </TabsContent>
 
@@ -1279,11 +1330,11 @@ export default function AdminDashboard() {
                     <UserProfile />
                   </motion.div>
                 </TabsContent>
-              </div >
-            </Tabs >
-          </div >
-        </main >
-      </SidebarInset >
+              </div>
+            </Tabs>
+          </div>
+        </main>
+      </SidebarInset>
 
       {/* Course Detail View Modal */}
       < Dialog open={showCourseDetail} onOpenChange={setShowCourseDetail} >

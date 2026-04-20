@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { SyncDataButton } from './data/SyncDataButton';
 
 interface Batch {
     id: string;
@@ -51,7 +52,12 @@ interface DetailedMonitoringResult extends MonitoringResult {
     batchName?: string;
 }
 
-export function LiveMonitoring() {
+interface LiveMonitoringProps {
+    onSync?: () => void;
+    loading?: boolean;
+}
+
+export function LiveMonitoring({ onSync, loading: parentLoading = false }: LiveMonitoringProps) {
     const { userRole } = useAuth();
     const { data, loading: monitorLoading, refresh, deleteEnrollment, deleteExamResult } = useLiveMonitoring();
     const { profiles, courses, loading: adminLoading } = useAdminData(userRole);
@@ -248,9 +254,11 @@ export function LiveMonitoring() {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <Button onClick={() => refresh()} variant="ghost" className="h-12 w-12 rounded-2xl bg-white shadow-xl shadow-slate-200/10 hover:bg-slate-50 shrink-0">
-                       <Activity className={`h-5 w-5 ${loading ? 'animate-spin text-primary' : 'text-slate-400'}`} />
-                    </Button>
+                    <SyncDataButton 
+                        onSync={onSync || (() => refresh())} 
+                        isLoading={parentLoading || monitorLoading || adminLoading} 
+                        className="h-12 w-12 rounded-2xl bg-white shadow-xl shadow-slate-200/10 hover:bg-slate-50"
+                    />
                 </div>
             </div>
 

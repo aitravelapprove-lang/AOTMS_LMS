@@ -2972,32 +2972,40 @@ app.get('/api/instructor/courses', authenticateToken, requireInstructor, async (
 app.get('/api/instructor/courses/:id/batch/:batchType/students', authenticateToken, requireInstructor, async (req, res) => {
     try {
         const { id, batchType } = req.params;
+        const { batch_id } = req.query;
         const role = await getUserRole(req.user.id);
         
-        // 1. Find the batches of this type for this course
-        const batchQuery = { 
-            course_id: id, 
-            batch_type: batchType.toLowerCase() 
-        };
+        let batchIds = [];
         
-        // SECURITY: If instructor, only show students from their OWN assigned batches
-        if (role === 'instructor') {
-            batchQuery.instructor_id = req.user.id;
+        if (batch_id) {
+            // Fetch students for a SPECIFIC batch card
+            batchIds = [batch_id];
+        } else {
+            // Find all batches of this type (session) for this course
+            const batchQuery = { 
+                course_id: id, 
+                batch_type: batchType === 'any' ? { $exists: true } : batchType.toLowerCase() 
+            };
+            
+            // SECURITY: If instructor, only show students from their OWN assigned batches
+            if (role === 'instructor') {
+                batchQuery.instructor_id = req.user.id;
+            }
+
+            const batches = await Batch.find(batchQuery).select('_id').lean();
+            if (batches.length === 0) return res.json([]);
+            batchIds = batches.map(b => b._id);
         }
 
-        const batches = await Batch.find(batchQuery).select('_id').lean();
-        if (batches.length === 0) return res.json([]);
-
         // 2. Find students assigned to these batches
-        const batchIds = batches.map(b => b._id);
         const studentAssignments = await StudentBatch.find({ batch_id: { $in: batchIds } })
             .populate('student_id', 'full_name email avatar_url mobile_number')
             .lean();
 
         // 3. Format and return
         const students = studentAssignments.map(a => ({
-            id: a._id,
-            user_id: a.student_id?._id,
+            id: a._id.toString(),
+            user_id: a.student_id?.id || a.student_id?._id,
             full_name: a.student_id?.full_name,
             email: a.student_id?.email,
             avatar_url: a.student_id?.avatar_url,
@@ -5441,7 +5449,24 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
                             { $and: [
                                 { instructor_id: { $exists: false } },
                                 { batch_type: { $in: studentBatchTypes } }
-                            ]}
+                            ]},
+
+                            // 4. No batch restrictions: visible to all enrolled students
+                            {
+                                $and: [
+                                    { $or: [
+                                        { allowed_batches: { $size: 0 } },
+                                        { allowed_batches: { $exists: false } },
+                                        { allowed_batches: null }
+                                    ]},
+                                    { $or: [
+                                        { batch_type: { $exists: false } },
+                                        { batch_type: null },
+                                        { batch_type: 'all' },
+                                        { batch_type: '' }
+                                    ]}
+                                ]
+                            }
                         ]
                     };
                     contentFilter = { $and: [enrollmentFilter, batchFilter] };
@@ -6047,6 +6072,100 @@ app.get('/api/batches', authenticateToken, async (req, res) => {
     }
 });
 
+// --- Specialized Live Class Creation + Notification ---
+app.post('/api/instructor/live-classes', authenticateToken, requireInstructor, async (req, res) => {
+    const { instructor_id, course_id, target_batch, batch_id, title, description, scheduled_at, duration_minutes, poster_url, zoom } = req.body;
+    try {
+        // 1. Create Zoom Meeting
+        const accessToken = await getZoomAccessToken();
+        const zoomResponse = await axios.post('https://api.zoom.us/v2/users/me/meetings', {
+            topic: zoom.topic,
+            type: 2, 
+            start_time: zoom.startTime,
+            duration: zoom.duration,
+            agenda: zoom.agenda,
+            settings: {
+                host_video: true,
+                participant_video: false,
+                join_before_host: false,
+                mute_upon_entry: true,
+                waiting_room: true,
+                auto_recording: 'cloud'
+            }
+        }, {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        // 2. Save Live Class Record
+        const liveClass = new LiveClass({
+            instructor_id,
+            course_id: course_id || null,
+            target_batch: target_batch || 'all',
+            batch_id: batch_id || null,
+            title,
+            description,
+            scheduled_at,
+            duration_minutes,
+            meeting_id: zoomResponse.data.id.toString(),
+            meeting_url: zoomResponse.data.join_url,
+            start_url: zoomResponse.data.start_url,
+            meeting_password: zoomResponse.data.password,
+            poster_url,
+            status: 'scheduled'
+        });
+        await liveClass.save();
+
+        // 3. Notify Students
+
+        let targetStudentIds = [];
+        if (target_batch === 'all') {
+            // Get all students enrolled in the course
+            const EnrollmentModel = mongoose.model('Enrollment');
+            const enrollments = await EnrollmentModel.find({ course_id: course_id });
+            targetStudentIds = enrollments.map(e => e.user_id);
+        } else {
+            // Get students in specific batch
+            // The frontend might send batch_id if it's a specific batch card, 
+            // or target_batch as 'morning' etc if it's a session.
+            const query = { course_id: course_id };
+            if (batch_id) {
+                query.batch_id = batch_id;
+            } else if (['morning', 'afternoon', 'evening'].includes(target_batch)) {
+                // If they still used session, we find batches of that type
+                const Batch = mongoose.model('Batch');
+                const matchingBatches = await Batch.find({ course_id, batch_type: target_batch });
+                const batchIds = matchingBatches.map(b => b._id);
+                query.batch_id = { $in: batchIds };
+            }
+            const students = await StudentBatch.find(query);
+            targetStudentIds = students.map(s => s.student_id);
+        }
+
+        // Create notifications for each student
+        if (targetStudentIds.length > 0) {
+            const notifications = targetStudentIds.map(sid => ({
+                user_id: sid,
+                type: 'live_class',
+                title: `New Live Class Scheduled: ${title}`,
+                message: `Instructor has scheduled a new interactive session for ${new Date(scheduled_at).toLocaleString()}.`,
+                data: {
+                    live_class_id: liveClass.id,
+                    course_id,
+                    poster_url
+                }
+            }));
+            await Notification.insertMany(notifications);
+        }
+
+        res.json({ success: true, liveClass });
+    } catch (err) {
+        handleError(res, err, 'create-live-class-specialized');
+    }
+});
+
 // Get single batch
 app.get('/api/batches/:id', authenticateToken, async (req, res) => {
     try {
@@ -6111,32 +6230,39 @@ app.get('/api/batches/my-batch/:courseId', authenticateToken, async (req, res) =
 // Get full course roster for instructors, grouped by batch type
 app.get('/api/batches/course-roster/:courseId', authenticateToken, requireInstructor, async (req, res) => {
     try {
+        // Convert courseId to ObjectId for proper MongoDB query
+        const courseId = new mongoose.Types.ObjectId(req.params.courseId);
+
         // Get all course enrollments (students) regardless of status
-        const enrollments = await Enrollment.find({ 
-            course_id: req.params.courseId
+        const enrollments = await Enrollment.find({
+            course_id: courseId
         }).lean();
-        
+
         const studentIds = enrollments.map(e => e.user_id).filter(id => id);
-        
+
         // --- SECURITY: Filter assignments by instructor if requested by instructor ---
         const userRole = await getUserRole(req.user.id);
-        let assignmentQuery = { 
-            course_id: req.params.courseId,
+        let assignmentQuery = {
+            course_id: courseId,
             student_id: { $in: studentIds }
         };
 
-        if (userRole === 'instructor') {
-            const myBatches = await Batch.find({ instructor_id: req.user.id }).select('_id').lean();
-            const myBatchIds = myBatches.map(b => b._id);
-            assignmentQuery.batch_id = { $in: myBatchIds };
-        }
+        // Fetch ALL assignments first, then filter instructor's own batches separately
+        const allAssignments = await StudentBatch.find(assignmentQuery).populate('batch_id').lean();
 
-        // Get all batch assignments for these students
-        const assignments = await StudentBatch.find(assignmentQuery).populate('batch_id').lean();
+        // Get instructor's batch IDs for permission checking
+        const myBatches = await Batch.find({ instructor_id: req.user.id }).select('_id').lean();
+        const myBatchIds = new Set(myBatches.map(b => b._id.toString()));
+
+        // Map assignments with batch ownership flag
+        const assignments = allAssignments.map(a => ({
+            ...a,
+            isMyBatch: myBatchIds.has(a.batch_id?._id?.toString())
+        }));
 
         // Get profiles and roles
         const profiles = await Profile.find({ user_id: { $in: studentIds } }).lean();
-        const users = await User.find({ _id: { $in: studentIds } }).select('full_name email role').lean();
+        const users = await User.find({ _id: { $in: studentIds } }).select('full_name email role avatar_url').lean();
         
         const profileMap = profiles.reduce((acc, p) => { 
             if (p.user_id) acc[p.user_id.toString()] = p; 
@@ -6175,7 +6301,7 @@ app.get('/api/batches/course-roster/:courseId', authenticateToken, requireInstru
                 student_id: uid,
                 full_name: profile?.full_name || user?.full_name || 'Enrolled Student',
                 email: profile?.email || user?.email || 'No email',
-                avatar_url: profile?.avatar_url,
+                avatar_url: profile?.avatar_url || user?.avatar_url || null,
                 role: role,
                 batch: (assigned && assigned.batch) ? {
                     id: assigned.batch._id.toString(),
@@ -6850,6 +6976,55 @@ app.get(/\/api\/s3\/public\/(.*)/, async (req, res) => {
     }
 });
 
+
+// --- Chat Monitor (Admin) ---
+app.get('/api/admin/chat-monitor/conversations', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const conversations = await Conversation.find()
+            .populate('participants', 'full_name avatar_url email')
+            .populate('last_message', 'content')
+            .sort({ updated_at: -1 });
+
+        // Transform for frontend expectation
+        const formatted = conversations.map(c => ({
+            id: c._id,
+            updated_at: c.updated_at,
+            last_message: c.last_message?.content || '',
+            participants: c.participants.map(p => ({
+                id: p._id,
+                name: p.full_name,
+                avatar_url: p.avatar_url,
+                email: p.email
+            }))
+        }));
+
+        res.json(formatted);
+    } catch (err) {
+        handleError(res, err, 'chat-monitor-conversations');
+    }
+});
+
+app.get('/api/admin/chat-monitor/conversations/:id/messages', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const messages = await Message.find({ conversation_id: req.params.id })
+            .populate('sender', 'full_name avatar_url')
+            .sort({ created_at: 1 });
+        
+        const formatted = messages.map(m => ({
+            id: m._id,
+            content: m.content,
+            sender_id: m.sender?._id,
+            sender_name: m.sender?.full_name,
+            timestamp: m.created_at,
+            type: m.type,
+            status: m.status
+        }));
+
+        res.json(formatted);
+    } catch (err) {
+        handleError(res, err, 'chat-monitor-messages');
+    }
+});
 
 // Start Server
 httpServer.listen(port, () => {

@@ -32,6 +32,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import type { Course } from '@/hooks/useAdminData';
+import { SyncDataButton } from "./data/SyncDataButton";
 
 interface CourseApprovalProps {
   courses: Course[];
@@ -40,6 +41,7 @@ interface CourseApprovalProps {
   onReject: (courseId: string, reason: string) => Promise<boolean>;
   onUpdateStatus?: (courseId: string, status: string) => Promise<boolean>;
   onToggleActive?: (courseId: string, isActive: boolean) => Promise<boolean>;
+  onSync?: () => void;
 }
 
 export function CourseApproval({
@@ -48,7 +50,8 @@ export function CourseApproval({
   onApprove,
   onReject,
   onUpdateStatus,
-  onToggleActive
+  onToggleActive,
+  onSync
 }: CourseApprovalProps) {
   const [filter, setFilter] = useState<'pending' | 'approved' | 'rejected' | 'draft' | 'all'>('pending');
 
@@ -140,9 +143,18 @@ export function CourseApproval({
           <div className="flex flex-col gap-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
-                <CardTitle className="text-xl flex items-center gap-2">
-                  <BookOpen className="h-5 w-5 text-primary" />
-                  Curriculum Catalog
+                <CardTitle className="text-xl flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-primary" />
+                    Curriculum Catalog
+                  </div>
+                  {onSync && (
+                    <SyncDataButton 
+                      onSync={onSync}
+                      isLoading={loading}
+                      className="h-9 px-4 border-none bg-slate-50 hover:bg-slate-100"
+                    />
+                  )}
                 </CardTitle>
                 <CardDescription>Platform Curriculum Nodes</CardDescription>
               </div>

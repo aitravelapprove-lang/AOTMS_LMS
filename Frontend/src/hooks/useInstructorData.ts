@@ -209,6 +209,20 @@ export interface BatchAssignmentData {
         batch_type?: string;
         batch_name?: string;
     };
+    assigned_session?: string;
+    assigned_time_slot?: string;
+}
+
+export interface Batch {
+  id: string;
+  _id?: string;
+  course_id: string | any;
+  instructor_id: string | any;
+  batch_name: string;
+  batch_type: string;
+  start_date?: string;
+  end_date?: string;
+  is_active?: boolean;
 }
 
 export interface ResumeScan {
@@ -410,16 +424,33 @@ export interface StudentRosterEntry {
   enrolled_at: string;
 }
 
-export function useBatchStudents(courseId: string | null, batchType: string | null) {
+export function useBatchStudents(courseId: string | null, batchType: string | null, batchId?: string | null) {
   return useQuery<StudentRosterEntry[]>({
-    queryKey: ['batch-students', courseId, batchType],
+    queryKey: ['batch-students', courseId, batchType, batchId],
     queryFn: async () => {
-      if (!courseId || !batchType) return [];
-      const url = batchType === 'all'
+      if (!courseId || (!batchType && !batchId)) return [];
+      
+      let url = batchType === 'all' && !batchId
         ? `/courses/${courseId}/roster`
-        : `/instructor/courses/${courseId}/batch/${batchType}/students`;
+        : `/instructor/courses/${courseId}/batch/${batchType || 'any'}/students`;
+        
+      if (batchId && batchId !== 'all') {
+        url += (url.includes('?') ? '&' : '?') + `batch_id=${batchId}`;
+      }
+      
       return fetchWithAuth(url);
     },
+  });
+}
+
+export function useCourseBatches(courseId: string | null) {
+  return useQuery<Batch[]>({
+    queryKey: ["course-batches", courseId],
+    queryFn: async () => {
+      if (!courseId) return [];
+      return fetchWithAuth<Batch[]>(`/batches?course_id=${courseId}`);
+    },
+    enabled: !!courseId,
   });
 }
 
@@ -1410,7 +1441,7 @@ export function useCreateTopic() {
               progress: progress,
               lastWatchedAt:
                 enrollment.last_accessed_at || enrollment.enrolled_at,
-              batchType: batchAssignment?.batch_id?.batch_type,
+              batchType: batchAssignment?.assigned_session || batchAssignment?.batch_id?.batch_type,
               batchName: batchAssignment?.batch_id?.batch_name,
             });
           } else {
@@ -1475,7 +1506,7 @@ export function useCreateTopic() {
                   progress: progress,
                   lastWatchedAt:
                     enrollment.last_accessed_at || enrollment.enrolled_at,
-                  batchType: batchAssignment?.batch_id?.batch_type,
+                  batchType: batchAssignment?.assigned_session || batchAssignment?.batch_id?.batch_type,
                   batchName: batchAssignment?.batch_id?.batch_name,
                 },
               ],
@@ -1891,29 +1922,8 @@ export function useCreateTopic() {
       }) => {
         if (!user?.id) throw new Error("You must be logged in to schedule meetings");
 
-        // 1. Create Zoom Meeting via our specific backend endpoint
-        const zoomData = (await fetchWithAuth<{
-          meetingId: number | string;
-          joinUrl: string;
-          startUrl: string;
-          password?: string;
-        }>("/zoom/meetings", {
-          method: "POST",
-          body: JSON.stringify({
-            topic: payload.topic,
-            startTime: payload.startTime,
-            duration: payload.duration,
-            agenda: payload.agenda,
-          }),
-        })) as {
-          meetingId: number;
-          joinUrl: string;
-          startUrl: string;
-          password?: string;
-        };
-
-        // 2. Save meeting metadata to our persistent live_classes collection in Firestore via Backend
-        return fetchWithAuth("/data/live_classes", {
+        // Create and Notify via specialized backend endpoint
+        return fetchWithAuth("/instructor/live-classes", {
           method: "POST",
           body: JSON.stringify({
             instructor_id: user.id,
@@ -1924,12 +1934,14 @@ export function useCreateTopic() {
             description: payload.agenda,
             scheduled_at: payload.startTime,
             duration_minutes: payload.duration,
-            meeting_id: zoomData.meetingId.toString(),
-            meeting_url: zoomData.joinUrl,
-            start_url: zoomData.startUrl,
-            meeting_password: zoomData.password,
             poster_url: payload.poster_url || null,
-            status: "scheduled",
+            // Zoom metadata (sinceZoom creation happens on backend now for security)
+            zoom: {
+               topic: payload.topic,
+               startTime: payload.startTime,
+               duration: payload.duration,
+               agenda: payload.agenda
+            }
           }),
         });
       },

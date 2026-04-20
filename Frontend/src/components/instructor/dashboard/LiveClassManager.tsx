@@ -32,7 +32,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { useInstructorLiveClasses, useCreateLiveClass, useDeleteLiveClass, useInstructorCourses, useBatchStudents, Course, LiveClass, uploadLivePoster, StudentRosterEntry } from '@/hooks/useInstructorData';
+import { useInstructorLiveClasses, useCreateLiveClass, useDeleteLiveClass, useInstructorCourses, useBatchStudents, useCourseBatches, Course, LiveClass, uploadLivePoster, StudentRosterEntry } from '@/hooks/useInstructorData';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
@@ -55,9 +55,12 @@ export function LiveClassManager() {
         targetBatch: 'all'
     });
 
+    const { data: courseBatches = [], isLoading: isLoadingBatches } = useCourseBatches(formData.courseId);
+
     const { data: batchStudents = [], isLoading: isLoadingStudents } = useBatchStudents(
         formData.courseId, 
-        formData.targetBatch
+        formData.targetBatch === 'all' ? 'all' : (courseBatches.find(b => b.id === formData.targetBatch)?.batch_type || 'any'),
+        formData.targetBatch === 'all' ? null : formData.targetBatch
     );
 
     const [posterFile, setPosterFile] = useState<File | null>(null);
@@ -132,8 +135,8 @@ export function LiveClassManager() {
 
             await createMeeting.mutateAsync({
                 ...formData,
-                target_batch: formData.targetBatch,
-                batchId: batchId,
+                target_batch: formData.targetBatch === 'all' ? 'all' : (courseBatches.find(b => b.id === formData.targetBatch)?.batch_type || 'all'),
+                batchId: formData.targetBatch === 'all' ? null : formData.targetBatch,
                 poster_url: finalPosterUrl
             });
             setIsAdding(false);
@@ -403,66 +406,81 @@ export function LiveClassManager() {
                                     </div>
                                 </div>
 
-                                {/* Target Selection: Course + Batch */}
-                                <div className="grid grid-cols-2 gap-4">
+                                {/* Target Selection: Course + Batch Cards */}
+                                <div className="space-y-4">
                                     <div className="space-y-1.5">
-                                        <label className="text-[11px] font-bold uppercase tracking-widest text-[#0075CF]">Select Course</label>
+                                        <label className="text-[11px] font-bold uppercase tracking-widest text-[#0075CF]">Select Target Course</label>
                                         <select
                                             title="Target Course"
                                             required
                                             value={formData.courseId}
                                             onChange={e => {
                                                 const courseId = e.target.value;
-                                                const selectedCourse = (courses as Course[]).find(c => c.id === courseId);
-                                                const assignedSession = selectedCourse?.assigned_session;
                                                 setFormData({ 
                                                     ...formData, 
                                                     courseId, 
-                                                    targetBatch: (assignedSession && assignedSession !== 'all') ? assignedSession : 'all' 
+                                                    targetBatch: 'all' 
                                                 });
                                             }}
                                             className="w-full h-11 px-4 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all appearance-none"
                                         >
-                                            <option value="">Select at least one course</option>
+                                            <option value="">Choose a course...</option>
                                             {(courses as Course[]).map((course: Course) => (
                                                 <option key={course.id} value={course.id}>{course.title}</option>
                                             ))}
                                         </select>
                                     </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[11px] font-bold uppercase tracking-widest text-[#0075CF]">Select Batch</label>
-                                        <select
-                                            title="Target Batch"
-                                            value={formData.targetBatch}
-                                            disabled={!formData.courseId}
-                                            onChange={e => setFormData({ ...formData, targetBatch: e.target.value })}
-                                            className="w-full h-11 px-4 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all appearance-none disabled:bg-slate-50 disabled:text-slate-400"
-                                        >
-                                            {(() => {
-                                                const selectedCourse = (courses as Course[]).find(c => c.id === formData.courseId);
-                                                const assignedSession = selectedCourse?.assigned_session;
-                                                
-                                                if (assignedSession && assignedSession !== 'all') {
-                                                    // If instructor is restricted to a specific batch, ONLY show that one
-                                                    return (
-                                                        <option value={assignedSession}>
-                                                            {assignedSession.charAt(0).toUpperCase() + assignedSession.slice(1)} Only
-                                                        </option>
-                                                    );
-                                                }
-                                                
-                                                // Otherwise show all options (Global/All + individual)
-                                                return (
-                                                    <>
-                                                        <option value="all">All Batches</option>
-                                                        <option value="morning">Morning</option>
-                                                        <option value="afternoon">Afternoon</option>
-                                                        <option value="evening">Evening</option>
-                                                    </>
-                                                );
-                                            })()}
-                                        </select>
-                                    </div>
+
+                                    {formData.courseId && (
+                                        <div className="space-y-2.5">
+                                            <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Select Target Batch</label>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFormData({ ...formData, targetBatch: 'all' })}
+                                                    className={cn(
+                                                        "flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all gap-1.5",
+                                                        formData.targetBatch === 'all' 
+                                                            ? "bg-primary/5 border-primary shadow-sm" 
+                                                            : "bg-white border-slate-100 hover:border-slate-200"
+                                                    )}
+                                                >
+                                                    <Users className={cn("w-5 h-5", formData.targetBatch === 'all' ? "text-primary" : "text-slate-400")} />
+                                                    <span className={cn("text-[10px] font-black uppercase tracking-widest", formData.targetBatch === 'all' ? "text-primary" : "text-slate-600")}>All Students</span>
+                                                </button>
+
+                                                {courseBatches.map(batch => (
+                                                    <button
+                                                        key={batch.id}
+                                                        type="button"
+                                                        onClick={() => setFormData({ ...formData, targetBatch: batch.id })}
+                                                        className={cn(
+                                                            "flex flex-col items-start p-3 rounded-xl border-2 transition-all gap-1 group relative overflow-hidden",
+                                                            formData.targetBatch === batch.id 
+                                                                ? "bg-primary/5 border-primary shadow-sm" 
+                                                                : "bg-white border-slate-100 hover:border-slate-200"
+                                                        )}
+                                                    >
+                                                        <div className={cn(
+                                                            "mb-1 px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tighter",
+                                                            batch.batch_type === 'morning' ? "bg-amber-100 text-amber-700" :
+                                                            batch.batch_type === 'afternoon' ? "bg-blue-100 text-blue-700" :
+                                                            "bg-indigo-100 text-indigo-700"
+                                                        )}>
+                                                            {batch.batch_type}
+                                                        </div>
+                                                        <span className={cn("text-[11px] font-bold truncate w-full text-left", formData.targetBatch === batch.id ? "text-primary" : "text-slate-700")}>
+                                                            {batch.batch_name}
+                                                        </span>
+                                                        <div className="absolute top-2 right-2">
+                                                            {formData.targetBatch === batch.id && <CheckCircle2 className="w-3.5 h-3.5 text-primary" />}
+                                                        </div>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            {isLoadingBatches && <p className="text-[10px] text-slate-400 italic font-medium animate-pulse">Loading available batches...</p>}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Student Visibility Preview — Batch-Wise */}

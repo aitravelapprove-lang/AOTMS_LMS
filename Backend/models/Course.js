@@ -98,7 +98,8 @@ const VideoSchema = new Schema({
     course_id: { type: Schema.Types.ObjectId, ref: 'Course', required: true },
     module_id: { type: Schema.Types.ObjectId, ref: 'Module' },
     title: { type: String, required: true },
-    video_url: { type: String, required: true }, // S3 or YouTube
+    video_url: { type: String }, // Optional depending if they use drive_link instead
+    drive_link: { type: String }, // Google Drive link option
     thumbnail_url: { type: String },
     duration: { type: Number }, // seconds
     duration_minutes: { type: Number },

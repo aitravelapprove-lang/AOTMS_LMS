@@ -60,6 +60,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import { SyncDataButton } from '../admin/data/SyncDataButton';
 
 // ... (Constants)
 
@@ -455,15 +456,20 @@ function QuestionTypeIcon({ type }: { type: string }) {
 export function QuestionBankManager({
   onSectionChange,
   initialTab = 'bank',
-  mode = 'manager'
+  mode = 'manager',
+  onSync,
+  loading: parentLoading = false
 }: {
   onSectionChange?: (section: string) => void;
   initialTab?: string;
   mode?: 'manager' | 'instructor';
+  onSync?: () => void;
+  loading?: boolean;
 }) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { data: questions = [], isLoading } = useQuestions();
+  const { data: questions = [], isLoading, refetch: refetchQuestions } = useQuestions();
+  const { refetch: refetchExams } = useExams();
   const createQuestion = useCreateQuestion();
   const deleteQuestion = useDeleteQuestion();
 
@@ -809,7 +815,12 @@ export function QuestionBankManager({
           <TabsList className="bg-slate-100/50 p-1.5 rounded-[1.8rem] h-16 border border-slate-200/60 shadow-inner flex-1 sm:flex-none">
           </TabsList>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
+            <SyncDataButton 
+              onSync={onSync || (() => { refetchQuestions(); refetchExams(); })} 
+              isLoading={parentLoading || isLoading} 
+              className="h-16 px-6"
+            />
             <Button 
                className="rounded-2xl h-16 px-8 bg-slate-900 hover:bg-black text-white text-[10px] font-black uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-95 shadow-xl shadow-slate-200 group"
                onClick={() => onSectionChange?.('exams')}

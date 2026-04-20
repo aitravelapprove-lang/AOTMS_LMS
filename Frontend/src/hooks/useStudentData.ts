@@ -305,7 +305,7 @@ export function useEnrollCourse() {
     const { user } = useAuth();
 
     return useMutation({
-        mutationFn: async ({ courseId, payment_proof_url, utr_number, coupon_code, payment_term, requested_batch_type }: { courseId: string, payment_proof_url?: string | null, utr_number?: string | null, coupon_code?: string, payment_term?: string, requested_batch_type?: string }) => {
+        mutationFn: async ({ courseId, payment_proof_url, utr_number, coupon_code, payment_term, requested_batch_type, requested_batch_id }: { courseId: string, payment_proof_url?: string | null, utr_number?: string | null, coupon_code?: string, payment_term?: string, requested_batch_type?: string, requested_batch_id?: string }) => {
             if (!user?.id) throw new Error("Not logged in");
             return fetchWithAuth('/courses/enroll', {
                 method: 'POST',
@@ -315,7 +315,8 @@ export function useEnrollCourse() {
                     utr_number,
                     coupon_code,
                     payment_term,
-                    requested_batch_type
+                    requested_batch_type,
+                    requested_batch_id
                 })
             });
         },
@@ -364,7 +365,8 @@ export function useStudentVideos(courseId: string | null) {
         queryKey: ['student-course-videos', courseId],
         queryFn: async () => {
             if (!courseId) return [];
-            return await fetchWithAuth(`/courses/${courseId}/videos`);
+            // Use generic data route which has automated ACL for student batch/enrollment scoping
+            return await fetchWithAuth(`/data/course_videos?course_id=eq.${courseId}&sort=order_index&order=asc&limit=200`);
         },
         enabled: !!courseId,
     });
@@ -377,7 +379,8 @@ export function useStudentResources(courseId: string | null) {
             if (!courseId) {
                 return await fetchWithAuth('/data/course_resources?limit=100');
             }
-            return await fetchWithAuth(`/courses/${courseId}/resources`);
+            // Use generic data route with auto-ACL
+            return await fetchWithAuth(`/data/course_resources?course_id=eq.${courseId}&limit=100`);
         },
         enabled: true,
     });

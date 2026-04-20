@@ -18,8 +18,8 @@ import {
     BookOpen, 
     MonitorPlay,
     Filter,
-    CheckCircle2,
-    Star
+    Star,
+    ExternalLink
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RatingModal } from './RatingModal';
@@ -300,10 +300,14 @@ export default function StudentVideoLibrary() {
                                                 </div>
                                             )}
                                             
-                                            {/* Play Button Overlay */}
+                                            {/* Play/Link Button Overlay */}
                                             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/30">
                                                 <div className="h-14 w-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/50 scale-75 group-hover:scale-100 transition-transform duration-300">
-                                                    <Play className="h-6 w-6 text-white fill-white ml-1" />
+                                                    {video.video_url ? (
+                                                        <Play className="h-6 w-6 text-white fill-white ml-1" />
+                                                    ) : (
+                                                        <ExternalLink className="h-6 w-6 text-white" />
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -313,8 +317,8 @@ export default function StudentVideoLibrary() {
                                                         <CheckCircle2 className="h-3 w-3" /> Done
                                                     </Badge>
                                                 )}
-                                                <Badge className="bg-black/60 backdrop-blur-sm text-white border-none font-mono text-xs hover:bg-black/70">
-                                                    Video
+                                                <Badge className={`backdrop-blur-sm text-white border-none font-mono text-xs ${video.video_url ? 'bg-black/60' : 'bg-indigo-600/80 hover:bg-indigo-600'}`}>
+                                                    {video.video_url ? 'Video' : 'Link'}
                                                 </Badge>
                                             </div>
                                             
@@ -365,21 +369,39 @@ export default function StudentVideoLibrary() {
                     
                     {playingVideo && (
                         <div className="flex flex-col">
-                            <div className="relative aspect-video bg-black w-full">
-                                <video 
-                                    ref={videoRef}
-                                    src={getVideoSrc(playingVideo.video_url)} 
-                                    controls 
-                                    autoPlay 
-                                    className="w-full h-full"
-                                    controlsList="nodownload"
-                                    onTimeUpdate={handleTimeUpdate}
-                                    onEnded={handleVideoEnded}
-                                    onPause={handlePause}
-                                    onLoadedMetadata={handleVideoLoad}
-                                >
-                                    Your browser does not support the video tag.
-                                </video>
+                            <div className="relative aspect-video bg-black w-full flex items-center justify-center">
+                                {playingVideo.video_url ? (
+                                    <video 
+                                        ref={videoRef}
+                                        src={getVideoSrc(playingVideo.video_url)} 
+                                        controls 
+                                        autoPlay 
+                                        className="w-full h-full"
+                                        controlsList="nodownload"
+                                        onTimeUpdate={handleTimeUpdate}
+                                        onEnded={handleVideoEnded}
+                                        onPause={handlePause}
+                                        onLoadedMetadata={handleVideoLoad}
+                                    >
+                                        Your browser does not support the video tag.
+                                    </video>
+                                ) : (
+                                    <div className="p-10 text-center space-y-6 animate-in zoom-in duration-500">
+                                        <div className="h-20 w-20 bg-indigo-500/10 rounded-3xl flex items-center justify-center mx-auto border border-indigo-500/20">
+                                            <ExternalLink className="h-10 w-10 text-indigo-400" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <h3 className="text-xl font-bold text-white tracking-tight">{playingVideo.title}</h3>
+                                            <p className="text-slate-400 text-sm">Access this resource on Google Drive.</p>
+                                        </div>
+                                        <Button 
+                                            className="h-12 px-8 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl"
+                                            onClick={() => window.open(playingVideo.drive_link, '_blank')}
+                                        >
+                                            Open in Google Drive
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                             <div className="p-6 bg-slate-900 text-white">
                                 <h3 className="text-xl font-bold mb-2">{playingVideo.title}</h3>

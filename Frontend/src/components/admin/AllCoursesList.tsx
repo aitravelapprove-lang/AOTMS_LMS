@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { SyncDataButton } from "./data/SyncDataButton";
 import {
   Dialog,
   DialogContent,
@@ -33,6 +34,7 @@ interface AllCoursesListProps {
   onUpdatePrice?: (id: string, price: string) => void;
   onToggleActive?: (id: string, isActive: boolean) => void;
   onDelete?: (id: string) => void;
+  onSync?: () => void;
 }
 
 export function AllCoursesList({
@@ -43,6 +45,7 @@ export function AllCoursesList({
   onUpdatePrice,
   onToggleActive,
   onDelete,
+  onSync,
 }: AllCoursesListProps) {
   const [editingPrice, setEditingPrice] = useState<{
     id: string;
@@ -99,6 +102,13 @@ export function AllCoursesList({
             Available Courses
           </p>
         </div>
+        {onSync && (
+          <SyncDataButton 
+            onSync={onSync} 
+            isLoading={loading} 
+            className="h-14 px-8 shadow-xl shadow-slate-200/50"
+          />
+        )}
       </div>
 
       {coursesList.length === 0 ? (

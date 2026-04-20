@@ -472,14 +472,18 @@ export function InstructorStudentDashboard() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   // Auto-set batch filter if instructor is restricted to a session
+  // Initial auto-selection of batch filter based on instructor's assigned session
+  const [hasAutoSet, setHasAutoSet] = useState(false);
+
   useEffect(() => {
-    if (courses && courses.length > 0 && batchFilter === 'all') {
+    if (courses && courses.length > 0 && !hasAutoSet && batchFilter === 'all') {
       const assignedSessions = Array.from(new Set(courses.map(c => c.assigned_session).filter(s => s && s !== 'all')));
-      if (assignedSessions.length === 1) {
-        setBatchFilter(assignedSessions[0] as string);
+      if (assignedSessions.length === 1 && (assignedSessions[0] === 'morning' || assignedSessions[0] === 'afternoon' || assignedSessions[0] === 'evening')) {
+        setBatchFilter(assignedSessions[0]);
+        setHasAutoSet(true);
       }
     }
-  }, [courses, batchFilter]);
+  }, [courses, batchFilter, hasAutoSet]);
 
 
   const groupedStudents = useMemo(() => {
@@ -501,36 +505,64 @@ export function InstructorStudentDashboard() {
       'evening': [],
       'unassigned': []
     };
-
     filtered.forEach(student => {
-      // Find the most relevant batch type for this student
-      const batchTypes = student.courseEnrollments.map(e => e.batchType).filter(Boolean);
-      
+      // If a specific course filter is set, only consider batch types for THAT course.
+      // Otherwise, consider all batch types for all courses the student is enrolled in.
+      const relevantEnrollments = courseFilter === 'all'
+        ? student.courseEnrollments
+        : student.courseEnrollments.filter(e => e.courseId === courseFilter);
+
+      // Find the most relevant batch types for this student (lowercased for comparison)
+      // Use a Set to avoid duplicates if a student is in multiple courses of the same session
+      const batchTypes = Array.from(new Set(
+        relevantEnrollments
+          .map(e => {
+            if (!e.batchType) return null;
+            const bt = e.batchType.toLowerCase();
+            // Normalize typos in data
+            if (bt.includes('eving') || bt.includes('eveg')) return 'evening';
+            if (bt.includes('morning')) return 'morning';
+            if (bt.includes('afternoon')) return 'afternoon';
+            return bt;
+          })
+          .filter(Boolean) as string[]
+      ));
+
       if (batchFilter !== 'all') {
-        if (batchTypes.includes(batchFilter)) {
-          groups[batchFilter].push(student);
+        const normalizedFilter = batchFilter.toLowerCase();
+        // If a specific filter is set, only include students that belong to THAT batch
+        if (batchTypes.includes(normalizedFilter)) {
+          groups[normalizedFilter].push(student);
         }
       } else {
+        // "All Batches" - show student in EVERY group they belong to
         if (batchTypes.length === 0) {
           groups['unassigned'].push(student);
         } else {
-          // If in multiple, prefer the first one found
-          const batch = batchTypes[0]!;
-          if (groups[batch]) {
-            groups[batch].push(student);
-          } else {
-            groups['unassigned'].push(student);
+          let added = false;
+          batchTypes.forEach(bt => {
+            if (groups[bt]) {
+              groups[bt].push(student);
+              added = true;
+            }
+          });
+          // Fallback to unassigned if the batch type doesn't match our main categories
+          if (!added) {
+             groups['unassigned'].push(student);
           }
         }
       }
     });
 
-    // Only return groups that have students or all if no filter
+    // Only return groups that have students or the specific group if a filter is set
     if (batchFilter !== 'all') {
-      return { [batchFilter]: groups[batchFilter] };
+      const normalizedFilter = batchFilter.toLowerCase();
+      return { [normalizedFilter]: groups[normalizedFilter] || [] };
     }
 
+    // Filter out empty groups for a cleaner "All Batches" view
     return Object.fromEntries(Object.entries(groups).filter(([_, s]) => s.length > 0));
+
   }, [students, searchQuery, statusFilter, courseFilter, batchFilter]);
 
   const totalFilteredCount = useMemo(() => 
@@ -550,7 +582,6 @@ export function InstructorStudentDashboard() {
   };
 
   const handleSendMessage = (studentId: string) => {
-    // Navigate to chat with student selected
     navigate(`/instructor/chat?recipientId=${studentId}&showProfile=true`);
   };
 
@@ -686,7 +717,7 @@ export function InstructorStudentDashboard() {
                       <div className="h-10 w-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Syncing Registry...</p>
                     </div>
-                  ) : Object.entries(groupedStudents).length > 0 ? (
+                  ) : totalFilteredCount > 0 ? (
                     <div className="space-y-10">
                       {Object.entries(groupedStudents).map(([group, sList]) => (
                         <div key={group} className="space-y-6">

@@ -27,6 +27,7 @@ import { Label } from "@/components/ui/label";
 import { useCourses } from '@/hooks/useManagerData';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import { SyncDataButton } from "./data/SyncDataButton";
 
 interface PendingQuestionBank {
     topic: string;
@@ -43,12 +44,15 @@ interface PendingQuestionBank {
 
 interface StudentAccess {
     student_id: string;
+    id?: string;
     student_name: string;
     student_email: string;
     student_avatar: string;
     assigned_by: string;
     granted_at: string;
     scheduled_date?: string;
+    college_name?: string;
+    reg_date?: string;
 }
 
 interface BatchStudentResponse {
@@ -122,14 +126,20 @@ interface Batch {
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-export function QuestionBankApproval() {
+interface QuestionBankApprovalProps {
+    onSync?: () => void;
+    loading?: boolean;
+}
+
+export function QuestionBankApproval({ onSync, loading: externalLoading }: QuestionBankApprovalProps) {
     const getImageSrc = (path?: string | null) => {
         if (!path) return null;
         if (path.startsWith('http')) return path;
         // In the student portal it uses /s3/public/
         return `${API_URL}/s3/public/${path}`;
     };
-    const [loading, setLoading] = useState(true);
+    const [internalLoading, setInternalLoading] = useState(true);
+    const loading = externalLoading || internalLoading;
     const [processing, setProcessing] = useState<string | null>(null);
     const { toast } = useToast();
 
@@ -171,9 +181,9 @@ export function QuestionBankApproval() {
     const [selectedCollegeStudents, setSelectedCollegeStudents] = useState<string[]>([]);
     const [scheduledDate, setScheduledDate] = useState("");
 
-    const fetchPendingBanks = async (showLoading = true) => {
+    const fetchPendingBanks = async (showLoading = true, showToast = false) => {
         try {
-            if (showLoading && approvedBanks.length === 0) setLoading(true);
+            if (showLoading && approvedBanks.length === 0) setInternalLoading(true);
 
             const summary = await fetchWithAuth('/admin/question-bank-summary') as (PendingQuestionBank & { approval_status: string, access_count: number })[];
 
@@ -185,10 +195,13 @@ export function QuestionBankApproval() {
                 counts[s.topic] = s.access_count || 0;
             });
             setAccessCount(counts);
+            if (showToast) {
+                toast({ title: "Repository Synced", description: "Question bank data has been updated." });
+            }
         } catch (err) {
             console.error('Failed to fetch question banks summary', err);
         } finally {
-            setLoading(false);
+            setInternalLoading(false);
         }
     };
 
@@ -505,10 +518,18 @@ export function QuestionBankApproval() {
                                     <Users className="h-5 w-5 text-slate-500" />
                                 </div>
                             ))}
-                            <div className="h-12 w-12 rounded-2xl border-4 border-slate-900 bg-blue-600 flex items-center justify-center shadow-xl">
+                        <div className="h-12 w-12 rounded-2xl border-4 border-slate-900 bg-blue-600 flex items-center justify-center shadow-xl">
                                 <span className="text-[10px] font-black">+</span>
                             </div>
                         </div>
+                        <SyncDataButton 
+                            onSync={() => {
+                                if (onSync) onSync();
+                                fetchPendingBanks(true, true);
+                            }} 
+                            isLoading={loading} 
+                            className="h-14 px-8 shadow-2xl shadow-blue-500/20 rounded-2xl bg-white/10 hover:bg-white/20 border-white/20 text-white"
+                        />
                     </div>
                 </div>
             </div>

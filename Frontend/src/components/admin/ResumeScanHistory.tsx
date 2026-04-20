@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { SyncDataButton } from "./data/SyncDataButton";
 import { 
   History, 
   FileSearch, 
@@ -37,7 +38,7 @@ interface ScanResult {
 }
 
 export function ResumeScanHistory() {
-  const { data: scans = [], isLoading } = useQuery<ScanResult[]>({
+  const { data: scans = [], isLoading, refetch } = useQuery<ScanResult[]>({
     queryKey: ['admin-resume-scans'],
     queryFn: async () => {
       return await fetchWithAuth('/admin/resume-scans');
@@ -62,9 +63,16 @@ export function ResumeScanHistory() {
           </h2>
           <p className="text-slate-500 text-sm font-medium">View all student ATS resume analysis results</p>
         </div>
-        <Badge variant="outline" className="bg-white border-slate-200 px-4 py-1.5 rounded-full shadow-sm text-[10px] uppercase font-black tracking-widest text-slate-400 shrink-0">
-          {scans.length} Scans Performed
-        </Badge>
+        <div className="flex items-center gap-4">
+          <Badge variant="outline" className="bg-white border-slate-200 px-4 py-1.5 rounded-full shadow-sm text-[10px] uppercase font-black tracking-widest text-slate-400 shrink-0">
+            {scans.length} Scans Performed
+          </Badge>
+          <SyncDataButton 
+            onSync={async () => { await refetch(); }} 
+            isLoading={isLoading} 
+            className="h-10 px-4"
+          />
+        </div>
       </div>
 
       {scans.length === 0 ? (

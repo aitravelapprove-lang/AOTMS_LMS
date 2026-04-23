@@ -10,9 +10,14 @@ interface VideoPlayerProps {
   onComplete?: () => void;
 }
 
+interface ProgressData {
+  last_watched_time?: number;
+  watched_percentage?: number;
+  completed?: boolean;
+}
+
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, videoId, courseId, onComplete }) => {
-  const Player = ReactPlayer as any;
-  const playerRef = useRef<any>(null);
+  const playerRef = useRef<ReactPlayer | HTMLVideoElement | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastSavedProgress, setLastSavedProgress] = useState(0);
   const [currentProgress, setCurrentProgress] = useState(0);
@@ -33,7 +38,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, videoId, courseId
   useEffect(() => {
     const init = async () => {
       try {
-        const data = await fetchWithAuth(`/progress/${videoId}`);
+        const data = await fetchWithAuth<ProgressData>(`/progress/${videoId}`);
         if (data && data.last_watched_time) {
           setLastSavedProgress(data.watched_percentage || 0);
           setPendingSeek(data.last_watched_time);
@@ -67,8 +72,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, videoId, courseId
   }, [videoId, courseId]);
 
   // Handle native video events
-  const onNativeTimeUpdate = (e: any) => {
-    const video = e.target;
+  const onNativeTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
+    const video = e.currentTarget;
     const progress = (video.currentTime / video.duration) * 100;
     const percentage = Math.floor(progress);
     setCurrentProgress(percentage);
@@ -80,8 +85,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, videoId, courseId
     }
   };
 
-  const onNativeLoadedMetadata = (e: any) => {
-    const video = e.target;
+  const onNativeLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
+    const video = e.currentTarget;
     setDuration(video.duration);
     if (!hasResumed && pendingSeek !== null) {
       video.currentTime = pendingSeek;
@@ -126,7 +131,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, videoId, courseId
 
       {isS3 ? (
         <video
-          ref={playerRef}
+          ref={playerRef as React.RefObject<HTMLVideoElement>}
           src={url}
           className="w-full h-full object-contain"
           controls
@@ -138,14 +143,14 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, videoId, courseId
           controlsList="nodownload"
         />
       ) : (
-        <Player
-          ref={playerRef}
+        <ReactPlayer
+          ref={playerRef as React.RefObject<ReactPlayer>}
           url={url}
           width="100%"
           height="100%"
           controls
           playing={true}
-          onProgress={(state: any) => {
+          onProgress={(state: { played: number; playedSeconds: number }) => {
             const pct = Math.floor(state.played * 100);
             setCurrentProgress(pct);
             progressRef.current = pct;
@@ -153,16 +158,18 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, videoId, courseId
             if (pct >= lastSavedProgress + 5) saveProgress(pct, state.playedSeconds, pct >= 95);
           }}
           onReady={() => {
-            if (playerRef.current) setDuration(playerRef.current.getDuration());
-            if (!hasResumed && pendingSeek !== null) {
-              playerRef.current.seekTo(pendingSeek, 'seconds');
-              setHasResumed(true);
-              setPendingSeek(null);
+            if (playerRef.current && 'getDuration' in playerRef.current) {
+               setDuration(playerRef.current.getDuration());
+               if (!hasResumed && pendingSeek !== null) {
+                 playerRef.current.seekTo(pendingSeek, 'seconds');
+                 setHasResumed(true);
+                 setPendingSeek(null);
+               }
             }
           }}
           onEnded={() => saveProgress(100, duration, true)}
           onPause={() => saveProgress(progressRef.current, timeRef.current, progressRef.current >= 95)}
-          config={{ file: { attributes: { controlsList: 'nodownload', style: { width: '100%', height: '100%' } } } } as any}
+          config={{ file: { attributes: { controlsList: 'nodownload', style: { width: '100%', height: '100%' } } } }}
         />
       )}
 

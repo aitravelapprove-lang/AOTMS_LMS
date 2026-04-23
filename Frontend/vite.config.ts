@@ -7,14 +7,13 @@ import path from "path";
 export default defineConfig(({ mode }) => ({
   server: {
     host: "localhost",
-    port: 8080,
+    strictPort: false,
     headers: {
       "Cross-Origin-Embedder-Policy": "credentialless",
       "Cross-Origin-Opener-Policy": "same-origin",
     },
     hmr: {
       host: "localhost",
-      port: 8080,
       protocol: "ws",
     },
   },

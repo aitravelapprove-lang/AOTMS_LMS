@@ -477,9 +477,9 @@ export function UserManagement({
                   <div className="flex items-start gap-4 min-w-0">
                     {/* Avatar */}
                     <div className="relative shrink-0">
-                      <Avatar className="h-14 w-14 border-2 border-slate-50 shadow-md rounded-[1.25rem] overflow-hidden">
+                      <Avatar className="h-14 w-14 border border-slate-100 shadow-lg rounded-2xl overflow-hidden">
                         <AvatarImage src={user.avatar_url} className="object-cover" />
-                        <AvatarFallback className="bg-primary/5 text-primary font-black text-lg">
+                        <AvatarFallback className="bg-slate-900 text-white font-black text-lg">
                           {(user.full_name || user.email || "U").charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
@@ -496,12 +496,7 @@ export function UserManagement({
                         </p>
                         <Badge
                           variant="outline"
-                          className={`shrink-0 text-[10px] h-6 px-2.5 rounded-lg uppercase font-black tracking-tight border-none shadow-none ${
-                            user.role === 'admin'      ? 'bg-rose-50 text-rose-600'   :
-                            user.role === 'manager'    ? 'bg-amber-50 text-amber-600'  :
-                            user.role === 'instructor' ? 'bg-blue-50 text-blue-600'    :
-                            'bg-slate-100 text-slate-600'
-                          }`}
+                          className="shrink-0 text-[10px] h-6 px-2.5 rounded-lg uppercase font-black tracking-tight border border-slate-100 bg-slate-50 text-slate-900 shadow-sm"
                         >
                           {user.role || "student"}
                         </Badge>

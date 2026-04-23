@@ -75,14 +75,14 @@ const BackNavigationHandler = () => {
       }
     };
 
-    // Add a state to history so we can intercept the back button
-    window.history.pushState(null, "", window.location.href);
+    // Commenting out pushState as it interferes with React Router 6.
+    // window.history.pushState(null, "", window.location.href);
     window.addEventListener("popstate", handlePopState);
 
     return () => {
       window.removeEventListener("popstate", handlePopState);
     };
-  }, [user, userRole, loading, navigate, location.pathname]);
+  }, [userRole, user, loading, navigate, location.pathname]);
 
   return null;
 };

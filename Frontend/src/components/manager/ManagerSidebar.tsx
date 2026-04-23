@@ -22,7 +22,11 @@ import {
   BookOpen,
   X,
   Database,
+  Zap,
+  Activity,
+  UserPlus
 } from "lucide-react";
+
 import {
   Sidebar,
   SidebarContent,
@@ -58,7 +62,7 @@ const navGroups = [
     ],
   },
   {
-    label: "Course Materials",
+    label: "Academic Content",
     items: [
       { id: "all-courses",  title: "All Courses",        url: "/manager/all-courses",           icon: BookOpen },
       { id: "video-library",title: "Video Library",      url: "/manager/video-library",         icon: Video },
@@ -67,25 +71,27 @@ const navGroups = [
   {
     label: "User Management",
     items: [
-      { id: "instructors",  title: "Instructors",        url: "/manager/instructors",           icon: Users },
+      { id: "users",        title: "User Management",    url: "/manager/users",                 icon: Users },
+      { id: "instructors",  title: "Instructors",        url: "/manager/instructors",           icon: UserPlus },
       { id: "instructor-access", title: "Instructor Access", url: "/manager/instructor-access", icon: ShieldCheck },
-      { id: "enrollments",  title: "Enrollments Hub",    url: "/manager/enrollments",           icon: Users },
+      { id: "enrollments",  title: "Enrollments Hub",    url: "/manager/enrollments",           icon: Database },
       { id: "grant-access", title: "Grant Access",       url: "/manager/grant-access",          icon: KeyRound },
     ],
   },
   {
-    label: "Analytics",
+    label: "Analytics & Monitoring",
     items: [
       { id: "student-performance", title: "Student Performance", url: "/manager/student-performance", icon: BarChart3 },
       { id: "leaderboard",  title: "Leaderboard",        url: "/manager/leaderboard",           icon: Trophy },
-      { id: "monitoring",   title: "Live Monitoring",    url: "/manager/monitoring",            icon: TrendingUp },
+      { id: "monitoring",   title: "Live Monitoring",    url: "/manager/monitoring",            icon: Activity },
       { id: "resume-scans", title: "Resume Scan Logs",   url: "/manager/resume-scans",          icon: ClipboardList },
     ],
   },
   {
-    label: "Marketing",
+    label: "Marketing & AI",
     items: [
       { id: "coupons",      title: "Rewards & Coupons",  url: "/manager/coupons",               icon: Ticket },
+      { id: "ai-hub",       title: "AI Communications",  url: "/manager/ai-hub",                icon: Zap },
     ],
   },
 ];

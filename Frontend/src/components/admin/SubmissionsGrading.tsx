@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { fetchWithAuth } from '@/lib/api';
 import { cn } from "@/lib/utils";
+import { SyncDataButton } from './data/SyncDataButton';
 
 interface QuestionSnapshot {
   question_id: string;
@@ -53,7 +54,17 @@ interface Question {
   correct_answer?: string;
 }
 
-export default function SubmissionsGrading() {
+interface SubjectiveGrade {
+  marks: number;
+  feedback: string;
+}
+
+interface SubmissionsGradingProps {
+  onSync?: () => void;
+  loading?: boolean;
+}
+
+export default function SubmissionsGrading({ onSync, loading: parentLoading = false }: SubmissionsGradingProps) {
   const [submissions, setSubmissions] = useState<PendingResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSubmission, setSelectedSubmission] = useState<PendingResult | null>(null);
@@ -61,7 +72,7 @@ export default function SubmissionsGrading() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   
   // Grading state
-  const [subjectiveGrading, setSubjectiveGrading] = useState<Record<string, any>>({});
+  const [subjectiveGrading, setSubjectiveGrading] = useState<Record<string, SubjectiveGrade>>({});
   const [globalFeedback, setGlobalFeedback] = useState("");
   const [isGrading, setIsGrading] = useState(false);
   
@@ -72,11 +83,14 @@ export default function SubmissionsGrading() {
     loadSubmissions();
   }, []);
 
-  const loadSubmissions = async () => {
+  const loadSubmissions = async (showToast = false) => {
     setLoading(true);
     try {
       const data = await fetchWithAuth<PendingResult[]>('/instructor/pending-grading');
       setSubmissions(data || []);
+      if (showToast) {
+        toast.success("Submissions synchronized");
+      }
     } catch {
       toast.error("Failed to load pending submissions");
     } finally {
@@ -110,7 +124,7 @@ export default function SubmissionsGrading() {
       setQuestions(subjectiveFs);
       
       // Initialize grading state
-      const initial: Record<string, any> = {};
+      const initial: Record<string, SubjectiveGrade> = {};
       subjectiveFs.forEach(q => {
         initial[q._id] = { marks: 0, feedback: "" };
       });
@@ -174,9 +188,16 @@ export default function SubmissionsGrading() {
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">Manual Grading</h1>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Review & Score Subjective Answers</p>
           </div>
-          <Badge className="h-6 gap-1 bg-indigo-50 text-indigo-600 border-none font-bold">
-            {submissions.length} Pending
-          </Badge>
+          <div className="flex items-center gap-2">
+            <SyncDataButton 
+              onSync={onSync || (() => loadSubmissions(true))} 
+              isLoading={parentLoading || loading} 
+              className="h-8 px-3"
+            />
+            <Badge className="h-6 gap-1 bg-indigo-50 text-indigo-600 border-none font-bold">
+              {submissions.length} Pending
+            </Badge>
+          </div>
         </div>
 
         <div className="relative">

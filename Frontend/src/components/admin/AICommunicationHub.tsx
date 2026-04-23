@@ -36,15 +36,17 @@ import {
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { fetchWithAuth } from "@/lib/api";
+import { SyncDataButton } from "./data/SyncDataButton";
 import { toast } from "sonner";
 import { Profile } from "@/hooks/useAdminData";
 
 interface AICommunicationHubProps {
   profiles: Profile[];
   loading: boolean;
+  onSync?: () => void;
 }
 
-export function AICommunicationHub({ profiles = [], loading: profilesLoading }: AICommunicationHubProps) {
+export function AICommunicationHub({ profiles = [], loading: profilesLoading, onSync }: AICommunicationHubProps) {
   const [activeTab, setActiveTab] = useState<"student" | "instructor">("student");
   const [selectedColleges, setSelectedColleges] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -165,7 +167,15 @@ export function AICommunicationHub({ profiles = [], loading: profilesLoading }: 
             </p>
           </div>
           
-          <div className="flex gap-2 bg-white/5 p-1.5 rounded-2xl backdrop-blur-sm border border-white/10">
+          <div className="flex flex-col md:flex-row items-center gap-4">
+            {onSync && (
+              <SyncDataButton 
+                onSync={onSync} 
+                isLoading={profilesLoading} 
+                className="h-12 px-6 rounded-2xl bg-white/10 hover:bg-white/20 border-white/20 text-white shadow-xl"
+              />
+            )}
+            <div className="flex gap-2 bg-white/5 p-1.5 rounded-2xl backdrop-blur-sm border border-white/10">
             <button
               onClick={() => { setActiveTab("student"); setSelectedUsers([]); }}
               className={`px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${
@@ -185,6 +195,7 @@ export function AICommunicationHub({ profiles = [], loading: profilesLoading }: 
           </div>
         </div>
       </div>
+    </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
         {/* ── LEFT: RECIPIENT SELECTION ── */}

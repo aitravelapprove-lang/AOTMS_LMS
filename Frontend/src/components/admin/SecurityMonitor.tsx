@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { SyncDataButton } from './data/SyncDataButton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +26,7 @@ interface SecurityMonitorProps {
   loading: boolean;
   highPriorityCount: number;
   onResolveEvent: (eventId: string) => Promise<boolean>;
+  onSync?: () => void;
 }
 
 export function SecurityMonitor({ 
@@ -32,7 +34,8 @@ export function SecurityMonitor({
   systemLogs,
   loading,
   highPriorityCount,
-  onResolveEvent 
+  onResolveEvent,
+  onSync
 }: SecurityMonitorProps) {
   const [processing, setProcessing] = useState<string | null>(null);
 
@@ -146,8 +149,15 @@ export function SecurityMonitor({
             {highPriorityCount > 0 && (
               <Badge variant="destructive" className="gap-1">
                 <AlertTriangle className="h-3 w-3" />
-                {highPriorityCount} high priority
+                    {highPriorityCount} high priority
               </Badge>
+            )}
+            {onSync && (
+              <SyncDataButton 
+                onSync={onSync} 
+                isLoading={loading} 
+                className="h-10 px-4"
+              />
             )}
           </div>
         </CardHeader>

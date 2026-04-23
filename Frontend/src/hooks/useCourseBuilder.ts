@@ -21,6 +21,7 @@ export interface S3CourseVideo {
     description?: string;
     video_type: string;
     video_url: string;
+    drive_link?: string;
     thumbnail_url?: string;
     is_published?: boolean;
     order_index: number;
@@ -57,8 +58,8 @@ export function useCourseModules(courseId: string | null) {
         queryKey: ['course-modules', courseId],
         queryFn: async () => {
             if (!courseId) return [];
-            // Use the specific sub-resource endpoint which handles sorting on the backend
-            return fetchWithAuth<CourseModule[]>(`/courses/${courseId}/modules`);
+            // Use generic data route for course modules
+            return fetchWithAuth<CourseModule[]>(`/data/course_modules?course_id=eq.${courseId}&sort=order_index&order=asc`);
         },
         enabled: !!courseId
     });
@@ -75,14 +76,14 @@ export function useModuleVideos(moduleId: string | null, courseId?: string) {
     return useQuery<S3CourseVideo[]>({
         queryKey: ['module-videos', moduleId, courseId],
         queryFn: async () => {
-            // If we have courseId but no moduleId, fetch all videos for the course
+            // If we have courseId but no moduleId, fetch all videos for the course via generic route
             if (courseId && !moduleId) {
-                return fetchWithAuth<S3CourseVideo[]>(`/courses/${courseId}/videos`);
+                return fetchWithAuth<S3CourseVideo[]>(`/data/course_videos?course_id=eq.${courseId}&sort=order_index&order=asc`);
             }
             if (!moduleId) return [];
-            // If we have courseId and moduleId, use the dedicated sub-resource route
+            // If we have courseId and moduleId, use generic data route
             if (courseId) {
-                return fetchWithAuth<S3CourseVideo[]>(`/courses/${courseId}/videos?module_id=eq.${moduleId}`);
+                return fetchWithAuth<S3CourseVideo[]>(`/data/course_videos?course_id=eq.${courseId}&module_id=eq.${moduleId}&sort=order_index&order=asc`);
             }
             // Fallback to generic table data
             return fetchWithAuth<S3CourseVideo[]>(`/data/course_videos?module_id=eq.${moduleId}&sort=order_index&order=asc`);
@@ -143,7 +144,7 @@ export function useCreateCourseModule() {
     return useMutation({
         mutationFn: async ({ course_id, title, order_index, allowed_batches, batch_type, unlock_after_days }: Partial<CourseModule>) => {
             if (!course_id) throw new Error('Course ID is required');
-            return fetchWithAuth(`/courses/${course_id}/modules`, {
+            return fetchWithAuth(`/data/course_modules`, {
                 method: 'POST',
                 body: JSON.stringify({
                     course_id,
@@ -165,12 +166,13 @@ export function useCreateCourseVideo() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ moduleId, courseId, ...video }: { moduleId: string, courseId?: string, title: string, video_type: string, video_url: string, thumbnail_url?: string, order_index: number, allowed_batches?: string[], batch_type?: string }) => {
+        mutationFn: async ({ moduleId, courseId, ...video }: { moduleId: string, courseId?: string, title: string, video_type: string, video_url?: string, drive_link?: string, thumbnail_url?: string, order_index: number, allowed_batches?: string[], batch_type?: string }) => {
             // Prefer the course sub-resource endpoint if courseId is provided
+            // Prefer the generic data endpoint as it's more standard now
             if (courseId) {
-                return fetchWithAuth(`/courses/${courseId}/videos`, {
+                return fetchWithAuth(`/data/course_videos`, {
                     method: 'POST',
-                    body: JSON.stringify({ ...video, module_id: moduleId }),
+                    body: JSON.stringify({ ...video, course_id: courseId, module_id: moduleId }),
                 });
             }
             // Fallback for generic table data

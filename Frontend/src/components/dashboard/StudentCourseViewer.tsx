@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { API_URL } from '@/lib/api';
 
 import { VideoPlayer } from './VideoPlayer';
+import { ExternalLink } from 'lucide-react';
 
 interface StudentCourseViewerProps {
     course: StudentCourse;
@@ -79,6 +80,53 @@ export function StudentCourseViewer({ course, isEnrolled = true, onBack }: Stude
                 </div>
             </div>
         );
+
+        if (!selectedVideo.video_url && selectedVideo.drive_link) {
+            const posterUrl = selectedVideo.thumbnail_url 
+                ? (selectedVideo.thumbnail_url.startsWith('http') ? selectedVideo.thumbnail_url : `${API_URL}/s3/public/${selectedVideo.thumbnail_url}`)
+                : (course.thumbnail_url?.startsWith('http') ? course.thumbnail_url : `${API_URL}/s3/public/${course.thumbnail_url}`);
+
+            return (
+                <div className="absolute inset-0 w-full h-full bg-slate-900 flex flex-col items-center justify-center overflow-hidden">
+                    {/* Background Blur */}
+                    <img 
+                        src={posterUrl} 
+                        className="absolute inset-0 w-full h-full object-cover opacity-30 blur-2xl scale-110" 
+                        alt="" 
+                    />
+                    <div className="absolute inset-0 bg-black/60" />
+
+                    {/* Main Content (Poster + Button) */}
+                    <div className="relative z-10 flex flex-col items-center w-full max-w-2xl px-6 animate-in fade-in zoom-in duration-500">
+                        {/* Poster Frame */}
+                        <div className="relative w-full aspect-video rounded-[2rem] overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.7)] border border-white/10 ring-4 ring-white/5 mb-8">
+                            <img 
+                                src={posterUrl} 
+                                className="w-full h-full object-cover" 
+                                alt={selectedVideo.title} 
+                            />
+                            {/* Overlay with info */}
+                            <div className="absolute inset-x-0 bottom-0 p-8 bg-gradient-to-t from-black/90 via-black/40 to-transparent pt-20">
+                                <h3 className="text-2xl font-black text-white mb-2 tracking-tight">{selectedVideo.title}</h3>
+                                <p className="text-white/60 text-[10px] font-black uppercase tracking-widest">External Resource Access</p>
+                            </div>
+                        </div>
+
+                        {/* Action Button */}
+                        <Button 
+                            className="h-16 px-10 rounded-2xl bg-white text-slate-900 hover:bg-slate-100 font-black tracking-widest uppercase transition-all shadow-2xl active:scale-95 flex items-center gap-4"
+                            onClick={() => window.open(selectedVideo.drive_link, '_blank')}
+                        >
+                             View in Google Drive 
+                             <div className="h-8 w-8 rounded-xl bg-slate-900 flex items-center justify-center">
+                                <ExternalLink className="h-4 w-4 text-white" />
+                             </div>
+                        </Button>
+                        <p className="mt-4 text-white/40 text-[10px] font-bold uppercase tracking-[0.2em] animate-pulse">Click to open external resource</p>
+                    </div>
+                </div>
+            );
+        }
 
         let videoUrlKey = selectedVideo.video_url;
 
@@ -598,7 +646,11 @@ function ModuleVideoList({ module, selectedVideoId, onSelectVideo, isEnrolled, d
                                     ) : !canAccess ? (
                                         <Lock className="h-5 w-5 text-muted-foreground/40" />
                                     ) : (
-                                        <Video className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                        (!vid.video_url && vid.drive_link) ? (
+                                            <ExternalLink className="h-5 w-5 text-indigo-400 group-hover:text-indigo-500 transition-colors" />
+                                        ) : (
+                                            <Video className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                        )
                                     )}
                                 </div>
                                 <div className="flex flex-col gap-1.5 flex-1 overflow-hidden">

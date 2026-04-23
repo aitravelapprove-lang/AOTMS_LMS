@@ -59,8 +59,10 @@ import {
   CreditCard,
   ImageOff,
   Zap,
-  ShieldCheck
+  ShieldCheck,
+  RefreshCw
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
@@ -74,6 +76,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { Profile } from "@/hooks/useAdminData";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { SyncDataButton } from "./data/SyncDataButton";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -129,18 +132,21 @@ interface UserManagementProps {
   onSendEmail: (userId: string) => Promise<boolean>;
   onUpdateEnrollmentStatus?: (id: string, status: "rejected" | "active") => Promise<void>;
   onResetATS?: (userId: string) => Promise<void>;
+  onSync?: () => void;
 }
 
 export function UserManagement({
-  users,
+  users = [],
   loading,
-  roleCounts,
+  roleCounts = {},
   onUpdateStatus,
   onUpdateRole,
   onSendEmail,
   onUpdateEnrollmentStatus,
   onResetATS,
+  onSync,
 }: UserManagementProps) {
+
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
@@ -450,6 +456,17 @@ export function UserManagement({
                   <SelectItem value="student" className="text-xs font-bold py-2">STUDENTS</SelectItem>
                 </SelectContent>
               </Select>
+
+              {onSync && (
+                <div className="flex items-center gap-2">
+                  <div className="h-6 w-[1px] bg-slate-200 mx-1 hidden sm:block" />
+                  <SyncDataButton 
+                    onSync={onSync}
+                    isLoading={loading}
+                    className="h-10 px-4 border-slate-200 bg-white/70 shadow-sm"
+                  />
+                </div>
+              )}
             </div>
           </div>
         </CardHeader>

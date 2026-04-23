@@ -42,6 +42,9 @@ const EnrollmentSchema = new Schema({
     payment_term: { type: String, default: 'full' }, // full, term1, term2
     remaining_balance: { type: Number, default: 0 },
     requested_batch_type: { type: String, enum: ['morning', 'afternoon', 'evening'], default: 'morning' },
+    requested_batch_id: { type: Schema.Types.ObjectId, ref: 'Batch' },
+    requested_time_slot: { type: String },
+
     category: { type: String, default: 'remove' }, // approve, remove
     payment: [
         {
@@ -86,6 +89,7 @@ const ModuleSchema = new Schema({
     allowed_batches: [{ type: Schema.Types.Mixed, ref: 'Batch' }],
     batch_type: { type: String }, // e.g., 'morning', 'afternoon', 'evening'
     unlock_after_days: { type: Number, default: 1 }, // Drip content
+    instructor_id: { type: Schema.Types.ObjectId, ref: 'User' },
     created_at: { type: Date, default: Date.now }
 });
 ModuleSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
@@ -94,7 +98,8 @@ const VideoSchema = new Schema({
     course_id: { type: Schema.Types.ObjectId, ref: 'Course', required: true },
     module_id: { type: Schema.Types.ObjectId, ref: 'Module' },
     title: { type: String, required: true },
-    video_url: { type: String, required: true }, // S3 or YouTube
+    video_url: { type: String }, // Optional depending if they use drive_link instead
+    drive_link: { type: String }, // Google Drive link option
     thumbnail_url: { type: String },
     duration: { type: Number }, // seconds
     duration_minutes: { type: Number },
@@ -104,6 +109,7 @@ const VideoSchema = new Schema({
     allowed_batches: [{ type: Schema.Types.Mixed, ref: 'Batch' }],
     batch_type: { type: String }, // e.g., 'morning', 'afternoon', 'evening'
     unlock_after_days: { type: Number, default: 1 }, // Optional video-level drip
+    instructor_id: { type: Schema.Types.ObjectId, ref: 'User' },
     created_at: { type: Date, default: Date.now }
 });
 VideoSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
@@ -115,6 +121,7 @@ const AnnouncementSchema = new Schema({
     is_pinned: { type: Boolean, default: false },
     // Batch access control: empty = visible to all enrolled students
     allowed_batches: [{ type: Schema.Types.Mixed, ref: 'Batch' }],
+    instructor_id: { type: Schema.Types.ObjectId, ref: 'User' },
     created_at: { type: Date, default: Date.now },
     updated_at: { type: Date }
 });
@@ -126,8 +133,8 @@ const TimelineSchema = new Schema({
     description: { type: String },
     scheduled_date: { type: Date, required: true },
     type: { type: String, default: 'lecture' }, // lecture, assignment, quiz, exam
-    // Batch access control: empty = visible to all enrolled students
     allowed_batches: [{ type: Schema.Types.Mixed, ref: 'Batch' }],
+    instructor_id: { type: Schema.Types.ObjectId, ref: 'User' },
     created_at: { type: Date, default: Date.now }
 });
 TimelineSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
@@ -142,8 +149,8 @@ const ResourceSchema = new Schema({
     instructor_avatar_url: { type: String },
     short_description: { type: String },
     category: { type: String },
-    // Batch access control: empty = visible to all enrolled students
     allowed_batches: [{ type: Schema.Types.Mixed, ref: 'Batch' }],
+    instructor_id: { type: Schema.Types.ObjectId, ref: 'User' },
     created_at: { type: Date, default: Date.now }
 });
 ResourceSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });

@@ -173,7 +173,7 @@ export function useCourses() {
     }
   }, [categories.length]);
 
-  const enrollCourse = useCallback(async (courseId: string, courseName: string, price: string, payment_proof_url?: string) => {
+  const enrollCourse = useCallback(async (courseId: string, courseName: string, price: string, payment_proof_url?: string, batchId?: string, timeSlot?: string) => {
     // Backend now handles Firebase/Firestore enrollment
     const insertRes = await fetchWithAuth(
       `/courses/enroll`,
@@ -183,7 +183,9 @@ export function useCourses() {
           course_id: courseId,
           course_name: courseName,
           price,
-          payment_proof_url
+          payment_proof_url,
+          requested_batch_id: batchId,
+          requested_time_slot: timeSlot
         })
       }
     );
@@ -240,13 +242,16 @@ export function useCourses() {
     }
   }, []);
 
-  const chooseCourse = useCallback(async (courseId: string) => {
+  const chooseCourse = useCallback(async (courseId: string, session?: string, startTime?: string, endTime?: string) => {
     const res = await fetchWithAuth(
       `/instructor/choose-course`,
       {
         method: 'POST',
         body: JSON.stringify({
-          courseId: courseId
+          courseId: courseId,
+          dealing_session: session,
+          start_time: startTime,
+          end_time: endTime
         })
       }
     );

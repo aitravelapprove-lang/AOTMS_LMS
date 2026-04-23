@@ -6,7 +6,6 @@ import {
     Calendar,
     Clock,
     Plus,
-    Play,
     X,
     AlertCircle,
     VideoOff,
@@ -15,9 +14,12 @@ import {
     ImagePlus,
     CheckCircle2,
     ChevronRight,
-    Search,
+    Sun,
+    Cloud,
+    Moon,
     Key
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -30,7 +32,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { useInstructorLiveClasses, useCreateLiveClass, useDeleteLiveClass, useInstructorCourses, useBatchStudents, Course, LiveClass, uploadLivePoster } from '@/hooks/useInstructorData';
+import { useInstructorLiveClasses, useCreateLiveClass, useDeleteLiveClass, useInstructorCourses, useBatchStudents, useCourseBatches, Course, LiveClass, uploadLivePoster, StudentRosterEntry } from '@/hooks/useInstructorData';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
@@ -53,9 +55,12 @@ export function LiveClassManager() {
         targetBatch: 'all'
     });
 
+    const { data: courseBatches = [], isLoading: isLoadingBatches } = useCourseBatches(formData.courseId);
+
     const { data: batchStudents = [], isLoading: isLoadingStudents } = useBatchStudents(
         formData.courseId, 
-        formData.targetBatch
+        formData.targetBatch === 'all' ? 'all' : (courseBatches.find(b => b.id === formData.targetBatch)?.batch_type || 'any'),
+        formData.targetBatch === 'all' ? null : formData.targetBatch
     );
 
     const [posterFile, setPosterFile] = useState<File | null>(null);
@@ -125,9 +130,13 @@ export function LiveClassManager() {
         }
 
         try {
+            const selectedCourse = (courses as Course[]).find(c => c.id === formData.courseId);
+            const batchId = selectedCourse?.assigned_batch_id;
+
             await createMeeting.mutateAsync({
                 ...formData,
-                target_batch: formData.targetBatch,
+                target_batch: formData.targetBatch === 'all' ? 'all' : (courseBatches.find(b => b.id === formData.targetBatch)?.batch_type || 'all'),
+                batchId: formData.targetBatch === 'all' ? null : formData.targetBatch,
                 poster_url: finalPosterUrl
             });
             setIsAdding(false);
@@ -397,105 +406,90 @@ export function LiveClassManager() {
                                     </div>
                                 </div>
 
-                                {/* Target Selection: Course + Batch */}
-                                <div className="grid grid-cols-2 gap-4">
+                                {/* Target Selection: Course + Batch Cards */}
+                                <div className="space-y-4">
                                     <div className="space-y-1.5">
-                                        <label className="text-[11px] font-bold uppercase tracking-widest text-[#0075CF]">Select Course</label>
+                                        <label className="text-[11px] font-bold uppercase tracking-widest text-[#0075CF]">Select Target Course</label>
                                         <select
                                             title="Target Course"
                                             required
                                             value={formData.courseId}
                                             onChange={e => {
                                                 const courseId = e.target.value;
-                                                const selectedCourse = (courses as Course[]).find(c => c.id === courseId);
-                                                const assignedSession = selectedCourse?.assigned_session;
                                                 setFormData({ 
                                                     ...formData, 
                                                     courseId, 
-                                                    targetBatch: (assignedSession && assignedSession !== 'all') ? assignedSession : 'all' 
+                                                    targetBatch: 'all' 
                                                 });
                                             }}
                                             className="w-full h-11 px-4 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all appearance-none"
                                         >
-                                            <option value="">Select at least one course</option>
+                                            <option value="">Choose a course...</option>
                                             {(courses as Course[]).map((course: Course) => (
                                                 <option key={course.id} value={course.id}>{course.title}</option>
                                             ))}
                                         </select>
                                     </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[11px] font-bold uppercase tracking-widest text-[#0075CF]">Select Batch</label>
-                                        <select
-                                            title="Target Batch"
-                                            value={formData.targetBatch}
-                                            disabled={!formData.courseId}
-                                            onChange={e => setFormData({ ...formData, targetBatch: e.target.value })}
-                                            className="w-full h-11 px-4 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all appearance-none disabled:bg-slate-50 disabled:text-slate-400"
-                                        >
-                                            {(() => {
-                                                const selectedCourse = (courses as Course[]).find(c => c.id === formData.courseId);
-                                                const assignedSession = selectedCourse?.assigned_session;
-                                                
-                                                if (assignedSession && assignedSession !== 'all') {
-                                                    // If instructor is restricted to a specific batch, ONLY show that one
-                                                    return (
-                                                        <option value={assignedSession}>
-                                                            {assignedSession.charAt(0).toUpperCase() + assignedSession.slice(1)} Only
-                                                        </option>
-                                                    );
-                                                }
-                                                
-                                                // Otherwise show all options (Global/All + individual)
-                                                return (
-                                                    <>
-                                                        <option value="all">All Batches</option>
-                                                        <option value="morning">Morning</option>
-                                                        <option value="afternoon">Afternoon</option>
-                                                        <option value="evening">Evening</option>
-                                                    </>
-                                                );
-                                            })()}
-                                        </select>
-                                    </div>
-                                </div>
 
-                                {/* Student Visibility Preview */}
-                                {formData.courseId && (
-                                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <h4 className="text-xs font-bold text-slate-600 uppercase flex items-center gap-2">
-                                                <Users className="w-3.5 h-3.5" />
-                                                {formData.targetBatch === 'all' ? 'Full Course Roster' : 'Verified Batch Students'} ({batchStudents.length})
-                                            </h4>
-                                            {isLoadingStudents && <div className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />}
-                                        </div>
-                                        
-                                        {batchStudents.length > 0 ? (
-                                            <div className="flex flex-wrap gap-2 max-h-[100px] overflow-y-auto pr-2 custom-scrollbar">
-                                                {batchStudents.map(student => (
-                                                    <div 
-                                                        key={student.id} 
-                                                        className="flex items-center gap-2 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-sm animate-in fade-in slide-in-from-left-2"
-                                                    >
-                                                        {student.avatar_url ? (
-                                                            <img src={student.avatar_url} className="w-4 h-4 rounded-full object-cover" alt="" />
-                                                        ) : (
-                                                            <div className="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center text-[8px] font-bold text-primary italic">
-                                                                {student.full_name?.charAt(0)}
-                                                            </div>
+                                    {formData.courseId && (
+                                        <div className="space-y-2.5">
+                                            <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Select Target Batch</label>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFormData({ ...formData, targetBatch: 'all' })}
+                                                    className={cn(
+                                                        "flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all gap-1.5",
+                                                        formData.targetBatch === 'all' 
+                                                            ? "bg-primary/5 border-primary shadow-sm" 
+                                                            : "bg-white border-slate-100 hover:border-slate-200"
+                                                    )}
+                                                >
+                                                    <Users className={cn("w-5 h-5", formData.targetBatch === 'all' ? "text-primary" : "text-slate-400")} />
+                                                    <span className={cn("text-[10px] font-black uppercase tracking-widest", formData.targetBatch === 'all' ? "text-primary" : "text-slate-600")}>All Students</span>
+                                                </button>
+
+                                                {courseBatches.map(batch => (
+                                                    <button
+                                                        key={batch.id}
+                                                        type="button"
+                                                        onClick={() => setFormData({ ...formData, targetBatch: batch.id })}
+                                                        className={cn(
+                                                            "flex flex-col items-start p-3 rounded-xl border-2 transition-all gap-1 group relative overflow-hidden",
+                                                            formData.targetBatch === batch.id 
+                                                                ? "bg-primary/5 border-primary shadow-sm" 
+                                                                : "bg-white border-slate-100 hover:border-slate-200"
                                                         )}
-                                                        <span className="text-[10px] font-medium text-slate-600 truncate max-w-[80px]">
-                                                            {student.full_name}
+                                                    >
+                                                        <div className={cn(
+                                                            "mb-1 px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tighter",
+                                                            batch.batch_type === 'morning' ? "bg-amber-100 text-amber-700" :
+                                                            batch.batch_type === 'afternoon' ? "bg-blue-100 text-blue-700" :
+                                                            "bg-indigo-100 text-indigo-700"
+                                                        )}>
+                                                            {batch.batch_type}
+                                                        </div>
+                                                        <span className={cn("text-[11px] font-bold truncate w-full text-left", formData.targetBatch === batch.id ? "text-primary" : "text-slate-700")}>
+                                                            {batch.batch_name}
                                                         </span>
-                                                    </div>
+                                                        <div className="absolute top-2 right-2">
+                                                            {formData.targetBatch === batch.id && <CheckCircle2 className="w-3.5 h-3.5 text-primary" />}
+                                                        </div>
+                                                    </button>
                                                 ))}
                                             </div>
-                                        ) : (
-                                            <p className="text-[10px] text-slate-400 italic">
-                                                {isLoadingStudents ? 'Scanning batch roster...' : 'No students found in this batch yet.'}
-                                            </p>
-                                        )}
-                                    </div>
+                                            {isLoadingBatches && <p className="text-[10px] text-slate-400 italic font-medium animate-pulse">Loading available batches...</p>}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Student Visibility Preview — Batch-Wise */}
+                                {formData.courseId && (
+                                    <BatchStudentPreview
+                                        batchStudents={batchStudents}
+                                        isLoadingStudents={isLoadingStudents}
+                                        targetBatch={formData.targetBatch}
+                                    />
                                 )}
 
                                 {/* Agenda */}
@@ -603,3 +597,87 @@ export function LiveClassManager() {
         </div>
     );
 }
+
+// ─── Sub-Components ─────────────────────────────────────────────────────────
+
+function BatchStudentPreview({ batchStudents, isLoadingStudents, targetBatch }: { 
+    batchStudents: StudentRosterEntry[], 
+    isLoadingStudents: boolean, 
+    targetBatch: string 
+}) {
+    return (
+        <div className="bg-slate-50/50 backdrop-blur-sm rounded-xl p-5 border border-slate-200/60 shadow-inner">
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col">
+                    <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.15em] flex items-center gap-2">
+                        <Users className="w-3.5 h-3.5 text-primary/60" />
+                        Target Audience
+                    </h4>
+                    <p className="text-sm font-bold text-slate-700 mt-0.5">
+                        {targetBatch === 'all' 
+                            ? 'Broadcasting to All Students' 
+                            : `Filtered: ${targetBatch.charAt(0).toUpperCase() + targetBatch.slice(1)} Session`}
+                    </p>
+                </div>
+                {isLoadingStudents && (
+                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                )}
+            </div>
+            
+            <div className="bg-white rounded-lg border border-slate-100 p-3 shadow-sm">
+                <div className="flex items-center gap-2 mb-3">
+                    <div className={cn(
+                        "p-1.5 rounded-lg",
+                        targetBatch === 'morning' ? "bg-amber-50 text-amber-600" :
+                        targetBatch === 'afternoon' ? "bg-blue-50 text-blue-600" :
+                        targetBatch === 'evening' ? "bg-indigo-50 text-indigo-600" :
+                        "bg-slate-100 text-slate-600"
+                    )}>
+                        {targetBatch === 'morning' ? <Sun className="w-3.5 h-3.5" /> : 
+                         targetBatch === 'afternoon' ? <Cloud className="w-3.5 h-3.5" /> :
+                         targetBatch === 'evening' ? <Moon className="w-3.5 h-3.5" /> :
+                         <Users className="w-3.5 h-3.5" />}
+                    </div>
+                    <span className="text-xs font-bold text-slate-600">
+                        {batchStudents.length} Students {targetBatch !== 'all' && 'in this session'}
+                    </span>
+                </div>
+
+                {batchStudents.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[120px] overflow-y-auto pr-2 custom-scrollbar">
+                        {batchStudents.map(student => (
+                            <div 
+                                key={student.id} 
+                                className="flex items-center gap-2 bg-slate-50/80 px-2 py-1.5 rounded-md border border-slate-100 transition-all hover:border-primary/20 hover:bg-white"
+                            >
+                                {student.avatar_url ? (
+                                    <img src={student.avatar_url} className="w-5 h-5 rounded-full object-cover ring-1 ring-slate-100" alt="" />
+                                ) : (
+                                    <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-black text-primary">
+                                        {student.full_name?.charAt(0)}
+                                    </div>
+                                )}
+                                <span className="text-[10px] font-bold text-slate-600 truncate">
+                                    {student.full_name?.split(' ')[0]}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="py-4 text-center border-2 border-dashed border-slate-50 rounded-lg">
+                        <Users className="w-6 h-6 text-slate-200 mx-auto mb-2" />
+                        <p className="text-[10px] text-slate-400 font-medium italic">
+                            {isLoadingStudents ? 'Scanning batch roster...' : 'No students identified for this session yet.'}
+                        </p>
+                    </div>
+                )}
+            </div>
+            
+            <div className="mt-3 flex items-center gap-2 text-[9px] text-slate-400 font-bold uppercase tracking-widest pl-1">
+                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                Only authorized students can join
+            </div>
+        </div>
+    );
+}
+

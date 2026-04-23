@@ -51,6 +51,7 @@ const LiveClassSchema = new Schema({
     duration_minutes: { type: Number, default: 60 },
     poster_url: { type: String },
     target_batch: { type: String, enum: ['all', 'morning', 'afternoon', 'evening'], default: 'all' },
+    batch_id: { type: Schema.Types.ObjectId, ref: 'Batch' },
     status: { type: String, default: 'scheduled' }, // scheduled, live, ended
     created_at: { type: Date, default: Date.now }
 });

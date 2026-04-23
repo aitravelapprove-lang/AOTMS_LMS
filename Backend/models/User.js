@@ -87,42 +87,11 @@ const VerifiedEmailSchema = new mongoose.Schema({
     verified_at: { type: Date }
 });
 
-const InstructorApplicationSchema = new mongoose.Schema({
-    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    full_name: { type: String },
-    email: { type: String },
-    area_of_expertise: { type: String },
-    custom_expertise: { type: String },
-    experience: { type: String },
-    resume_url: { type: String },
-    status: { type: String, default: 'pending' },
-    created_at: { type: Date, default: Date.now }
-});
-InstructorApplicationSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret.user_id; delete ret._id; } });
-
-const GuestCredentialSchema = new mongoose.Schema({
-    username: { type: String, required: true, unique: true },
-    password_hash: { type: String, required: true },
-    display_name: { type: String },
-    email: { type: String },
-    access_level: { type: String, default: 'guest' },
-    allowed_courses: [{ type: String }],
-    expires_at: { type: Date, required: true },
-    max_sessions: { type: Number, default: 1 },
-    is_active: { type: Boolean, default: true },
-    last_login_at: { type: Date },
-    created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    created_at: { type: Date, default: Date.now, index: true }
-});
-GuestCredentialSchema.set('toJSON', { virtuals: true, versionKey: false, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; } });
-
 module.exports = {
     User: mongoose.model('User', UserSchema),
     Profile: mongoose.model('Profile', ProfileSchema, 'profiles'),
     UserRole: mongoose.model('UserRole', UserRoleSchema, 'user_roles'),
     OTP: mongoose.model('OTP', OTPSchema),
     VerifiedEmail: mongoose.model('VerifiedEmail', VerifiedEmailSchema),
-    InstructorApplication: mongoose.model('InstructorApplication', InstructorApplicationSchema),
-    GuestCredential: mongoose.model('GuestCredential', GuestCredentialSchema),
     ResumeScan: mongoose.model('ResumeScan', ResumeScanSchema, 'resumescans')
 };

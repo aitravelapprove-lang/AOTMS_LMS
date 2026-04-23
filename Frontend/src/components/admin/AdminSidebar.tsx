@@ -61,7 +61,6 @@ const navGroups = [
     label: "Platform Performance",
     items: [
       { title: "Student Performance", url: "/admin/student-performance", icon: TrendingUp },
-      { title: "Exam Grading", url: "/admin/grading", icon: ClipboardList },
       { title: "Leaderboard", url: "/admin/leaderboard", icon: Trophy },
       { title: "Rewards & Coupons", url: "/admin/coupons", icon: Ticket },
       { title: "Resume Scans", url: "/admin/resume-scans", icon: ClipboardList },

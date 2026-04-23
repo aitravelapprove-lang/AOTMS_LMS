@@ -41,7 +41,10 @@ import {
   UserPlus,
   ArrowRight,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  Sun,
+  CloudSun,
+  Moon
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -66,10 +69,11 @@ interface Batch {
   id: string;
   _id?: string;
   batch_name: string;
-  batch_type: 'morning' | 'afternoon' | 'evening' | 'all';
-  start_time?: string;
-  end_time?: string;
+  batch_type: 'morning' | 'afternoon' | 'evening';
+  start_time: string;
+  end_time: string;
   max_students: number;
+
   student_count: number;
   created_at: string;
   batches?: Batch[];
@@ -97,6 +101,7 @@ interface GroupedRoster {
   afternoon: RosterStudent[];
   evening: RosterStudent[];
   unassigned: RosterStudent[];
+  byBatch: Record<string, RosterStudent[]>;
 }
 
 interface BatchRequest {
@@ -123,7 +128,7 @@ interface BatchRequest {
 interface BatchManagerProps {
   courseId: string;
   courseTitle: string;
-  assignedSession?: 'morning' | 'afternoon' | 'evening' | 'all';
+  assignedSession?: 'morning' | 'afternoon' | 'evening';
 }
 
 // ─── Draggable Student Card ─────────────────────────────────────────────────
@@ -231,7 +236,8 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
   const [requests, setRequests] = useState<BatchRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'batches' | 'roster' | 'requests'>('batches');
-  const [rosterFilter, setRosterFilter] = useState<'all' | 'morning' | 'afternoon' | 'evening' | 'unassigned'>('all');
+  const [rosterFilter, setRosterFilter] = useState<'morning' | 'afternoon' | 'evening' | 'unassigned'>('morning');
+  const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const { toast } = useToast();
   
   // Dnd-kit sensors
@@ -248,18 +254,18 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
 
   const [activeStudent, setActiveStudent] = useState<RosterStudent | null>(null);
 
-  const isRestricted = useMemo(() => {
-    return batches.some(b => b.batch_category === 'remove');
-  }, [batches]);
 
   // Create/Edit Batch State
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
   const [newBatch, setNewBatch] = useState({
     batch_name: "",
-    batch_type: "morning" as 'morning' | 'afternoon' | 'evening' | 'all',
-    max_students: 30
+    batch_type: "morning" as 'morning' | 'afternoon' | 'evening',
+    max_students: 30,
+    start_time: "09:00",
+    end_time: "11:00"
   });
+
 
   const handleUpdateBatch = async () => {
     if (!editingBatch) return;
@@ -322,8 +328,11 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
       setNewBatch({
         batch_name: "",
         batch_type: "morning",
-        max_students: 30
+        max_students: 30,
+        start_time: "09:00",
+        end_time: "11:00"
       });
+
       loadBatches();
     } catch (e: unknown) {
       const error = e as Error;
@@ -364,43 +373,52 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
     if (!over) return;
 
     const studentId = active.id as string;
-    const targetBatchType = over.id as 'morning' | 'afternoon' | 'evening' | 'unassigned';
-    
-    // Find if the student is already in a batch of this type
+    const overId = over.id as string;
     const student = active.data.current as RosterStudent;
-    
-    // Check session or type mismatch
-    const currentSession = student.batch?.session || student.batch?.type;
-    if (currentSession === targetBatchType) return;
 
-    if (targetBatchType === 'unassigned') {
+    // 1. Handle Unassignment
+    if (overId === 'unassigned') {
       if (student.batch) {
         handleRemoveStudent(studentId, student.batch.id);
       }
       return;
     }
 
-    // Assign to a batch of the target type
-    // Look for direct session batches OR container batches that hold this session
-    const possibleBatches = batches.filter(b => 
-        b.batch_type === targetBatchType || 
-        (b.batch_type === 'all' && b.batches?.some(sub => sub.batch_type === targetBatchType))
-    );
+    // 2. Check if dropped on a specific batch (Batch-wise view)
+    const targetBatch = batches.find(b => b.id === overId);
     
-    if (possibleBatches.length === 0) {
-      toast({ 
-        title: "No Batches", 
-        description: `Create a ${targetBatchType} section first.`,
-        variant: "destructive"
-      });
+    if (targetBatch) {
+      // If student is already in this exact batch, do nothing
+      if (student.batch?.id === overId) return;
+
+      // Assign to this specific batch
+      // If it's a sub-batch, we need the actual sub-batch ID if available
+      handleAssignStudent(overId, studentId, targetBatch.batch_type);
       return;
     }
 
-    if (possibleBatches.length === 1) {
-      handleAssignStudent(possibleBatches[0].id, studentId, targetBatchType);
-    } else {
-      // Multiple batches of this type, open modal to choose
-      setAssignmentModal({ student, isOpen: true });
+    // 3. Fallback: Check if dropped on a session category (for legacy support if any)
+    const targetBatchType = overId as 'morning' | 'afternoon' | 'evening';
+    if (['morning', 'afternoon', 'evening'].includes(targetBatchType)) {
+      const currentSession = student.batch?.session || student.batch?.type;
+      if (currentSession === targetBatchType) return;
+
+      const possibleBatches = batches.filter(b => b.batch_type === targetBatchType);
+      
+      if (possibleBatches.length === 0) {
+        toast({ 
+          title: "No Batches", 
+          description: `Create a ${targetBatchType} section first.`,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (possibleBatches.length === 1) {
+        handleAssignStudent(possibleBatches[0].id, studentId, targetBatchType);
+      } else {
+        setAssignmentModal({ student, isOpen: true });
+      }
     }
   };
 
@@ -439,15 +457,29 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
     }
   };
 
-  const getSessionTime = (type: string) => {
-    switch(type) {
-      case 'morning': return "08:00 AM — 12:00 PM";
-      case 'afternoon': return "01:00 PM — 05:00 PM";
-      case 'evening': return "06:00 PM — 09:00 PM";
-      case 'all': return "08:00 AM — 09:00 PM";
-      default: return "";
+  const formatTime = (timeStr: string) => {
+    if (!timeStr) return "";
+    // If already formatted or special string, return as is
+    if (timeStr.includes('AM') || timeStr.includes('PM')) return timeStr;
+    
+    try {
+      const [hours, minutes] = timeStr.split(':');
+      const h = parseInt(hours);
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const h12 = h % 12 || 12;
+      return `${h12.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+    } catch (e) {
+      return timeStr;
     }
   };
+
+  const getSessionTime = (batch: Batch) => {
+    if (batch.start_time && batch.end_time) {
+      return `${formatTime(batch.start_time)} — ${formatTime(batch.end_time)}`;
+    }
+    return "Custom Schedule";
+  };
+
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', {
@@ -481,15 +513,13 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
               >
                 Batch Cards
               </Button>
-              {!isRestricted && (
-                <Button 
-                  variant={viewMode === 'roster' ? 'default' : 'ghost'}
-                  onClick={() => setViewMode('roster')}
-                  className={`rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest transition-all ${viewMode === 'roster' ? 'bg-white text-primary shadow-sm' : 'text-slate-400'}`}
-                >
-                  Full Roster
-                </Button>
-              )}
+              <Button 
+                variant={viewMode === 'roster' ? 'default' : 'ghost'}
+                onClick={() => setViewMode('roster')}
+                className={`rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest transition-all ${viewMode === 'roster' ? 'bg-white text-primary shadow-sm' : 'text-slate-400'}`}
+              >
+                Full Roster
+              </Button>
               <Button 
                 variant={viewMode === 'requests' ? 'default' : 'ghost'}
                 onClick={() => setViewMode('requests')}
@@ -505,15 +535,13 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
             </div>
           </div>
 
-          {!isRestricted && (
-            <Button 
-              onClick={() => setShowCreateModal(true)}
-              className="rounded-xl h-11 px-6 bg-primary text-white hover:bg-primary/90 font-black text-[10px] uppercase tracking-widest flex items-center gap-2 shadow-xl shadow-primary/20"
-            >
-              <Plus className="h-4 w-4" />
-              Create Batch
-            </Button>
-          )}
+          <Button 
+            onClick={() => setShowCreateModal(true)}
+            className="rounded-xl h-11 px-6 bg-primary text-white hover:bg-primary/90 font-black text-[10px] uppercase tracking-widest flex items-center gap-2 shadow-xl shadow-primary/20"
+          >
+            <Plus className="h-4 w-4" />
+            Create Batch
+          </Button>
         </div>
       </div>
 
@@ -525,31 +553,8 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
         </div>
       ) : viewMode === 'batches' ? (
         (() => {
-          const processedBatches: Batch[] = [];
-          
-          batches.forEach(b => {
-            // Include all active batches, even if batch_category is 'remove' (standalone batches)
-            if (b.batch_type === 'all' && b.batches && b.batches.length > 0) {
-              // Flatten: show sub-batches instead of the container 'all' batch
-              b.batches.forEach(sub => {
-                processedBatches.push({
-                  ...sub,
-                  parent_batch_id: b.id,
-                  // Combine parent name with sub-batch type for clarity if needed
-                  batch_name: `${b.batch_name} (${sub.batch_type.charAt(0).toUpperCase() + sub.batch_type.slice(1)})`,
-                  original: sub // keep reference to sub
-                } as Batch);
-              });
-            } else {
-              // Standard specific batch type (morning/afternoon/evening) or 'all' without sub-entries
-              processedBatches.push(b);
-            }
-          });
-
-          // Apply session filter if active
-          const filteredBatches = (assignedSession && assignedSession !== 'all')
-            ? processedBatches.filter(b => b.batch_type === assignedSession)
-            : processedBatches;
+          // Show all batches regardless of assigned session so newly created batches are visible
+          const filteredBatches = batches;
 
           if (filteredBatches.length === 0) {
             return (
@@ -560,20 +565,20 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
                 </div>
                 <h3 className="text-2xl font-black text-slate-900 tracking-tight">Zero Active Batches</h3>
                 <p className="text-slate-500 max-w-sm mt-4 text-sm font-medium leading-relaxed">
-                  {(assignedSession || 'all') !== 'all' 
+                  {assignedSession 
                     ? `You don't have any dealing batches for the ${assignedSession} session yet.`
                     : "Enable strict time-gating by creating your first training batch. Students will automatically split as they enroll."
                   }
                 </p>
                 <Button 
                    onClick={() => {
-                     setNewBatch(prev => ({ ...prev, batch_type: (assignedSession === 'all' || !assignedSession) ? 'morning' : (assignedSession as 'morning' | 'afternoon' | 'evening') }));
+                     setNewBatch(prev => ({ ...prev, batch_type: !assignedSession ? 'morning' : (assignedSession as 'morning' | 'afternoon' | 'evening') }));
                      setShowCreateModal(true);
                    }} 
                    variant="default" 
                    className="mt-10 rounded-2xl h-14 px-10 bg-primary text-white font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/30"
                 >
-                  Initialize {(assignedSession && assignedSession !== 'all') ? assignedSession : 'First'} Batch
+                  Initialize {assignedSession ? assignedSession : 'First'} Batch
                 </Button>
               </div>
             );
@@ -619,7 +624,9 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
                                       setNewBatch({
                                         batch_name: batch.batch_name,
                                         batch_type: batch.batch_type,
-                                        max_students: batch.max_students
+                                        max_students: batch.max_students,
+                                        start_time: batch.start_time || "09:00",
+                                        end_time: batch.end_time || "11:00"
                                       });
                                       setShowCreateModal(true);
                                    }}
@@ -643,7 +650,7 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
                               <div className="h-6 w-6 rounded-lg bg-slate-100 flex items-center justify-center">
                                  <Clock className="h-3.5 w-3.5" />
                               </div>
-                              {getSessionTime(batch.batch_type)}
+                              {getSessionTime(batch)}
                             </div>
 
                             <div className="space-y-4">
@@ -682,7 +689,8 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
                              <Button 
                                variant="ghost" 
                                onClick={() => {
-                                 setRosterFilter(batch.batch_type);
+                                 setRosterFilter(batch.batch_type as typeof rosterFilter);
+                                 setSelectedBatchId(batch.id);
                                  setViewMode('roster');
                                }}
                                className="h-auto p-0 text-primary font-black text-[10px] uppercase tracking-[0.15em] hover:bg-transparent hover:translate-x-1 transition-all"
@@ -695,6 +703,30 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
                     </motion.div>
                     );
                 })}
+                
+                {/* LOCALIZED CREATE BUTTON CARD */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: filteredBatches.length * 0.05 }}
+                >
+                  <Card 
+                    onClick={() => {
+                      setNewBatch(prev => ({ 
+                        ...prev, 
+                        batch_type: !assignedSession ? 'morning' : (assignedSession as 'morning' | 'afternoon' | 'evening') 
+                      }));
+                      setShowCreateModal(true);
+                    }}
+                    className="rounded-[3rem] border-4 border-dashed border-slate-100 h-full min-h-[300px] flex flex-col items-center justify-center p-8 cursor-pointer hover:border-primary/20 hover:bg-primary/5 transition-all duration-500 group bg-white/30 backdrop-blur-sm shadow-sm"
+                  >
+                    <div className="h-16 w-16 rounded-[1.5rem] bg-slate-50 flex items-center justify-center mb-6 group-hover:bg-primary group-hover:text-white transition-all duration-500 group-hover:rotate-12 shadow-inner">
+                      <Plus className="h-8 w-8 text-slate-400 group-hover:text-white" />
+                    </div>
+                    <h3 className="text-lg font-black text-slate-900 tracking-tight group-hover:text-primary transition-colors">Create New Batch</h3>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-2 italic">Add Session Node</p>
+                  </Card>
+                </motion.div>
               </AnimatePresence>
             </div>
           );
@@ -784,16 +816,14 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
             <div className="flex flex-wrap items-center justify-between gap-4 pb-4">
               <div className="flex flex-wrap items-center gap-2">
                 {[
-                  { id: 'all', label: 'All Students', icon: Users },
-                  { id: 'morning', label: 'Morning Session', icon: Clock },
-                  { id: 'afternoon', label: 'Afternoon Session', icon: Clock },
-                  { id: 'evening', label: 'Evening Session', icon: Clock },
-                  { id: 'unassigned', label: 'Unassigned', icon: X }
+                  { id: 'morning', label: 'Morning Session', icon: Sun },
+                  { id: 'afternoon', label: 'Afternoon Session', icon: CloudSun },
+                  { id: 'evening', label: 'Evening Session', icon: Moon },
+                  { id: 'unassigned', label: 'Unassigned Queue', icon: Users }
                 ].filter(f => {
                   if (f.id === 'unassigned') return true;
-                  if (!assignedSession || assignedSession === 'all') return true;
-                  // Strictly only show the assigned session and unassigned
-                  return f.id === assignedSession;
+                  // Show all sessions so instructor can see all students
+                  return true;
                 }).map((f) => (
                   <Button
                     key={f.id}
@@ -809,6 +839,14 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
                     {f.label}
                   </Button>
                 ))}
+                
+                <Button 
+                  onClick={() => setShowCreateModal(true)}
+                  className="rounded-2xl h-10 px-6 bg-primary/10 text-primary hover:bg-primary hover:text-white font-black text-[10px] uppercase tracking-widest flex items-center gap-2 transition-all border border-primary/20"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  New Batch
+                </Button>
               </div>
               <div className={`px-4 py-2 bg-slate-100 rounded-full border border-slate-200 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-slate-500 transition-opacity ${activeStudent ? 'opacity-100 animate-pulse' : 'opacity-40'}`}>
                  <ArrowRight className="h-3.5 w-3.5" />
@@ -816,43 +854,81 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
               </div>
             </div>
 
-            <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-${rosterFilter === 'all' ? '4' : (['morning', 'afternoon', 'evening'].includes(rosterFilter) ? '2' : '1')} gap-6`}>
-              {(rosterFilter === 'all' || rosterFilter === 'morning') && (
-                <DroppableRosterColumn 
-                  title="Morning Batch" 
-                  students={roster?.morning || []} 
-                  colorClass="bg-orange-100 text-orange-700" 
-                  type="morning"
-                  onRemove={handleRemoveStudent}
-                />
-              )}
-              {(rosterFilter === 'all' || rosterFilter === 'afternoon') && (
-                <DroppableRosterColumn 
-                  title="Afternoon Batch" 
-                  students={roster?.afternoon || []} 
-                  colorClass="bg-blue-100 text-blue-700" 
-                  type="afternoon"
-                  onRemove={handleRemoveStudent}
-                />
-              )}
-              {(rosterFilter === 'all' || rosterFilter === 'evening') && (
-                <DroppableRosterColumn 
-                  title="Evening Batch" 
-                  students={roster?.evening || []} 
-                  colorClass="bg-violet-100 text-violet-700" 
-                  type="evening"
-                  onRemove={handleRemoveStudent}
-                />
-              )}
-              {(rosterFilter === 'all' || rosterFilter === 'unassigned' || ['morning', 'afternoon', 'evening'].includes(rosterFilter)) && (
-                <DroppableRosterColumn 
-                  title="Unassigned" 
-                  students={roster?.unassigned || []} 
-                  colorClass="bg-slate-200 text-slate-600" 
-                  type="unassigned"
-                  onRemove={handleRemoveStudent}
-                />
-              )}
+            <div className="overflow-x-auto pb-6 -mx-4 px-4 custom-scrollbar">
+              <div className="flex gap-6 min-w-max pb-2">
+                {selectedBatchId ? (
+                  // Single Batch View
+                  <div className="space-y-4 w-[400px]">
+                    <div className="flex items-center justify-between bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
+                       <div className="flex items-center gap-3">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => setSelectedBatchId(null)}
+                            className="h-8 w-8 p-0 rounded-full hover:bg-slate-100"
+                          >
+                             <X className="h-4 w-4" />
+                          </Button>
+                          {(() => {
+                             const b = batches.find(x => x.id === selectedBatchId);
+                             return (
+                               <div>
+                                  <h4 className="font-black text-slate-900 text-sm">{b?.batch_name}</h4>
+                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                     {b ? getSessionTime(b) : 'No Batch Selected'}
+                                  </p>
+                               </div>
+                             );
+                          })()}
+                       </div>
+                    </div>
+                    <DroppableRosterColumn 
+                      title="Allocated Students" 
+                      students={roster?.byBatch[selectedBatchId] || []} 
+                      colorClass="bg-primary/10 text-primary" 
+                      type={selectedBatchId}
+                      onRemove={handleRemoveStudent}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    {/* Show all batches so instructor can see all assigned students */}
+                    {batches.filter(b => {
+                      if (b.batch_category === 'remove' && !b.id) return false;
+                      if (rosterFilter === 'unassigned') return false;
+                      // Show all batches regardless of session type so all students are visible
+                      return true;
+                    }).map(batch => (
+                      <div key={batch.id} className="w-[320px] shrink-0">
+                        <DroppableRosterColumn 
+                          title={batch.batch_name} 
+                          students={roster?.byBatch[batch.id] || []} 
+                          colorClass={
+                            batch.batch_type === 'morning' ? 'bg-orange-100 text-orange-700' :
+                            batch.batch_type === 'afternoon' ? 'bg-blue-100 text-blue-700' :
+                            'bg-violet-100 text-violet-700'
+                          } 
+                          type={batch.id}
+                          onRemove={handleRemoveStudent}
+                        />
+                      </div>
+                    ))}
+
+                    {/* Unassigned Queue */}
+                    {rosterFilter === 'unassigned' && (
+                      <div className="w-[320px] shrink-0">
+                        <DroppableRosterColumn 
+                          title="Unassigned Queue" 
+                          students={roster?.unassigned || []} 
+                          colorClass="bg-slate-100 text-slate-700" 
+                          type="unassigned"
+                          onRemove={handleRemoveStudent}
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
 
             <DragOverlay>
@@ -909,7 +985,7 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">Type</Label>
-                <Select value={newBatch.batch_type} onValueChange={(v: 'morning' | 'afternoon' | 'evening' | 'all') => setNewBatch({...newBatch, batch_type: v})}>
+                <Select value={newBatch.batch_type} onValueChange={(v: 'morning' | 'afternoon' | 'evening') => setNewBatch({...newBatch, batch_type: v})}>
                   <SelectTrigger className="h-12 rounded-2xl border-slate-200 bg-slate-50/50">
                     <SelectValue />
                   </SelectTrigger>
@@ -917,7 +993,6 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
                     <SelectItem value="morning">Morning</SelectItem>
                     <SelectItem value="afternoon">Afternoon</SelectItem>
                     <SelectItem value="evening">Evening</SelectItem>
-                    {!editingBatch && <SelectItem value="all">Full Daily Unit (Split 3)</SelectItem>}
                   </SelectContent>
                 </Select>
               </div>
@@ -932,18 +1007,40 @@ export function BatchManager({ courseId, courseTitle, assignedSession }: BatchMa
               </div>
             </div>
 
-            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">Start Time</Label>
+                <Input 
+                   type="time"
+                   value={newBatch.start_time}
+                   onChange={(e) => setNewBatch({...newBatch, start_time: e.target.value})}
+                   className="h-12 rounded-2xl border-slate-200 bg-slate-50/50" 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">End Time</Label>
+                <Input 
+                   type="time"
+                   value={newBatch.end_time}
+                   onChange={(e) => setNewBatch({...newBatch, end_time: e.target.value})}
+                   className="h-12 rounded-2xl border-slate-200 bg-slate-50/50" 
+                />
+              </div>
+            </div>
+
+            <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10">
                <div className="flex items-center gap-2 mb-2">
                   <Clock className="h-4 w-4 text-primary" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Fixed Session Timings</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Custom Slot preview</span>
                </div>
                <p className="text-sm font-black text-slate-900 leading-tight">
-                  {getSessionTime(newBatch.batch_type)}
+                  {newBatch.start_time} to {newBatch.end_time} ({newBatch.batch_type.toUpperCase()})
                </p>
                <p className="text-[10px] font-medium text-slate-400 mt-1 leading-relaxed">
-                  Timings are optimized for local timezones and cannot be modified.
+                  You can now set specific timings within the broad session categories.
                </p>
             </div>
+
           </div>
 
           <DialogFooter className="gap-3 mt-4 border-t pt-6">

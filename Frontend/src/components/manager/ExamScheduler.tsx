@@ -94,6 +94,7 @@ import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SyncDataButton } from "../admin/data/SyncDataButton";
 
 // ─── 1. Validation Schema ────────────────────────────────────────────────────
 
@@ -367,12 +368,18 @@ function ExamCardSkeleton() {
 
 // ─── 3. Main Horizontal Scheduler ──────────────────────────────────────────
 
-export function ExamScheduler({ onNavigateToRepository }: { onNavigateToRepository?: () => void }) {
+interface ExamSchedulerProps {
+  onNavigateToRepository?: () => void;
+  onSync?: () => void;
+  loading?: boolean;
+}
+
+export function ExamScheduler({ onNavigateToRepository, onSync, loading: parentLoading = false }: ExamSchedulerProps) {
   const { user, userRole } = useAuth();
   const { data: rawRatings } = useInstructorRatings();
   const ratings = useMemo(() => Array.isArray(rawRatings) ? rawRatings : [], [rawRatings]);
   const { toast } = useToast();
-  const { data: rawExams, isLoading } = useExams();
+  const { data: rawExams, isLoading, refetch } = useExams();
   const exams = useMemo(() => Array.isArray(rawExams) ? rawExams : [], [rawExams]);
   const { data: rawQuestions } = useQuestions();
   const questions = useMemo(() => Array.isArray(rawQuestions) ? rawQuestions : [], [rawQuestions]);
@@ -545,7 +552,11 @@ export function ExamScheduler({ onNavigateToRepository }: { onNavigateToReposito
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       <div className="flex items-center justify-between gap-6">
-        <div />
+        <SyncDataButton 
+          onSync={onSync || (() => refetch())} 
+          isLoading={parentLoading || isLoading} 
+          className="h-14 px-8 rounded-2xl bg-white/50 backdrop-blur-sm border-slate-100 shadow-xl"
+        />
         <Dialog
           open={isAddOpen}
           onOpenChange={(val) => {

@@ -25,7 +25,7 @@ const deriveBatchType = (selectedIds: string[], allBatches: {id: string, batch_t
     return 'all';
 };
 
-import { Trash2, Lock, PlayCircle, MoreVertical, CheckCircle, Loader2, Plus, X, Video, Layers, Image as ImageIcon, Camera, Clock } from "lucide-react";
+import { Trash2, Lock, PlayCircle, MoreVertical, CheckCircle, Loader2, Plus, X, Video, Layers, Image as ImageIcon, Camera, Clock, ExternalLink } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { motion, AnimatePresence } from "framer-motion";
@@ -78,24 +78,39 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
     title: "",
     description: "",
     module_id: "",
+    drive_link: "",
     is_published: true,
-    allowed_batches: [] as string[],
-    batch_type: 'all'
+    batch_type: 'all',
+    allowed_batches: [] as string[]
   });
 
   const [batches, setBatches] = useState<{ id: string, batch_name: string, batch_type: string }[]>([]);
-  
+
   useEffect(() => {
     const loadBatches = async () => {
-      try {
-        const data = (await fetchWithAuth(`/batches?course_id=${courseId}`)) as { id: string, batch_name: string, batch_type: string }[];
-        setBatches(data || []);
-      } catch (e) {
-        console.error("Failed to load batches", e);
-      }
+        try {
+            const data = await fetchWithAuth(`/batches?course_id=${courseId}`) as any[];
+            setBatches(data || []);
+        } catch (e) {
+            console.error("Failed to load batches", e);
+        }
     };
     if (courseId) loadBatches();
   }, [courseId]);
+
+  const toggleBatch = (batchId: string) => {
+      const isSelected = newVideo.allowed_batches.includes(batchId);
+      const updatedIds = isSelected 
+          ? newVideo.allowed_batches.filter(id => id !== batchId)
+          : [...newVideo.allowed_batches, batchId];
+      
+      setNewVideo(prev => ({
+          ...prev,
+          allowed_batches: updatedIds,
+          batch_type: deriveBatchType(updatedIds, batches)
+      }));
+  };
+
 
   const isCourseApproved = courseStatus === 'approved' || courseStatus === 'published' || courseStatus === 'draft' || courseStatus === 'rejected' || !courseStatus;
 
@@ -167,9 +182,14 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
     console.log('Upload started:', { selectedFile, title: newVideo.title, module_id: newVideo.module_id, courseId });
     
     // Validation
-    if (!selectedFile || !newVideo.title.trim()) {
-      toast({ title: "Missing Information", description: "Please provide a video file and title.", variant: "destructive" });
+    if ((!selectedFile && !newVideo.drive_link.trim()) || !newVideo.title.trim()) {
+      toast({ title: "Missing Information", description: "Please provide a video file or Google Drive link, and a title.", variant: "destructive" });
       return;
+    }
+    
+    if (!thumbnailFile) {
+        toast({ title: "Thumbnail Required", description: "Please provide a thumbnail image.", variant: "destructive" });
+        return;
     }
 
     if (!isCreatingModule && !newVideo.module_id) {
@@ -202,15 +222,21 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
          console.log('Step 0 complete: Created module', targetModuleId);
       }
 
-      console.log('Step 1: Uploading video to S3...');
-      const videoUrl = await uploadS3.mutateAsync({
-        file: selectedFile,
-        customTitle: newVideo.title,
-        folder: 'LMS VIDEOS',
-        onProgress: setUploadProgress,
-        courseId
-      });
-      console.log('Step 1 complete: Video S3 URL:', videoUrl);
+      let videoUrl = "";
+      if (selectedFile) {
+          console.log('Step 1: Uploading video to S3...');
+          videoUrl = await uploadS3.mutateAsync({
+            file: selectedFile,
+            customTitle: newVideo.title,
+            folder: 'LMS VIDEOS',
+            onProgress: setUploadProgress,
+            courseId
+          });
+          console.log('Step 1 complete: Video S3 URL:', videoUrl);
+      } else {
+          console.log('Step 1 skipped: Using Drive Link instead of S3 output.');
+          // Use a dummy or empty video_url if backend requires it, but we made it optional.
+      }
 
       let thumbnailUrl = "";
       if (thumbnailFile) {
@@ -228,8 +254,9 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
         courseId,
         moduleId: targetModuleId,
         title: newVideo.title,
-        video_type: 's3',
+        video_type: selectedFile ? 's3' : 'external',
         video_url: videoUrl,
+        drive_link: newVideo.drive_link,
         thumbnail_url: thumbnailUrl,
         order_index: videos.length,
         allowed_batches: newVideo.allowed_batches,
@@ -251,10 +278,10 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
         ...prev,
         title: "",
         description: "",
+        drive_link: "",
         // Keep module ID selected (if we just created one, keep it selected for next upload)
         module_id: targetModuleId, 
         is_published: true,
-        allowed_batches: []
       }));
       
       // If we created a module, switch back to select mode with the new module selected
@@ -320,7 +347,7 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
             <div className="space-y-4">
               <div className="flex items-center gap-2 ml-1">
                 <div className="h-2 w-2 rounded-full bg-primary" />
-                <Label className="text-xs font-bold uppercase tracking-wider text-slate-600">Video Title</Label>
+                <Label className="text-xs font-bold uppercase tracking-wider text-slate-600">Video Title <span className="text-rose-500 font-black">*</span></Label>
               </div>
               <div className="relative">
                 <Input
@@ -338,7 +365,7 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
               <div className="flex items-center justify-between px-1">
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full bg-blue-500" />
-                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-600">Select Module</Label>
+                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-600">Select Module <span className="text-rose-500 font-black">*</span></Label>
                 </div>
                 <Button 
                   variant="ghost" 
@@ -398,55 +425,78 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
               </AnimatePresence>
             </div>
 
-            {/* 3. Restricted Access Chips */}
-            {batches.length > 0 && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 ml-1">
+            {/* 3. Resource Access (Google Drive) */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between ml-1 mr-1">
+                <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full bg-amber-500" />
-                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-600">Access Control (Select Batches)</Label>
+                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-600">Access Control (Google Drive Link) <span className="text-rose-500 font-black">*</span></Label>
                 </div>
-                <div className="flex flex-wrap gap-2 p-4 bg-slate-50/50 border-2 border-slate-200 rounded-2xl">
-                  {batches.map((batch) => {
-                    const isSelected = newVideo.allowed_batches.includes(batch.id);
-                    return (
-                      <Badge
-                        key={batch.id}
-                        variant={isSelected ? "default" : "outline"}
-                        className={`cursor-pointer h-10 px-5 rounded-xl font-bold uppercase text-[9px] tracking-widest transition-all duration-300 flex items-center gap-2 ${
-                          isSelected ? 'bg-primary text-white scale-105 shadow-lg shadow-primary/20' : 'bg-white text-slate-500 border-slate-300 hover:border-primary hover:text-primary'
-                        }`}
-                        onClick={() => {
-                          let nextBatches = [...newVideo.allowed_batches];
-                          if (isSelected) {
-                            nextBatches = nextBatches.filter(id => id !== batch.id);
-                          } else {
-                            nextBatches.push(batch.id);
-                          }
-                          setNewVideo(prev => ({ 
-                            ...prev, 
-                            allowed_batches: nextBatches,
-                            batch_type: deriveBatchType(nextBatches, batches)
-                          }));
-                        }}
-                      >
-                        {isSelected && <CheckCircle className="h-3 w-3 shrink-0" />}
-                        <span className="truncate">{batch.batch_name}</span>
-                      </Badge>
-                    );
-                  })}
-                  {newVideo.allowed_batches.length === 0 && (
-                    <p className="w-full text-center text-[10px] text-slate-500 font-bold uppercase tracking-tighter">Visible to everyone by default</p>
-                  )}
+                <span className="text-[9px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">Required if no video</span>
+              </div>
+              <div className="relative group">
+                <Input
+                  placeholder="Paste Google Drive shared link here..."
+                  value={newVideo.drive_link}
+                  onChange={(e) => setNewVideo({ ...newVideo, drive_link: e.target.value })}
+                  className="h-14 rounded-2xl border-slate-300 border-2 bg-white focus:ring-4 focus:ring-amber-500/10 pl-12 text-base font-medium transition-all shadow-sm w-full"
+                />
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" className="text-amber-500">
+                        <path fill="currentColor" d="M20.21 12l-3.3 5.72h-6.6L13.61 12l-3.3-5.71h6.61l3.29 5.71zm-9.91-5.71L7 6.29L3.71 12l3.3 5.71h6.6L10.31 12zM2.87 13.71L6.16 19.43l3.3-5.72z" />
+                    </svg>
                 </div>
               </div>
+            </div>
+
+            {/* Batch Selection for Video Visibility */}
+            {batches.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 ml-1">
+                    <div className="h-2 w-2 rounded-full bg-indigo-500" />
+                    <Label className="text-xs font-bold uppercase tracking-wider text-slate-600">Restrict Visibility (Optional)</Label>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant={newVideo.allowed_batches.length === 0 ? "default" : "outline"}
+                      onClick={() => setNewVideo(prev => ({ ...prev, allowed_batches: [], batch_type: 'all' }))}
+                      className="rounded-xl h-10 px-4 text-xs font-bold uppercase tracking-wider"
+                    >
+                      All Students
+                    </Button>
+                    {batches.map(batch => (
+                      <Button
+                        key={batch.id}
+                        type="button"
+                        variant={newVideo.allowed_batches.includes(batch.id) ? "default" : "outline"}
+                        onClick={() => toggleBatch(batch.id)}
+                        className={`rounded-xl h-10 px-4 text-xs font-bold uppercase tracking-wider ${
+                            newVideo.allowed_batches.includes(batch.id) 
+                            ? (batch.batch_type === 'morning' ? 'bg-orange-500 hover:bg-orange-600' : 
+                               batch.batch_type === 'afternoon' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-violet-500 hover:bg-violet-600')
+                            : ''
+                        }`}
+                      >
+                        {batch.batch_name} ({batch.batch_type})
+                      </Button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.05em] ml-1">
+                     Selection restricted to chosen batches. Leave blank for "All Enrolled".
+                  </p>
+                </div>
             )}
 
             {/* 4. Asset Selection Side (Media) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full border-t-2 border-slate-100 pt-10">
               <div className="space-y-4">
-                <div className="flex items-center gap-2 ml-1">
-                  <div className="h-2 w-2 rounded-full bg-rose-500" />
-                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-600">Video File</Label>
+                <div className="flex items-center justify-between ml-1 mr-1">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-rose-500" />
+                    <Label className="text-xs font-bold uppercase tracking-wider text-slate-600">Video File <span className="text-rose-500 font-black">*</span></Label>
+                  </div>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">Required if no link</span>
                 </div>
                 <div 
                   className={`border-2 border-dashed rounded-3xl p-8 text-center transition-all cursor-pointer group relative overflow-hidden flex flex-col items-center justify-center min-h-[220px] lg:min-h-[260px]
@@ -502,7 +552,7 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
               <div className="space-y-4">
                 <div className="flex items-center gap-2 ml-1">
                   <div className="h-2 w-2 rounded-full bg-indigo-500" />
-                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-600">Thumbnail Image</Label>
+                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-600">Thumbnail Image <span className="text-rose-500 font-black">*</span></Label>
                 </div>
                 <div 
                   className={`border-2 border-dashed rounded-3xl p-6 text-center transition-all cursor-pointer group min-h-[220px] lg:min-h-[260px] flex flex-col items-center justify-center
@@ -584,7 +634,15 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
                   variant="outline" 
                   onClick={() => {
                     clearFile();
-                    setNewVideo({ title: "", description: "", module_id: "", is_published: true, allowed_batches: [] });
+                    setNewVideo({ 
+                      title: "", 
+                      description: "", 
+                      module_id: "", 
+                      is_published: true, 
+                      allowed_batches: [], 
+                      drive_link: "", 
+                      batch_type: "all" 
+                    });
                     setNewModuleName("");
                   }} 
                   disabled={uploading}
@@ -594,7 +652,14 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
                 </Button>
                 <Button 
                   onClick={() => handleUpload()}
-                  disabled={uploading || !selectedFile || !newVideo.title || (!isCreatingModule && !newVideo.module_id) || (isCreatingModule && !newModuleName)}
+                  disabled={
+                    uploading || 
+                    (!selectedFile && !newVideo.drive_link.trim()) || 
+                    !newVideo.title.trim() || 
+                    !thumbnailFile ||
+                    (!isCreatingModule && !newVideo.module_id) || 
+                    (isCreatingModule && !newModuleName.trim())
+                  }
                   className={`w-full sm:w-2/3 h-14 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-2xl transition-all active:scale-[0.98] ${uploadSuccess ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-200' : 'bg-primary hover:bg-primary/90 shadow-primary/30'}`}
                 >
                   {uploading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Video className="h-5 w-5 mr-3" />}
@@ -678,6 +743,19 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
                             }}
                             muted
                           />
+                        ) : video.drive_link ? (
+                          <div className="h-full w-full relative">
+                            <img 
+                              src={video.thumbnail_url?.startsWith('http') ? video.thumbnail_url : `/s3/public/${video.thumbnail_url}`} 
+                              className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-1000"
+                              alt=""
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                <div className="h-12 w-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
+                                    <ExternalLink className="h-6 w-6 text-indigo-600" />
+                                </div>
+                            </div>
+                          </div>
                         ) : (
                           <div className="h-full w-full flex items-center justify-center">
                             <PlayCircle className="h-12 w-12 text-slate-200" />
@@ -690,7 +768,11 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
                         </div>
                         <div className="absolute inset-0 z-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all bg-black/20">
                           <div className="h-16 w-16 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
-                            <PlayCircle className="h-8 w-8 text-primary ml-1" />
+                            {video.video_url ? (
+                                <PlayCircle className="h-8 w-8 text-primary ml-1" />
+                            ) : (
+                                <ExternalLink className="h-8 w-8 text-indigo-600" />
+                            )}
                           </div>
                         </div>
                       </div>
@@ -750,14 +832,30 @@ export function VideoUploader({ courseId, courseStatus, hideVideoList = false, o
               <DialogHeader className="sr-only">
                 <DialogTitle>{playingVideo?.title}</DialogTitle>
               </DialogHeader>
-              <div className="relative w-full aspect-video bg-black rounded-2xl overflow-hidden">
-                {playingVideo?.video_url && (
+              <div className="relative w-full aspect-video bg-black rounded-2xl overflow-hidden flex items-center justify-center">
+                {playingVideo?.video_url ? (
                   <video
                     src={playingVideo.video_url}
                     controls
                     autoPlay
                     className="w-full h-full object-contain"
                   />
+                ) : (
+                  <div className="p-10 text-center space-y-6">
+                    <div className="h-20 w-20 bg-indigo-500/10 rounded-3xl flex items-center justify-center mx-auto border border-indigo-500/20">
+                        <ExternalLink className="h-10 w-10 text-indigo-400" />
+                    </div>
+                    <div className="space-y-2">
+                        <h3 className="text-xl font-bold text-white tracking-tight">{playingVideo?.title}</h3>
+                        <p className="text-slate-400 text-sm">This resource is hosted on Google Drive.</p>
+                    </div>
+                    <Button 
+                        className="h-12 px-8 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl"
+                        onClick={() => window.open(playingVideo?.drive_link, '_blank')}
+                    >
+                        Go to Google Drive
+                    </Button>
+                  </div>
                 )}
               </div>
             </DialogContent>

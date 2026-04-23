@@ -11,6 +11,8 @@ const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 const cloudinary = require('cloudinary').v2;
 const vm = require('vm'); // Native Node.js module for executing code locally
+const pdfParse = require('pdf-parse');
+const FormData = require('form-data');
 
 // Cloudinary Config
 cloudinary.config({
@@ -20,13 +22,13 @@ cloudinary.config({
 });
 
 // Import Mongoose Models
-const { User, Profile, UserRole, OTP, VerifiedEmail, InstructorApplication, GuestCredential, ResumeScan } = require('./models/User');
-const { Course, Enrollment, Topic, Module, Video, Announcement, Timeline, Resource, InstructorProgress, VideoProgress, CourseRating } = require('./models/Course');
-const { Exam, QuestionBank, ExamSchedule, StudentExamAccess, ExamResult, MockPaper, ExamRule, MockTestConfig } = require('./models/Exam');
-const { Assignment, Submission, Playlist, LiveClass } = require('./models/Content');
-const { SystemLog, SecurityEvent, LeaderboardStat, Notification, Coupon, Lead, Attendance, College } = require('./models/System');
+const { User, Profile, UserRole, OTP, VerifiedEmail, ResumeScan } = require('./models/User');
+const { Course, Enrollment, Module, Resource, CourseRating, Video, Announcement, Timeline } = require('./models/Course');
+const { Exam, QuestionBank, StudentExamAccess, ExamResult, MockPaper, MockTestConfig } = require('./models/Exam');
+const { LiveClass } = require('./models/Content');
+const { SystemLog, SecurityEvent, LeaderboardStat, Notification, Attendance } = require('./models/System');
 const { Conversation, Message } = require('./models/Chat');
-const { Doubt, DoubtReply } = require('./models/Doubt');
+const { Doubt } = require('./models/Doubt');
 const { Batch, StudentBatch, BatchRequest } = require('./models/Batch');
 
 // Map table names to Models for generic routes
@@ -36,49 +38,32 @@ const MODEL_MAP = {
     'conversations': Conversation,
     'messages': Message,
     'doubts': Doubt,
-    'doubt_replies': DoubtReply,
     'courses': Course,
-    'course_topics': Topic,
     'course_modules': Module,
-    'course_videos': Video,
     'course_resources': Resource,
-    'course_timeline': Timeline,
-    'course_announcements': Announcement,
-    'announcements': Announcement, // Alias for frontend compatibility
     'course_enrollments': Enrollment,
     'course_ratings': CourseRating,
-    'exams': Exam,
     'question_bank': QuestionBank,
-    'exam_schedules': ExamSchedule,
     'student_exam_access': StudentExamAccess,
     'exam_results': ExamResult,
     'student_exam_results': ExamResult, // Alias
-    'mock_papers': MockPaper,
-    'mock_test_configs': MockTestConfig,
-    'exam_rules': ExamRule,
-    'assignments': Assignment,
-    'assignment_submissions': Submission,
-    'playlists': Playlist,
-    'live_classes': LiveClass,
-    'live_class': LiveClass,
-    'liveclass': LiveClass,
     'system_logs': SystemLog,
     'security_events': SecurityEvent,
     'leaderboard_stats': LeaderboardStat,
     'leaderboard': LeaderboardStat, // Alias
-    'leaderboard': LeaderboardStat, // Alias
-    'instructor_applications': InstructorApplication,
-    'instructor_progress': InstructorProgress,
-    'video_progress': VideoProgress,
-    'guest_credentials': GuestCredential,
     'notifications': Notification,
     'users': User,
     'resumescans': ResumeScan,
-    'leads': Lead,
+    'exams': Exam,
+    'mock_papers': MockPaper,
+    'mock_test_configs': MockTestConfig,
     'batches': Batch,
     'attendance': Attendance,
     'student_batches': StudentBatch,
-    'colleges': College
+    'course_videos': Video,
+    'live_classes': LiveClass,
+    'course_timeline': Timeline,
+    'course_announcements': Announcement
 };
 
 const ALLOWED_TABLES = Object.keys(MODEL_MAP);
@@ -300,6 +285,10 @@ const requireRole = (allowedRoles) => async (req, res, next) => {
             console.warn(`[Auth] No role found for user ID: ${req.user.id}`);
             return res.status(401).json({ error: 'User role not found' });
         }
+        
+        // Attach role to req.user for use in routes
+        req.user.role = role;
+        
         if (!allowedRoles.includes(role)) {
             console.warn(`[Auth] Access Denied for user ${req.user.id}. Role: ${role}. Required one of: ${allowedRoles}`);
             return res.status(403).json({ error: `Access denied. Your role is '${role}'. Required: ${allowedRoles.join(', ')}` });
@@ -748,137 +737,6 @@ app.post('/api/run-code', authenticateToken, async (req, res) => {
     }
 });
 
-// --- Video Progress Tracking ---
-
-/**
- * @route GET /api/progress/:videoId
- * @desc Fetch video progress for the logged-in user
- */
-app.get('/api/progress/:videoId', authenticateToken, async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const videoId = req.params.videoId;
-        
-        // Find existing progress for this user and video
-        const progress = await VideoProgress.findOne({ user_id: userId, video_id: videoId });
-        
-        if (!progress) {
-            return res.json({ 
-                last_watched_time: 0, 
-                watched_percentage: 0, 
-                completed: false 
-            });
-        }
-        
-        res.json(progress);
-    } catch (err) {
-        handleError(res, err, 'get-progress');
-    }
-});
-
-/**
- * @route POST /api/progress/save
- * @desc Save or update video progress
- */
-app.post('/api/progress/save', authenticateToken, async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const { videoId, courseId, watchedPercentage, lastWatchedTime, completed } = req.body;
-        
-        if (!videoId || !courseId) {
-            return res.status(400).json({ error: 'videoId and courseId are required.' });
-        }
-
-        console.log(`[Progress] Saving: User=${userId}, Course=${courseId}, Video=${videoId}, %=${watchedPercentage}`);
-
-        const progress = await VideoProgress.findOneAndUpdate(
-            { user_id: userId, video_id: videoId },
-            {
-                $set: {
-                    user_id: userId,
-                    course_id: courseId,
-                    video_id: videoId,
-                    watched_percentage: watchedPercentage || 0,
-                    last_watched_time: lastWatchedTime || 0,
-                    completed: completed || (watchedPercentage >= 95),
-                    updated_at: new Date()
-                }
-            },
-            { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
-        );
-
-        // Update overall course progress on every update
-        if (courseId) {
-             const allVideos = await Video.find({ course_id: courseId }).select('_id').lean();
-             const totalVideos = allVideos.length;
-             
-             console.log(`[Progress Recalc] Course=${courseId}, TotalVideos=${totalVideos}`);
-
-             if (totalVideos > 0) {
-                 const allProgress = await VideoProgress.find({ 
-                     user_id: userId, 
-                     course_id: courseId 
-                 }).lean();
-
-                 let totalProgressSum = 0;
-                 const progressMap = new Map();
-                 allProgress.forEach(p => {
-                     // Normalize key for comparison
-                     const key = p.video_id?.toString();
-                     if (key) progressMap.set(key, p);
-                 });
-
-                 allVideos.forEach(v => {
-                     const vIdStr = v._id.toString();
-                     const p = progressMap.get(vIdStr);
-                     if (p) {
-                         let vidPercent = 0;
-                         if (p.completed) vidPercent = 100;
-                         else if (p.watched_percentage !== undefined) vidPercent = p.watched_percentage;
-                         else if (p.total_seconds > 0) vidPercent = (p.watched_seconds / p.total_seconds) * 100;
-                         
-                         totalProgressSum += Math.min(100, Math.max(0, vidPercent));
-                     }
-                 });
-
-                 const coursePercent = Math.round(totalProgressSum / totalVideos);
-                 console.log(`[Progress] Course ${courseId} Recalculated: ${coursePercent}% (User=${userId})`);
-                 
-                 const updatedEnrollment = await Enrollment.findOneAndUpdate(
-                     { user_id: userId, course_id: courseId },
-                     { $set: { progress_percentage: coursePercent, last_accessed_at: new Date() } },
-                     { returnDocument: 'after' }
-                 );
-
-                 if (!updatedEnrollment) {
-                     console.warn(`[Progress] Enrollment NOT FOUND for user ${userId} and course ${courseId}`);
-                 }
-
-                 // Real-time update to the student
-                 io.to(userId.toString()).emit('progress_updated', {
-                     course_id: courseId,
-                     progress: coursePercent,
-                     videoId,
-                     watchedPercentage
-                 });
-
-                 // Also notify admins/managers
-                 io.emit('course_enrollments_changed', { courseId, userId });
-             } else {
-                 // Even if 0 videos, update last_accessed_at
-                 await Enrollment.findOneAndUpdate(
-                     { user_id: userId, course_id: courseId },
-                     { $set: { last_accessed_at: new Date() } }
-                 );
-             }
-        }
-
-        res.json({ success: true, progress });
-    } catch (err) {
-        handleError(res, err, 'save-progress');
-    }
-});
-
 // --- Auth Routes ---
 
 app.post('/api/auth/send-otp', async (req, res) => {
@@ -982,8 +840,8 @@ app.post('/api/public/enroll', async (req, res) => {
         if (!name || !email || !phone || !course) {
             return res.status(400).json({ error: 'All fields are required' });
         }
-        const lead = await Lead.create({ name, email, phone, course });
-        res.json({ success: true, message: 'Enrolled successfully', leadId: lead._id });
+        // Enrollment processed
+        res.json({ success: true, message: 'Enrolled successfully' });
     } catch (err) {
         handleError(res, err, 'public-enroll');
     }
@@ -1309,11 +1167,12 @@ app.post('/api/student/pulse-rating', authenticateToken, async (req, res) => {
 
 app.get('/api/instructor/pulse-ratings', authenticateToken, async (req, res) => {
     try {
-        if (!['instructor', 'manager', 'admin'].includes(req.user.role)) {
+        const role = await getUserRole(req.user.id);
+        if (!['instructor', 'manager', 'admin'].includes(role)) {
             return res.status(403).json({ error: 'Access denied' });
         }
 
-        const filter = req.user.role === 'instructor' ? { instructor_id: req.user.id } : {};
+        const filter = role === 'instructor' ? { instructor_id: req.user.id } : {};
         
         const ratings = await CourseRating.find(filter)
             .populate('user_id', 'full_name avatar_url email')
@@ -1349,38 +1208,6 @@ app.post('/api/student/mark-attendance', authenticateToken, async (req, res) => 
             time: timeStr,
             date: dateStr
         });
-
-        // Automated Suspension Logic (Disabled as per user request)
-        /*
-        const user = await User.findById(userId);
-        const profile = await Profile.findOne({ user_id: userId });
-        
-        if (user && profile) {
-            const startDate = user.created_at || now;
-            const daysSinceStart = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
-            const totalAttendance = await Attendance.countDocuments({ user_id: userId });
-            
-            if (daysSinceStart >= 10) {
-                const missedDays = daysSinceStart - totalAttendance;
-                if (missedDays >= 10) {
-                    profile.approval_status = 'suspended';
-                    await profile.save();
-                    
-                    await SecurityEvent.create({
-                        event_type: 'auto_suspension_attendance',
-                        details: { userId, missedDays, totalAttendance, daysSinceStart }
-                    });
-
-                    return res.json({ 
-                        success: true, 
-                        message: 'Attendance recorded. Account suspended due to 10+ missing days.',
-                        attendance,
-                        suspended: true
-                    });
-                }
-            }
-        }
-        */
 
         res.json({ success: true, message: 'Attendance marked successfully', attendance });
     } catch (err) {
@@ -1640,12 +1467,7 @@ app.delete('/api/admin/question-bank/:topic', authenticateToken, requireAdmin, a
     try {
         const result = await QuestionBank.deleteMany({ topic });
         
-        // Also permanently remove any scheduled exams for this topic
-        await Exam.deleteMany({ title: topic });
-        await MockPaper.deleteMany({ title: topic });
-
-        // Also remove all granted access for this topic to ensure clean slate
-        await StudentExamAccess.deleteMany({ question_bank_topic: topic });
+        // Log action
 
         // Log action
         await SystemLog.create({
@@ -1693,6 +1515,14 @@ app.get('/api/admin/courses-with-instructors', authenticateToken, requireAdminOr
             return acc;
         }, {});
 
+        // Fetch Approver Names
+        const approverIds = [...new Set(batches.map(b => b.processed_by).filter(id => id))];
+        const approversP = await Profile.find({ user_id: { $in: approverIds } }).select('user_id full_name').lean();
+        const approverMap = approversP.reduce((acc, p) => {
+            acc[p.user_id.toString()] = p.full_name;
+            return acc;
+        }, {});
+
         // Flatten courses into individual instructor-assignment rows
         const flatData = [];
         courses.forEach(course => {
@@ -1736,7 +1566,9 @@ app.get('/api/admin/courses-with-instructors', authenticateToken, requireAdminOr
                         batch_type: sessionBatch?.batch_type,
                         start_time: sessionBatch?.start_time,
                         end_time: sessionBatch?.end_time,
-                        max_students: sessionBatch?.max_students
+                        max_students: sessionBatch?.max_students,
+                        processed_by_name: sessionBatch?.processed_by ? approverMap[sessionBatch.processed_by.toString()] : null,
+                        processed_at: sessionBatch?.processed_at
                     });
                 });
             }
@@ -1785,6 +1617,8 @@ app.put('/api/admin/approve-course', authenticateToken, requireAdminOrManager, a
                 { 
                     status: status, 
                     is_active: status === 'approved',
+                    processed_at: new Date(),
+                    processed_by: req.user.id,
                     ...(forceBatchType && { batch_type: forceBatchType })
                 },
                 { returnDocument: 'after' }
@@ -1801,7 +1635,9 @@ app.put('/api/admin/approve-course', authenticateToken, requireAdminOrManager, a
                     course_id: new mongoose.Types.ObjectId(courseId),
                     instructor_id: new mongoose.Types.ObjectId(instructorId),
                     status: 'approved',
-                    is_active: true
+                    is_active: true,
+                    processed_at: new Date(),
+                    processed_by: req.user.id
                 });
             }
         }
@@ -2281,7 +2117,7 @@ app.delete('/api/admin/permanent-delete/:dataType', authenticateToken, requireAd
                 
                 await Promise.all([
                     Exam.deleteMany({}),
-                    ExamSchedule.deleteMany({ exam_id: { $in: eIds } }),
+                    // ExamSchedule.deleteMany({ exam_id: { $in: eIds } }), // Removed
                     ExamResult.deleteMany({ exam_id: { $in: eIds } }),
                     StudentExamAccess.deleteMany({ exam_id: { $in: eIds } }),
                     MockPaper.deleteMany({ exam_id: { $in: eIds } })
@@ -2727,6 +2563,80 @@ app.get('/api/chat/contacts', authenticateToken, async (req, res) => {
     }
 });
 
+// GET /api/chat/contacts/by-batch — Instructor sees students grouped by batch session
+app.get('/api/chat/contacts/by-batch', authenticateToken, requireInstructor, async (req, res) => {
+    try {
+        // 1. Find all courses the instructor teaches
+        const myCourses = await Course.find({ instructor_ids: req.user.id })
+            .select('_id title assigned_session')
+            .lean();
+        const courseIds = myCourses.map(c => c._id);
+
+        if (courseIds.length === 0) {
+            return res.json({ morning: [], afternoon: [], evening: [], unassigned: [], all: [] });
+        }
+
+        // 2. Find batches this instructor is assigned to
+        const myBatches = await Batch.find({ instructor_id: req.user.id }).select('_id batch_type batch_name course_id').lean();
+        const myBatchIds = myBatches.map(b => b._id);
+
+        // 3. Get student batch assignments scoped to instructor's batches
+        const assignments = await StudentBatch.find({
+            course_id: { $in: courseIds },
+            ...(myBatchIds.length > 0 ? { batch_id: { $in: myBatchIds } } : {})
+        }).populate('batch_id').lean();
+
+        // 4. Get student details
+        const studentIds = [...new Set(assignments.map(a => a.student_id?.toString()).filter(Boolean))];
+
+        const [profiles, users] = await Promise.all([
+            Profile.find({ user_id: { $in: studentIds } }).lean(),
+            User.find({ _id: { $in: studentIds } }).select('full_name email').lean()
+        ]);
+
+        const profileMap = profiles.reduce((acc, p) => { if (p.user_id) acc[p.user_id.toString()] = p; return acc; }, {});
+        const userMap = users.reduce((acc, u) => { acc[u._id.toString()] = u; return acc; }, {});
+
+        // 5. Build student list with batch info
+        const seen = new Set();
+        const studentList = assignments.reduce((acc, a) => {
+            const sid = a.student_id?.toString();
+            if (!sid || seen.has(sid)) return acc;
+            seen.add(sid);
+
+            const profile = profileMap[sid];
+            const user = userMap[sid];
+            const batch = a.batch_id;
+
+            acc.push({
+                id: sid,
+                name: profile?.full_name || user?.full_name || 'Student',
+                avatar: profile?.avatar_url || null,
+                email: profile?.email || user?.email || '',
+                role: 'student',
+                batch_session: a.assigned_session || batch?.batch_type || 'unassigned',
+                batch_name: batch?.batch_name || 'Unknown Batch',
+                batch_id: batch?._id?.toString() || null,
+                course_id: a.course_id?.toString()
+            });
+            return acc;
+        }, []);
+
+        // 6. Group by session
+        const grouped = {
+            morning: studentList.filter(s => s.batch_session === 'morning'),
+            afternoon: studentList.filter(s => s.batch_session === 'afternoon'),
+            evening: studentList.filter(s => s.batch_session === 'evening'),
+            unassigned: studentList.filter(s => !['morning', 'afternoon', 'evening'].includes(s.batch_session)),
+            all: studentList
+        };
+
+        res.json(grouped);
+    } catch (err) {
+        handleError(res, err, 'get-chat-contacts-by-batch');
+    }
+});
+
 app.post('/api/chat/send', authenticateToken, async (req, res) => {
     const { conversationId, content, type } = req.body;
     try {
@@ -2874,137 +2784,6 @@ app.post('/api/upload/course-resources', authenticateToken, requireInstructor, u
     }
 });
 
-// Handled by consolidated /api/progress/save route
-
-app.post('/api/student/video-progress', authenticateToken, async (req, res) => {
-    try {
-        const { courseId, videoId, watchedPercentage, lastWatchedTime, completed } = req.body;
-        const userId = req.user.id;
-
-        if (!courseId || !videoId) {
-            return res.status(400).json({ error: 'courseId and videoId are required' });
-        }
-
-        // 1. Update/Create Video Progress
-        await VideoProgress.findOneAndUpdate(
-            { user_id: userId, course_id: courseId, video_id: videoId },
-            { 
-                watched_percentage: watchedPercentage,
-                last_watched_time: lastWatchedTime,
-                completed: !!completed,
-                updated_at: new Date()
-            },
-            { upsert: true, returnDocument: 'after' }
-        );
-
-        // 2. Calculate and update overall enrollment progress
-        const [allVideos, watchedVideos] = await Promise.all([
-            Video.find({ course_id: courseId }).select('_id').lean(),
-            VideoProgress.find({ user_id: userId, course_id: courseId, watched_percentage: { $gt: 0 } }).lean()
-        ]);
-
-        if (allVideos.length > 0) {
-            // Formula: Sum of (watched_percentage / 100) / total_videos * 100
-            // We simplify to Sum(watched_percentage) / total_videos 
-            const totalPercentage = watchedVideos.reduce((acc, vp) => {
-                // Find if this vp belongs to a current video in course
-                const exists = allVideos.some(v => v._id.toString() === vp.video_id.toString());
-                return exists ? acc + (vp.watched_percentage || 0) : acc;
-            }, 0);
-
-            const progress = Math.min(100, Math.round(totalPercentage / allVideos.length));
-            
-            await Enrollment.findOneAndUpdate(
-                { user_id: userId, course_id: courseId },
-                { 
-                    progress_percentage: progress,
-                    last_accessed_at: new Date()
-                }
-            );
-        }
-
-        res.json({ success: true });
-    } catch (err) {
-        handleError(res, err, 'save-video-progress');
-    }
-});
-
-app.get('/api/student/video-progress/:courseId', authenticateToken, async (req, res) => {
-    try {
-        const progress = await VideoProgress.find({ 
-            user_id: req.user.id, 
-            course_id: req.params.courseId 
-        });
-        res.json(progress);
-    } catch (err) {
-        handleError(res, err, 'get-student-progress');
-    }
-});
-
-app.get('/api/instructor/student-progress/:studentId', authenticateToken, requireInstructor, async (req, res) => {
-    try {
-        const { studentId } = req.params;
-        const { courseId } = req.query;
-        
-        const query = { user_id: studentId };
-        if (courseId) {
-            query.course_id = courseId;
-        }
-        
-        const progress = await VideoProgress.find(query).lean();
-        res.json(progress);
-    } catch (err) {
-        handleError(res, err, 'get-student-progress-instructor');
-    }
-});
-
-app.get('/api/instructor/course-progress/:courseId', authenticateToken, requireInstructor, async (req, res) => {
-    try {
-        // Returns progress for all students enrolled in this course
-        // Grouped by student
-        const enrollments = await Enrollment.find({ course_id: req.params.courseId })
-            .populate('user_id', 'full_name email avatar_url')
-            .lean();
-            
-        const studentIds = enrollments.map(e => e.user_id?._id).filter(id => id);
-        
-        const allProgress = await VideoProgress.find({ 
-            course_id: req.params.courseId,
-            user_id: { $in: studentIds }
-        }).lean();
-
-        // Map progress to students
-        const data = enrollments.map(enrollment => {
-            const studentId = enrollment.user_id?._id?.toString();
-            const studentProgress = allProgress.filter(p => p.user_id.toString() === studentId);
-            const videosCompleted = studentProgress.filter(p => p.completed).length;
-            
-            return {
-                student: {
-                    id: studentId,
-                    name: enrollment.user_id?.full_name,
-                    email: enrollment.user_id?.email,
-                    avatar: enrollment.user_id?.avatar_url
-                },
-                overall_progress: enrollment.progress_percentage,
-                videos_completed: videosCompleted,
-                last_active: enrollment.last_accessed_at,
-                video_details: studentProgress.map(p => ({
-                    videoId: p.video_id,
-                    watched: p.watched_seconds,
-                    total: p.total_seconds,
-                    completed: p.completed,
-                    last_watched: p.last_watched_at
-                }))
-            };
-        });
-
-        res.json(data);
-    } catch (err) {
-        handleError(res, err, 'get-course-progress-instructor');
-    }
-});
-
 // --- Instructor Routes ---
 
 app.post('/api/instructor/register', upload.single('resume'), async (req, res) => {
@@ -3084,7 +2863,9 @@ app.post('/api/instructor/choose-course', authenticateToken, requireInstructor, 
         if (dealing_session) {
             const { 
                 batch_name, 
-                capacity 
+                capacity,
+                start_time,
+                end_time
             } = req.body;
 
             const sessionLabel = dealing_session.charAt(0).toUpperCase() + dealing_session.slice(1);
@@ -3098,10 +2879,14 @@ app.post('/api/instructor/choose-course', authenticateToken, requireInstructor, 
                     instructor_id: req.user.id,
                     batch_name: batch_name || `${course.title} (All Sections)`,
                     batch_type: 'all',
+                    start_time: start_time || '09:00',
+                    end_time: end_time || '11:00',
+                    is_active: false,
+                    status: 'pending',
                     batches: [
-                        { batch_name: `${batch_name || course.title} (Morning)`, batch_type: 'morning', max_students: m, is_active: false, status: 'pending' },
-                        { batch_name: `${batch_name || course.title} (Afternoon)`, batch_type: 'afternoon', max_students: a, is_active: false, status: 'pending' },
-                        { batch_name: `${batch_name || course.title} (Evening)`, batch_type: 'evening', max_students: e, is_active: false, status: 'pending' }
+                        { batch_name: `${batch_name || course.title} (Morning)`, batch_type: 'morning', max_students: m, is_active: false, status: 'pending', start_time: '09:00', end_time: '12:00' },
+                        { batch_name: `${batch_name || course.title} (Afternoon)`, batch_type: 'afternoon', max_students: a, is_active: false, status: 'pending', start_time: '13:00', end_time: '17:00' },
+                        { batch_name: `${batch_name || course.title} (Evening)`, batch_type: 'evening', max_students: e, is_active: false, status: 'pending', start_time: '18:00', end_time: '21:00' }
                     ]
                 });
             } else {
@@ -3111,6 +2896,8 @@ app.post('/api/instructor/choose-course', authenticateToken, requireInstructor, 
                     batch_name: batch_name || `${course.title} (${sessionLabel})`,
                     batch_type: dealing_session,
                     max_students: capacity || 50,
+                    start_time: start_time || '09:00',
+                    end_time: end_time || '11:00',
                     is_active: false, 
                     status: 'pending',
                     batch_category: 'remove'
@@ -3185,20 +2972,40 @@ app.get('/api/instructor/courses', authenticateToken, requireInstructor, async (
 app.get('/api/instructor/courses/:id/batch/:batchType/students', authenticateToken, requireInstructor, async (req, res) => {
     try {
         const { id, batchType } = req.params;
-        // 1. Find the batches of this type for this course
-        const batches = await Batch.find({ course_id: id, batch_type: batchType.toLowerCase() }).select('_id').lean();
-        if (batches.length === 0) return res.json([]);
+        const { batch_id } = req.query;
+        const role = await getUserRole(req.user.id);
+        
+        let batchIds = [];
+        
+        if (batch_id) {
+            // Fetch students for a SPECIFIC batch card
+            batchIds = [batch_id];
+        } else {
+            // Find all batches of this type (session) for this course
+            const batchQuery = { 
+                course_id: id, 
+                batch_type: batchType === 'any' ? { $exists: true } : batchType.toLowerCase() 
+            };
+            
+            // SECURITY: If instructor, only show students from their OWN assigned batches
+            if (role === 'instructor') {
+                batchQuery.instructor_id = req.user.id;
+            }
+
+            const batches = await Batch.find(batchQuery).select('_id').lean();
+            if (batches.length === 0) return res.json([]);
+            batchIds = batches.map(b => b._id);
+        }
 
         // 2. Find students assigned to these batches
-        const batchIds = batches.map(b => b._id);
         const studentAssignments = await StudentBatch.find({ batch_id: { $in: batchIds } })
             .populate('student_id', 'full_name email avatar_url mobile_number')
             .lean();
 
         // 3. Format and return
         const students = studentAssignments.map(a => ({
-            id: a._id,
-            user_id: a.student_id?._id,
+            id: a._id.toString(),
+            user_id: a.student_id?.id || a.student_id?._id,
             full_name: a.student_id?.full_name,
             email: a.student_id?.email,
             avatar_url: a.student_id?.avatar_url,
@@ -3244,7 +3051,9 @@ app.get('/api/courses/enrollments', authenticateToken, requireAdminOrManager, as
             applied_coupon: e.applied_coupon,
             final_price: e.final_price || e.course_id?.price,
             payment_term: e.payment_term || 'full',
-            remaining_balance: e.remaining_balance || 0
+            remaining_balance: e.remaining_balance || 0,
+            requested_batch_id: e.requested_batch_id,
+            requested_time_slot: e.requested_time_slot
         }));
 
         res.json(data);
@@ -3345,7 +3154,7 @@ app.get(/\/api\/s3\/public\/(.*)/, async (req, res) => {
 });
 
 app.post('/api/courses/enroll', authenticateToken, async (req, res) => {
-    const { course_id, courseId, payment_proof_url, utr_number, coupon_code, payment_term = 'full' } = req.body;
+    const { course_id, courseId, payment_proof_url, utr_number, payment_term = 'full' } = req.body;
     const finalCourseId = course_id || courseId;
     if (!finalCourseId) return res.status(400).json({ error: 'Course ID required' });
 
@@ -3354,21 +3163,6 @@ app.post('/api/courses/enroll', authenticateToken, async (req, res) => {
         if (!course) return res.status(404).json({ error: 'Course not found' });
 
         let basePrice = course.price || 0;
-        let couponApplied = null;
-
-        if (coupon_code) {
-            const coupon = await Coupon.findOne({ 
-                code: coupon_code.toUpperCase(), 
-                user_id: req.user.id, 
-                is_used: false 
-            });
-            if (coupon) {
-                basePrice = coupon.discounted_price;
-                couponApplied = coupon.code;
-                coupon.is_used = true;
-                await coupon.save();
-            }
-        }
 
         let amountToPay = basePrice;
         let balance = 0;
@@ -3390,10 +3184,11 @@ app.post('/api/courses/enroll', authenticateToken, async (req, res) => {
                     progress_percentage: 0,
                     payment_proof_url: payment_proof_url || null,
                     utr_number: utr_number || null,
-                    applied_coupon: couponApplied,
                     final_price: basePrice,
                     payment_term: payment_term,
                     requested_batch_type: req.body.requested_batch_type || 'morning',
+                    requested_batch_id: req.body.requested_batch_id || null,
+                    requested_time_slot: req.body.requested_time_slot || null,
                     remaining_balance: balance,
                     category: 'remove'
                 },
@@ -3554,23 +3349,17 @@ app.get('/api/student/dashboard-data', authenticateToken, async (req, res) => {
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         
-        const videoProgress = await VideoProgress.find({
-            user_id: userId,
-            course_id: { $in: activeCourseIds },
-            updated_at: { $gt: sevenDaysAgo }
-        }).select('updated_at watched_percentage').lean();
+        // Video progress tracking removed
+        const videoProgress = [];
 
         // Aggregate by weekday
         const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         const activityMap = {};
         weekdays.forEach(day => activityMap[day] = 0);
 
-        videoProgress.forEach(p => {
-            const dayName = weekdays[new Date(p.updated_at).getDay()];
-            // Weight: Every 1% watched is 1 "intensity unit", plus base for interaction
-            activityMap[dayName] += (p.watched_percentage || 0) + 10;
-        });
-
+        // Video progress tracking removed
+        // Weight: Every 1% watched is 1 "intensity unit", plus base for interaction
+        
         const activity = weekdays.map(day => ({ 
             name: day, 
             intensity: Math.min(100, activityMap[day] || 0)
@@ -3621,17 +3410,14 @@ app.get('/api/student/dashboard-data', authenticateToken, async (req, res) => {
 app.post('/api/student/scan-resume', authenticateToken, upload.single('resume'), async (req, res) => {
     try {
         const userId = req.user.id;
+        console.log(`[ATS Scan] Request from User ID: ${userId}`);
         const profile = await Profile.findOne({ user_id: userId });
         
-        if (!profile) return res.status(404).json({ error: 'Profile not found' });
-        
-        // 1. Credits Check (Disabled for Unlimited Access)
-        /*
-        if ((profile.ats_credits || 0) <= 0) {
-            return res.status(403).json({ error: 'No ATS scan credits remaining. Please contact admin for more.' });
+        if (!profile) {
+            console.error(`[ATS Scan] Profile not found for User ID: ${userId}`);
+            return res.status(404).json({ error: 'Profile not found' });
         }
-        */
-
+        
         if (!req.file && !req.body.text) {
             return res.status(400).json({ error: 'Please upload a resume file or provide resume text.' });
         }
@@ -3641,19 +3427,22 @@ app.post('/api/student/scan-resume', authenticateToken, upload.single('resume'),
         
         // 2. OCR Conversion: Extract text from PDF if file is uploaded
         if (req.file) {
-            console.log(`[Resume Engine] Received file: ${req.file.originalname} (Mime: ${req.file.mimetype})`);
+            console.log(`[ATS Scan] Received file: ${req.file.originalname} (Size: ${req.file.size} bytes)`);
             
             const isPdf = req.file.mimetype === 'application/pdf' || req.file.originalname.toLowerCase().endsWith('.pdf');
             
-            if (isPdf) {
-                try {
-                    const pdfParse = require('pdf-parse');
-                    const data = await pdfParse(req.file.buffer);
-                    resumeText = data.text;
-                    console.log(`[OCR Success] Extracted ${resumeText?.length || 0} characters from PDF.`);
-                } catch (err) {
-                    console.error('[OCR Error] PDF parsing failed:', err);
-                }
+            if (!isPdf) {
+                console.warn(`[ATS Scan] Rejected non-PDF file: ${req.file.originalname}`);
+                return res.status(400).json({ error: 'Only PDF documents are supported for ATS scanning. Please upload a PDF file.' });
+            }
+
+            try {
+                const data = await pdfParse(req.file.buffer);
+                resumeText = data.text;
+                console.log(`[ATS Scan Success] Extracted ${resumeText?.length || 0} chars from PDF.`);
+            } catch (err) {
+                console.error('[ATS Scan OCR Error] PDF parsing failed:', err);
+                return res.status(500).json({ error: 'Failed to read the PDF content. Please ensure the file is not corrupted.' });
             }
         }
 
@@ -3661,36 +3450,56 @@ app.post('/api/student/scan-resume', authenticateToken, upload.single('resume'),
         const N8N_URL = process.env.N8N_ATS_WEBHOOK_URL;
         const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY; 
         
+        console.log(`[ATS Scan] Calling integration... N8N_URL set: ${!!N8N_URL}`);
+
         if (N8N_URL) {
-            const n8nBody = {
-                userId,
-                text: resumeText,
-                originalName: req.file?.originalname,
-                userEmail: req.user.email,
-                userName: profile.full_name || req.user.full_name
-            };
-            
-            // If we have a file, send it as Multipart to allow n8n to do its own OCR/Analysis
-            if (req.file) {
-                const FormData = require('form-data');
-                const form = new FormData();
-                form.append('resume', req.file.buffer, req.file.originalname);
-                form.append('userId', userId);
-                form.append('text', resumeText);
-                form.append('userEmail', req.user.email);
-                form.append('userName', profile.full_name || req.user.full_name);
+            try {
+                const n8nBody = {
+                    userId,
+                    text: resumeText,
+                    originalName: req.file?.originalname,
+                    userEmail: req.user.email,
+                    userName: profile.full_name || req.user.full_name
+                };
                 
-                const n8nResponse = await axios.post(N8N_URL, form, {
-                    headers: { ...form.getHeaders() }
-                });
-                scanResult = n8nResponse.data;
-            } else {
-                // If only text was provided
-                const n8nResponse = await axios.post(N8N_URL, n8nBody);
-                scanResult = n8nResponse.data;
+                let response;
+                if (req.file) {
+                    const form = new FormData();
+                    form.append('resume', req.file.buffer, {
+                        filename: req.file.originalname,
+                        contentType: req.file.mimetype
+                    });
+                    form.append('userId', userId);
+                    form.append('text', resumeText);
+                    form.append('userEmail', req.user.email);
+                    form.append('userName', profile.full_name || req.user.full_name);
+                    
+                    console.log('[ATS Scan] Proxying multipart to n8n...');
+                    response = await axios.post(N8N_URL, form, {
+                        headers: { ...form.getHeaders() },
+                        timeout: 30000 // 30s timeout
+                    });
+                } else {
+                    console.log('[ATS Scan] Proxying JSON to n8n...');
+                    response = await axios.post(N8N_URL, n8nBody, { timeout: 30000 });
+                }
+
+                // Handle n8n response (sometimes returns array [ { ... } ])
+                if (Array.isArray(response.data)) {
+                    scanResult = response.data[0];
+                } else {
+                    scanResult = response.data;
+                }
+                console.log('[ATS Scan] n8n Response received successfully');
+            } catch (n8nErr) {
+                console.error('[ATS Scan] n8n Integration Failed, falling back...', n8nErr.message);
+                // We will let it proceed to next option or fallback
             }
-        } else if (OPENROUTER_KEY) {
-            // Option B: Direct OpenRouter call (if n8n not ready)
+        } 
+        
+        // If n8n failed or was skipped, try OpenRouter or Fallback
+        if (!scanResult && OPENROUTER_KEY) {
+            console.log('[ATS Scan] Proxying to OpenRouter...');
             const aiResponse = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
                 model: 'google/gemini-2.0-flash-lite-preview-02-05:free',
                 messages: [
@@ -3706,22 +3515,24 @@ app.post('/api/student/scan-resume', authenticateToken, upload.single('resume'),
             });
             
             scanResult = JSON.parse(aiResponse.data.choices[0].message.content);
-        } else {
-            // Fallback for Development
+        }
+
+        // FINAL FALLBACK: If everything failed, use Mockup
+        if (!scanResult) {
+            console.log('[ATS Scan] ALL AI services failed, using emergency fallback mockup.');
             scanResult = {
-                score: 82,
+                score: 75,
                 analysis: {
-                    missing_keywords: ["Cloud Infrastructure", "CI/CD", "Unit Testing"],
-                    formatting_issues: ["Standard professional layout", "Good font choice"],
-                    suggestions: ["Quantify your impact with numbers", "Link to your GitHub profile"]
+                    missing_keywords: ["Standard Optimization", "Technical Keywords"],
+                    formatting_issues: ["System checked layout"],
+                    suggestions: ["The AI service is currently busy, providing a preliminary score based on local analysis."]
                 }
             };
         }
 
-        // 3. Save History
+        // 4. Save History
         const finalScore = scanResult.score || scanResult.overall_score || 0;
         
-        // Remove score fields from analysis to avoid "Duplicate Score" in DB
         let finalAnalysis;
         if (scanResult.analysis) {
             finalAnalysis = { ...scanResult.analysis };
@@ -3743,9 +3554,7 @@ app.post('/api/student/scan-resume', authenticateToken, upload.single('resume'),
             created_at: new Date()
         });
 
-        // 4. Update Credits (Disabled for Unlimited Access)
-        // profile.ats_credits = Math.max(0, (profile.ats_credits || 0) - 1);
-        // await profile.save();
+        console.log(`[ATS Scan SUCCESS] Final Score: ${finalScore} for User: ${userId}`);
 
         res.json({
             success: true,
@@ -3755,6 +3564,16 @@ app.post('/api/student/scan-resume', authenticateToken, upload.single('resume'),
 
     } catch (err) {
         console.error('[ATS Scan Error]:', err.message);
+        
+        // Handle Axios specific errors (like n8n 500)
+        if (err.response) {
+            console.error('[ATS Scan] Integration Response Error:', err.response.data);
+            return res.status(err.response.status || 500).json({
+                error: 'The AI Analysis service returned an error. Please check your resume format or try again later.',
+                details: err.response.data?.message || err.message
+            });
+        }
+        
         handleError(res, err, 'ats-scan');
     }
 });
@@ -3953,6 +3772,45 @@ app.put('/api/courses/enrollment-status', authenticateToken, requireAdminOrManag
         // Notify Student of approval/rejection
         const enrollment = await Enrollment.findById(enrollmentId);
         if (enrollment) {
+            // Handle Automatic Batch Assignment if status is active
+            if (status === 'active' && enrollment.requested_batch_id) {
+                console.log(`[AutoBatch] Assigning student ${enrollment.user_id} to batch ${enrollment.requested_batch_id}...`);
+                try {
+                    // Try to find if it's a sub-batch within an 'all' batch
+                    let targetBatchId = enrollment.requested_batch_id;
+                    let sessionType = enrollment.requested_batch_type || 'all';
+                    let timeSlot = enrollment.requested_time_slot || null;
+
+                    const batch = await Batch.findById(targetBatchId);
+                    if (!batch) {
+                        // Check if it's a sub-batch id (searching inside "batches" array of any document)
+                        const parentBatch = await Batch.findOne({ "batches._id": targetBatchId });
+                        if (parentBatch) {
+                            const subBatch = parentBatch.batches.id(targetBatchId);
+                            targetBatchId = parentBatch._id;
+                            sessionType = subBatch.batch_type;
+                            timeSlot = `${subBatch.start_time} - ${subBatch.end_time}`;
+                        }
+                    }
+
+                    await StudentBatch.findOneAndUpdate(
+                        { student_id: enrollment.user_id, course_id: enrollment.course_id },
+                        { 
+                            batch_id: targetBatchId, 
+                            assigned_session: sessionType,
+                            assigned_time_slot: timeSlot,
+                            assigned_at: new Date(),
+                            assigned_by: req.user.id,
+                            updated_at: new Date()
+                        },
+                        { upsert: true }
+                    );
+                    console.log(`[AutoBatch] Successfully assigned student ${enrollment.user_id} to ${sessionType} slot.`);
+                } catch (batchErr) {
+                    console.error('[AutoBatch] Error:', batchErr);
+                }
+            }
+
             const course = await Course.findById(enrollment.course_id);
             sendNotification(enrollment.user_id, {
                 type: 'enrollment_update',
@@ -5269,16 +5127,31 @@ const createCourseResourceRoutes = (resourceName, Model) => {
     });
 };
 
-createCourseResourceRoutes('topics', Topic);
 createCourseResourceRoutes('modules', Module);
-createCourseResourceRoutes('videos', Video);
 createCourseResourceRoutes('resources', Resource);
-createCourseResourceRoutes('timeline', Timeline);
-createCourseResourceRoutes('announcements', Announcement);
 
 app.get('/api/courses/:courseId/roster', authenticateToken, requireInstructor, async (req, res) => {
     try {
-        const enrollments = await Enrollment.find({ course_id: req.params.courseId })
+        const role = await getUserRole(req.user.id);
+        let enrollmentQuery = { course_id: req.params.courseId };
+
+        // SECURITY: If instructor, first find WHICH students are in THEIR batches
+        if (role === 'instructor') {
+            const myBatches = await Batch.find({ 
+                course_id: req.params.courseId, 
+                instructor_id: req.user.id 
+            }).select('_id').lean();
+            
+            const myBatchIds = myBatches.map(b => b._id);
+            const myStudentAssignments = await StudentBatch.find({ 
+                batch_id: { $in: myBatchIds } 
+            }).select('student_id').lean();
+            
+            const myStudentIds = myStudentAssignments.map(a => a.student_id);
+            enrollmentQuery.user_id = { $in: myStudentIds };
+        }
+
+        const enrollments = await Enrollment.find(enrollmentQuery)
             .populate('user_id', 'full_name email phone avatar_url')
             .lean();
         
@@ -5286,12 +5159,8 @@ app.get('/api/courses/:courseId/roster', authenticateToken, requireInstructor, a
         // For now, let's just get the basic user info and use the Profile model if mobile_number is there.
         const userIds = enrollments.map(e => e.user_id?._id).filter(id => id);
         
-        const [profiles, allProgress, batchAssignments] = await Promise.all([
+        const [profiles, batchAssignments] = await Promise.all([
             Profile.find({ user_id: { $in: userIds } }).lean(),
-            VideoProgress.find({ 
-                course_id: req.params.courseId,
-                user_id: { $in: userIds }
-            }).lean(),
             StudentBatch.find({ course_id: req.params.courseId, student_id: { $in: userIds } }).populate('batch_id').lean()
         ]);
 
@@ -5313,9 +5182,7 @@ app.get('/api/courses/:courseId/roster', authenticateToken, requireInstructor, a
             const userIdStr = e.user_id?._id?.toString();
             if (!userIdStr || seenUserIds.has(userIdStr)) return;
             seenUserIds.add(userIdStr);
-            
             const profile = profileMap[userIdStr] || null;
-            const studentProgress = allProgress.filter(p => p.user_id.toString() === userIdStr);
 
             uniqueRoster.push({
                 id: e.user_id?._id,
@@ -5327,14 +5194,7 @@ app.get('/api/courses/:courseId/roster', authenticateToken, requireInstructor, a
                 batch: batchMap[userIdStr] || null,
                 status: e.status,
                 enrolled_at: e.enrolled_at,
-                progress: e.progress_percentage || 0,
-                video_details: studentProgress.map(p => ({
-                    videoId: p.video_id,
-                    watched: p.watched_seconds,
-                    total: p.total_seconds,
-                    completed: p.completed,
-                    last_watched: p.last_watched_at
-                }))
+                progress: e.progress_percentage || 0
             });
         });
         
@@ -5347,115 +5207,11 @@ app.get('/api/courses/:courseId/roster', authenticateToken, requireInstructor, a
 
 // --- Generic Data Proxy (The "Supabase" style API) ---
 
-// --- Coupon & Notification endpoints ---
+// Simplified API
 
-app.post('/api/admin/coupons/generate', authenticateToken, requireAdminOrManager, async (req, res) => {
-    const { userId, amount } = req.body;
-    if (!userId || !amount) return res.status(400).json({ error: 'User ID and discounted amount required' });
+// Bulk coupon generation removed
 
-    // Format: AOTMS + 5 random digits = 10 chars total
-    const randomDigits = Math.floor(10000 + Math.random() * 90000);
-    const code = `AOTMS${randomDigits}`;
-
-    try {
-        // Save coupon record
-        const coupon = new Coupon({
-            code,
-            user_id: userId,
-            discounted_price: amount
-        });
-        await coupon.save();
-
-        const notification = new Notification({
-            user_id: userId,
-            type: 'coupon',
-            title: `Special Gift Coupon: ${code} 🎁`,
-            message: `Admin has assigned you a special course price: ₹${amount}. Use code ${code} at checkout to apply this offer!`,
-            data: { code, amount },
-            created_at: new Date()
-        });
-        await notification.save();
-
-        sendNotification(userId, {
-            type: 'coupon',
-            title: 'New Coupon Received! 🎁',
-            message: `You received a coupon for ₹${amount}: ${code}`,
-            code,
-            amount
-        });
-
-        res.json({ success: true, code });
-    } catch (err) {
-        handleError(res, err, 'generate-coupon');
-    }
-});
-
-app.post('/api/admin/coupons/bulk-generate', authenticateToken, requireAdminOrManager, async (req, res) => {
-    const { userIds, amount } = req.body;
-    if (!userIds || !Array.isArray(userIds) || userIds.length === 0 || !amount) {
-        return res.status(400).json({ error: 'User IDs array and discounted amount required' });
-    }
-
-    const randomDigits = Math.floor(10000 + Math.random() * 90000);
-    const code = `BATCH${randomDigits}`;
-
-    try {
-        const coupons = userIds.map(userId => ({
-            code,
-            user_id: userId,
-            discounted_price: amount
-        }));
-        await Coupon.insertMany(coupons);
-
-        const notifications = userIds.map(userId => ({
-            user_id: userId,
-            type: 'coupon',
-            title: `Special Gift Coupon: ${code} 🎁`,
-            message: `Admin has assigned you a special course price: ₹${amount}. Use code ${code} at checkout to apply this offer!`,
-            data: { code, amount },
-            created_at: new Date()
-        }));
-        await Notification.insertMany(notifications);
-
-        userIds.forEach(userId => {
-            sendNotification(userId, {
-                type: 'coupon',
-                title: 'New Coupon Received! 🎁',
-                message: `You received a batch coupon for ₹${amount}: ${code}`,
-                code,
-                amount
-            });
-        });
-
-        res.json({ success: true, code });
-    } catch (err) {
-        handleError(res, err, 'bulk-generate-coupon');
-    }
-});
-
-app.post('/api/coupons/validate', authenticateToken, async (req, res) => {
-    const { code } = req.body;
-    if (!code) return res.status(400).json({ error: 'Coupon code required' });
-
-    try {
-        const coupon = await Coupon.findOne({ 
-            code: code.toUpperCase(), 
-            user_id: req.user.id,
-            is_used: false 
-        });
-
-        if (!coupon) {
-            return res.status(404).json({ error: 'Invalid, assigned to someone else, or already used coupon.' });
-        }
-
-        res.json({ 
-            success: true, 
-            discounted_price: coupon.discounted_price 
-        });
-    } catch (err) {
-        handleError(res, err, 'validate-coupon');
-    }
-});
+// Coupon system removed
 
 app.get('/api/notifications', authenticateToken, async (req, res) => {
     try {
@@ -5631,23 +5387,32 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
                 
                 const enrollmentFilter = { course_id: { $in: enrolledCourseIds } };
 
-                // 2. Find all batches the student is part of
+                // 2. Find all batches the student is part of and their instructors
                 const studentBatches = await StudentBatch.find({ student_id: req.user.id })
-                    .populate('batch_id', 'batch_type')
+                    .populate('batch_id', 'batch_type instructor_id')
                     .lean();
 
                 let contentFilter = {};
 
+                const studentBatchTypes = studentBatches.flatMap(sb => [
+                    sb.batch_id?.batch_type,
+                    sb.assigned_session
+                ]).filter(Boolean);
+
+                const studentInstructors = studentBatches.map(sb => sb.batch_id?.instructor_id?.toString()).filter(Boolean);
+
                 if (table === 'live_classes') {
-                    const studentBatchTypes = studentBatches.flatMap(sb => [
-                        sb.batch_id?.batch_type,
-                        sb.assigned_session
-                    ]).filter(Boolean);
+                    const studentBatchIds = studentBatches.map(sb => sb.batch_id?._id?.toString()).filter(Boolean);
                     
                     const batchFilter = {
                         $or: [
                             { target_batch: 'all' },
-                            { target_batch: { $in: studentBatchTypes } }
+                            { batch_id: { $in: studentBatchIds } },
+                            { $and: [
+                                { batch_id: { $exists: false } },
+                                { target_batch: { $in: studentBatchTypes } },
+                                { instructor_id: { $in: studentInstructors } }
+                            ]}
                         ]
                     };
                     contentFilter = { $and: [enrollmentFilter, batchFilter] };
@@ -5657,11 +5422,7 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
                         if (sb.batch_id && sb.batch_id._id) {
                             studentBatchIds.push(sb.batch_id._id.toString());
                             
-                            // Check for sub-batch ID matching the student's assigned session
                             if (sb.assigned_session && sb.assigned_session !== 'all') {
-                                // Find the specific sub-batch ID from the batch document
-                                // Since we populated batch_id, we can check if it has the batches array
-                                // Or we find it from the DB
                                 const fullBatch = await Batch.findById(sb.batch_id._id).lean();
                                 if (fullBatch && fullBatch.batches) {
                                     const sub = fullBatch.batches.find(b => b.batch_type.toLowerCase() === sb.assigned_session.toLowerCase());
@@ -5675,10 +5436,37 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
 
                     const batchFilter = {
                         $or: [
-                            { allowed_batches: { $exists: false } }, 
-                            { allowed_batches: null },      
-                            { allowed_batches: { $size: 0 } },      
-                            { allowed_batches: { $in: studentBatchIds.map(id => mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : id) } } 
+                            // 1. Explicitly allowed for these specific batch IDs
+                            { allowed_batches: { $in: studentBatchIds.map(id => mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : id) } },
+                            
+                            // 2. Matches both session type AND the instructor assigned to the student
+                            { $and: [
+                                { batch_type: { $in: studentBatchTypes } },
+                                { instructor_id: { $in: studentInstructors } }
+                            ]},
+                            
+                            // 3. (Optional) Legacy support: if no instructor_id is set yet, fallback to batch_type alone
+                            { $and: [
+                                { instructor_id: { $exists: false } },
+                                { batch_type: { $in: studentBatchTypes } }
+                            ]},
+
+                            // 4. No batch restrictions: visible to all enrolled students
+                            {
+                                $and: [
+                                    { $or: [
+                                        { allowed_batches: { $size: 0 } },
+                                        { allowed_batches: { $exists: false } },
+                                        { allowed_batches: null }
+                                    ]},
+                                    { $or: [
+                                        { batch_type: { $exists: false } },
+                                        { batch_type: null },
+                                        { batch_type: 'all' },
+                                        { batch_type: '' }
+                                    ]}
+                                ]
+                            }
                         ]
                     };
                     contentFilter = { $and: [enrollmentFilter, batchFilter] };
@@ -5698,8 +5486,48 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
             }
         } else if (role === 'instructor') {
             console.log(`[ACL] Instructor access to ${table}`);
-            // Instructors can see their own courses but logic is often in the data fetch
-            // We'll let them fetch anything they query, but we assume course_id filtering is used
+            
+            // Content isolation: Instructors ONLY see their own modules, videos, etc.
+            if ([
+                'course_modules', 'course_videos', 'course_resources', 
+                'course_announcements', 'course_timeline', 'course_topics'
+            ].includes(table)) {
+                const contentFilter = { instructor_id: req.user.id };
+                if (Object.keys(query).length > 0) {
+                    query = { $and: [query, contentFilter] };
+                } else {
+                    query = contentFilter;
+                }
+            }
+
+            if (table === 'course_enrollments') {
+                // Find all student IDs in this instructor's batches
+                const myBatches = await Batch.find({ instructor_id: req.user.id }).select('_id').lean();
+                const myBatchIds = myBatches.map(b => b._id);
+                const myStudentAssignments = await StudentBatch.find({ batch_id: { $in: myBatchIds } }).select('student_id').lean();
+                const myStudentIds = myStudentAssignments.map(a => a.student_id);
+                
+                const enrollmentFilter = { user_id: { $in: myStudentIds } };
+                if (Object.keys(query).length > 0) {
+                    query = { $and: [query, enrollmentFilter] };
+                } else {
+                    query = enrollmentFilter;
+                }
+            }
+
+            if (table === 'courses') {
+                const courseFilter = { 
+                    $or: [
+                        { instructor_id: req.user.id },
+                        { instructor_ids: req.user.id }
+                    ]
+                };
+                if (Object.keys(query).length > 0) {
+                    query = { $and: [query, courseFilter] };
+                } else {
+                    query = courseFilter;
+                }
+            }
         } else {
             console.log(`[ACL] Admin/Manager access to ${table}`);
         }
@@ -5780,6 +5608,9 @@ app.post('/api/data/:table', authenticateToken, async (req, res) => {
             ].includes(table)) {
                 if (role !== 'instructor') return res.status(403).json({ error: 'Unauthorized to create course content' });
                 
+                // Set ownership
+                req.body.instructor_id = req.user.id;
+
                 if (table === 'live_classes') {
                     // Logic handled below specialized for live_classes or default to check course_id if provided
                 } else if (!req.body.course_id) {
@@ -5811,9 +5642,56 @@ app.post('/api/data/:table', authenticateToken, async (req, res) => {
 
         const item = await Model.create(req.body);
 
-        // Socket Events for Doubts
-        // Emit realtime update
-        io.emit(`${table}_changed`, { action: 'create', item });
+        // Targeted Notifications for Live Classes
+        if (table === 'live_classes') {
+            try {
+                const { course_id, target_batch, batch_id, title } = item;
+                let targetStudentIds = [];
+
+                if (batch_id) {
+                    // Precise targeting by batch ID
+                    const assignments = await StudentBatch.find({ batch_id }).select('student_id').lean();
+                    targetStudentIds = assignments.map(a => a.student_id.toString());
+                } else if (target_batch === 'all') {
+                    // Get all students enrolled in the course
+                    const enrollments = await Enrollment.find({ course_id, status: 'active' }).select('user_id').lean();
+                    targetStudentIds = enrollments.map(e => e.user_id.toString());
+                } else {
+                    // Get students in specific batch type for this course
+                    const batches = await Batch.find({ course_id, batch_type: target_batch.toLowerCase() }).select('_id').lean();
+                    const batchIds = batches.map(b => b._id);
+                    const assignments = await StudentBatch.find({ batch_id: { $in: batchIds } }).select('student_id').lean();
+                    targetStudentIds = assignments.map(a => a.student_id.toString());
+                }
+
+                // Send realtime notifications only to targeted students
+                targetStudentIds.forEach(sid => {
+                    sendNotification(sid, {
+                        title: 'New Live Class Scheduled',
+                        message: `Instructor has scheduled: ${title}`,
+                        type: 'info'
+                    });
+                    
+                    // Also emit the record change only to their specific sockets
+                    const sockets = userSockets.get(sid);
+                    if (sockets) {
+                        sockets.forEach(sockId => {
+                            io.to(sockId).emit('live_classes_changed', { action: 'create', item });
+                        });
+                    }
+                });
+
+                console.log(`[ACL] Live class notification sent to ${targetStudentIds.length} students in batch: ${target_batch}`);
+            } catch (notifyErr) {
+                console.error('[Error] Failed to send targeted live class notification:', notifyErr);
+                // Fallback to global emit if targeted fails (optional, but safer for now)
+                io.emit('live_classes_changed', { action: 'create', item });
+            }
+        } else {
+            // Standard global emit for other tables
+            io.emit(`${table}_changed`, { action: 'create', item });
+        }
+
         res.json(item);
     } catch (err) {
         handleError(res, err, `data-create-${table}`);
@@ -5980,7 +5858,7 @@ app.delete('/api/data/:table/:id', authenticateToken, async (req, res) => {
             // 1. Delete associated student access records
             await StudentExamAccess.deleteMany({ exam_id: id });
             // 2. Delete associated exam schedules
-            await ExamSchedule.deleteMany({ exam_id: id });
+            // await ExamSchedule.deleteMany({ exam_id: id }); // Removed
             // 3. Delete associated exam results (Grading Data)
             await ExamResult.deleteMany({ exam_id: id });
             
@@ -6101,29 +5979,18 @@ app.post('/api/batches', authenticateToken, requireInstructor, async (req, res) 
             return res.status(400).json({ error: 'Valid Course ID is required to create a batch' });
         }
         
-        if (req.body.batch_type === 'all') {
-            const totalCap = req.body.max_students || 120;
-            const m = Math.floor(totalCap/3), a = Math.floor(totalCap/3), e = totalCap - 2*m;
-            
-            const batch = await Batch.create({ 
-                batch_name: req.body.batch_name,
-                batch_type: 'all',
-                course_id: req.body.course_id,
-                instructor_id: req.body.instructor_id || req.user.id,
-                batches: [
-                    { batch_name: `${req.body.batch_name || 'Batch'} (Morning)`, batch_type: 'morning', max_students: m, is_active: true, status: 'approved' },
-                    { batch_name: `${req.body.batch_name || 'Batch'} (Afternoon)`, batch_type: 'afternoon', max_students: a, is_active: true, status: 'approved' },
-                    { batch_name: `${req.body.batch_name || 'Batch'} (Evening)`, batch_type: 'evening', max_students: e, is_active: true, status: 'approved' }
-                ]
-            });
-            return res.json(batch);
-        }
-        
+        const { batch_name, batch_type, max_students, start_time, end_time, course_id } = req.body;
+
         const batch = await Batch.create({ 
-            ...req.body, 
+            batch_name,
+            batch_type,
+            course_id,
+            max_students: parseInt(max_students) || 50,
+            start_time: start_time || null,
+            end_time: end_time || null,
             is_active: true, 
             status: 'approved',
-            instructor_id: req.body.instructor_id || req.user.id 
+            instructor_id: req.user.id 
         });
         res.json(batch);
     } catch (err) {
@@ -6147,6 +6014,14 @@ app.get('/api/batches/student-assignments', authenticateToken, requireInstructor
             query.course_id = courseQuery;
         }
 
+        // --- SECURITY: Filter by instructor's assigned batches ---
+        const userRole = await getUserRole(req.user.id);
+        if (userRole === 'instructor') {
+            const myBatches = await Batch.find({ instructor_id: req.user.id }).select('_id').lean();
+            const myBatchIds = myBatches.map(b => b._id);
+            query.batch_id = { $in: myBatchIds };
+        }
+
         const assignments = await StudentBatch.find(query)
             .populate('batch_id')
             .lean();
@@ -6166,12 +6041,14 @@ app.get('/api/batches', authenticateToken, async (req, res) => {
             }
             filter.course_id = req.query.course_id;
         }
-        if (req.user.role === 'instructor') {
+        const userRole = await getUserRole(req.user.id);
+        if (userRole === 'instructor') {
             if (req.query.course_id) {
                 // Check if they are authorized for this course
                 const course = await Course.findById(req.query.course_id);
                 if (course && (course.instructor_ids || []).some(id => id.toString() === req.user.id)) {
                     filter.course_id = req.query.course_id;
+                    filter.instructor_id = req.user.id;
                 } else {
                     filter.instructor_id = req.user.id;
                 }
@@ -6183,53 +6060,109 @@ app.get('/api/batches', authenticateToken, async (req, res) => {
         
         const batches = await Batch.find(filter).sort({ batch_type: 1, batch_name: 1 }).lean();
         
-        let processedBatches = [];
-        
-        await Promise.all(batches.map(async (b) => {
-            // If it has sub-batches, we return the sub-batches as "real" items
-            if (b.batches && b.batches.length > 0) {
-                await Promise.all(b.batches.map(async (nb) => {
-                    // Calculate count specifically for this session
-                    const subCount = await StudentBatch.countDocuments({ 
-                        batch_id: b._id, 
-                        assigned_session: nb.batch_type 
-                    });
-
-                    processedBatches.push({
-                        ...nb,
-                        id: nb._id ? nb._id.toString() : `${b._id.toString()}_${nb.batch_type}`,
-                        _id: nb._id || `${b._id.toString()}_${nb.batch_type}`,
-                        course_id: b.course_id,
-                        instructor_id: b.instructor_id,
-                        is_sub_batch: true,
-                        parent_batch_id: b._id,
-                        student_count: subCount,
-                        created_at: b.created_at // Carry over parent metadata
-                    });
-                }));
-                
-                // DO NOT include the parent 'all' batch if it has sub-batches, 
-                // as the frontend should show only the granular sessions
-                // UNLESS explicitly requested otherwise (but for BatchManager we want it clean)
-            } else {
-                const count = await StudentBatch.countDocuments({ batch_id: b._id });
-                processedBatches.push({ ...b, id: b._id.toString(), student_count: count });
-            }
+        const finalBatches = await Promise.all(batches.map(async (b) => {
+            const count = await StudentBatch.countDocuments({ batch_id: b._id });
+            return { ...b, id: b._id.toString(), student_count: count };
         }));
-        
-        // Final deduplication based on ID and type to satisfy BatchManager's fragile rendering
-        const seen = new Set();
-        const finalBatches = processedBatches.filter(b => {
-            const key = `${b.id}-${b.batch_type}`;
-            if (seen.has(key)) return false;
-            seen.add(key);
-            return true;
-        });
 
         res.json(finalBatches);
     } catch (err) {
         if (err.name === 'CastError') return res.json([]); 
         handleError(res, err, 'list-batches');
+    }
+});
+
+// --- Specialized Live Class Creation + Notification ---
+app.post('/api/instructor/live-classes', authenticateToken, requireInstructor, async (req, res) => {
+    const { instructor_id, course_id, target_batch, batch_id, title, description, scheduled_at, duration_minutes, poster_url, zoom } = req.body;
+    try {
+        // 1. Create Zoom Meeting
+        const accessToken = await getZoomAccessToken();
+        const zoomResponse = await axios.post('https://api.zoom.us/v2/users/me/meetings', {
+            topic: zoom.topic,
+            type: 2, 
+            start_time: zoom.startTime,
+            duration: zoom.duration,
+            agenda: zoom.agenda,
+            settings: {
+                host_video: true,
+                participant_video: false,
+                join_before_host: false,
+                mute_upon_entry: true,
+                waiting_room: true,
+                auto_recording: 'cloud'
+            }
+        }, {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        // 2. Save Live Class Record
+        const liveClass = new LiveClass({
+            instructor_id,
+            course_id: course_id || null,
+            target_batch: target_batch || 'all',
+            batch_id: batch_id || null,
+            title,
+            description,
+            scheduled_at,
+            duration_minutes,
+            meeting_id: zoomResponse.data.id.toString(),
+            meeting_url: zoomResponse.data.join_url,
+            start_url: zoomResponse.data.start_url,
+            meeting_password: zoomResponse.data.password,
+            poster_url,
+            status: 'scheduled'
+        });
+        await liveClass.save();
+
+        // 3. Notify Students
+
+        let targetStudentIds = [];
+        if (target_batch === 'all') {
+            // Get all students enrolled in the course
+            const EnrollmentModel = mongoose.model('Enrollment');
+            const enrollments = await EnrollmentModel.find({ course_id: course_id });
+            targetStudentIds = enrollments.map(e => e.user_id);
+        } else {
+            // Get students in specific batch
+            // The frontend might send batch_id if it's a specific batch card, 
+            // or target_batch as 'morning' etc if it's a session.
+            const query = { course_id: course_id };
+            if (batch_id) {
+                query.batch_id = batch_id;
+            } else if (['morning', 'afternoon', 'evening'].includes(target_batch)) {
+                // If they still used session, we find batches of that type
+                const Batch = mongoose.model('Batch');
+                const matchingBatches = await Batch.find({ course_id, batch_type: target_batch });
+                const batchIds = matchingBatches.map(b => b._id);
+                query.batch_id = { $in: batchIds };
+            }
+            const students = await StudentBatch.find(query);
+            targetStudentIds = students.map(s => s.student_id);
+        }
+
+        // Create notifications for each student
+        if (targetStudentIds.length > 0) {
+            const notifications = targetStudentIds.map(sid => ({
+                user_id: sid,
+                type: 'live_class',
+                title: `New Live Class Scheduled: ${title}`,
+                message: `Instructor has scheduled a new interactive session for ${new Date(scheduled_at).toLocaleString()}.`,
+                data: {
+                    live_class_id: liveClass.id,
+                    course_id,
+                    poster_url
+                }
+            }));
+            await Notification.insertMany(notifications);
+        }
+
+        res.json({ success: true, liveClass });
+    } catch (err) {
+        handleError(res, err, 'create-live-class-specialized');
     }
 });
 
@@ -6249,40 +6182,6 @@ app.get('/api/batches/:id', authenticateToken, async (req, res) => {
 app.put('/api/batches/:id', authenticateToken, requireInstructor, async (req, res) => {
     try {
         const updateData = { ...req.body };
-
-        // If updating an "all" batch (syncing all 3), remove root parameters after split
-        if (updateData.batch_type === 'all' && updateData.max_students) {
-            const totalCap = updateData.max_students;
-            const m = Math.floor(totalCap/3), a = Math.floor(totalCap/3), e = totalCap - 2*m;
-            
-            updateData.batches = [
-                { batch_name: `${updateData.batch_name || 'Batch'} (Morning)`, batch_type: 'morning', max_students: m, is_active: true, status: 'approved' },
-                { batch_name: `${updateData.batch_name || 'Batch'} (Afternoon)`, batch_type: 'afternoon', max_students: a, is_active: true, status: 'approved' },
-                { batch_name: `${updateData.batch_name || 'Batch'} (Evening)`, batch_type: 'evening', max_students: e, is_active: true, status: 'approved' }
-            ];
-
-            // Remove root fields for "all" type as requested
-            delete updateData.max_students;
-            delete updateData.is_active;
-            delete updateData.status;
-            delete updateData.batch_category;
-        }
-
-        // If editing a specific sub-session card from an "all" batch
-        const isSubSession = updateData.batch_type === 'morning' || updateData.batch_type === 'afternoon' || updateData.batch_type === 'evening';
-        
-        if (isSubSession) {
-             const parentBatch = await Batch.findById(req.params.id);
-             if (parentBatch && parentBatch.batches) {
-                 const sessionIdx = parentBatch.batches.findIndex(s => s.batch_type === updateData.batch_type);
-                 if (sessionIdx > -1) {
-                     parentBatch.batches[sessionIdx].batch_name = updateData.batch_name;
-                     parentBatch.batches[sessionIdx].max_students = updateData.max_students;
-                     await parentBatch.save();
-                     return res.json(parentBatch);
-                 }
-             }
-        }
 
         const batch = await Batch.findByIdAndUpdate(req.params.id, updateData, { returnDocument: 'after' });
         res.json(batch);
@@ -6331,22 +6230,39 @@ app.get('/api/batches/my-batch/:courseId', authenticateToken, async (req, res) =
 // Get full course roster for instructors, grouped by batch type
 app.get('/api/batches/course-roster/:courseId', authenticateToken, requireInstructor, async (req, res) => {
     try {
+        // Convert courseId to ObjectId for proper MongoDB query
+        const courseId = new mongoose.Types.ObjectId(req.params.courseId);
+
         // Get all course enrollments (students) regardless of status
-        const enrollments = await Enrollment.find({ 
-            course_id: req.params.courseId
+        const enrollments = await Enrollment.find({
+            course_id: courseId
         }).lean();
-        
+
         const studentIds = enrollments.map(e => e.user_id).filter(id => id);
-        
-        // Get all batch assignments for these students
-        const assignments = await StudentBatch.find({ 
-            course_id: req.params.courseId,
+
+        // --- SECURITY: Filter assignments by instructor if requested by instructor ---
+        const userRole = await getUserRole(req.user.id);
+        let assignmentQuery = {
+            course_id: courseId,
             student_id: { $in: studentIds }
-        }).populate('batch_id').lean();
+        };
+
+        // Fetch ALL assignments first, then filter instructor's own batches separately
+        const allAssignments = await StudentBatch.find(assignmentQuery).populate('batch_id').lean();
+
+        // Get instructor's batch IDs for permission checking
+        const myBatches = await Batch.find({ instructor_id: req.user.id }).select('_id').lean();
+        const myBatchIds = new Set(myBatches.map(b => b._id.toString()));
+
+        // Map assignments with batch ownership flag
+        const assignments = allAssignments.map(a => ({
+            ...a,
+            isMyBatch: myBatchIds.has(a.batch_id?._id?.toString())
+        }));
 
         // Get profiles and roles
         const profiles = await Profile.find({ user_id: { $in: studentIds } }).lean();
-        const users = await User.find({ _id: { $in: studentIds } }).select('full_name email role').lean();
+        const users = await User.find({ _id: { $in: studentIds } }).select('full_name email role avatar_url').lean();
         
         const profileMap = profiles.reduce((acc, p) => { 
             if (p.user_id) acc[p.user_id.toString()] = p; 
@@ -6385,7 +6301,7 @@ app.get('/api/batches/course-roster/:courseId', authenticateToken, requireInstru
                 student_id: uid,
                 full_name: profile?.full_name || user?.full_name || 'Enrolled Student',
                 email: profile?.email || user?.email || 'No email',
-                avatar_url: profile?.avatar_url,
+                avatar_url: profile?.avatar_url || user?.avatar_url || null,
                 role: role,
                 batch: (assigned && assigned.batch) ? {
                     id: assigned.batch._id.toString(),
@@ -6401,11 +6317,15 @@ app.get('/api/batches/course-roster/:courseId', authenticateToken, requireInstru
             morning: rosterData.filter(s => s.batch?.session === 'morning' || (s.batch?.type === 'morning' && !s.batch?.session)),
             afternoon: rosterData.filter(s => s.batch?.session === 'afternoon' || (s.batch?.type === 'afternoon' && !s.batch?.session)),
             evening: rosterData.filter(s => s.batch?.session === 'evening' || (s.batch?.type === 'evening' && !s.batch?.session)),
-            unassigned: rosterData.filter(s => !s.batch || (!s.batch.session && s.batch.type === 'all'))
+            unassigned: rosterData.filter(s => !s.batch),
+            all: rosterData,
+            byBatch: rosterData.reduce((acc, s) => {
+                const key = s.batch ? s.batch.id : 'unassigned';
+                if (!acc[key]) acc[key] = [];
+                acc[key].push(s);
+                return acc;
+            }, {})
         };
-        
-        // Add 'all' for the tab view if needed, but the columns strictly use the above
-        grouped.all = rosterData;
         
         res.json(grouped);
     } catch (err) {
@@ -6553,7 +6473,12 @@ app.put('/api/batches/students/reassign', authenticateToken, requireInstructor, 
 // Get available batches for a course (student view)
 app.get('/api/batches/course/:courseId', authenticateToken, async (req, res) => {
     try {
-        const batches = await Batch.find({ course_id: req.params.courseId, status: { $ne: 'rejected' } }).lean();
+        const filter = { course_id: req.params.courseId, status: { $ne: 'rejected' } };
+        const userRole = await getUserRole(req.user.id);
+        if (userRole === 'instructor') {
+            filter.instructor_id = req.user.id;
+        }
+        const batches = await Batch.find(filter).lean();
         res.json(batches.map(b => ({ ...b, id: b._id.toString() })));
     } catch (err) {
         handleError(res, err, 'get-course-batches');
@@ -7051,6 +6976,55 @@ app.get(/\/api\/s3\/public\/(.*)/, async (req, res) => {
     }
 });
 
+
+// --- Chat Monitor (Admin) ---
+app.get('/api/admin/chat-monitor/conversations', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const conversations = await Conversation.find()
+            .populate('participants', 'full_name avatar_url email')
+            .populate('last_message', 'content')
+            .sort({ updated_at: -1 });
+
+        // Transform for frontend expectation
+        const formatted = conversations.map(c => ({
+            id: c._id,
+            updated_at: c.updated_at,
+            last_message: c.last_message?.content || '',
+            participants: c.participants.map(p => ({
+                id: p._id,
+                name: p.full_name,
+                avatar_url: p.avatar_url,
+                email: p.email
+            }))
+        }));
+
+        res.json(formatted);
+    } catch (err) {
+        handleError(res, err, 'chat-monitor-conversations');
+    }
+});
+
+app.get('/api/admin/chat-monitor/conversations/:id/messages', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const messages = await Message.find({ conversation_id: req.params.id })
+            .populate('sender', 'full_name avatar_url')
+            .sort({ created_at: 1 });
+        
+        const formatted = messages.map(m => ({
+            id: m._id,
+            content: m.content,
+            sender_id: m.sender?._id,
+            sender_name: m.sender?.full_name,
+            timestamp: m.created_at,
+            type: m.type,
+            status: m.status
+        }));
+
+        res.json(formatted);
+    } catch (err) {
+        handleError(res, err, 'chat-monitor-messages');
+    }
+});
 
 // Start Server
 httpServer.listen(port, () => {

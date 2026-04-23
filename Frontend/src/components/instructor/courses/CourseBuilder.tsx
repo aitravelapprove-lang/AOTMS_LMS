@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit, ArrowLeft, Trash2, UploadCloud, GripVertical, Loader2, CheckCircle2, XCircle, Copy, Check, AlertTriangle, Clock, CheckCircle, FileVideo, X, Layers, ChevronUp, ChevronDown, Users, Sparkles, TrendingUp, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +13,13 @@ import { useCourseModules, useCreateCourseModule, useUpdateCourseModule, useModu
 import { fetchWithAuth } from '@/lib/api';
 import { Course } from '@/hooks/useInstructorData';
 import { VideoUploader } from '../VideoUploader';
+import { 
+  Plus, Edit, ArrowLeft, Trash2, UploadCloud, GripVertical, Loader2, 
+  CheckCircle2, XCircle, Copy, Check, AlertTriangle, Clock, CheckCircle, 
+  FileVideo, X, Layers, ChevronUp, ChevronDown, Users, Sparkles, 
+  TrendingUp, Activity, ExternalLink, Lock, PlayCircle, MoreVertical, 
+  Image as ImageIcon, Camera 
+} from 'lucide-react';
 import { BatchManager } from '../BatchManager';
 import { cn } from "@/lib/utils";
 
@@ -304,17 +310,40 @@ function ModuleItem({ module, course }: { module: CourseModule, course: Course }
                                 transition={{ delay: idx * 0.05 }}
                                 className="group/vid relative bg-white rounded-2xl sm:rounded-3xl border border-slate-100 p-2 sm:p-3 hover:shadow-2xl transition-all duration-300"
                             >
-                                <div className="relative aspect-video rounded-xl sm:rounded-2xl bg-black overflow-hidden mb-3">
-                                    <video
-                                        key={vid.video_url}
-                                        controls
-                                        className="w-full h-full object-contain"
-                                        preload="metadata"
-                                        poster={vid.thumbnail_url ? (vid.thumbnail_url.startsWith('http') ? vid.thumbnail_url : `/s3/public/${vid.thumbnail_url}`) : undefined}
-                                    >
-                                        <source src={vid.video_url.startsWith('https') ? vid.video_url : (vid.video_url.includes('s3') ? vid.video_url : `/s3/public/${vid.video_url}`)} type="video/mp4" />
-                                    </video>
-                                    <div className="absolute top-2 right-2 opacity-0 group-hover/vid:opacity-100 transition-opacity">
+                                <div className="relative aspect-video rounded-xl sm:rounded-2xl bg-black overflow-hidden mb-3 group/poster">
+                                    {vid.video_url ? (
+                                        <video
+                                            key={vid.video_url}
+                                            controls
+                                            className="w-full h-full object-contain"
+                                            preload="metadata"
+                                            poster={vid.thumbnail_url ? (vid.thumbnail_url.startsWith('http') ? vid.thumbnail_url : `/s3/public/${vid.thumbnail_url}`) : undefined}
+                                        >
+                                            <source src={vid.video_url.startsWith('https') ? vid.video_url : (vid.video_url.includes('s3') ? vid.video_url : `/s3/public/${vid.video_url}`)} type="video/mp4" />
+                                        </video>
+                                    ) : (
+                                        <div className="relative w-full h-full">
+                                            <img 
+                                                src={vid.thumbnail_url ? (vid.thumbnail_url.startsWith('http') ? vid.thumbnail_url : `/s3/public/${vid.thumbnail_url}`) : undefined} 
+                                                className="w-full h-full object-cover opacity-60"
+                                                alt=""
+                                            />
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 gap-3">
+                                                <div className="h-10 w-10 bg-indigo-500 rounded-xl flex items-center justify-center shadow-lg transform group-hover/poster:scale-110 transition-transform">
+                                                    <ExternalLink className="h-5 w-5 text-white" />
+                                                </div>
+                                                <Button 
+                                                    variant="secondary" 
+                                                    size="sm" 
+                                                    className="h-8 rounded-lg text-[10px] font-black uppercase tracking-widest bg-white/90"
+                                                    onClick={() => window.open(vid.drive_link, '_blank')}
+                                                >
+                                                    Open Link
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="absolute top-2 right-2 opacity-0 group-hover/vid:opacity-100 transition-opacity z-30">
                                         <Button 
                                             variant="ghost" 
                                             size="icon" 
@@ -590,7 +619,7 @@ export function CourseBuilder({ course, onBack }: CourseBuilderProps) {
                         <BatchManager 
                             courseId={course.id} 
                             courseTitle={course.title} 
-                            assignedSession={course.assigned_session}
+                            assignedSession={course.assigned_session === 'all' ? undefined : course.assigned_session as 'morning' | 'afternoon' | 'evening'}
                         />
                     </motion.div>
                 ) : (

@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -30,6 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { SyncDataButton } from './data/SyncDataButton';
 
 interface Batch {
     id: string;
@@ -50,7 +52,12 @@ interface DetailedMonitoringResult extends MonitoringResult {
     batchName?: string;
 }
 
-export function LiveMonitoring() {
+interface LiveMonitoringProps {
+    onSync?: () => void;
+    loading?: boolean;
+}
+
+export function LiveMonitoring({ onSync, loading: parentLoading = false }: LiveMonitoringProps) {
     const { userRole } = useAuth();
     const { data, loading: monitorLoading, refresh, deleteEnrollment, deleteExamResult } = useLiveMonitoring();
     const { profiles, courses, loading: adminLoading } = useAdminData(userRole);
@@ -247,9 +254,11 @@ export function LiveMonitoring() {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <Button onClick={() => refresh()} variant="ghost" className="h-12 w-12 rounded-2xl bg-white shadow-xl shadow-slate-200/10 hover:bg-slate-50 shrink-0">
-                       <Activity className={`h-5 w-5 ${loading ? 'animate-spin text-primary' : 'text-slate-400'}`} />
-                    </Button>
+                    <SyncDataButton 
+                        onSync={onSync || (() => refresh())} 
+                        isLoading={parentLoading || monitorLoading || adminLoading} 
+                        className="h-12 w-12 rounded-2xl bg-white shadow-xl shadow-slate-200/10 hover:bg-slate-50"
+                    />
                 </div>
             </div>
 
@@ -300,8 +309,9 @@ export function LiveMonitoring() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {filteredInstructors.map((inst, i) => (
-                                            <>
+                                        {filteredInstructors.map((inst) => (
+                                            <Fragment key={inst.id}>
+
                                                 <tr key={inst.id} className="group hover:bg-slate-50/50 transition-colors cursor-pointer" onClick={() => toggleExpand(inst.id)}>
                                                     <td className="px-8 py-5">
                                                         {expandedInst.includes(inst.id) ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
@@ -433,8 +443,9 @@ export function LiveMonitoring() {
                                                         </td>
                                                     </tr>
                                                 )}
-                                            </>
+                                            </Fragment>
                                         ))}
+
                                     </tbody>
                                 </table>
                             </div>

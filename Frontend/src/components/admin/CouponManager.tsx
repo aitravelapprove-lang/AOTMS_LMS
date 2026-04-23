@@ -34,6 +34,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { fetchWithAuth } from "@/lib/api";
 import { toast } from "sonner";
+import { SyncDataButton } from "./data/SyncDataButton";
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -76,7 +77,12 @@ interface Coupon {
   created_at: string;
 }
 
-export function CouponManager() {
+interface CouponManagerProps {
+  onSync?: () => void;
+  loading?: boolean;
+}
+
+export function CouponManager({ onSync, loading: parentLoading = false }: CouponManagerProps) {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -97,10 +103,19 @@ export function CouponManager() {
   const [isSavingCollege, setIsSavingCollege] = useState(false);
 
   useEffect(() => {
-    fetchStudents();
-    fetchCoupons();
-    fetchColleges();
+    refreshAllData();
   }, []);
+
+  const refreshAllData = async (showToast = false) => {
+    setLoading(true);
+    await Promise.all([
+      fetchStudents(),
+      fetchCoupons(),
+      fetchColleges()
+    ]);
+    setLoading(false);
+    if (showToast) toast.success("Reward data synchronized");
+  };
 
   const fetchColleges = async () => {
     try {
@@ -140,7 +155,6 @@ export function CouponManager() {
   };
 
   const fetchStudents = async () => {
-    setLoading(true);
     try {
       const studentUsers = await fetchWithAuth<Student[]>("/admin/students");
       setStudents(studentUsers || []);
@@ -148,7 +162,7 @@ export function CouponManager() {
       console.error("Failed to fetch students:", err);
       toast.error("Failed to load student list");
     } finally {
-      setLoading(false);
+      // Handled by refreshAllData
     }
   };
 
@@ -332,6 +346,11 @@ export function CouponManager() {
         </div>
         
         <div className="flex items-center gap-4 bg-white p-2 rounded-[2rem] border border-slate-200 shadow-sm">
+            <SyncDataButton 
+              onSync={onSync || (() => refreshAllData(true))}
+              isLoading={parentLoading || loading}
+              className="h-10 px-6 border-none bg-slate-50 hover:bg-slate-100"
+            />
             <div className="flex -space-x-3 px-2">
                 {students.slice(0, 5).map((s, i) => (
                     <Avatar key={i} className="h-9 w-9 border-2 border-white ring-1 ring-slate-100 cursor-default">
@@ -341,12 +360,14 @@ export function CouponManager() {
                 ))}
             </div>
             <div className="h-5 w-px bg-slate-200 mx-1" />
-            <Badge
-                variant="secondary"
-                className="bg-primary text-white border-transparent px-4 py-1.5 rounded-lg font-black text-[10px] tracking-widest uppercase"
-            >
+            <Badge variant="secondary" className="px-3 py-1 bg-primary/5 text-primary border-none font-bold">
                 {students.length} Active Students
             </Badge>
+            <SyncDataButton 
+                onSync={() => refreshAllData(true)} 
+                isLoading={loading} 
+                className="h-10 px-4"
+            />
         </div>
       </div>
 
@@ -827,9 +848,7 @@ export function CouponManager() {
             </div>
           </Card>
         </div>
-
       </div>
-
     </div>
   );
 }

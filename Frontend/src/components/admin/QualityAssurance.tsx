@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { SyncDataButton } from "./data/SyncDataButton";
 
 interface DataSummary {
     users: number;
@@ -42,7 +43,12 @@ interface DeletionStats {
     messages: number;
 }
 
-export function QualityAssurance() {
+interface QualityAssuranceProps {
+    onSync?: () => void;
+    loading?: boolean;
+}
+
+export function QualityAssurance({ onSync, loading: parentLoading = false }: QualityAssuranceProps) {
     const [loading, setLoading] = useState(true);
     const [deleting, setDeleting] = useState(false);
     const [summary, setSummary] = useState<DataSummary>({
@@ -102,11 +108,14 @@ export function QualityAssurance() {
         conversations: 'Conversations'
     };
 
-    const fetchSummary = async () => {
+    const fetchSummary = async (showToast = false) => {
         try {
             setLoading(true);
             const counts = await fetchWithAuth('/admin/data-summary') as DataSummary;
             setSummary(counts);
+            if (showToast) {
+                toast({ title: "System Audit Complete", description: "Database summary has been synchronized." });
+            }
         } catch (err) {
             console.error('Failed to fetch data summary', err);
         } finally {
@@ -282,10 +291,17 @@ export function QualityAssurance() {
                         Permanently remove data from the database. This action cannot be undone.
                     </p>
                 </div>
-                <Badge variant="destructive" className="h-6 sm:h-7 px-2.5 sm:px-3 flex items-center gap-2 self-start sm:self-auto text-xs">
-                    <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    Destructive Actions
-                </Badge>
+                <div className="flex items-center gap-3 self-start sm:self-auto">
+                    <Badge variant="destructive" className="h-6 sm:h-7 px-2.5 sm:px-3 flex items-center gap-2 text-xs">
+                        <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        Destructive Actions
+                    </Badge>
+                    <SyncDataButton 
+                        onSync={onSync || (() => fetchSummary(true))} 
+                        isLoading={parentLoading || loading} 
+                        className="h-10 px-4"
+                    />
+                </div>
             </div>
 
             <Card className="border-2 border-red-200 bg-red-50/30">

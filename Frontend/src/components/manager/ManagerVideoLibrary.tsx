@@ -12,6 +12,7 @@ import { useDeleteCourseVideo } from "@/hooks/useCourseBuilder";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { SyncDataButton } from "../admin/data/SyncDataButton";
 
 interface Video {
   id: string;
@@ -39,9 +40,11 @@ interface Module {
 
 interface ManagerVideoLibraryProps {
   showUpload?: boolean;
+  onSync?: () => void;
+  loading?: boolean;
 }
 
-export function ManagerVideoLibrary({ showUpload = true }: ManagerVideoLibraryProps) {
+export function ManagerVideoLibrary({ showUpload = true, onSync, loading: parentLoading = false }: ManagerVideoLibraryProps) {
   const [videos, setVideos] = useState<Video[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,7 +68,7 @@ export function ManagerVideoLibrary({ showUpload = true }: ManagerVideoLibraryPr
     return `${day}/${month}/${year} ${hours}:${minutes}`;
   };
 
-  const loadData = async () => {
+  const loadData = async (showToast = false) => {
     setLoading(true);
     try {
       const [videosRes, coursesRes] = await Promise.all([
@@ -74,6 +77,9 @@ export function ManagerVideoLibrary({ showUpload = true }: ManagerVideoLibraryPr
       ]);
       setVideos((videosRes as Video[]) || []);
       setCourses((coursesRes as Course[]) || []);
+      if (showToast) {
+        toast({ title: "Library Updated", description: "Video repository has been synchronized." });
+      }
     } catch (err) {
       console.error('Failed to load videos:', err);
     } finally {
@@ -191,10 +197,11 @@ export function ManagerVideoLibrary({ showUpload = true }: ManagerVideoLibraryPr
             <option key={course.id} value={course.id}>{course.title}</option>
           ))}
         </select>
-        <Button variant="outline" onClick={loadData}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
+        <SyncDataButton 
+          onSync={onSync || (() => loadData(true))} 
+          isLoading={parentLoading || loading} 
+          className="h-10 px-4"
+        />
 
         {showUpload && (
           <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>

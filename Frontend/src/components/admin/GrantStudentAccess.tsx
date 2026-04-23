@@ -24,6 +24,7 @@ import { fetchWithAuth } from '@/lib/api';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { Profile, CourseEnrollment } from '@/hooks/useAdminData';
+import { SyncDataButton } from '@/components/admin/data/SyncDataButton';
 import {
   Select,
   SelectContent,
@@ -42,9 +43,16 @@ interface Course {
 interface GrantStudentAccessProps {
     profiles?: Profile[];
     enrollments?: CourseEnrollment[];
+    onSync?: () => void;
+    loading?: boolean;
 }
 
-export function GrantStudentAccess({ profiles: propProfiles = [], enrollments: propEnrollments = [] }: GrantStudentAccessProps) {
+export function GrantStudentAccess({ 
+  profiles: propProfiles = [], 
+  enrollments: propEnrollments = [],
+  onSync,
+  loading = false
+}: GrantStudentAccessProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [studentUuid, setStudentUuid] = useState('');
@@ -172,11 +180,18 @@ export function GrantStudentAccess({ profiles: propProfiles = [], enrollments: p
           </div>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2">
+              <Button className="gap-2 rounded-xl h-10 shadow-md">
                 <Plus className="h-4 w-4" />
                 Enroll Student
               </Button>
             </DialogTrigger>
+            {onSync && (
+              <SyncDataButton 
+                onSync={onSync} 
+                isLoading={loading} 
+                className="h-10 px-4"
+              />
+            )}
             <DialogContent className="sm:max-w-lg">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">

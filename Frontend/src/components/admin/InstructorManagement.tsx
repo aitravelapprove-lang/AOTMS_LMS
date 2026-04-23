@@ -32,10 +32,12 @@ import {
   Unlock as UnlockIcon,
   ExternalLink,
   Calendar,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fetchWithAuth } from "@/lib/api";
 import { toast } from "sonner";
+import { SyncDataButton } from "./data/SyncDataButton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -113,7 +115,12 @@ interface Profile {
   role?: string;
 }
 
-export function InstructorManagement() {
+interface InstructorManagementProps {
+  onSync?: () => void;
+  loading?: boolean;
+}
+
+export function InstructorManagement({ onSync, loading: parentLoading = false }: InstructorManagementProps) {
   const [instructors, setInstructors] = useState<Instructor[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
@@ -137,7 +144,7 @@ export function InstructorManagement() {
   );
   const [loadingMockData, setLoadingMockData] = useState(false);
 
-  const loadData = async () => {
+  const loadData = async (showToast = false) => {
     setLoading(true);
     try {
       const [instructorsData, coursesData] = (await Promise.all([
@@ -146,6 +153,7 @@ export function InstructorManagement() {
       ])) as [Instructor[], Course[]];
       setInstructors(instructorsData || []);
       setCourses(coursesData || []);
+      if (showToast) toast.success("Faculty data synchronized");
     } catch (err) {
       console.error("Failed to load data:", err);
       toast.error("Failed to load instructors or courses");
@@ -193,10 +201,10 @@ export function InstructorManagement() {
             ...new Set(studentBatches.map((sb) => sb.student_id)),
           ];
           if (studentIds.length > 0) {
-          const [profiles, users] = (await Promise.all([
-            fetchWithAuth(`/data/profiles?user_id=in.(${studentIds.join(",")})`),
-            fetchWithAuth(`/data/users?id=in.(${studentIds.join(",")})`)
-          ])) as [Profile[], any[]];
+           const [profiles, users] = (await Promise.all([
+            fetchWithAuth<Profile[]>(`/data/profiles?user_id=in.(${studentIds.join(",")})`),
+            fetchWithAuth<User[]>(`/data/users?id=in.(${studentIds.join(",")})`)
+          ])) as [Profile[], User[]];
 
           const userMap = users.reduce((acc, u) => { acc[u.id] = u; return acc; }, {});
 
@@ -439,16 +447,11 @@ export function InstructorManagement() {
             className="pl-12 h-14 w-full bg-white border-none shadow-xl shadow-slate-200/20 rounded-2xl focus-visible:ring-2 focus-visible:ring-indigo-600 transition-all font-bold text-slate-900"
           />
         </div>
-        <Button
-          variant="outline"
-          onClick={loadData}
-          className="h-14 px-8 rounded-2xl bg-white border-none shadow-xl shadow-slate-200/20 font-black uppercase tracking-widest text-[10px] hover:bg-slate-50 transition-all shrink-0"
-        >
-          <RefreshCw
-            className={cn("h-4 w-4 mr-3", loading && "animate-spin")}
-          />
-          Sync Data
-        </Button>
+        <SyncDataButton 
+          onSync={onSync || (() => loadData(true))}
+          isLoading={parentLoading || loading}
+          className="h-14 px-8 shadow-xl shadow-indigo-200/50"
+        />
       </div>
 
       {/* Instructor List */}
@@ -854,13 +857,14 @@ export function InstructorManagement() {
                                 >
                                   {batch.batch_type} Session
                                 </Badge>
-                                <span className="text-[9px] font-bold text-slate-300 hidden sm:block">
-                                  •
-                                </span>
-                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest truncate">
-                                  Active Batch System
-                                </span>
-                              </div>
+                                  <span className="text-[9px] font-bold text-slate-300 hidden sm:block">
+                                    •
+                                  </span>
+                                  <div className="flex items-center gap-1 text-[9px] font-bold text-indigo-500 uppercase tracking-widest bg-indigo-50/50 px-2 py-0.5 rounded-lg border border-indigo-100/50 truncate">
+                                    <Clock className="h-2.5 w-2.5" />
+                                    {batch.start_time && batch.end_time ? `${batch.start_time} — ${batch.end_time}` : 'Full Duration'}
+                                  </div>
+                                </div>
                             </div>
                           </div>
                           <div className="flex items-center justify-between sm:text-right border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100">

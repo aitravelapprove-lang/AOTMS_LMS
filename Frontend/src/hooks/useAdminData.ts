@@ -55,19 +55,8 @@ export interface Course {
   created_at: string;
 }
 
-export interface CourseEnrollment {
-  id: string;
-  user_id: string;
-  course_id: string;
-  status: 'pending' | 'active' | 'rejected' | string;
-  enrollment_date: string;
-  user_name?: string;
-  user_email?: string;
-  payment_term?: 'full' | 'term1' | 'term2';
-  category?: 'approve' | 'remove';
-  final_price?: number;
-  remaining_balance?: number;
-}
+import { CourseEnrollment } from './useCourses';
+export type { CourseEnrollment };
 
 export interface SecurityEvent {
   id: string;
@@ -372,12 +361,36 @@ export function useAdminData(userRole?: string | null) {
   };
 
   const updateEnrollmentStatus = async (enrollmentId: string, status: string) => {
+    // Store previous states for rollback
+    const previousEnrollments = [...enrollments];
+    const previousStats = { ...stats };
+
+    // Optimistically update the UI
+    setEnrollments(prev => prev.map(e => {
+      const eId = (e as any)._id || e.id;
+      return eId === enrollmentId 
+        ? { ...e, status: status as CourseEnrollment['status'] } 
+        : e;
+    }));
+
+    // If approved/rejected, we typically reduce pending count
+    if (status === 'active' || status === 'rejected') {
+      setStats(prev => ({
+        ...prev,
+        pendingEnrollments: Math.max(0, prev.pendingEnrollments - 1)
+      }));
+    }
+
     try {
       await fetchWithAuth('/courses/enrollment-status', { method: 'PUT', body: JSON.stringify({ enrollmentId, status }) });
       toast({ title: 'Success', description: `Enrollment ${status}` });
+      // Refresh in background to ensure sync with server-side side effects
       fetchAllData();
       return true;
     } catch (error) {
+      // Rollback on error
+      setEnrollments(previousEnrollments);
+      setStats(previousStats);
       toast({ title: 'Error', description: 'Failed enrollment update', variant: 'destructive' });
       return false;
     }

@@ -30,7 +30,7 @@ import {
   ArrowRight,
   RotateCcw
 } from "lucide-react";
-import { CourseEnrollment } from "@/hooks/useCourses";
+import { SyncDataButton } from "./data/SyncDataButton";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Select,
@@ -46,6 +46,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { CourseEnrollment } from "@/hooks/useCourses";
 
 interface EnrollmentsListProps {
   enrollments: CourseEnrollment[];
@@ -54,6 +55,7 @@ interface EnrollmentsListProps {
   onUpdatePayment?: (id: string, term: string) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
   onResetATS?: (userId: string) => Promise<void>;
+  onSync?: () => void;
 }
 
 export function EnrollmentsList({ 
@@ -62,7 +64,8 @@ export function EnrollmentsList({
   onUpdateStatus, 
   onUpdatePayment, 
   onDelete, 
-  onResetATS 
+  onResetATS,
+  onSync
 }: EnrollmentsListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCourse, setFilterCourse] = useState("all");
@@ -147,10 +150,10 @@ export function EnrollmentsList({
     }
   };
 
-  const getEnrollmentName = (e: CourseEnrollment) => e.user_name || e.profile?.full_name || 'Unknown Student';
-  const getEnrollmentEmail = (e: CourseEnrollment) => e.user_email || e.profile?.email || 'N/A';
-  const getCourseName = (e: CourseEnrollment) => e.course_name || e.course?.title || 'Unknown Course';
-  const getAvatarUrl = (e: CourseEnrollment) => e.user_avatar || e.profile?.avatar_url || null;
+  const getEnrollmentName = (e: CourseEnrollment) => e.user_name || e.student_name || e.profile?.full_name || 'Unknown Student';
+  const getEnrollmentEmail = (e: CourseEnrollment) => e.user_email || e.student_email || e.profile?.email || 'N/A';
+  const getCourseName = (e: CourseEnrollment) => e.course_name || e.course_title || e.course?.title || 'Unknown Course';
+  const getAvatarUrl = (e: CourseEnrollment) => e.user_avatar || e.student_avatar || e.profile?.avatar_url || null;
 
   const courses = [...new Set((enrollments || []).map(e => getCourseName(e)).filter(Boolean))];
 
@@ -303,16 +306,24 @@ export function EnrollmentsList({
         </div>
 
         <div className="flex flex-wrap items-center gap-4">
-          <div className="relative group min-w-[300px]">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+          <div className="relative flex-1 max-w-2xl">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
-              placeholder="Search by student, ID or email..."
+              placeholder="Search by student name or course..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-12 h-14 w-full bg-white border-none shadow-xl shadow-slate-200/20 rounded-2xl focus-visible:ring-2 focus-visible:ring-indigo-600 transition-all font-bold text-slate-900"
+              className="pl-12 h-14 w-full bg-white border-none shadow-xl shadow-slate-200/20 rounded-2xl focus-visible:ring-2 focus-visible:ring-emerald-600 transition-all font-bold text-slate-900"
             />
           </div>
           
+          {onSync && (
+            <SyncDataButton 
+              onSync={onSync} 
+              isLoading={loading} 
+              className="h-14 px-8 shadow-xl shadow-emerald-200/50"
+            />
+          )}
+
           <div className="flex flex-wrap items-center gap-3">
             <Select value={filterCourse} onValueChange={setFilterCourse}>
               <SelectTrigger className="h-12 w-44 rounded-2xl bg-white border-none shadow-xl shadow-slate-200/20 font-bold">
@@ -353,40 +364,25 @@ export function EnrollmentsList({
               </SelectContent>
             </Select>
 
-            {/* Calendar date range — responsive, shows only when custom selected */}
             {filterTimeframe === 'custom' && (
-              <div className="flex flex-wrap items-center gap-2 animate-in slide-in-from-right-4 duration-300">
-                <div className="flex items-center gap-2 bg-white rounded-2xl px-4 py-2.5 shadow-xl shadow-slate-200/20 border border-slate-100">
-                  <Calendar className="h-4 w-4 text-indigo-500 flex-shrink-0" />
-                  <div className="flex flex-col">
-                    <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">From</span>
-                    <input
-                      type="date"
-                      value={customFrom}
-                      onChange={(e) => setCustomFrom(e.target.value)}
-                      className="text-[11px] font-black text-slate-800 bg-transparent border-none outline-none cursor-pointer w-[110px]"
-                    />
-                  </div>
-                </div>
-                <span className="text-slate-300 font-black text-sm">→</span>
-                <div className="flex items-center gap-2 bg-white rounded-2xl px-4 py-2.5 shadow-xl shadow-slate-200/20 border border-slate-100">
-                  <Calendar className="h-4 w-4 text-indigo-500 flex-shrink-0" />
-                  <div className="flex flex-col">
-                    <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">To</span>
-                    <input
-                      type="date"
-                      value={customTo}
-                      min={customFrom || undefined}
-                      onChange={(e) => setCustomTo(e.target.value)}
-                      className="text-[11px] font-black text-slate-800 bg-transparent border-none outline-none cursor-pointer w-[110px]"
-                    />
-                  </div>
-                </div>
+              <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl shadow-xl shadow-slate-200/20 border border-slate-100 flex-shrink-0 animate-in slide-in-from-right-4">
+                <Calendar className="h-4 w-4 text-slate-400" />
+                <Input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} className="h-9 border-none bg-transparent font-bold text-[10px] w-28 p-0 focus-visible:ring-0" />
+                <div className="h-3 w-px bg-slate-200 mx-1" />
+                <Input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} className="h-9 border-none bg-transparent font-bold text-[10px] w-28 p-0 focus-visible:ring-0" />
               </div>
             )}
           </div>
         </div>
       </div>
+            
+      {onSync && (
+        <SyncDataButton 
+          onSync={onSync} 
+          isLoading={loading} 
+          className="h-12 px-6 shadow-xl"
+        />
+      )}
 
       <div className="min-h-[400px]">
         {filteredEnrollments.length === 0 ? (
@@ -457,28 +453,130 @@ export function EnrollmentsList({
                                         : 'N/A'
                                       }
                                     </span>
-                                  </div>
-                                  <div className="flex items-center gap-2 text-[10px] font-mono text-slate-900 group-hover:text-slate-600 transition-colors">
-                                    <Fingerprint className="h-3 w-3" />
-                                    <span className="truncate max-w-[120px]">{enrollment.user_id}</span>
-                                    <button 
-                                      onClick={() => copyToClipboard(enrollment.user_id || '', enrollment.id)}
-                                      className="p-1 hover:bg-white rounded-md transition-all text-indigo-500"
-                                    >
-                                      {copiedId === enrollment.id ? <Check className="h-2.5 w-2.5" /> : <Copy className="h-2.5 w-2.5" />}
-                                    </button>
+          {filteredEnrollments.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex flex-col items-center justify-center py-24 bg-white rounded-[3rem] border-4 border-dashed border-slate-100"
+            >
+              <div className="h-24 w-24 bg-slate-50 rounded-full flex items-center justify-center mb-6">
+                <Users className="h-10 w-10 text-slate-200" />
+              </div>
+              <p className="text-lg font-black text-slate-300 uppercase tracking-widest">No matching records found</p>
+            </motion.div>
+          ) : (
+            <div className="space-y-6">
+              <div className="hidden xl:block">
+                <div className="bg-white rounded-[3rem] shadow-2xl shadow-slate-200/50 overflow-hidden border border-slate-100">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50/50 border-b border-slate-100">
+                        <th className="px-8 py-8 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] w-[30%]">Student Profile</th>
+                        <th className="px-6 py-8 text-[11px] font-black text-indigo-600 uppercase tracking-[0.2em] w-[18%]">Enrolled Course</th>
+                        <th className="px-4 py-8 text-[11px] font-black text-indigo-600 uppercase tracking-[0.2em] text-center w-[12%]">Term 1</th>
+                        <th className="px-4 py-8 text-[11px] font-black text-amber-600 uppercase tracking-[0.2em] text-center w-[12%]">Term 2</th>
+                        <th className="px-8 py-8 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] w-[18%]">Payment Summary</th>
+                        <th className="px-8 py-8 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] text-right w-[10%]">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      <AnimatePresence mode="popLayout">
+                        {filteredEnrollments.map((enrollment, index) => {
+                          const fullFee = safeParsePrice(enrollment.final_price || enrollment.price);
+                          const isPaidFull = enrollment.payment_term === 'full';
+                          const isTerm1 = enrollment.payment_term === 'term1';
+                          const isTerm2 = enrollment.payment_term === 'term2';
+                          const term1Fee = Math.round(fullFee * 0.6);
+                          const term2Fee = Math.round(fullFee * 0.4);
+
+                          // Fix for the user's financial reporting issue:
+                          // Calculate actual deposited amount based on the term status
+                          const depositedValue = isPaidFull || isTerm2 ? fullFee : isTerm1 ? term1Fee : 0;
+
+                          return (
+                            <motion.tr
+                              layout
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              exit={{ opacity: 0, scale: 0.95 }}
+                              transition={{ delay: index * 0.05 }}
+                              key={enrollment.id}
+                              className="hover:bg-slate-50/50 transition-colors group"
+                            >
+                              <td className="px-8 py-6">
+                                <div className="flex items-center gap-5">
+                                  <EnrollmentAvatar enrollment={enrollment} />
+                                  <div className="space-y-1 min-w-0">
+                                    <div className="flex items-center gap-3">
+                                      <h4 className="font-black text-slate-900 group-hover:text-indigo-600 transition-colors whitespace-nowrap">
+                                        {enrollment.user_name || enrollment.profile?.full_name}
+                                      </h4>
+                                      {getStatusBadge(enrollment.status || 'pending')}
+                                    </div>
+                                    <div className="flex items-center gap-2 text-[10px] font-bold text-slate-900 bg-slate-50/80 px-2 py-1 rounded-lg w-fit">
+                                      <Calendar className="h-3 w-3 text-indigo-500" />
+                                      <span>
+                                        {(enrollment.enrollment_date || enrollment.enrolled_at)
+                                          ? new Date(enrollment.enrollment_date || enrollment.enrolled_at).toLocaleDateString('en-GB') + ' | ' + new Date(enrollment.enrollment_date || enrollment.enrolled_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+                                          : 'N/A'}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-[10px] font-mono text-slate-900 group-hover:text-slate-600 transition-colors">
+                                      <Fingerprint className="h-3 w-3" />
+                                      <span className="truncate max-w-[120px]">{enrollment.user_id}</span>
+                                      <button
+                                        onClick={() => copyToClipboard(enrollment.user_id || '', enrollment.id)}
+                                        className="p-1 hover:bg-white rounded-md transition-all text-indigo-500"
+                                      >
+                                        {copiedId === enrollment.id ? <Check className="h-2.5 w-2.5" /> : <Copy className="h-2.5 w-2.5" />}
+                                      </button>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-6 font-black">
-                              <div className="space-y-2">
-                                <p className="text-xs text-slate-900 leading-tight uppercase tracking-tight">
-                                  {enrollment.course_name || enrollment.course?.title}
-                                </p>
-                                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 w-fit">
-                                  <Globe className="h-2.5 w-2.5 text-slate-400" />
-                                  <span className="text-[8px] font-black uppercase text-slate-400 tracking-wider">Course Bundle</span>
+                              </td>
+                              <td className="px-6 py-6 font-black">
+                                <div className="space-y-2">
+                                  <p className="text-xs text-slate-900 leading-tight uppercase tracking-tight">
+                                    {enrollment.course_name || enrollment.course?.title}
+                                  </p>
+                                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 w-fit">
+                                    <Globe className="h-2.5 w-2.5 text-slate-400" />
+                                    <span className="text-[8px] font-black uppercase text-slate-400 tracking-wider">Course Bundle</span>
+                                  </div>
+                                  {enrollment.requested_time_slot && (
+                                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-50 w-fit border border-indigo-100">
+                                      <Clock className="h-2.5 w-2.5 text-indigo-500" />
+                                      <span className="text-[8px] font-black uppercase text-indigo-700 tracking-wider">Req: {enrollment.requested_time_slot}</span>
+                                    </div>
+                                  )}
+                                </div>
+
+                              </td>
+                              <td className="px-4 py-6 text-center">
+                                <div className="space-y-1.5">
+                                  <p className="text-sm font-black text-indigo-600 tracking-tighter italic">₹{term1Fee.toLocaleString('en-IN')}</p>
+                                  <Badge className={cn(
+                                    "rounded-lg px-2 py-0.5 text-[8px] font-black uppercase tracking-widest border-none shadow-sm",
+                                    (isTerm1 || isTerm2 || isPaidFull) ? "bg-indigo-50 text-indigo-600" : "bg-slate-100 text-slate-400 animate-pulse"
+                                  )}>
+                                    {(isTerm1 || isTerm2 || isPaidFull) ? "Cleared" : "Pending"}
+                                  </Badge>
+                                </div>
+                              </td>
+                              <td className="px-4 py-6 text-center">
+                                <div className="space-y-1.5">
+                                  <p className={cn(
+                                    "text-sm font-black tracking-tighter italic",
+                                    (isTerm2 || isPaidFull) ? "text-emerald-600" : isTerm1 ? "text-amber-500" : "text-slate-300"
+                                  )}>
+                                    ₹{(isTerm2 || isPaidFull) ? term2Fee.toLocaleString('en-IN') : (safeParsePrice(enrollment.remaining_balance) || term2Fee).toLocaleString('en-IN')}
+                                  </p>
+                                  <Badge className={cn(
+                                    "rounded-lg px-2 py-0.5 text-[8px] font-black uppercase tracking-widest border-none shadow-sm",
+                                    (isTerm2 || isPaidFull) ? "bg-emerald-50 text-emerald-600" : isTerm1 ? "bg-amber-50 text-amber-600 animate-pulse" : "bg-slate-100 text-slate-300"
+                                  )}>
+                                    {(isTerm2 || isPaidFull) ? "Cleared" : isTerm1 ? "Awaited" : "Locked"}
+                                  </Badge>
                                 </div>
                               </div>
                             </td>
@@ -515,10 +613,24 @@ export function EnrollmentsList({
                                   <div className="space-y-0.5">
                                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Deposited</p>
                                     <p className="text-xs font-black text-slate-900 tracking-tighter">₹{depositedValue.toLocaleString('en-IN')}</p>
+                              </td>
+                              <td className="px-8 py-6">
+                                <div className="space-y-2">
+                                  <div className="flex justify-between items-end">
+                                    <div className="space-y-0.5">
+                                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Deposited</p>
+                                      <p className="text-xs font-black text-emerald-600 tracking-tighter">₹{depositedValue.toLocaleString('en-IN')}</p>
+                                    </div>
+                                    <div className="space-y-0.5 text-right font-black">
+                                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Value</p>
+                                      <p className="text-xs text-slate-900 tracking-tighter italic">₹{fullFee.toLocaleString('en-IN')}</p>
+                                    </div>
                                   </div>
-                                  <div className="space-y-0.5 text-right font-black">
-                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Value</p>
-                                    <p className="text-xs text-slate-900 tracking-tighter italic">₹{fullFee.toLocaleString('en-IN')}</p>
+                                  <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200/20">
+                                    <motion.div
+                                      initial={{ width: 0 }}
+                                      animate={{ width: `${Math.min(100, (depositedValue / (fullFee || 1)) * 100)}%` }}
+                                      className="h-full bg-indigo-600 rounded-full shadow-[0_0_15px_rgba(79,70,229,0.3)]" />
                                   </div>
                                 </div>
                                 <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200/50">
@@ -586,8 +698,65 @@ export function EnrollmentsList({
                     </AnimatePresence>
                   </tbody>
                 </table>
+                              </td>
+                              <td className="px-8 py-6 text-right">
+                                <div className="flex items-center justify-end gap-3 transition-all duration-300">
+                                  {enrollment.status === 'pending' || !enrollment.status ? (
+                                    <Button
+                                      onClick={() => handleUpdateStatus(enrollment.id, 'active')}
+                                      disabled={processingId === enrollment.id}
+                                      className="h-10 px-5 bg-slate-900 text-white font-black uppercase tracking-widest text-[9px] rounded-xl hover:bg-indigo-600 transition-all shadow-xl"
+                                    >
+                                      {processingId === enrollment.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Approve"}
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      onClick={() => setSelectedEnrollment(enrollment)}
+                                      className="h-11 w-11 p-0 bg-white shadow-lg shadow-slate-200/50 text-indigo-600 rounded-2xl hover:scale-110 active:scale-95 transition-all border border-slate-50"
+                                    >
+                                      <Eye className="h-5 w-5" />
+                                    </Button>
+                                  )}
+
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-11 w-11 rounded-2xl text-slate-300 hover:text-slate-600 hover:bg-slate-50 transition-all">
+                                        <MoreVertical className="h-5 w-5" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="rounded-2xl p-2 border-none shadow-2xl w-52 bg-white/95 backdrop-blur-md">
+                                      <DropdownMenuItem onClick={() => setSelectedEnrollment(enrollment)} className="rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-800 focus:bg-slate-900 focus:text-white transition-colors cursor-pointer">
+                                        <Eye className="h-4 w-4 mr-3 text-indigo-500" /> View Details
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => handleUpdateStatus(enrollment.id, 'active')} className="rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest text-emerald-600 focus:bg-emerald-600 focus:text-white transition-colors cursor-pointer">
+                                        <ShieldCheck className="h-4 w-4 mr-3" /> Approve Access
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => handleUpdateStatus(enrollment.id, 'rejected')} className="rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest text-orange-600 focus:bg-orange-600 focus:text-white transition-colors cursor-pointer">
+                                        <XCircle className="h-4 w-4 mr-3" /> Deny Access
+                                      </DropdownMenuItem>
+                                      <div className="h-px bg-slate-100 my-2" />
+                                      <DropdownMenuItem
+                                        onClick={() => enrollment.user_id && onResetATS?.(enrollment.user_id)}
+                                        className="rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest text-amber-600 focus:bg-amber-600 focus:text-white transition-colors cursor-pointer"
+                                      >
+                                        <RotateCcw className="h-4 w-4 mr-3" /> Reset ATS Score
+                                      </DropdownMenuItem>
+                                      <div className="h-px bg-slate-100 my-2" />
+                                      <DropdownMenuItem onClick={() => handleDelete(enrollment.id)} className="rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest text-rose-600 focus:bg-rose-600 focus:text-white transition-colors cursor-pointer">
+                                        <Trash2 className="h-4 w-4 mr-3" /> Remove Record
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              </td>
+                            </motion.tr>
+                          );
+                        })}
+                      </AnimatePresence>
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
 
             <div className="grid grid-cols-1 gap-6">
               {filteredEnrollments.map((enrollment, index) => {
@@ -628,8 +797,30 @@ export function EnrollmentsList({
                               <Fingerprint className="h-3.5 w-3.5 mb-0.5" />
                               <span>{enrollment.user_id?.slice(0, 10)}...</span>
                             </div>
+              <div className="xl:hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+                {filteredEnrollments.map((enrollment, index) => (
+                  <motion.div
+                    layout
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.05 }}
+                    key={enrollment.id}
+                    className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/30 overflow-hidden flex flex-col group hover:border-indigo-600/30 transition-all duration-500"
+                  >
+                    <div className="p-7 space-y-7 flex-1">
+                      <div className="flex justify-between items-start">
+                        <div className="flex gap-4">
+                          <EnrollmentAvatar enrollment={enrollment} />
+                          <div className="space-y-1">
+                            <h4 className="font-black text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight">
+                              {enrollment.user_name || enrollment.profile?.full_name}
+                            </h4>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest truncate max-w-[140px]">
+                              {enrollment.user_email || enrollment.profile?.email}
+                            </p>
                           </div>
                         </div>
+                        {getStatusBadge(enrollment.status || 'pending')}
                       </div>
 
                       {/* Section 2: Course Info */}
@@ -666,6 +857,35 @@ export function EnrollmentsList({
                                 )}>T2</Badge>
                              </div>
                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Terms Cleared</p>
+                      <div className="bg-slate-50/50 p-5 rounded-3xl space-y-4 border border-slate-100">
+                        <div className="space-y-1">
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Enrolled In</p>
+                          <p className="text-sm font-black text-slate-800 leading-tight uppercase tracking-tight">
+                            {enrollment.course_name || enrollment.course?.title}
+                          </p>
+                          {enrollment.requested_time_slot && (
+                            <div className="mt-1 flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-50 w-fit border border-indigo-100">
+                              <Clock className="h-2.5 w-2.5 text-indigo-500" />
+                              <span className="text-[8px] font-black uppercase text-indigo-700 tracking-wider">{enrollment.requested_time_slot}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 pt-1">
+                          <div className="space-y-1">
+                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Admission Date</p>
+                            <p className="text-[10px] font-bold text-slate-600 tracking-tight">
+                              {enrollment.enrollment_date ? new Date(enrollment.enrollment_date).toLocaleDateString('en-GB') : 'N/A'}
+                            </p>
+                          </div>
+                          <div className="space-y-1 text-right">
+                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Enrollment ID</p>
+                            <div className="flex items-center justify-end gap-1 font-mono text-[9px] font-bold text-indigo-500">
+                              <span>{enrollment.user_id?.slice(0, 8)}...</span>
+                              <button onClick={() => copyToClipboard(enrollment.user_id || '', enrollment.id + '-mob')} className="p-1">
+                                {copiedId === enrollment.id + '-mob' ? <Check className="h-2 w-2" /> : <Copy className="h-2 w-2" />}
+                              </button>
+                            </div>
                           </div>
                         </div>
                         <div className="relative h-2 w-full bg-slate-100 rounded-full overflow-hidden">
@@ -719,51 +939,98 @@ export function EnrollmentsList({
                   </motion.div>
                 );
               })}
-            </div>
-          </div>
-        )}
-      </div>
 
-      <Dialog open={!!selectedEnrollment} onOpenChange={(open) => !open && setSelectedEnrollment(null)}>
-        <DialogContent className="w-[95vw] sm:max-w-4xl h-[92vh] p-0 overflow-hidden bg-[#fafafa] border-none shadow-[0_50px_200px_rgba(0,0,0,0.15)] rounded-[3rem] flex flex-col">
-          <div className="flex-1 overflow-y-auto scrollbar-none pb-20">
-            <div className="flex flex-col md:flex-row min-h-full">
-              <div className="w-full md:w-80 bg-white p-12 md:border-r border-slate-100 flex flex-col shrink-0">
-                  <div className="space-y-12">
-                    <div className="space-y-4">
-                        <Badge className="bg-indigo-600 text-white rounded-lg px-3 py-1 text-[9px] uppercase font-black tracking-widest border-none shadow-lg shadow-indigo-200">Management Panel</Badge>
-                        <h3 className="text-4xl font-black text-slate-900 tracking-tighter leading-[0.9]">Enrollment<br/><span className="text-indigo-600">Details</span></h3>
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-[0.1em]">
+                          <span className="text-slate-400">Deposited</span>
+                          <span className="text-indigo-600 italic">Total Value</span>
+                        </div>
+                        <div className="flex justify-between items-end">
+                          <p className="text-xl font-black text-emerald-600 italic tracking-tighter">₹{safeParsePrice(enrollment.final_price).toLocaleString('en-IN')}</p>
+                          <p className="text-sm font-black text-slate-400 line-through tracking-tighter opacity-50">₹{safeParsePrice(enrollment.price).toLocaleString('en-IN')}</p>
+                        </div>
+                        <div className="h-2.5 w-full bg-slate-50 rounded-full p-0.5 border border-slate-100 overflow-hidden">
+                          <div
+                            className="h-full bg-indigo-600 rounded-full shadow-lg transition-all duration-1000"
+                            style={{ width: `${Math.min(100, (safeParsePrice(enrollment.final_price) / (safeParsePrice(enrollment.price) || 1)) * 100)}%` }} />
+                        </div>
+                      </div>
                     </div>
-                    
-                    <div className="space-y-8">
+
+                    <div className="p-4 bg-slate-50 border-t border-slate-100 flex gap-3">
+                      <Button onClick={() => setSelectedEnrollment(enrollment)} variant="secondary" className="flex-1 h-14 rounded-2xl bg-white border-2 border-slate-100 text-slate-900 font-black uppercase tracking-widest text-[10px] hover:bg-slate-900 hover:text-white transition-all shadow-sm">
+                        Verify Documents
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-14 w-14 rounded-2xl bg-white border-2 border-slate-100 text-slate-400 hover:text-indigo-600 transition-all shadow-sm">
+                            <MoreVertical className="h-5 w-5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="rounded-2xl p-2 border-none shadow-2xl w-48 font-black uppercase tracking-widest text-[9px]">
+                          <DropdownMenuItem onClick={() => handleUpdateStatus(enrollment.id, 'active')} className="rounded-xl px-4 py-3 text-emerald-600 focus:bg-emerald-600 focus:text-white transition-colors cursor-pointer">
+                            <ShieldCheck className="h-3.5 w-3.5 mr-3" /> Approve Entry
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleUpdateStatus(enrollment.id, 'rejected')} className="rounded-xl px-4 py-3 text-orange-600 focus:bg-orange-600 focus:text-white transition-colors cursor-pointer">
+                            <XCircle className="h-3.5 w-3.5 mr-3" /> Deny Access
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => enrollment.user_id && onResetATS?.(enrollment.user_id)}
+                            className="rounded-xl px-4 py-3 text-amber-600 focus:bg-amber-600 focus:text-white transition-colors cursor-pointer"
+                          >
+                            <RotateCcw className="h-3.5 w-3.5 mr-3" /> Reset ATS Score
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDelete(enrollment.id)} className="rounded-xl px-4 py-3 text-rose-600 focus:bg-rose-600 focus:text-white transition-colors cursor-pointer">
+                            <Trash2 className="h-3.5 w-3.5 mr-3" /> Remove Record
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div><Dialog open={!!selectedEnrollment} onOpenChange={(open) => !open && setSelectedEnrollment(null)}>
+            <DialogContent className="w-[95vw] sm:max-w-4xl h-[92vh] p-0 overflow-hidden bg-[#fafafa] border-none shadow-[0_50px_200px_rgba(0,0,0,0.15)] rounded-[3rem] flex flex-col">
+              <div className="flex-1 overflow-y-auto scrollbar-none pb-20">
+                <div className="flex flex-col md:flex-row min-h-full">
+                  <div className="w-full md:w-80 bg-white p-12 md:border-r border-slate-100 flex flex-col shrink-0">
+                    <div className="space-y-12">
+                      <div className="space-y-4">
+                        <Badge className="bg-indigo-600 text-white rounded-lg px-3 py-1 text-[9px] uppercase font-black tracking-widest border-none shadow-lg shadow-indigo-200">Management Panel</Badge>
+                        <h3 className="text-4xl font-black text-slate-900 tracking-tighter leading-[0.9]">Enrollment<br /><span className="text-indigo-600">Details</span></h3>
+                      </div>
+
+                      <div className="space-y-8">
                         <div className="space-y-3">
-                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-3">
-                               <div className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" /> Transaction (UTR) ID
-                            </label>
-                            <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100 shadow-inner">
-                                <span className="text-sm font-mono font-black text-slate-900 tracking-wider break-all leading-relaxed">{selectedEnrollment?.utr_number || "NO_UTR_DATA"}</span>
-                            </div>
+                          <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-3">
+                            <div className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" /> Transaction (UTR) ID
+                          </label>
+                          <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100 shadow-inner">
+                            <span className="text-sm font-mono font-black text-slate-900 tracking-wider break-all leading-relaxed">{selectedEnrollment?.utr_number || "NO_UTR_DATA"}</span>
+                          </div>
                         </div>
 
                         <div className="space-y-6 pt-2">
-                            <div className="flex items-center gap-4 group">
-                                <div className="h-12 w-12 rounded-2xl bg-slate-900 flex items-center justify-center shadow-lg transition-transform group-hover:scale-110">
-                                    <Users className="h-6 w-6 text-white" />
-                                </div>
-                                <div className="space-y-0.5">
-                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Student Name</p>
-                                    <p className="text-base font-black text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight">{selectedEnrollment?.user_name}</p>
-                                </div>
+                          <div className="flex items-center gap-4 group">
+                            <div className="h-12 w-12 rounded-2xl bg-slate-900 flex items-center justify-center shadow-lg transition-transform group-hover:scale-110">
+                              <Users className="h-6 w-6 text-white" />
                             </div>
-                            <div className="flex items-center gap-4 group">
-                                <div className="h-12 w-12 rounded-2xl bg-white border border-slate-100 flex items-center justify-center shadow-xl transition-transform group-hover:scale-110">
-                                  <GraduationCap className="h-6 w-6 text-indigo-600" />
-                                </div>
-                                <div className="space-y-0.5">
-                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Enrolled Course</p>
-                                    <p className="text-base font-black text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight">{selectedEnrollment?.course_name}</p>
-                                </div>
+                            <div className="space-y-0.5">
+                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Student Name</p>
+                              <p className="text-base font-black text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight">{selectedEnrollment?.user_name}</p>
                             </div>
+                          </div>
+                          <div className="flex items-center gap-4 group">
+                            <div className="h-12 w-12 rounded-2xl bg-white border border-slate-100 flex items-center justify-center shadow-xl transition-transform group-hover:scale-110">
+                              <GraduationCap className="h-6 w-6 text-indigo-600" />
+                            </div>
+                            <div className="space-y-0.5">
+                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Enrolled Course</p>
+                              <p className="text-base font-black text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight">{selectedEnrollment?.course_name}</p>
+                            </div>
+                          </div>
                         </div>
 
                         {/* Payment Breakdown in Dialog */}
@@ -826,53 +1093,111 @@ export function EnrollmentsList({
                                               (pTerm === 'term1') ? "Confirm Pay?" : 
                                               (pTerm === 'term2' && selectedEnrollment.status === 'pending') ? "Clear Now?" :
                                               (pTerm === 'term2' && selectedEnrollment.status === 'deactivate') ? "Awaiting Pay" :
+                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Financial Breakdown (60/40)</p>
+                          <div className="grid grid-cols-1 gap-4">
+                            {(() => {
+                              const full = safeParsePrice(selectedEnrollment?.final_price || selectedEnrollment?.price);
+                              const term1 = Math.round(full * 0.6);
+                              const term2 = Math.round(full * 0.4);
+                              const pTerm = selectedEnrollment?.payment_term;
+
+                              return (
+                                <>
+                                  <div className="flex items-center justify-between p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100/50">
+                                    <div className="space-y-1">
+                                      <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Term 01 (60%)</p>
+                                      <p className="text-lg font-black text-indigo-900 italic">₹{term1.toLocaleString('en-IN')}</p>
+                                    </div>
+                                    <Badge className={cn(
+                                      "rounded-lg px-2 py-1 text-[8px] font-black uppercase tracking-widest border-none",
+                                      (pTerm === 'full' || pTerm === 'term1' || pTerm === 'term2') ? "bg-indigo-600 text-white" : "bg-slate-200 text-slate-400"
+                                    )}>
+                                      {(pTerm === 'full' || pTerm === 'term1' || pTerm === 'term2') ? "Cleared" : "Pending"}
+                                    </Badge>
+                                  </div>
+                                  <div className="flex items-center justify-between p-4 rounded-2xl bg-amber-50/50 border border-amber-100/50">
+                                    <div className="space-y-1">
+                                      <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Term 02 (40%)</p>
+                                      <p className="text-lg font-black text-amber-900 italic">₹{term2.toLocaleString('en-IN')}</p>
+                                    </div>
+                                    <Badge
+                                      onClick={() => {
+                                        if (pTerm === 'term1' || (pTerm === 'term2' && selectedEnrollment.status === 'pending')) {
+                                          const msg = pTerm === 'term1' ?
+                                            'Trigger Term 2 payment requirement for this student?' :
+                                            'Confirm final payment receipt and Activate student?';
+
+                                          if (window.confirm(msg)) {
+                                            onUpdatePayment?.(selectedEnrollment.id, 'term2');
+                                            // Optimistically update local selected state
+                                            setSelectedEnrollment({
+                                              ...selectedEnrollment,
+                                              payment_term: 'term2',
+                                              status: pTerm === 'term1' ? 'deactivate' : 'active'
+                                            });
+                                          }
+                                        }
+                                      } }
+                                      className={cn(
+                                        "rounded-lg px-2 py-1 text-[8px] font-black uppercase tracking-widest border-none transition-all",
+                                        (pTerm === 'full' || (pTerm === 'term2' && selectedEnrollment.status === 'active')) ? "bg-emerald-600 text-white" :
+                                          (pTerm === 'term1') ? "bg-amber-600 text-white animate-pulse cursor-pointer hover:scale-105 active:scale-95" :
+                                            (pTerm === 'term2' && selectedEnrollment.status === 'pending') ? "bg-blue-600 text-white animate-pulse cursor-pointer hover:scale-105 active:scale-95" :
+                                              (pTerm === 'term2' && selectedEnrollment.status === 'deactivate') ? "bg-rose-500 text-white" :
+                                                "bg-slate-200 text-slate-400"
+                                      )}
+                                    >
+                                      {(pTerm === 'full' || (pTerm === 'term2' && selectedEnrollment.status === 'active')) ? "Cleared" :
+                                        (pTerm === 'term1') ? "Confirm Pay?" :
+                                          (pTerm === 'term2' && selectedEnrollment.status === 'pending') ? "Clear Now?" :
+                                            (pTerm === 'term2' && selectedEnrollment.status === 'deactivate') ? "Awaiting Pay" :
                                               "Locked"}
-                                           </Badge>
-                                       </div>
-                                    </>
-                                 );
-                              })()}
-                           </div>
+                                    </Badge>
+                                  </div>
+                                </>
+                              );
+                            })()}
+                          </div>
                         </div>
+                      </div>
                     </div>
                   </div>
-              </div>
 
-              <div className="flex-1 p-8 md:p-14">
-                  <div className="h-full bg-white rounded-[3rem] p-10 shadow-2xl shadow-slate-200/50 flex flex-col border border-slate-100 relative overflow-hidden group">
+                  <div className="flex-1 p-8 md:p-14">
+                    <div className="h-full bg-white rounded-[3rem] p-10 shadow-2xl shadow-slate-200/50 flex flex-col border border-slate-100 relative overflow-hidden group">
                       <div className="absolute top-0 right-0 p-8">
-                         <div className="h-12 w-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-300">
-                            <CreditCard className="h-6 w-6" />
-                         </div>
+                        <div className="h-12 w-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-300">
+                          <CreditCard className="h-6 w-6" />
+                        </div>
                       </div>
-                      
+
                       <div className="flex-1 flex flex-col items-center justify-center relative z-10">
-                          {selectedEnrollment?.payment_proof_url ? (
-                              <div className="relative group/proof cursor-zoom-in max-w-full">
-                                  <img 
-                                    src={selectedEnrollment.payment_proof_url} 
-                                    alt="Payment Proof" 
-                                    className="max-h-[45vh] lg:max-h-[55vh] rounded-[2rem] object-contain shadow-[0_30px_60px_rgba(0,0,0,0.12)] transition-all duration-700 group-hover/proof:scale-[1.03]" 
-                                  />
-                                  <div className="absolute inset-0 bg-indigo-600/0 group-hover/proof:bg-indigo-600/5 transition-all duration-700 rounded-[2rem]" />
-                              </div>
-                          ) : (
-                              <div className="text-center space-y-6 py-20 opacity-20">
-                                   <div className="h-32 w-32 mx-auto rounded-full bg-slate-100 flex items-center justify-center border-4 border-dashed border-slate-200">
-                                      <RefreshCw className="h-10 w-10 text-slate-400" />
-                                   </div>
-                                   <p className="font-black text-slate-400 uppercase tracking-[0.3em] text-[10px]">No Payment Document</p>
-                              </div>
-                          )}
+                        {selectedEnrollment?.payment_proof_url ? (
+                          <div className="relative group/proof cursor-zoom-in max-w-full">
+                            <img
+                              src={selectedEnrollment.payment_proof_url}
+                              alt="Payment Proof"
+                              className="max-h-[45vh] lg:max-h-[55vh] rounded-[2rem] object-contain shadow-[0_30px_60px_rgba(0,0,0,0.12)] transition-all duration-700 group-hover/proof:scale-[1.03]" />
+                            <div className="absolute inset-0 bg-indigo-600/0 group-hover/proof:bg-indigo-600/5 transition-all duration-700 rounded-[2rem]" />
+                          </div>
+                        ) : (
+                          <div className="text-center space-y-6 py-20 opacity-20">
+                            <div className="h-32 w-32 mx-auto rounded-full bg-slate-100 flex items-center justify-center border-4 border-dashed border-slate-200">
+                              <RefreshCw className="h-10 w-10 text-slate-400" />
+                            </div>
+                            <p className="font-black text-slate-400 uppercase tracking-[0.3em] text-[10px]">No Payment Document</p>
+                          </div>
+                        )}
                       </div>
 
                       <div className="mt-10 p-6 bg-slate-50/50 rounded-3xl border border-slate-100 flex items-center justify-between">
-                         <div className="flex items-center gap-3">
-                            <Zap className="h-5 w-5 text-amber-500 fill-amber-500" />
-                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Payment Proof Verified</p>
-                         </div>
-                         <Badge className="bg-emerald-50 text-emerald-600 border-none px-3 font-black text-[9px] uppercase tracking-tighter">Verified</Badge>
+                        <div className="flex items-center gap-3">
+                          <Zap className="h-5 w-5 text-amber-500 fill-amber-500" />
+                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Payment Proof Verified</p>
+                        </div>
+                        <Badge className="bg-emerald-50 text-emerald-600 border-none px-3 font-black text-[9px] uppercase tracking-tighter">Verified</Badge>
                       </div>
+                    </div>
                   </div>
               </div>
             </div>
@@ -906,12 +1231,40 @@ export function EnrollmentsList({
                    <ShieldCheck className="h-5 w-5" />
                    <span className="text-[10px] font-black uppercase tracking-widest">Enrolled & Active</span>
                 </div>
-              )}
-          </div>
-        </DialogContent>
-      </Dialog>
+              </div>
 
+              <div className="absolute bottom-0 left-0 right-0 p-8 bg-white/80 backdrop-blur-xl border-t border-slate-100 flex flex-wrap justify-end gap-5 rounded-b-[3rem] z-20">
 
-    </div>
-  );
+                <Button variant="ghost" onClick={() => setSelectedEnrollment(null)} className="text-slate-400 font-black uppercase tracking-widest text-[10px] h-14 px-8 rounded-2xl hover:bg-slate-50 transition-all">Close Viewer</Button>
+
+                {selectedEnrollment?.status === 'pending' && (
+                  <>
+                    <Button
+                      variant="destructive"
+                      className="rounded-2xl h-14 px-8 font-black uppercase tracking-widest text-[10px] shadow-xl shadow-rose-100 border-none transition-all hover:translate-y-[-4px]"
+                      onClick={() => { if (selectedEnrollment) handleUpdateStatus(selectedEnrollment.id, 'rejected'); setSelectedEnrollment(null); } }
+                    >
+                      Reject Admission
+                    </Button>
+                    <Button
+                      className="bg-indigo-600 hover:bg-slate-900 text-white rounded-2xl h-14 px-12 font-black uppercase tracking-widest text-[10px] transition-all shadow-2xl shadow-indigo-200 hover:translate-y-[-4px] active:translate-y-0"
+                      onClick={() => { if (selectedEnrollment) handleUpdateStatus(selectedEnrollment.id, 'active'); setSelectedEnrollment(null); } }
+                    >
+                      Approve Enrollment
+                      <ArrowRight className="h-4 w-4 ml-3" />
+                    </Button>
+                  </>
+                )}
+
+                {selectedEnrollment?.status === 'active' && (
+                  <div className="flex items-center gap-3 px-6 h-14 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100/50">
+                    <ShieldCheck className="h-5 w-5" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Enrolled & Active</span>
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+      </div>
+    );
 }

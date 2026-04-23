@@ -40,6 +40,7 @@ import { CourseBuilder } from "@/components/instructor/courses/CourseBuilder";
 import { Course as InstructorCourse } from "@/hooks/useInstructorData";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import { SyncDataButton } from "@/components/admin/data/SyncDataButton";
 
 interface AdminCourse {
   id: string;
@@ -67,8 +68,9 @@ interface AdminCourse {
   updated_at: string;
   batch_type?: string;
   batch_name?: string;
-  instructor_id?: string;
   row_id: string;
+  processed_by_name?: string | null;
+  processed_at?: string | null;
 }
 
 interface Stats {
@@ -79,9 +81,15 @@ interface Stats {
   draft: number;
 }
 
-export default function InstructorAccess() {
+interface InstructorAccessProps {
+  onSync?: () => void;
+  loading?: boolean;
+}
+
+export default function InstructorAccess({ onSync, loading: externalLoading }: InstructorAccessProps) {
   const [courses, setCourses] = useState<AdminCourse[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [internalLoading, setInternalLoading] = useState(true);
+  const loading = externalLoading || internalLoading;
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedCourse, setSelectedCourse] = useState<AdminCourse | null>(
@@ -103,7 +111,7 @@ export default function InstructorAccess() {
   );
 
   const fetchCourses = useCallback(async () => {
-    setLoading(true);
+    setInternalLoading(true);
     try {
       const data = await fetchWithAuth("/admin/courses-with-instructors");
       const coursesData = (data as AdminCourse[]).map((c: AdminCourse) => ({
@@ -133,7 +141,7 @@ export default function InstructorAccess() {
       console.error("Failed to fetch courses:", err);
       toast.error("Failed to load requests");
     } finally {
-      setLoading(false);
+      setInternalLoading(false);
     }
   }, []);
 
@@ -156,7 +164,7 @@ export default function InstructorAccess() {
           : (c.id === courseId);
           
         if (isTarget) {
-          return { ...c, status: "approved" as "approved" };
+          return { ...c, status: "approved" };
         }
         return c;
       }));
@@ -282,27 +290,37 @@ export default function InstructorAccess() {
           </p>
         </div>
 
-        <div className="flex items-center justify-between sm:justify-end gap-3 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm w-full sm:w-auto">
-          <div className="flex -space-x-2 sm:-space-x-3 px-2">
-            {courses.slice(0, 4).map((c, i) => (
-              <Avatar
-                key={i}
-                className="h-8 w-8 border-2 border-white ring-1 ring-slate-100 italic"
-              >
-                <AvatarImage src={c.instructor_avatar || ""} />
-                <AvatarFallback className="bg-slate-100 text-[10px] font-bold">
-                  {c.instructor_name?.[0]}
-                </AvatarFallback>
-              </Avatar>
-            ))}
+        <div className="flex items-center gap-4">
+          <SyncDataButton 
+            onSync={() => {
+              if (onSync) onSync();
+              fetchCourses();
+            }} 
+            isLoading={loading} 
+            className="h-14 px-6 rounded-3xl bg-white shadow-sm border-slate-100"
+          />
+          <div className="flex items-center justify-between sm:justify-end gap-3 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm w-full sm:w-auto">
+            <div className="flex -space-x-2 sm:-space-x-3 px-2">
+              {courses.slice(0, 4).map((c, i) => (
+                <Avatar
+                  key={i}
+                  className="h-8 w-8 border-2 border-white ring-1 ring-slate-100 italic"
+                >
+                  <AvatarImage src={c.instructor_avatar || ""} />
+                  <AvatarFallback className="bg-slate-100 text-[10px] font-bold">
+                    {c.instructor_name?.[0]}
+                  </AvatarFallback>
+                </Avatar>
+              ))}
+            </div>
+            <div className="h-4 w-px bg-slate-200 mx-1" />
+            <Badge
+              variant="secondary"
+              className="px-3 py-1 bg-primary/5 text-primary border-none font-bold"
+            >
+              {stats.pending} Pending Request{stats.pending !== 1 && "s"}
+            </Badge>
           </div>
-          <div className="h-4 w-px bg-slate-200 mx-1" />
-          <Badge
-            variant="secondary"
-            className="px-3 py-1 bg-primary/5 text-primary border-none font-bold"
-          >
-            {stats.pending} Pending Request{stats.pending !== 1 && "s"}
-          </Badge>
         </div>
       </div>
 
@@ -544,12 +562,25 @@ export default function InstructorAccess() {
                        </div>
                     </div>
 
-                    {/* Date Column */}
+                    {/* Date/Audit Column */}
                     <div className="col-span-1 md:col-span-1">
-                       <span className="text-[11px] font-black text-slate-400 uppercase tracking-tighter flex items-center gap-1.5 md:block">
-                          <Calendar className="h-3 w-3 md:hidden text-slate-300" />
-                          {course.created_at ? new Date(course.created_at).toLocaleDateString('en-GB') : 'N/A'}
-                       </span>
+                       <div className="flex flex-col gap-0.5">
+                          <span className="text-[11px] font-black text-slate-400 uppercase tracking-tighter flex items-center gap-1.5 md:block">
+                             <Calendar className="h-3 w-3 md:hidden text-slate-300" />
+                             {course.created_at ? new Date(course.created_at).toLocaleDateString('en-GB') : 'N/A'}
+                          </span>
+                          {course.status === 'approved' && course.processed_by_name && (
+                             <div className="flex flex-col">
+                                <span className="text-[8px] font-bold text-emerald-500 uppercase leading-tight">Approved By:</span>
+                                <span className="text-[9px] font-black text-slate-600 truncate max-w-[80px]">{course.processed_by_name}</span>
+                                {course.processed_at && (
+                                   <span className="text-[8px] font-medium text-slate-400">
+                                      {new Date(course.processed_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                                   </span>
+                                )}
+                             </div>
+                          )}
+                       </div>
                     </div>
 
                     {/* Actions Column */}

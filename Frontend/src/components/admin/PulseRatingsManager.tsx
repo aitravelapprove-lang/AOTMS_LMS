@@ -6,9 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { useInstructorRatings, CourseRating } from '@/hooks/useInstructorData';
+import { SyncDataButton } from './data/SyncDataButton';
 
 export function PulseRatingsManager() {
-  const { data: ratings = [], isLoading } = useInstructorRatings();
+  const { data: ratings = [], isLoading, refetch } = useInstructorRatings();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRating, setFilterRating] = useState<number | null>(null);
 
@@ -34,21 +35,28 @@ export function PulseRatingsManager() {
           <p className="text-slate-500 font-bold italic">Global feedback stream across all academy instructors</p>
         </div>
 
-        <div className="flex items-center gap-4 bg-white p-4 rounded-3xl shadow-sm border border-slate-100">
-           <div className="h-12 w-12 rounded-2xl bg-amber-400 flex items-center justify-center text-white shadow-lg shadow-amber-400/20">
-              <Trophy className="h-6 w-6 fill-white" />
-           </div>
-           <div>
-              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Average Platform Pulse</div>
-              <div className="flex items-baseline gap-2">
-                 <span className="text-2xl font-black text-slate-900">{avgRating}</span>
-                 <div className="flex gap-0.5">
-                    {[1,2,3,4,5].map(s => (
-                      <Star key={s} className={`h-3 w-3 ${s <= Math.round(Number(avgRating)) ? 'text-amber-400 fill-amber-400' : 'text-slate-200'}`} />
-                    ))}
-                 </div>
-              </div>
-           </div>
+        <div className="flex items-center gap-4">
+          <SyncDataButton 
+            onSync={async () => { await refetch(); }} 
+            isLoading={isLoading} 
+            className="h-14 px-6 rounded-3xl bg-white shadow-sm border-slate-100"
+          />
+          <div className="flex items-center gap-4 bg-white p-4 rounded-3xl shadow-sm border border-slate-100">
+             <div className="h-12 w-12 rounded-2xl bg-amber-400 flex items-center justify-center text-white shadow-lg shadow-amber-400/20">
+                <Trophy className="h-6 w-6 fill-white" />
+             </div>
+             <div>
+                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Average Platform Pulse</div>
+                <div className="flex items-baseline gap-2">
+                   <span className="text-2xl font-black text-slate-900">{avgRating}</span>
+                   <div className="flex gap-0.5">
+                      {[1,2,3,4,5].map(s => (
+                        <Star key={s} className={`h-3 w-3 ${s <= Math.round(Number(avgRating)) ? 'text-amber-400 fill-amber-400' : 'text-slate-200'}`} />
+                      ))}
+                   </div>
+                </div>
+             </div>
+          </div>
         </div>
       </div>
 

@@ -129,9 +129,10 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 interface QuestionBankApprovalProps {
     onSync?: () => void;
     loading?: boolean;
+    mode?: string;
 }
 
-export function QuestionBankApproval({ onSync, loading: externalLoading }: QuestionBankApprovalProps) {
+export function QuestionBankApproval({ onSync, loading: externalLoading, mode }: QuestionBankApprovalProps) {
     const getImageSrc = (path?: string | null) => {
         if (!path) return null;
         if (path.startsWith('http')) return path;

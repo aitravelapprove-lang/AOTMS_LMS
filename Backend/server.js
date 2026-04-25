@@ -2005,7 +2005,7 @@ app.get('/api/admin/student-performance/:studentId', authenticateToken, requireA
     }
 });
 
-app.get('/api/admin/exams-list', authenticateToken, requireAdminOrManager, async (req, res) => {
+app.get('/api/admin/exams-list', authenticateToken, requireInstructor, async (req, res) => {
     try {
         const exams = await Exam.find()
             .sort({ created_at: -1 })
@@ -5707,7 +5707,7 @@ app.put('/api/data/:table/:id', authenticateToken, async (req, res) => {
         const role = await getUserRole(req.user.id);
 
         // Security: Restrict who can update sensitive data
-        if (role !== 'admin' && role !== 'manager') {
+        if (role !== 'admin' && role !== 'manager' && role !== 'instructor') {
             if (['course_enrollments', 'student_exam_access', 'exam_results'].includes(table)) {
                 // ... same logic for students
                 const existing = await Model.findById(id);
@@ -5758,8 +5758,10 @@ app.put('/api/data/:table/:id', authenticateToken, async (req, res) => {
                 if (existing && existing.created_by?.toString() !== req.user.id) {
                     return res.status(403).json({ error: 'Forbidden: Cannot update questions created by others' });
                 }
-                // Force status to pending on update if not admin
-                req.body.approval_status = 'pending';
+                if (role !== 'instructor') {
+                    // Force status to pending on update if not admin/instructor/manager
+                    req.body.approval_status = 'pending';
+                }
                 delete req.body.created_by;
             } else if (!['doubts', 'doubt_replies'].includes(table)) {
                  return res.status(403).json({ error: 'Unauthorized to update this table' });

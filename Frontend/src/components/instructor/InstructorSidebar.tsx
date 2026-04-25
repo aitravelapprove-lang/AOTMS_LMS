@@ -33,6 +33,7 @@ import {
   User,
   MessageSquare,
   Bell,
+  CheckCircle2,
 } from "lucide-react";
 
 import logo from "@/assets/logo.png";

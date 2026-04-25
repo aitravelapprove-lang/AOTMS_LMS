@@ -137,7 +137,7 @@ export function LiveClassManager() {
             await createMeeting.mutateAsync({
                 ...formData,
                 startTime: `${selectedDate}T${selectedTime}`,
-                duration: 60, // Fixed duration as requested to remove the "ending concept"
+                duration: 1440, // Increased duration to effectively remove the "ending concept"
                 target_batch: formData.targetBatch === 'all' ? 'all' : (courseBatches.find(b => b.id === formData.targetBatch)?.batch_type || 'all'),
                 batchId: formData.targetBatch === 'all' ? null : formData.targetBatch,
                 poster_url: finalPosterUrl
@@ -229,8 +229,7 @@ export function LiveClassManager() {
                                             
                                             {/* Top Overlay Badge */}
                                             <div className="absolute top-3 left-3 z-20">
-                                                {new Date(session.scheduled_at) <= new Date() && 
-                                                 new Date() <= new Date(new Date(session.scheduled_at).getTime() + (session.duration_minutes || 60) * 60000) && (
+                                                {new Date(session.scheduled_at) <= new Date() && (
                                                     <Badge className="bg-red-500 text-white border-none animate-pulse font-bold text-[10px] px-2 py-0.5 rounded-lg shadow-xl">
                                                         LIVE
                                                     </Badge>
@@ -238,6 +237,7 @@ export function LiveClassManager() {
                                             </div>
 
                                             {/* Floating Badges Overlay */}
+
                                             <div className="absolute bottom-3 left-3 right-3 z-30 flex items-center gap-2">
                                                 <div className="bg-black/50 backdrop-blur-md text-white text-[9px] font-bold px-3 py-1.5 rounded-xl border border-white/10 uppercase tracking-wider">
                                                     {session.target_batch === 'all' ? 'All Batches' : `${session.target_batch} Batch`}
@@ -388,28 +388,29 @@ export function LiveClassManager() {
                                 </div>
 
                                 {/* Start Time + Duration */}
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Start Date</label>
-                                        <input
-                                            type="date"
-                                            required
-                                            value={selectedDate}
-                                            onChange={e => setSelectedDate(e.target.value)}
-                                            className="w-full h-11 px-4 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                                        />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Start Time</label>
-                                        <input
-                                            type="time"
-                                            required
-                                            value={selectedTime}
-                                            onChange={e => setSelectedTime(e.target.value)}
-                                            className="w-full h-11 px-4 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                                        />
-                                    </div>
+                                {/* Start Date & Time Selection */}
+                                <div className="space-y-1.5">
+                                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Session Date & Time</label>
+                                    <input
+                                        type="datetime-local"
+                                        required
+                                        value={selectedDate && selectedTime ? `${selectedDate}T${selectedTime}` : ""}
+                                        onChange={e => {
+                                            const val = e.target.value;
+                                            if (val) {
+                                                const [d, t] = val.split('T');
+                                                setSelectedDate(d);
+                                                setSelectedTime(t);
+                                            } else {
+                                                setSelectedDate('');
+                                                setSelectedTime('');
+                                            }
+                                        }}
+                                        className="w-full h-11 px-4 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                                    />
+                                    <p className="text-[9px] font-bold text-slate-400 italic">This session will start at your local time.</p>
                                 </div>
+
 
                                 {/* Target Selection: Course + Batch Cards */}
                                 <div className="space-y-4">

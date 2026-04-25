@@ -66,17 +66,8 @@ export default function LiveSession() {
                 const endTime = startTime + duration;
                 const now = new Date().getTime();
 
-                // Check if session has ended (User's requirement #2)
-                // Instructors (role 1) can bypass this to see the session details or manage it
-                if (now > endTime && role !== 1) {
-                    setIsFinished(true);
-                    throw new Error('This live session has already finished.');
-                }
+                // Time checks removed as per user request to allow immediate access
 
-                // Optional: Check if session is too early (Allow 30 mins early for prep)
-                if (now < startTime - (30 * 60000)) {
-                    throw new Error(`This session is scheduled for ${new Date(liveClass.scheduled_at).toLocaleString()}. Please return closer to the start time.`);
-                }
 
                 addLog('Authenticating credentials...');
 

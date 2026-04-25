@@ -48,12 +48,13 @@ export function LiveClassManager() {
 
     const [formData, setFormData] = useState({
         topic: '',
-        startTime: '',
-        duration: 60,
         agenda: '',
         courseId: '',
         targetBatch: 'all'
     });
+
+    const [selectedDate, setSelectedDate] = useState('');
+    const [selectedTime, setSelectedTime] = useState('');
 
     const { data: courseBatches = [], isLoading: isLoadingBatches } = useCourseBatches(formData.courseId);
 
@@ -135,12 +136,16 @@ export function LiveClassManager() {
 
             await createMeeting.mutateAsync({
                 ...formData,
+                startTime: `${selectedDate}T${selectedTime}`,
+                duration: 60, // Fixed duration as requested to remove the "ending concept"
                 target_batch: formData.targetBatch === 'all' ? 'all' : (courseBatches.find(b => b.id === formData.targetBatch)?.batch_type || 'all'),
                 batchId: formData.targetBatch === 'all' ? null : formData.targetBatch,
                 poster_url: finalPosterUrl
             });
             setIsAdding(false);
-            setFormData({ topic: '', startTime: '', duration: 60, agenda: '', courseId: '', targetBatch: 'all' });
+            setFormData({ topic: '', agenda: '', courseId: '', targetBatch: 'all' });
+            setSelectedDate('');
+            setSelectedTime('');
             setPosterFile(null);
             setPosterPreview(null);
             setFinalPosterUrl(null);
@@ -385,22 +390,22 @@ export function LiveClassManager() {
                                 {/* Start Time + Duration */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
-                                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Start Time</label>
+                                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Start Date</label>
                                         <input
-                                            type="datetime-local"
+                                            type="date"
                                             required
-                                            value={formData.startTime}
-                                            onChange={e => setFormData({ ...formData, startTime: e.target.value })}
+                                            value={selectedDate}
+                                            onChange={e => setSelectedDate(e.target.value)}
                                             className="w-full h-11 px-4 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                                         />
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Duration (Min)</label>
+                                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Start Time</label>
                                         <input
-                                            type="number"
+                                            type="time"
                                             required
-                                            value={formData.duration}
-                                            onChange={e => setFormData({ ...formData, duration: parseInt(e.target.value) })}
+                                            value={selectedTime}
+                                            onChange={e => setSelectedTime(e.target.value)}
                                             className="w-full h-11 px-4 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                                         />
                                     </div>

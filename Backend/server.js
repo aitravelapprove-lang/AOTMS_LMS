@@ -1460,7 +1460,7 @@ app.put('/api/admin/approve-question-bank', authenticateToken, requireAdmin, asy
 });
 
 // Remove/Disable Question Bank
-app.delete('/api/admin/question-bank/:topic', authenticateToken, requireAdmin, async (req, res) => {
+app.delete('/api/admin/question-bank/:topic', authenticateToken, requireInstructor, async (req, res) => {
     const { topic } = req.params;
     if (!topic) return res.status(400).json({ error: 'Missing topic' });
 
@@ -4253,7 +4253,7 @@ app.post('/api/manager/grant-exam-access', authenticateToken, requireAdminOrMana
     }
 });
 
-app.get('/api/manager/approved-question-banks', authenticateToken, requireAdminOrManager, async (req, res) => {
+app.get('/api/manager/approved-question-banks', authenticateToken, requireInstructor, async (req, res) => {
     try {
         const banks = await QuestionBank.aggregate([
             { $match: { approval_status: 'approved' } },
@@ -4275,7 +4275,7 @@ app.get('/api/manager/approved-question-banks', authenticateToken, requireAdminO
     }
 });
 
-app.get('/api/admin/question-bank-summary', authenticateToken, requireAdminOrManager, async (req, res) => {
+app.get('/api/admin/question-bank-summary', authenticateToken, requireInstructor, async (req, res) => {
     try {
         const banks = await QuestionBank.aggregate([
                 { 
@@ -4399,7 +4399,7 @@ app.get('/api/admin/platform-stats', authenticateToken, requireAdminOrManager, a
     }
 });
 
-app.get('/api/admin/question-bank/:topic/access-list', authenticateToken, requireAdminOrManager, async (req, res) => {
+app.get('/api/admin/question-bank/:topic/access-list', authenticateToken, requireInstructor, async (req, res) => {
     try {
         const { topic } = req.params;
         
@@ -4468,7 +4468,7 @@ app.get('/api/admin/question-bank/:topic/access-list', authenticateToken, requir
     }
 });
 
-app.delete('/api/admin/question-bank/:topic/revoke-access/:studentId', authenticateToken, requireAdminOrManager, async (req, res) => {
+app.delete('/api/admin/question-bank/:topic/revoke-access/:studentId', authenticateToken, requireInstructor, async (req, res) => {
     try {
         const { topic, studentId } = req.params;
         
@@ -4496,7 +4496,7 @@ app.delete('/api/admin/question-bank/:topic/revoke-access/:studentId', authentic
     }
 });
 
-app.post('/api/admin/question-bank/grant-access', authenticateToken, requireAdminOrManager, async (req, res) => {
+app.post('/api/admin/question-bank/grant-access', authenticateToken, requireInstructor, async (req, res) => {
     const { userId, student_id, userIds, topic, batchId, type, scheduled_date } = req.body;
     const targetUserId = userId || student_id;
     if (!topic) return res.status(400).json({ error: 'Topic required' });

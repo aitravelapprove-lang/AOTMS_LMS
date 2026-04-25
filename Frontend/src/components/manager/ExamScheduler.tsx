@@ -292,7 +292,7 @@ function ExamCard({
               </Button>
             </div>
           )}
-          {exam.approval_status === "pending" && userRole !== "instructor" && (
+          {exam.approval_status === "pending" && (
             <div className="flex flex-1 gap-2">
               <Button
                 className="flex-1 h-12 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[10px] uppercase tracking-widest transition-all active:scale-95"

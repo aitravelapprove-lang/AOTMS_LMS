@@ -60,6 +60,7 @@ const contentNavItems = [
   { title: "Manual Grading", url: "/instructor/grading", icon: BarChart3 },
   { title: "Assessment Protocols", url: "/instructor/exams", icon: ShieldCheck },
   { title: "Question Bank", url: "/instructor/question-bank", icon: FolderOpen },
+  { title: "Question Access", url: "/instructor/question-access", icon: ShieldCheck },
   { title: "Resume Scan Logs", url: "/instructor/resume-scans", icon: FileText },
 ];
 

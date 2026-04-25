@@ -29,6 +29,7 @@ import { ChatInterface } from "@/components/chat/ChatInterface";
 import { QuestionBankManager } from "@/components/manager/QuestionBankManager";
 import { ExamScheduler } from "@/components/manager/ExamScheduler";
 import { InstructorVideoLibrary } from "@/components/instructor/dashboard/InstructorVideoLibrary";
+import { QuestionBankApproval } from "@/components/admin/QuestionBankApproval";
 import { LiveClassManager } from "@/components/instructor/dashboard/LiveClassManager";
 import { UserProfile } from "@/components/dashboard/UserProfile";
 import { ResumeScanHistory } from "@/components/admin/ResumeScanHistory";
@@ -517,6 +518,7 @@ export default function InstructorDashboard() {
   const isLiveClasses = path === "/instructor/live-classes";
   const isChat = path === "/instructor/chat";
   const isQuestionBank = path === "/instructor/question-bank";
+  const isQuestionAccess = path === "/instructor/question-access";
   const isExams = path === "/instructor/exams";
   const isProfile = path === "/instructor/profile";
   const isResumeScans = path === "/instructor/resume-scans";
@@ -644,6 +646,15 @@ export default function InstructorDashboard() {
                   animate={{ opacity: 1 }}
                 >
                   <InstructorVideoLibrary />
+                </motion.div>
+              )}
+              {isQuestionAccess && (
+                <motion.div
+                  key="question-access"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <QuestionBankApproval mode="instructor" />
                 </motion.div>
               )}
               {isLiveClasses && (

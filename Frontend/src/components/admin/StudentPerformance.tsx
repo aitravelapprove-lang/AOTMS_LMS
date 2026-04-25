@@ -550,17 +550,27 @@ export function StudentPerformance({
     <div className="space-y-7 animate-in fade-in duration-500">
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
-        <div className="flex items-center gap-4">
-          <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-xl shadow-indigo-200">
-            <BarChart3 className="h-7 w-7 text-white" />
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex items-center gap-5">
+          <div className="h-16 w-16 rounded-[2rem] bg-slate-900 flex items-center justify-center shadow-2xl shadow-slate-200 ring-4 ring-white">
+            <BarChart3 className="h-8 w-8 text-white" />
           </div>
-          <div>
-            <h1 className="text-3xl font-black tracking-tight text-slate-900 leading-none mb-1">Student Performance</h1>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-              Map · Courses · Exams · Attendance · Live · Resources · ATS
+          <div className="space-y-1">
+            <h1 className="text-3xl md:text-4xl font-black tracking-tight text-slate-900 leading-none">Student Directory</h1>
+            <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-2">
+               <span className="h-1 w-4 bg-primary rounded-full" /> Platform Registry V.2
             </p>
           </div>
+        </div>
+        <div className="flex items-center gap-3">
+           <Button
+            variant="outline"
+            onClick={loadStudents}
+            className="h-12 px-6 rounded-2xl gap-3 font-black text-[11px] uppercase tracking-widest border-slate-200 bg-white shadow-sm hover:bg-slate-50 transition-all active:scale-95"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Refresh Registry
+          </Button>
         </div>
         <SyncDataButton 
           onSync={onSync || (() => loadStudents(true))}
@@ -594,47 +604,57 @@ export function StudentPerformance({
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[200px] max-w-md">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+      {/* Advanced Filters */}
+      <div className="flex flex-col sm:flex-row gap-4 p-5 bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/30">
+        <div className="relative flex-1 group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-slate-900 transition-colors" />
           <Input
-            placeholder="Search name, email, UUID, mobile…"
+            placeholder="Search registry by name, email or mobile..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="pl-11 h-11 bg-white border-none shadow-xl shadow-slate-200/30 rounded-2xl font-bold text-slate-900 focus-visible:ring-2 focus-visible:ring-indigo-500"
+            className="pl-12 h-12 bg-slate-50 border-none rounded-2xl font-bold text-slate-900 focus-visible:ring-2 focus-visible:ring-slate-900/10 placeholder:text-slate-400/70"
           />
         </div>
-        <Select value={fStatus} onValueChange={setFStatus}>
-          <SelectTrigger className="h-11 w-40 rounded-2xl bg-white border-none shadow-xl shadow-slate-200/20 font-bold">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="rounded-2xl border-none shadow-2xl">
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="approved">Approved</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={fCollege} onValueChange={setFCollege}>
-          <SelectTrigger className="h-11 w-52 rounded-2xl bg-white border-none shadow-xl shadow-slate-200/20 font-bold">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="rounded-2xl border-none shadow-2xl max-h-60">
-            <SelectItem value="all">All Colleges</SelectItem>
-            {uniqueColleges.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <div className="flex gap-3">
+          <Select value={fStatus} onValueChange={setFStatus}>
+            <SelectTrigger className="h-12 w-40 rounded-2xl bg-slate-50 border-none font-black text-[11px] uppercase tracking-tighter shadow-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="rounded-2xl border-slate-100 shadow-2xl">
+              <SelectItem value="all" className="font-bold text-xs py-3">ALL STATUS</SelectItem>
+              <SelectItem value="approved" className="font-bold text-xs py-3">APPROVED</SelectItem>
+              <SelectItem value="pending" className="font-bold text-xs py-3">PENDING</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={fCollege} onValueChange={setFCollege}>
+            <SelectTrigger className="h-12 min-w-52 rounded-2xl bg-slate-50 border-none font-black text-[11px] uppercase tracking-tighter shadow-sm">
+              <SelectValue placeholder="College" />
+            </SelectTrigger>
+            <SelectContent className="rounded-2xl border-slate-100 shadow-2xl max-h-80">
+              <SelectItem value="all" className="font-bold text-xs py-3">ALL COLLEGES</SelectItem>
+              {uniqueColleges.map(c => (
+                <SelectItem key={c} value={c} className="font-bold text-xs py-3">{c.toUpperCase()}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Student List */}
-      <Card className="border-none shadow-2xl shadow-slate-200/50 rounded-[2.5rem] overflow-hidden bg-white">
-        <CardHeader className="px-7 py-5 border-b border-slate-100 bg-slate-50/50">
-          <CardTitle className="text-base font-black text-slate-800 flex items-center gap-2">
-            <Users className="h-5 w-5 text-indigo-500" />
-            Student Directory
-            <Badge className="ml-auto bg-indigo-100 text-indigo-700 border-none font-black text-[10px]">
-              {filtered.length} records
-            </Badge>
-          </CardTitle>
+      <Card className="border-none shadow-[0_32px_64px_-12px_rgba(0,0,0,0.1)] rounded-[3rem] overflow-hidden bg-white">
+        <CardHeader className="px-8 py-7 border-b border-slate-50 bg-slate-50/50">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg font-black text-slate-900 flex items-center gap-3">
+              <div className="h-10 w-10 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-lg">
+                <Users className="h-5 w-5" />
+              </div>
+              STUDENT DIRECTORY
+            </CardTitle>
+            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-2xl shadow-sm border border-slate-100">
+               <span className="animate-pulse h-2 w-2 rounded-full bg-emerald-500" />
+               <span className="text-[11px] font-black tracking-widest text-slate-500 uppercase">{filtered.length} ACTIVE RECORDS</span>
+            </div>
+          </div>
         </CardHeader>
 
         <CardContent className="p-0">
@@ -654,20 +674,21 @@ export function StudentPerformance({
               <AnimatePresence>
                 {filtered.map((stu, idx) => {
                   const isExp = expandedId === stu.id;
-                  const detail = detailCache[stu.id];
-                  const isDown = downloadingId === stu.id;
                   const isLoadingThis = loadingId === stu.id;
+                  const isDown = downloadingId === stu.id;
+                  const detail = detailCache[stu.id];
 
-                  // Extract data from detail cache if available
+                  // Performance summary from detail cache
                   const enrollments = detail?.performance?.enrollments || [];
                   const results = detail?.performance?.results || [];
                   const attendance = detail?.attendance || [];
 
+                  // Quick summary from props or profile
                   const myBulk = bulkEnrollments.filter(e => e.user_id === stu.user_id);
-                  const coursesCount = myBulk.length;
-                  const avgProgress = coursesCount > 0 
-                    ? Math.round(myBulk.reduce((acc, curr) => acc + (curr.progress_percentage || 0), 0) / coursesCount)
-                    : 0;
+                  const coursesCount = myBulk.length > 0 ? myBulk.length : (enrollments.length || 0);
+                  const avgProgress = myBulk.length > 0 
+                    ? Math.round(myBulk.reduce((acc, curr) => acc + (curr.progress_percentage || 0), 0) / myBulk.length)
+                    : (enrollments.length > 0 ? Math.round(enrollments.reduce((acc, curr) => acc + (curr.progress || 0), 0) / enrollments.length) : 0);
 
                   return (
                     <motion.div
@@ -678,74 +699,84 @@ export function StudentPerformance({
                     >
                       {/* ── Row ── */}
                       <div
-                        className={`flex items-center gap-3 px-5 py-4 cursor-pointer group transition-colors ${isExp ? "bg-indigo-50/40" : "hover:bg-slate-50/60"}`}
+                        className={`flex flex-col sm:flex-row items-center gap-4 px-6 py-6 cursor-pointer group transition-all ${isExp ? "bg-slate-50" : "hover:bg-slate-50/50"}`}
                         onClick={() => toggleExpand(stu)}
                       >
-                        {/* Avatar */}
-                        <div className="relative flex-shrink-0">
-                          <Avatar className="h-11 w-11 rounded-xl border-2 border-white shadow-md">
-                            <AvatarImage src={stu.avatar_url || ""} />
-                            <AvatarFallback className="bg-gradient-to-br from-indigo-100 to-violet-100 text-indigo-700 font-black text-sm rounded-xl">
-                              {stu.full_name?.[0] || "?"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white ${stu.is_approved ? "bg-emerald-500" : "bg-amber-400"}`} />
-                        </div>
+                        {/* Avatar & Identifiers Row */}
+                        <div className="flex items-center gap-4 w-full sm:w-auto flex-1 min-w-0">
+                          <div className="relative flex-shrink-0 group-hover:scale-110 transition-transform duration-500">
+                            <Avatar className="h-16 w-16 sm:h-20 sm:w-20 rounded-[2rem] border-4 border-white shadow-xl overflow-hidden ring-1 ring-slate-100">
+                              <AvatarImage src={stu.avatar_url || ""} className="object-cover" />
+                              <AvatarFallback className="bg-slate-900 text-white font-black text-xl sm:text-2xl rounded-[2rem]">
+                                {stu.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || "?"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className={`absolute -bottom-1 -right-1 h-6 w-6 rounded-full border-4 border-white shadow-md flex items-center justify-center ${stu.is_approved ? "bg-slate-900" : "bg-amber-500"}`}>
+                               <div className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                            </div>
+                          </div>
 
-                        {/* Name + email */}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-black text-slate-900 text-sm leading-tight group-hover:text-indigo-600 transition-colors truncate">
-                            {stu.full_name || "—"}
-                          </p>
-                          <div className="flex flex-wrap items-center gap-2 mt-0.5">
-                            <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1 truncate">
-                              <Mail className="h-2.5 w-2.5" />{stu.email}
-                            </span>
-                            {stu.mobile_number && (
-                              <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
-                                <Phone className="h-2.5 w-2.5" />{stu.mobile_number}
+                          <div className="flex-1 min-w-0 space-y-1.5">
+                            <p className="font-black text-slate-900 text-xl sm:text-2xl leading-[0.9] tracking-tight group-hover:text-slate-700 transition-colors truncate">
+                              {stu.full_name || "UNNAMED STUDENT"}
+                            </p>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-2">
+                              <span className="text-[11px] text-slate-500 font-bold flex items-center gap-2 truncate uppercase tracking-widest">
+                                <Mail className="h-3 w-3 opacity-40 shrink-0" />{stu.email}
                               </span>
-                            )}
+                              {stu.mobile_number && (
+                                <span className="text-[11px] text-slate-500 font-bold flex items-center gap-2 uppercase tracking-widest">
+                                  <Phone className="h-3 w-3 opacity-40 shrink-0" />{stu.mobile_number}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 pt-1">
+                               <Badge className="bg-slate-100 hover:bg-slate-200 text-slate-600 border-none font-black text-[9px] px-3 py-1 rounded-full uppercase tracking-widest transition-colors">
+                                  {sv(stu.college_name).toUpperCase()}
+                               </Badge>
+                            </div>
                           </div>
                         </div>
 
-                        {/* Performance Quick Summary */}
-                        <div className="hidden lg:flex items-center gap-3 flex-shrink-0">
-                          <div className="flex flex-col items-center">
-                            <span className="text-[14px] font-black text-slate-900">{coursesCount}</span>
-                            <span className="text-[7px] font-black text-slate-400 uppercase tracking-tighter">Courses</span>
+                        {/* Metrics Row */}
+                        <div className="grid grid-cols-2 lg:flex items-center gap-4 sm:gap-8 w-full sm:w-auto flex-shrink-0 pt-4 sm:pt-0 border-t sm:border-none border-slate-100">
+                          <div className="flex flex-col items-start sm:items-center px-4 py-2 bg-slate-50 sm:bg-transparent rounded-2xl">
+                            <span className="text-xl sm:text-2xl font-black text-slate-900 leading-none">{coursesCount}</span>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Courses</span>
                           </div>
-                          <div className="h-8 w-px bg-slate-100" />
-                          <div className="flex flex-col items-center">
-                            <span className={`text-[14px] font-black ${avgProgress >= 70 ? 'text-emerald-500' : avgProgress >= 40 ? 'text-amber-500' : 'text-slate-900'}`}>{avgProgress}%</span>
-                            <span className="text-[7px] font-black text-slate-400 uppercase tracking-tighter">Avg Progress</span>
+                          
+                          <div className="flex flex-col items-start sm:items-center px-4 py-2 bg-slate-50 sm:bg-transparent rounded-2xl">
+                            <span className={`text-xl sm:text-2xl font-black leading-none ${avgProgress >= 70 ? 'text-emerald-500' : avgProgress >= 40 ? 'text-amber-500' : 'text-slate-900'}`}>{avgProgress}%</span>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Progress</span>
                           </div>
-                          <div className="h-8 w-px bg-slate-100" />
-                          <div className="flex flex-col items-end">
-                            <Badge className={`text-[9px] font-black border-none px-2 py-0.5 rounded-full ${stu.is_approved ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
-                              {stu.is_approved ? "Approved" : "Pending"}
-                            </Badge>
-                            <span className="text-[7px] font-black text-slate-300 uppercase tracking-tighter mt-0.5">{sv(stu.college_name).slice(0, 15)}</span>
-                          </div>
-                        </div>
 
-                        {/* Download + Chevron */}
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <Button
-                            size="sm"
-                            onClick={e => downloadPdf(e, stu)}
-                            disabled={isDown}
-                            className="h-9 w-9 p-0 rounded-xl bg-indigo-50 hover:bg-indigo-600 text-indigo-600 hover:text-white border-none shadow-sm transition-all"
-                            title="Download PDF"
-                          >
-                            {isDown ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-                          </Button>
-                          {isLoadingThis
-                            ? <Loader2 className="h-4 w-4 animate-spin text-indigo-400" />
-                            : isExp
-                              ? <ChevronUp className="h-5 w-5 text-indigo-500" />
-                              : <ChevronDown className="h-5 w-5 text-slate-400 group-hover:text-indigo-500 transition-colors" />
-                          }
+                          <div className="flex flex-col items-start sm:items-center px-4 py-2 bg-slate-50 sm:bg-transparent rounded-2xl">
+                             <Badge className={`text-[10px] h-6 font-black border-none px-3 rounded-full uppercase tracking-widest shadow-sm ${stu.is_approved ? "bg-slate-900 text-white" : "bg-amber-500 text-white"}`}>
+                                {stu.is_approved ? "Active" : "Pending"}
+                             </Badge>
+                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2 hidden sm:block">STATUS</span>
+                          </div>
+
+                          {/* Expansion & Download */}
+                          <div className="flex items-center justify-end gap-3 col-span-2 sm:col-span-1 border-t pt-4 sm:pt-0 sm:border-none mt-2 sm:mt-0">
+                            <Button
+                              size="lg"
+                              onClick={e => downloadPdf(e, stu)}
+                              disabled={isDown}
+                              className="h-12 w-12 sm:h-14 sm:w-14 p-0 rounded-[1.2rem] bg-slate-900 hover:bg-black text-white shadow-xl shadow-slate-200 transition-all active:scale-95 group/dl"
+                              title="Download Performance Report"
+                            >
+                              {isDown ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5 group-hover/dl:scale-110 transition-transform" />}
+                            </Button>
+                            <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-[1.2rem] bg-slate-50 flex items-center justify-center text-slate-400 border border-slate-100 group-hover:bg-slate-900 group-hover:text-white transition-all transition-colors">
+                               {isLoadingThis
+                                  ? <Loader2 className="h-5 w-5 animate-spin" />
+                                  : isExp
+                                    ? <ChevronUp className="h-6 w-6" />
+                                    : <ChevronDown className="h-6 w-6" />
+                               }
+                            </div>
+                          </div>
                         </div>
                       </div>
 
@@ -756,54 +787,66 @@ export function StudentPerformance({
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: "auto", opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.25 }}
+                            transition={{ duration: 0.3, ease: "easeInOut" }}
                             className="overflow-hidden"
                           >
-                            <div className="px-5 pb-7 pt-3 bg-gradient-to-br from-indigo-50/30 to-violet-50/20 border-t border-indigo-100/40">
+                            <div className="px-6 pb-10 pt-4 bg-slate-50/50 border-t border-slate-100">
                               {isLoadingThis ? (
-                                <div className="flex items-center justify-center gap-3 py-10">
-                                  <Loader2 className="h-5 w-5 animate-spin text-indigo-400" />
-                                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fetching all data…</p>
+                                <div className="flex flex-col items-center justify-center gap-4 py-20">
+                                  <div className="h-12 w-12 rounded-2xl bg-white flex items-center justify-center shadow-sm border border-slate-100">
+                                    <Loader2 className="h-6 w-6 animate-spin text-slate-900" />
+                                  </div>
+                                  <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Mapping Student Portfolio...</p>
                                 </div>
                               ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mt-3">
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mt-4">
 
                                   {/* 1. Personal Info */}
-                                  <Sec icon={Eye} title="Personal Info" color="text-slate-500" empty="">
-                                    <div className="space-y-1.5">
-                                      {[
-                                        { l: "Full Name", v: stu.full_name, icon: Users },
-                                        { l: "Email", v: stu.email, icon: Mail },
-                                        { l: "Mobile", v: stu.mobile_number, icon: Phone },
-                                        { l: "College", v: stu.college_name, icon: GraduationCap },
-                                        { l: "Institute", v: stu.institute_name, icon: Building2 },
-                                        { l: "Joined", v: sd(stu.created_at), icon: Clock },
-                                        { l: "UUID", v: stu.id, icon: Fingerprint, mono: true },
-                                      ].map(item => (
-                                        <div key={item.l} className="flex items-start gap-2">
-                                          <item.icon className="h-3 w-3 text-slate-300 mt-0.5 flex-shrink-0" />
-                                          <div className="min-w-0">
-                                            <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest">{item.l}</p>
-                                            <p className={`text-[11px] font-bold text-slate-700 break-all ${(item as { mono?: boolean }).mono ? "font-mono text-[9px]" : ""}`}>
-                                              {sv(item.v)}
-                                            </p>
+                                  <Sec icon={Eye} title="Identity Dashboard" color="text-slate-900" empty="">
+                                    <div className="space-y-4 pt-2">
+                                      {(() => {
+                                        interface IdentityItem {
+                                          l: string;
+                                          v: string | null | undefined;
+                                          icon: React.ElementType;
+                                          mono?: boolean;
+                                        }
+                                        const items: IdentityItem[] = [
+                                          { l: "Full Name", v: stu.full_name, icon: Users },
+                                          { l: "Email Address", v: stu.email, icon: Mail },
+                                          { l: "Contact No", v: stu.mobile_number, icon: Phone },
+                                          { l: "College Det.", v: stu.college_name, icon: GraduationCap },
+                                          { l: "Institute", v: stu.institute_name, icon: Building2 },
+                                          { l: "Joined On", v: sd(stu.created_at), icon: Clock },
+                                          { l: "Platform UUID", v: stu.id, icon: Fingerprint, mono: true },
+                                        ];
+                                        return items.map(item => (
+                                          <div key={item.l} className="flex items-start gap-4 pb-3 border-b border-slate-50 last:border-none">
+                                            <div className="h-8 w-8 rounded-xl bg-slate-50 flex items-center justify-center flex-shrink-0">
+                                              <item.icon className="h-3.5 w-3.5 text-slate-400" />
+                                            </div>
+                                            <div className="min-w-0">
+                                              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{item.l}</p>
+                                              <p className={`text-[12px] font-bold text-slate-800 break-all ${item.mono ? "font-mono text-[10px]" : ""}`}>
+                                                {sv(item.v)}
+                                              </p>
+                                            </div>
                                           </div>
-                                        </div>
-                                      ))}
+                                        ));
+                                      })()}
                                     </div>
                                   </Sec>
 
-                                  {/* 2. Leaflet Map */}
-                                  <Sec icon={MapPin} title="Location Map" color="text-blue-500" count={stu.latitude && stu.longitude ? 1 : 0} empty="No GPS data recorded">
+                                  {/* 2. Map & GPS */}
+                                  <Sec icon={MapPin} title="GPS Authentication" color="text-slate-900" count={stu.latitude && stu.longitude ? 1 : 0} empty="No Location Data Registered">
                                     {stu.latitude && stu.longitude && (
-                                      <div className="space-y-2">
-                                        {/* ──── LEAFLET MapContainer (same as UserManagement.tsx) ──── */}
-                                        <div className="h-[150px] w-full rounded-xl overflow-hidden border-2 border-slate-100 shadow-inner relative z-0">
+                                      <div className="space-y-4 pt-2">
+                                        <div className="h-[200px] w-full rounded-2xl overflow-hidden border border-slate-100 shadow-sm relative z-0">
                                           <MapContainer
                                             center={[stu.latitude, stu.longitude]}
                                             zoom={13}
                                             scrollWheelZoom={false}
-                                            className="h-full w-full"
+                                            className="h-full w-full grayscale contrast-125"
                                           >
                                             <TileLayer
                                               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -811,54 +854,60 @@ export function StudentPerformance({
                                             />
                                             <Marker position={[stu.latitude, stu.longitude]}>
                                               <Popup>
-                                                <div className="text-xs font-bold">
-                                                  {stu.full_name}'s Location<br />
+                                                <div className="text-xs font-bold font-display">
+                                                  VERIFIED LOCATION<br />
                                                   <span className="text-[10px] font-normal text-slate-500">{stu.full_address}</span>
                                                 </div>
                                               </Popup>
                                             </Marker>
                                           </MapContainer>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-2">
-                                          <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
-                                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Latitude</p>
-                                            <p className="text-[11px] font-bold text-slate-700">{stu.latitude.toFixed(6)}</p>
+                                        <div className="grid grid-cols-2 gap-3">
+                                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">LATITUDE</p>
+                                            <p className="text-xs font-black text-slate-900">{stu.latitude.toFixed(6)}</p>
                                           </div>
-                                          <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
-                                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Longitude</p>
-                                            <p className="text-[11px] font-bold text-slate-700">{stu.longitude.toFixed(6)}</p>
+                                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">LONGITUDE</p>
+                                            <p className="text-xs font-black text-slate-900">{stu.longitude.toFixed(6)}</p>
                                           </div>
                                         </div>
-                                        <a
-                                          href={`https://maps.google.com/?q=${stu.latitude},${stu.longitude}`}
-                                          target="_blank" rel="noreferrer"
-                                          onClick={e => e.stopPropagation()}
-                                          className="text-[9px] font-black text-blue-500 hover:text-blue-700 uppercase tracking-widest flex items-center justify-center gap-1"
+                                        <Button
+                                           variant="ghost"
+                                           onClick={() => window.open(`https://maps.google.com/?q=${stu.latitude},${stu.longitude}`, '_blank')}
+                                           className="w-full h-11 rounded-2xl border border-slate-100 text-[10px] font-black uppercase tracking-widest gap-2 bg-white hover:bg-slate-900 hover:text-white transition-all shadow-sm"
                                         >
-                                          <Globe className="h-3 w-3" /> Open in Google Maps →
-                                        </a>
+                                           <Globe className="h-3.5 w-3.5" /> Navigate via Maps
+                                        </Button>
                                       </div>
                                     )}
                                   </Sec>
 
-                                  {/* 3. Enrolled Courses */}
-                                  <Sec icon={BookOpen} title="Enrolled Courses" color="text-cyan-500" count={enrollments.length} empty="No courses enrolled">
-                                    <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
+                                  {/* 3. Courses */}
+                                  <Sec icon={BookOpen} title="Course Pipeline" color="text-slate-900" count={enrollments.length} empty="Zero Enrollments Detected">
+                                    <div className="space-y-3 pt-2 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
                                       {enrollments.map((e, i) => {
                                         const prog = e.progress ?? 0;
                                         return (
-                                          <div key={i} className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                                            <div className="flex items-center justify-between mb-1">
-                                              <p className="text-[11px] font-black text-slate-800 truncate flex-1">{sv(e.course_name)}</p>
-                                              <Badge className={`text-[7px] font-black border-none ml-1 ${e.status === "active" ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"}`}>
-                                                {e.status || "—"}
+                                          <div key={i} className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow group/card">
+                                            <div className="flex items-center justify-between mb-3">
+                                              <p className="text-xs font-black text-slate-900 truncate flex-1 uppercase tracking-tighter">{sv(e.course_name)}</p>
+                                              <Badge className={`text-[8px] font-black border-none px-2 py-0.5 rounded-full ${e.status === "active" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-400"}`}>
+                                                {e.status?.toUpperCase() || "PENDING"}
                                               </Badge>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                              <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                                                <div className="h-full bg-cyan-500 rounded-full" style={{ width: `${prog}%` }} />
+                                            <div className="space-y-2">
+                                              <div className="flex items-center justify-between">
+                                                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">CURRICULUM COMPLETION</span>
+                                                 <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{prog}%</span>
                                               </div>
-                                              <span className="text-[9px] font-black text-cyan-600 w-8 text-right">{prog}%</span>
+                                              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                <motion.div 
+                                                   initial={{ width: 0 }}
+                                                   animate={{ width: `${prog}%` }}
+                                                   className="h-full bg-slate-900 rounded-full" 
+                                                />
+                                              </div>
                                             </div>
                                           </div>
                                         );
@@ -866,36 +915,27 @@ export function StudentPerformance({
                                     </div>
                                   </Sec>
 
-                                  {/* 4. Exam Results */}
-                                  <Sec icon={Award} title="Exam Results" color="text-violet-500" count={results.length} empty="No exam records">
-                                    <div className="space-y-1.5 max-h-[220px] overflow-y-auto">
+                                  {/* 4. Exams */}
+                                  <Sec icon={Award} title="Academic Scores" color="text-slate-900" count={results.length} empty="No Assessments Found">
+                                    <div className="space-y-3 pt-2 max-h-[350px] overflow-y-auto pr-1">
                                       {results.map((r, i) => {
-                                        const pct = r.percentage ?? (r.score && r.total ? Math.round((r.score / r.total) * 100) : null);
-                                        const pass = pct !== null && pct >= 60;
+                                        const pct = r.percentage ?? (r.score && r.total ? Math.round((r.score / r.total) * 100) : 0);
+                                        const pass = pct >= 60;
                                         return (
-                                          <div key={i} className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                                            <div className="flex items-center justify-between mb-1">
-                                              <p className="text-[11px] font-black text-slate-800 truncate flex-1">{sv(r.title || r.exam_name)}</p>
-                                              {r.score !== undefined && r.total !== undefined && (
-                                                <span className="text-[9px] font-bold text-slate-500 ml-2 flex-shrink-0">{r.score}/{r.total}</span>
-                                              )}
+                                          <div key={i} className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                                            <div className="flex items-center justify-between mb-2">
+                                              <p className="text-xs font-black text-slate-900 truncate uppercase tracking-tighter">{sv(r.title || r.exam_name)}</p>
+                                              <span className="text-[10px] font-black text-slate-400 ml-2">{r.score || 0}/{r.total || 100}</span>
                                             </div>
-                                            {pct !== null && (
-                                              <>
-                                                <div className="flex items-center gap-2">
-                                                  <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                                                    <div className={`h-full rounded-full ${pass ? "bg-emerald-500" : "bg-rose-400"}`} style={{ width: `${pct}%` }} />
-                                                  </div>
-                                                  <span className={`text-[10px] font-black w-8 text-right flex-shrink-0 ${pass ? "text-emerald-600" : "text-rose-500"}`}>{pct}%</span>
-                                                </div>
-                                              </>
-                                            )}
-                                            <div className="flex items-center justify-between mt-1">
-                                              <span className="text-[8px] text-slate-400">{sd(r.date)}</span>
-                                              <Badge className={`text-[7px] font-black border-none ${pass ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-500"}`}>
-                                                {pass ? "✓ Passed" : "✗ Failed"}
+                                            <div className="flex items-center gap-3">
+                                              <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                                <div className={`h-full rounded-full ${pass ? "bg-slate-900" : "bg-slate-300"}`} style={{ width: `${pct}%` }} />
+                                              </div>
+                                              <Badge className={`text-[8px] font-black border-none px-2 py-0.5 rounded-full ${pass ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-500"}`}>
+                                                {pass ? "PASSED" : "FAILED"}
                                               </Badge>
                                             </div>
+                                            <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest mt-2">ASSESSED ON {sd(r.date)}</p>
                                           </div>
                                         );
                                       })}
@@ -903,27 +943,27 @@ export function StudentPerformance({
                                   </Sec>
 
                                   {/* 5. Attendance */}
-                                  <Sec icon={CalendarCheck} title="Attendance" color="text-emerald-500" count={attendance.length} empty="No attendance records">
-                                    <div className="space-y-2">
-                                      <div className="flex items-center gap-3 p-2.5 bg-emerald-50 rounded-xl border border-emerald-100">
-                                        <div className="h-10 w-10 rounded-lg bg-white flex items-center justify-center font-black text-sm text-emerald-700 shadow-sm flex-shrink-0">
+                                  <Sec icon={CalendarCheck} title="Verified Attendance" color="text-slate-900" count={attendance.length} empty="Zero Log Entries">
+                                    <div className="space-y-4 pt-2">
+                                      <div className="flex items-center gap-4 p-4 bg-slate-900 rounded-2xl text-white shadow-xl shadow-slate-200">
+                                        <div className="h-12 w-12 rounded-xl bg-white/10 flex items-center justify-center font-black text-2xl border border-white/20">
                                           {attendance.length}
                                         </div>
                                         <div>
-                                          <p className="text-[11px] font-black text-emerald-800">Days Present</p>
-                                          <p className="text-[9px] text-emerald-600">Total Attendance</p>
+                                          <p className="text-[10px] font-black uppercase tracking-widest text-white/50">PLATFORM ENGAGEMENT</p>
+                                          <p className="text-lg font-black">LOGGED DAYS</p>
                                         </div>
                                       </div>
-                                      <div className="space-y-1 max-h-[140px] overflow-y-auto">
-                                        {attendance.slice(0, 20).map((a, i) => (
-                                          <div key={i} className="flex items-center justify-between px-2.5 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
-                                            <div className="flex items-center gap-2">
-                                              <span className="text-[10px] font-bold text-slate-600">{sd(a.date || a.timestamp)}</span>
-                                              {a.day && <span className="text-[8px] text-slate-400">{a.day}</span>}
+                                      <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
+                                        {attendance.slice(0, 10).map((a, i) => (
+                                          <div key={i} className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
+                                            <div className="flex flex-col">
+                                               <span className="text-[10px] font-black text-slate-900 uppercase tracking-tighter">{sd(a.date || a.timestamp)}</span>
+                                               <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{a.day || "LOGGED"}</span>
                                             </div>
-                                            <div className="flex items-center gap-1.5">
-                                              {a.time && <span className="text-[8px] text-slate-400">{formatTime(a.time)}</span>}
-                                              <Badge className="text-[7px] font-black border-none bg-emerald-50 text-emerald-600">Present</Badge>
+                                            <div className="text-right">
+                                               <p className="text-[10px] font-black text-slate-900">{formatTime(a.time || "00:00")}</p>
+                                               <Badge className="text-[7px] font-black bg-slate-900 text-white border-none px-2 py-0">PRESENT</Badge>
                                             </div>
                                           </div>
                                         ))}
@@ -931,100 +971,40 @@ export function StudentPerformance({
                                     </div>
                                   </Sec>
 
-                                  {/* 6. Live Sessions */}
-                                  <Sec icon={Video} title="Live Sessions" color="text-pink-500" count={detail?.live_sessions?.length ?? 0} empty="No live sessions">
-                                    <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
-                                      {detail?.live_sessions?.map((l, i) => (
-                                        <div key={i} className="flex items-start gap-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                                          <div className={`h-7 w-7 rounded-lg flex items-center justify-center flex-shrink-0 ${l.status === "live" ? "bg-rose-100" : "bg-slate-100"}`}>
-                                            <Video className={`h-3.5 w-3.5 ${l.status === "live" ? "text-rose-500" : "text-slate-400"}`} />
-                                          </div>
-                                          <div className="flex-1 min-w-0">
-                                            <p className="text-[11px] font-black text-slate-800 truncate">{sv(l.title || l.topic)}</p>
-                                            <div className="flex items-center gap-2 mt-0.5">
-                                              <Badge className={`text-[7px] font-black border-none ${l.status === "live" ? "bg-rose-50 text-rose-600" : "bg-slate-100 text-slate-500"}`}>{l.status || "—"}</Badge>
-                                              <span className="text-[8px] text-slate-400">{sd(l.start_time)}</span>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </Sec>
-
-                                  {/* 7. Resources */}
-                                  <Sec icon={FileText} title="Resources" color="text-orange-500" count={detail?.resources?.length ?? 0} empty="No resources found">
-                                    <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
-                                      {detail?.resources?.map((r, i) => (
-                                        <div key={i} className="flex items-center gap-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                                          <div className="h-7 w-7 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0">
-                                            <FileText className="h-3.5 w-3.5 text-orange-500" />
-                                          </div>
-                                          <div className="flex-1 min-w-0">
-                                            <p className="text-[11px] font-black text-slate-800 truncate">{sv(r.title)}</p>
-                                            {r.type && <Badge className="text-[7px] font-black border-none bg-orange-50 text-orange-600">{r.type}</Badge>}
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </Sec>
-
-                                  {/* 8. Resume ATS */}
-                                  <Sec icon={Cpu} title="Resume ATS Score" color="text-teal-500" count={detail?.resume_ats ? 1 : 0} empty="No resume scan found">
+                                  {/* 6. Resume Scan */}
+                                  <Sec icon={Cpu} title="Resume ATS Audit" color="text-slate-900" count={detail?.resume_ats ? 1 : 0} empty="No Scan Profile Found">
                                     {detail?.resume_ats && (() => {
                                       const ats = detail.resume_ats;
                                       const score = ats.ats_score ?? ats.score ?? 0;
-                                      const good = score >= 70;
-                                      const mid = score >= 50;
                                       return (
-                                        <div className="space-y-3">
-                                          <div className="flex items-center gap-4 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                                            <div className={`h-14 w-14 rounded-2xl flex flex-col items-center justify-center font-black flex-shrink-0 ${good ? "bg-emerald-100 text-emerald-700" : mid ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700"}`}>
-                                              <span className="text-xl">{score}</span>
-                                              <span className="text-[8px] opacity-70">/100</span>
+                                        <div className="space-y-5 pt-2">
+                                          <div className="flex flex-col items-center py-6 bg-slate-50 rounded-[2.5rem] border border-slate-100 relative overflow-hidden">
+                                            <div className="absolute top-0 left-0 w-full h-1 bg-slate-100">
+                                                <div className="h-full bg-slate-900 transition-all duration-1000" style={{ width: `${score}%` }} />
                                             </div>
-                                            <div className="flex-1">
-                                              <div className="h-2 bg-slate-200 rounded-full overflow-hidden mb-1.5">
-                                                <div className={`h-full rounded-full ${good ? "bg-emerald-500" : mid ? "bg-amber-400" : "bg-rose-400"}`} style={{ width: `${score}%` }} />
-                                              </div>
-                                              {ats.job_title && <p className="text-[10px] font-bold text-slate-600 truncate">{ats.job_title}</p>}
-                                            </div>
+                                            <span className="text-5xl font-black text-slate-900 leading-none">{score}</span>
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mt-3 underline underline-offset-8">ATS SCORE</span>
                                           </div>
-                                          {ats.skills && ats.skills.length > 0 && (
-                                            <div className="flex flex-wrap gap-1">
-                                              {ats.skills.slice(0, 8).map((sk, si) => (
-                                                <Badge key={si} className="text-[7px] font-black bg-teal-50 text-teal-700 border-none">{sk}</Badge>
-                                              ))}
+                                          
+                                          {ats.job_title && (
+                                            <div className="p-4 bg-white rounded-2xl border border-slate-100">
+                                              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">TARGET ROLE</p>
+                                              <p className="text-xs font-black text-slate-900 uppercase">{ats.job_title}</p>
                                             </div>
                                           )}
-                                          {ats.feedback && (
-                                            <p className="text-[9px] text-slate-500 italic">{ats.feedback}</p>
+
+                                          {ats.skills && (
+                                            <div className="flex flex-wrap gap-2">
+                                              {ats.skills.slice(0, 10).map((sk, si) => (
+                                                <Badge key={si} className="text-[9px] font-black bg-slate-900 text-white border-none py-1 px-3 rounded-full uppercase tracking-tighter">
+                                                  {sk}
+                                                </Badge>
+                                              ))}
+                                            </div>
                                           )}
                                         </div>
                                       );
                                     })()}
-                                  </Sec>
-
-                                  {/* 9. Performance Summary */}
-                                  <Sec icon={TrendingUp} title="Performance Summary" color="text-indigo-500" empty="">
-                                    <div className="space-y-2">
-                                      {[
-                                        { l: "Courses Enrolled", v: enrollments.length, ic: BookOpen, c: "text-cyan-600", bg: "bg-cyan-50" },
-                                        { l: "Active Courses", v: enrollments.filter(e => e.status === "active").length, ic: Star, c: "text-emerald-600", bg: "bg-emerald-50" },
-                                        { l: "Exams Attempted", v: results.length, ic: Award, c: "text-violet-600", bg: "bg-violet-50" },
-                                        { l: "Exams Passed", v: results.filter(r => (r.percentage ?? 0) >= 60).length, ic: CheckCircle2, c: "text-emerald-600", bg: "bg-emerald-50" },
-                                        { l: "Attendance Days", v: attendance.length, ic: CalendarCheck, c: "text-orange-500", bg: "bg-orange-50" },
-                                        { l: "Live Sessions", v: detail?.live_sessions?.length ?? 0, ic: Video, c: "text-pink-600", bg: "bg-pink-50" },
-                                        { l: "ATS Score", v: detail?.resume_ats ? `${detail.resume_ats.ats_score ?? detail.resume_ats.score ?? "—"}/100` : "—", ic: Cpu, c: "text-teal-600", bg: "bg-teal-50" },
-                                      ].map(it => (
-                                        <div key={it.l} className="flex items-center gap-2">
-                                          <div className={`h-6 w-6 rounded-lg ${it.bg} flex items-center justify-center flex-shrink-0`}>
-                                            <it.ic className={`h-3 w-3 ${it.c}`} />
-                                          </div>
-                                          <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex-1">{it.l}</span>
-                                          <span className={`text-sm font-black ${it.c}`}>{it.v}</span>
-                                        </div>
-                                      ))}
-                                    </div>
                                   </Sec>
 
                                 </div>

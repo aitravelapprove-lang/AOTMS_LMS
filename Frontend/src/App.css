@@ -1,0 +1,6 @@
+/* Clean up global styles that might interfere with landing page layouts */
+#root {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}

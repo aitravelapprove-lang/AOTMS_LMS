@@ -1,0 +1,11 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "description": "Enables creation and management of n8n workflows for simplified automation and integration tasks.",
+  "name": "com.pulsemcp.mirror/makafeli-n8n-workflow-builder",
+  "repository": {
+    "source": "github",
+    "url": "https://github.com/makafeli/n8n-workflow-builder"
+  },
+  "title": "n8n Workflow Builder",
+  "version": "0.0.0"
+}

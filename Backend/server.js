@@ -6172,15 +6172,8 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
 
                 const enrollmentFilter = { course_id: { $in: enrolledCourseIds } };
 
-                // 2. Find all batches the student is part of and their instructors.
-                // Scope to the specific course being queried (if the request filtered by a single
-                // course_id) so a student's batch/session in an unrelated course can't accidentally
-                // match batch_type+instructor rules for this course's content.
-                const requestedCourseId = (query.course_id && !query.course_id.$in) ? query.course_id : null;
-                const studentBatchQuery = { student_id: req.user.id };
-                if (requestedCourseId) studentBatchQuery.course_id = requestedCourseId;
-
-                const studentBatches = await StudentBatch.find(studentBatchQuery)
+                // 2. Find all batches the student is part of and their instructors
+                const studentBatches = await StudentBatch.find({ student_id: req.user.id })
                     .populate('batch_id', 'batch_type instructor_id')
                     .lean();
 
@@ -6214,23 +6207,16 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
                     const studentBatchIds = [];
                     for (const sb of studentBatches) {
                         if (sb.batch_id && sb.batch_id._id) {
+                            studentBatchIds.push(sb.batch_id._id.toString());
+
                             if (sb.assigned_session && sb.assigned_session !== 'all') {
                                 const fullBatch = await Batch.findById(sb.batch_id._id).lean();
-                                const sub = fullBatch?.batches?.find(b => b.batch_type.toLowerCase() === sb.assigned_session.toLowerCase());
-                                if (sub && sub._id) {
-                                    // Student is in a specific session (morning/afternoon/evening) within a
-                                    // combined "all sessions" batch container. Scope them to ONLY that
-                                    // session's sub-batch id — do NOT also add the parent container id,
-                                    // or content shared with the parent would leak to every session.
-                                    studentBatchIds.push(sub._id.toString());
-                                } else {
-                                    // No matching sub-batch found (legacy/simple batch structure) —
-                                    // fall back to the parent batch id as before.
-                                    studentBatchIds.push(sb.batch_id._id.toString());
+                                if (fullBatch && fullBatch.batches) {
+                                    const sub = fullBatch.batches.find(b => b.batch_type.toLowerCase() === sb.assigned_session.toLowerCase());
+                                    if (sub && sub._id) {
+                                        studentBatchIds.push(sub._id.toString());
+                                    }
                                 }
-                            } else {
-                                // No specific session assigned — student's scope is the whole batch container.
-                                studentBatchIds.push(sb.batch_id._id.toString());
                             }
                         }
                     }
@@ -6244,18 +6230,31 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
                             ] } },
 
                             // 2. Matches both session type AND the instructor assigned to the student
+                            //    IMPORTANT: only applies when NO specific batch was chosen (allowed_batches empty),
+                            //    otherwise a same-session/same-instructor video leaks across different specific batches.
                             {
                                 $and: [
                                     { batch_type: { $in: studentBatchTypes } },
-                                    { instructor_id: { $in: studentInstructors } }
+                                    { instructor_id: { $in: studentInstructors } },
+                                    { $or: [
+                                        { allowed_batches: { $size: 0 } },
+                                        { allowed_batches: { $exists: false } },
+                                        { allowed_batches: null }
+                                    ] }
                                 ]
                             },
 
                             // 3. (Optional) Legacy support: if no instructor_id is set yet, fallback to batch_type alone
+                            //    Also only when no specific batch was chosen, for the same reason as above.
                             {
                                 $and: [
                                     { instructor_id: { $exists: false } },
-                                    { batch_type: { $in: studentBatchTypes } }
+                                    { batch_type: { $in: studentBatchTypes } },
+                                    { $or: [
+                                        { allowed_batches: { $size: 0 } },
+                                        { allowed_batches: { $exists: false } },
+                                        { allowed_batches: null }
+                                    ] }
                                 ]
                             },
 

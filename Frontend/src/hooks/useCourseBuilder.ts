@@ -218,6 +218,22 @@ export function useDeleteCourseVideo() {
     });
 }
 
+export function useUpdateCourseVideo() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ id, ...updates }: Partial<S3CourseVideo> & { id: string }) => {
+            return fetchWithAuth(`/data/course_videos/${id}`, {
+                method: 'PUT',
+                body: JSON.stringify(updates),
+            });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['module-videos'] });
+        },
+    });
+}
+
 export function useUpdateCourseModule() {
     const queryClient = useQueryClient();
 

@@ -4,15 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PlusCircle, Video as VideoIcon, Search, RefreshCw, Play, Clock, BookOpen, X, UploadCloud, Trash2 } from "lucide-react";
+import { PlusCircle, Video as VideoIcon, Search, RefreshCw, Play, Clock, BookOpen, X, UploadCloud, Trash2, Pencil } from "lucide-react";
 import { fetchWithAuth, API_URL } from "@/lib/api";
 import { VideoPlayer } from "../../dashboard/VideoPlayer";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { VideoUploader } from "../VideoUploader";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useInstructorCourses, Course } from "@/hooks/useInstructorData";
-import { useDeleteCourseVideo } from "@/hooks/useCourseBuilder";
+import { useDeleteCourseVideo, useUpdateCourseVideo } from "@/hooks/useCourseBuilder";
 import { useToast } from "@/hooks/use-toast";
 
 interface Video {
@@ -41,7 +41,11 @@ export function InstructorVideoLibrary() {
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [isPlayerOpen, setIsPlayerOpen] = useState(false);
   const deleteVideo = useDeleteCourseVideo();
+  const updateVideo = useUpdateCourseVideo();
   const { toast } = useToast();
+  const [editingVideo, setEditingVideo] = useState<Video | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [isSavingTitle, setIsSavingTitle] = useState(false);
 
   const loadVideos = useCallback(async () => {
     if (courses.length === 0) {
@@ -120,6 +124,31 @@ export function InstructorVideoLibrary() {
       toast({ title: "Deleted", description: "Video removed successfully." });
     } catch (err) {
       toast({ title: "Error", description: "Failed to delete video.", variant: "destructive" });
+    }
+  };
+
+  const openEditDialog = (video: Video) => {
+    setEditingVideo(video);
+    setEditTitle(video.title || "");
+  };
+
+  const handleSaveTitle = async () => {
+    if (!editingVideo) return;
+    const trimmed = editTitle.trim();
+    if (!trimmed) {
+      toast({ title: "Error", description: "Title cannot be empty.", variant: "destructive" });
+      return;
+    }
+    setIsSavingTitle(true);
+    try {
+      await updateVideo.mutateAsync({ id: editingVideo.id, title: trimmed });
+      setVideos(prev => prev.map(v => v.id === editingVideo.id ? { ...v, title: trimmed } : v));
+      toast({ title: "Saved", description: "Video title updated successfully." });
+      setEditingVideo(null);
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to update video title.", variant: "destructive" });
+    } finally {
+      setIsSavingTitle(false);
     }
   };
 
@@ -366,9 +395,20 @@ export function InstructorVideoLibrary() {
                     size="icon"
                     onClick={(e) => {
                         e.stopPropagation();
+                        openEditDialog(video);
+                    }}
+                    className="h-8 w-8 text-slate-400 hover:text-primary hover:bg-primary/10 ml-2"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                        e.stopPropagation();
                         handleDelete(video.id);
                     }}
-                    className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 ml-2"
+                    className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 ml-1"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -431,6 +471,35 @@ export function InstructorVideoLibrary() {
                 </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Video Title Dialog */}
+      <Dialog open={!!editingVideo} onOpenChange={(open) => { if (!open) setEditingVideo(null); }}>
+        <DialogContent className="max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Video Title</DialogTitle>
+            <DialogDescription>Update the title shown for this video.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="edit-video-title">Title</Label>
+            <Input
+              id="edit-video-title"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              placeholder="Enter video title"
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTitle(); }}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingVideo(null)} disabled={isSavingTitle}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveTitle} disabled={isSavingTitle}>
+              {isSavingTitle ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

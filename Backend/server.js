@@ -14,6 +14,7 @@ const cloudinary = require('cloudinary').v2;
 const vm = require('vm'); // Native Node.js module for executing code locally
 const pdfParse = require('pdf-parse');
 const FormData = require('form-data');
+const { sendEmail } = require('./utils/email');
 
 // Cloudinary Config
 cloudinary.config({
@@ -383,7 +384,7 @@ app.post('/api/admin/broadcast', authenticateToken, requireAdminOrManager, async
 
         // Fallback: check Profile for any missing (also cast to ObjectId)
         const missingIds = selectedUsers.filter(id => !userMap[id] && mongoose.Types.ObjectId.isValid(id))
-                                        .map(id => new mongoose.Types.ObjectId(id));
+            .map(id => new mongoose.Types.ObjectId(id));
         if (missingIds.length > 0) {
             console.log('[AI Hub Broadcast] Checking profiles for missing IDs:', missingIds.length);
             const profiles = await Profile.find({ user_id: { $in: missingIds } }).lean();
@@ -399,42 +400,45 @@ app.post('/api/admin/broadcast', authenticateToken, requireAdminOrManager, async
             return res.status(400).json({ error: 'No valid emails found for selected users. Please sync platform data and try again.' });
         }
 
-        const n8nWebhookUrl = process.env.N8N_ADMIN_STUDENT_EMAIL_URL || process.env.N8N_EMAIL_WEBHOOK_URL;
-        if (!n8nWebhookUrl) {
-            console.error('[AI Hub Broadcast] No n8n webhook URL configured. Set N8N_ADMIN_STUDENT_EMAIL_URL in .env');
-            return res.status(500).json({ error: 'Mail webhook not configured. Contact administrator.' });
-        }
+        console.log('[AI Hub Broadcast] Sending direct emails to', recipients.length, 'recipients');
 
-        console.log('[AI Hub Broadcast] Sending to n8n webhook:', n8nWebhookUrl);
-
-        // Send one webhook call per recipient — matching the email.json spec the n8n workflow expects
         const results = await Promise.allSettled(
-            recipients.map(r =>
-                axios.post(n8nWebhookUrl, {
-                    email: r.email,
-                    full_name: r.full_name,
-                    user_id: r.user_id,
-                    subject,
-                    message,          // ✅ send as both 'message' and 'content' for n8n compatibility
-                    content: message,
-                    category,
-                    broadcast_type: type,
-                    sent_at: new Date().toISOString(),
-                    triggered_by: req.user?.id || 'admin'
-                }, {
-                    timeout: 15000,
-                    headers: { 'Content-Type': 'application/json' }
-                })
-            )
+            recipients.map(r => {
+                const html = `
+                    <div style="font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #334155; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 20px; background-color: #ffffff; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);">
+                        <div style="text-align: center; margin-bottom: 28px;">
+                            <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); width: 64px; height: 64px; border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px; color: #ffffff; font-size: 24px; font-weight: 800; line-height: 64px; text-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-left: auto; margin-right: auto;">A</div>
+                            <h2 style="color: #0f172a; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.03em;">Academy of Tech Masters</h2>
+                            <p style="color: #64748b; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; margin: 4px 0 0 0;">Official Broadcast Notification</p>
+                        </div>
+                        <div style="background-color: #f8fafc; border-radius: 16px; padding: 24px; border: 1px solid #f1f5f9; margin-bottom: 24px;">
+                            <p style="font-size: 16px; font-weight: 700; color: #1e293b; margin-top: 0; margin-bottom: 12px;">Hello ${r.full_name || 'Student'},</p>
+                            <div style="font-size: 15px; color: #334155; white-space: pre-wrap; line-height: 1.7;">${message}</div>
+                        </div>
+                        <div style="text-align: center; margin: 28px 0;">
+                            <a href="https://aotms.com" style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); color: #ffffff; padding: 14px 32px; text-decoration: none; font-weight: 700; font-size: 14px; border-radius: 10px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);">Visit LMS Dashboard</a>
+                        </div>
+                        <div style="margin-top: 32px; border-top: 1px solid #f1f5f9; padding-top: 20px; text-align: center;">
+                            <p style="font-size: 12px; color: #94a3b8; margin: 0 0 6px 0;">This email is an official request sent to registered system members of AOTMS LMS.</p>
+                            <p style="font-size: 12px; color: #94a3b8; margin: 0;">&copy; ${new Date().getFullYear()} <a href="https://aotms.com" style="color: #3b82f6; text-decoration: none; font-weight: 600;">aotms.com</a>. All rights reserved.</p>
+                        </div>
+                    </div>
+                `;
+                return sendEmail({
+                    to: r.email,
+                    subject: subject,
+                    html: html
+                });
+            })
         );
 
         const succeeded = results.filter(r => r.status === 'fulfilled').length;
         const failed = results.filter(r => r.status === 'rejected').length;
         results.forEach((r, i) => {
             if (r.status === 'rejected') {
-                console.error(`[AI Hub Broadcast] ❌ Failed for ${recipients[i]?.email}:`, r.reason?.message, r.reason?.response?.data);
+                console.error(`[AI Hub Broadcast] ❌ Failed for ${recipients[i]?.email}:`, r.reason?.message);
             } else {
-                console.log(`[AI Hub Broadcast] ✅ Sent to ${recipients[i]?.email}:`, r.value?.status);
+                console.log(`[AI Hub Broadcast] ✅ Sent to ${recipients[i]?.email}`);
             }
         });
 
@@ -443,7 +447,7 @@ app.post('/api/admin/broadcast', authenticateToken, requireAdminOrManager, async
         if (succeeded === 0 && failed > 0) {
             return res.status(502).json({
                 success: false,
-                error: `Broadcast failed: n8n webhook did not accept any requests. Check n8n workflow is active at: ${n8nWebhookUrl}`,
+                error: `Mail broadcast failed. Check SMTP credentials in .env file.`,
                 failed,
                 succeeded
             });
@@ -872,12 +876,31 @@ app.post('/api/auth/send-otp', async (req, res) => {
 
         console.log(`[AUTH-OTP] OTP for ${email}: ${otp}`);
 
-        // Trigger n8n webhook (Legacy support)
-        if (process.env.N8N_EMAIL_WEBHOOK_URL) {
-            axios.post(process.env.N8N_EMAIL_WEBHOOK_URL, {
-                event: 'otp_request', email, otp, full_name, timestamp: new Date()
-            }).catch(e => console.error('n8n OTP trigger failed:', e.message));
-        }
+        // Send OTP email directly via SMTP
+        const otpHtml = `
+            <div style="font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #334155; max-width: 500px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 20px; background-color: #ffffff; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);">
+                <div style="text-align: center; margin-bottom: 24px;">
+                    <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); width: 56px; height: 56px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px; color: #ffffff; font-size: 20px; font-weight: 800; line-height: 56px; text-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-left: auto; margin-right: auto;">A</div>
+                    <h2 style="color: #0f172a; margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.02em;">Academy of Tech Masters</h2>
+                    <p style="color: #ea580c; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 4px 0 0 0;">One-Time verification code</p>
+                </div>
+                <p style="font-size: 15px; color: #334155; margin-top: 0; font-weight: 600;">Dear ${full_name || 'Student'},</p>
+                <p style="font-size: 14px; color: #475569;">To complete your login or registration on the AOTMS portal, please enter the following verification code. This code is valid for 10 minutes:</p>
+                <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; text-align: center; font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #1e3a8a; padding: 18px; margin: 24px 0; text-shadow: 0 1px 1px rgba(0,0,0,0.05); font-family: monospace;">
+                    ${otp}
+                </div>
+                <p style="font-size: 12px; color: #64748b; margin-bottom: 0; border-top: 1px solid #f1f5f9; padding-top: 16px;">If you did not make this request, you do not need to take any action. Your account remains secure.</p>
+                <div style="margin-top: 32px; border-top: 1px solid #f1f5f9; padding-top: 16px; text-align: center;">
+                    <p style="font-size: 11px; color: #94a3b8; margin: 0 0 4px 0;">Academy of Tech Masters Learning Management System.</p>
+                    <p style="font-size: 11px; color: #94a3b8; margin: 0;">&copy; ${new Date().getFullYear()} <a href="https://aotms.com" style="color: #3b82f6; text-decoration: none; font-weight: 600;">aotms.com</a>. All rights reserved.</p>
+                </div>
+            </div>
+        `;
+        sendEmail({
+            to: email,
+            subject: 'Verify Your Email | Academy of Tech Masters',
+            html: otpHtml
+        }).catch(e => console.error('SMTP OTP sending failed:', e.message));
 
         res.json({ message: 'OTP sent successfully' });
     } catch (err) {
@@ -901,11 +924,31 @@ app.post('/api/auth/resend-otp', async (req, res) => {
         );
         console.log(`[AUTH-OTP] Resent OTP for ${email}: ${otp}`);
 
-        if (process.env.N8N_EMAIL_WEBHOOK_URL) {
-            axios.post(process.env.N8N_EMAIL_WEBHOOK_URL, {
-                event: 'otp_request', email, otp, full_name, timestamp: new Date()
-            }).catch(e => console.error('n8n OTP trigger failed:', e.message));
-        }
+        // Send OTP email directly via SMTP
+        const otpHtml = `
+            <div style="font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #334155; max-width: 500px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 20px; background-color: #ffffff; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);">
+                <div style="text-align: center; margin-bottom: 24px;">
+                    <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); width: 56px; height: 56px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px; color: #ffffff; font-size: 20px; font-weight: 800; line-height: 56px; text-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-left: auto; margin-right: auto;">A</div>
+                    <h2 style="color: #0f172a; margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.02em;">Academy of Tech Masters</h2>
+                    <p style="color: #ea580c; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 4px 0 0 0;">One-Time verification code</p>
+                </div>
+                <p style="font-size: 15px; color: #334155; margin-top: 0; font-weight: 600;">Dear ${full_name || 'Student'},</p>
+                <p style="font-size: 14px; color: #475569;">To complete your login or registration on the AOTMS portal, please enter the following verification code. This code is valid for 10 minutes:</p>
+                <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; text-align: center; font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #1e3a8a; padding: 18px; margin: 24px 0; text-shadow: 0 1px 1px rgba(0,0,0,0.05); font-family: monospace;">
+                    ${otp}
+                </div>
+                <p style="font-size: 12px; color: #64748b; margin-bottom: 0; border-top: 1px solid #f1f5f9; padding-top: 16px;">If you did not make this request, you do not need to take any action. Your account remains secure.</p>
+                <div style="margin-top: 32px; border-top: 1px solid #f1f5f9; padding-top: 16px; text-align: center;">
+                    <p style="font-size: 11px; color: #94a3b8; margin: 0 0 4px 0;">Academy of Tech Masters Learning Management System.</p>
+                    <p style="font-size: 11px; color: #94a3b8; margin: 0;">&copy; ${new Date().getFullYear()} <a href="https://aotms.com" style="color: #3b82f6; text-decoration: none; font-weight: 600;">aotms.com</a>. All rights reserved.</p>
+                </div>
+            </div>
+        `;
+        sendEmail({
+            to: email,
+            subject: 'Verify Your Email | Academy of Tech Masters',
+            html: otpHtml
+        }).catch(e => console.error('SMTP OTP sending failed:', e.message));
 
         res.json({ message: 'OTP resent successfully' });
     } catch (err) {
@@ -1221,20 +1264,37 @@ app.post('/api/auth/login', async (req, res) => {
                 details: { email, timestamp: loginTime }
             });
 
-            // Call n8n webhook to deliver OTP to admin email
-            axios.post('https://aotms.app.n8n.cloud/webhook/Email', {
-                event: 'admin_login_otp',
-                email,
-                otp,
-                full_name: user.full_name,
-                ip: loginIp,
-                time: loginTime,
-                message: 'Your Admin Login OTP'
-            })
-                .then(() => console.log(`[Security] Admin OTP webhook SUCCESS for ${email}`))
-                .catch(e => console.error(`[Security] Admin OTP webhook ERROR:`, e.message));
+            // Send Admin Login OTP directly via Resend email helper
+            const otpHtml = `
+                <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #334155; max-width: 500px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);">
+                    <div style="text-align: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 16px; margin-bottom: 20px;">
+                        <h2 style="color: #0f172a; margin: 0; font-size: 20px; font-weight: 800;">Academy of Tech Masters</h2>
+                        <span style="color: #ea580c; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Admin Security Authentication</span>
+                    </div>
+                    <p style="font-size: 14px; color: #334155; margin-top: 0; font-weight: 500;">Hello ${user.full_name || 'Admin'},</p>
+                    <p style="font-size: 14px; color: #334155;">A login attempt was initiated on your administrator platform account. Use the following security code to authenticate:</p>
+                    <div style="background-color: #f8fafc; padding: 16px; border-radius: 12px; text-align: center; font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #ea580c; border: 1px dashed #fdba74; margin: 24px 0;">
+                        ${otp}
+                    </div>
+                    <p style="font-size: 13px; color: #334155;"><strong>Login Details:</strong><br/>
+                    • <strong>IP Address:</strong> ${loginIp}<br/>
+                    • <strong>Time:</strong> ${loginTime}</p>
+                    <p style="font-size: 12px; color: #ef4444; font-weight: 600; margin-top: 20px;">If this login attempt was not initiated by you, please secure your credentials immediately.</p>
+                    <div style="margin-top: 32px; border-top: 2px solid #f1f5f9; padding-top: 16px; text-align: center;">
+                        <p style="font-size: 10px; color: #94a3b8; margin: 0;">&copy; ${new Date().getFullYear()} Academy of Tech Masters Security Team.</p>
+                    </div>
+                </div>
+            `;
 
-            console.log(`[Security] Admin OTP sent to ${email}: ${otp}`);
+            sendEmail({
+                to: email,
+                subject: 'Security: Admin Login Passcode | Academy of Tech Masters',
+                html: otpHtml
+            })
+                .then(() => console.log(`[Security] Admin OTP sent successfully to ${email}`))
+                .catch(e => console.error(`[Security] Admin OTP Resend API error:`, e.message));
+
+            console.log(`[Security] Admin OTP generated and scheduled for ${email}: ${otp}`);
             return res.json({ requiresOtp: true, message: 'OTP sent to your admin email' });
         }
         // ----------------------
@@ -1342,16 +1402,34 @@ app.post('/api/auth/admin-resend-otp', async (req, res) => {
             { upsert: true, returnDocument: 'after' }
         );
 
-        axios.post('https://aotms.app.n8n.cloud/webhook/Email', {
-            event: 'admin_login_otp',
-            email,
-            otp,
-            full_name: user.full_name,
-            time: new Date().toISOString(),
-            message: 'Your Admin Login OTP (Resent)'
+        // Send Admin Login OTP directly via Resend email helper
+        const otpHtml = `
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #334155; max-width: 500px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);">
+                <div style="text-align: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 16px; margin-bottom: 20px;">
+                    <h2 style="color: #0f172a; margin: 0; font-size: 20px; font-weight: 800;">Academy of Tech Masters</h2>
+                    <span style="color: #ea580c; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Admin Security Authentication</span>
+                </div>
+                <p style="font-size: 14px; color: #334155; margin-top: 0; font-weight: 500;">Hello ${user.full_name || 'Admin'},</p>
+                <p style="font-size: 14px; color: #334155;">A login attempt was initiated on your administrator platform account. Use the following security code to authenticate:</p>
+                <div style="background-color: #f8fafc; padding: 16px; border-radius: 12px; text-align: center; font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #ea580c; border: 1px dashed #fdba74; margin: 24px 0;">
+                    ${otp}
+                </div>
+                <p style="font-size: 13px; color: #334155;"><strong>Login Details (Resent):</strong><br/>
+                • <strong>Time:</strong> ${new Date().toLocaleString()}</p>
+                <p style="font-size: 12px; color: #ef4444; font-weight: 600; margin-top: 20px;">If this login attempt was not initiated by you, please secure your credentials immediately.</p>
+                <div style="margin-top: 32px; border-top: 2px solid #f1f5f9; padding-top: 16px; text-align: center;">
+                    <p style="font-size: 10px; color: #94a3b8; margin: 0;">&copy; ${new Date().getFullYear()} Academy of Tech Masters Security Team.</p>
+                </div>
+            </div>
+        `;
+
+        sendEmail({
+            to: email,
+            subject: 'Security: Admin Login Passcode | Academy of Tech Masters',
+            html: otpHtml
         })
-            .then(() => console.log(`[Security] Admin OTP resend webhook SUCCESS for ${email}`))
-            .catch(e => console.error(`[Security] Admin OTP resend webhook ERROR:`, e.message));
+            .then(() => console.log(`[Security] Admin OTP resent successfully to ${email}`))
+            .catch(e => console.error(`[Security] Admin OTP Resend API error (Resend):`, e.message));
 
         console.log(`[Security] Admin OTP resent to ${email}: ${otp}`);
         res.json({ message: 'OTP resent successfully' });
@@ -1542,15 +1620,34 @@ app.post('/api/admin/send-approval-email', authenticateToken, requireAdmin, asyn
         const profile = await Profile.findOne({ user_id: userId });
         if (!profile) return res.status(404).json({ error: 'User not found' });
 
-        if (process.env.N8N_EMAIL_WEBHOOK_URL) {
-            axios.post(process.env.N8N_EMAIL_WEBHOOK_URL, {
-                event: 'user_approved',
-                email: profile.email,
-                full_name: profile.full_name,
-                user_id: userId,
-                timestamp: new Date()
-            }).catch(e => console.error('n8n trigger failed', e.message));
-        }
+        const approvalHtml = `
+            <div style="font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #334155; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 20px; background-color: #ffffff; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);">
+                <div style="text-align: center; margin-bottom: 28px;">
+                    <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); width: 64px; height: 64px; border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px; color: #ffffff; font-size: 24px; font-weight: 800; line-height: 64px; text-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-left: auto; margin-right: auto;">✓</div>
+                    <h2 style="color: #0f172a; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.03em;">Academy of Tech Masters</h2>
+                    <p style="color: #10b981; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; margin: 4px 0 0 0;">Account Approved Successfully</p>
+                </div>
+                <div style="background-color: #f8fafc; border-radius: 16px; padding: 24px; border: 1px solid #f1f5f9; margin-bottom: 24px;">
+                    <p style="font-size: 16px; font-weight: 700; color: #1e293b; margin-top: 0; margin-bottom: 12px;">Dear ${profile.full_name || 'Student'},</p>
+                    <p style="font-size: 15px; color: #334155; margin-bottom: 12px;">We are pleased to inform you that your account at <strong>Academy of Tech Masters</strong> has been approved by the school administrator!</p>
+                    <p style="font-size: 15px; color: #334155; margin-bottom: 0;">You can now log in to the platform and access your courses, classroom sessions, and records.</p>
+                </div>
+                <div style="text-align: center; margin: 28px 0;">
+                    <a href="https://aotms.com" style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); color: #ffffff; padding: 14px 32px; text-decoration: none; font-weight: 700; font-size: 14px; border-radius: 10px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);">Access LMS Portal</a>
+                </div>
+                <div style="margin-top: 32px; border-top: 1px solid #f1f5f9; padding-top: 20px; text-align: center;">
+                    <p style="font-size: 12px; color: #94a3b8; margin: 0 0 6px 0;">If you have any questions, please contact our support team at <a href="mailto:aotms.marketing@gmail.com" style="color: #3b82f6; text-decoration: none;">aotms.marketing@gmail.com</a>.</p>
+                    <p style="font-size: 12px; color: #94a3b8; margin: 0;">&copy; ${new Date().getFullYear()} <a href="https://aotms.com" style="color: #3b82f6; text-decoration: none; font-weight: 600;">aotms.com</a>. All rights reserved.</p>
+                </div>
+            </div>
+        `;
+
+        await sendEmail({
+            to: profile.email,
+            subject: 'Your Account is Approved! | Academy of Tech Masters',
+            html: approvalHtml
+        });
+
         res.json({ message: 'Approval email sent' });
     } catch (err) {
         handleError(res, err, 'send-approval-email');
@@ -1567,40 +1664,43 @@ app.post('/api/admin/send-student-email', authenticateToken, requireAdminOrManag
             return res.status(404).json({ error: 'Student profile not found' });
         }
 
-        const n8nUrl = process.env.N8N_ADMIN_STUDENT_EMAIL_URL;
-        if (!n8nUrl) {
-            console.error('[Admin Email] N8N_ADMIN_STUDENT_EMAIL_URL not found in .env');
-            return res.status(500).json({ error: 'Mail webhook not configured in system environment' });
-        }
+        const welcomeHtml = `
+            <div style="font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #334155; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 20px; background-color: #ffffff; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);">
+                <div style="text-align: center; margin-bottom: 28px;">
+                    <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); width: 64px; height: 64px; border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px; color: #ffffff; font-size: 24px; font-weight: 800; line-height: 64px; text-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-left: auto; margin-right: auto;">A</div>
+                    <h2 style="color: #0f172a; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.03em;">Academy of Tech Masters</h2>
+                    <p style="color: #3b82f6; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; margin: 4px 0 0 0;">LMS Portal Onboarding</p>
+                </div>
+                <div style="background-color: #f8fafc; border-radius: 16px; padding: 24px; border: 1px solid #f1f5f9; margin-bottom: 24px;">
+                    <p style="font-size: 16px; font-weight: 700; color: #1e293b; margin-top: 0; margin-bottom: 12px;">Dear ${profile.full_name || 'Student'},</p>
+                    <p style="font-size: 15px; color: #334155; margin-bottom: 12px;">Your profile is completely configured on our LMS system. You can log in and manage your assignments, attendance records, study modules, and track your ongoing exam results.</p>
+                    
+                    <div style="background-color: #ffffff; padding: 18px; border-radius: 12px; border: 1px solid #e2e8f0; margin: 20px 0;">
+                        <p style="font-size: 14px; font-weight: 700; color: #1e293b; margin: 0 0 8px 0;">Your Registered Login Details:</p>
+                        <p style="font-size: 14px; color: #475569; margin: 0 0 6px 0;"><strong>LMS URL:</strong> <a href="https://aotms.com" style="color: #3b82f6; text-decoration: none; font-weight: 600;">aotms.com</a></p>
+                        <p style="font-size: 14px; color: #475569; margin: 0;"><strong>Username:</strong> ${profile.email}</p>
+                    </div>
+                    
+                    <p style="font-size: 14px; color: #475569; margin-bottom: 0;">If you are logging in for the first time, click the button below to sign in or reset your password using the "Forgot Password" link on the login page.</p>
+                </div>
+                <div style="text-align: center; margin: 28px 0;">
+                    <a href="https://aotms.com" style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); color: #ffffff; padding: 14px 32px; text-decoration: none; font-weight: 700; font-size: 14px; border-radius: 10px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);">Sign In to LMS</a>
+                </div>
+                <div style="margin-top: 32px; border-top: 1px solid #f1f5f9; padding-top: 20px; text-align: center;">
+                    <p style="font-size: 12px; color: #94a3b8; margin: 0 0 6px 0;">This email was sent via administrative action. For any queries, reach us at <a href="mailto:aotms.marketing@gmail.com" style="color: #3b82f6; text-decoration: none;">aotms.marketing@gmail.com</a>.</p>
+                    <p style="font-size: 12px; color: #94a3b8; margin: 0;">&copy; ${new Date().getFullYear()} <a href="https://aotms.com" style="color: #3b82f6; text-decoration: none; font-weight: 600;">aotms.com</a>. All rights reserved.</p>
+                </div>
+            </div>
+        `;
 
-        // Prepare payload as per email.json specification
-        const payload = {
-            email: profile.email,
-            full_name: profile.full_name,
-            user_id: userId,
-            sent_at: new Date().toISOString(),
-            triggered_by: req.user.id
-        };
-
-        console.log(`[Admin Email] Triggering n8n sequence for ${profile.email}`);
-
-        await axios.post(n8nUrl, payload, {
-            timeout: 10000 // 10s timeout
+        await sendEmail({
+            to: profile.email,
+            subject: 'LMS Onboarding and Account Information | Academy of Tech Masters',
+            html: welcomeHtml
         });
 
-        res.json({ success: true, message: 'Email sequence triggered via n8n' });
+        res.json({ success: true, message: 'Onboarding email sent successfully via SMTP' });
     } catch (err) {
-        console.error('[Admin Email Error]:', err.message);
-        if (err.response) {
-            console.error('[Admin Email Details]:', err.response.status, err.response.data);
-            // If n8n returns 404, it means the workflow is likely deactivated in n8n
-            if (err.response.status === 404) {
-                return res.status(404).json({
-                    error: 'Mail workflow is inactive or path incorrect in n8n.',
-                    details: 'Ensure n8n workflow is "ACTIVE" for production webhooks.'
-                });
-            }
-        }
         handleError(res, err, 'send-student-email');
     }
 });
@@ -2345,7 +2445,7 @@ app.get('/api/admin/student-performance/:studentId', authenticateToken, requireA
             if (r.answers) {
                 try {
                     answersObj = Object.fromEntries(r.answers);
-                } catch(e) {
+                } catch (e) {
                     if (typeof r.answers === 'object') {
                         Object.entries(r.answers).forEach(([k, v]) => { answersObj[k] = String(v); });
                     }
@@ -2361,7 +2461,7 @@ app.get('/api/admin/student-performance/:studentId', authenticateToken, requireA
                 try {
                     const bankQs = await QuestionBank.find({ _id: { $in: qIds } }).lean();
                     bankQs.forEach(q => { bankMap[q._id.toString()] = q; });
-                } catch(e) {}
+                } catch (e) { }
             }
 
             // Helper: resolve answer value — if it's an option ObjectId, return the option text
@@ -2430,7 +2530,7 @@ app.get('/api/admin/student-performance/:studentId', authenticateToken, requireA
                                 student_answer: studentText
                             });
                         });
-                    } catch(e) {}
+                    } catch (e) { }
                 }
             }
 
@@ -3875,7 +3975,7 @@ app.get('/api/student/video-progress/:courseId', authenticateToken, async (req, 
         const { courseId } = req.params;
 
         const progressList = await VideoProgress.find({ user_id: userId, course_id: courseId }).lean();
-        
+
         // Map to expected format: { video_id, watched_seconds, total_seconds, completed }
         const mappedList = progressList.map(p => ({
             video_id: p.video_id,
@@ -6224,10 +6324,14 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
                     const batchFilter = {
                         $or: [
                             // 1. Explicitly allowed for these specific batch IDs (handles both String and ObjectId saved forms)
-                            { allowed_batches: { $in: [
-                                ...studentBatchIds.map(id => mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : id),
-                                ...studentBatchIds // also include string forms since Schema.Types.Mixed saves as strings
-                            ] } },
+                            {
+                                allowed_batches: {
+                                    $in: [
+                                        ...studentBatchIds.map(id => mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : id),
+                                        ...studentBatchIds // also include string forms since Schema.Types.Mixed saves as strings
+                                    ]
+                                }
+                            },
 
                             // 2. Matches both session type AND the instructor assigned to the student
                             //    IMPORTANT: only applies when NO specific batch was chosen (allowed_batches empty),
@@ -6236,11 +6340,13 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
                                 $and: [
                                     { batch_type: { $in: studentBatchTypes } },
                                     { instructor_id: { $in: studentInstructors } },
-                                    { $or: [
-                                        { allowed_batches: { $size: 0 } },
-                                        { allowed_batches: { $exists: false } },
-                                        { allowed_batches: null }
-                                    ] }
+                                    {
+                                        $or: [
+                                            { allowed_batches: { $size: 0 } },
+                                            { allowed_batches: { $exists: false } },
+                                            { allowed_batches: null }
+                                        ]
+                                    }
                                 ]
                             },
 
@@ -6250,11 +6356,13 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
                                 $and: [
                                     { instructor_id: { $exists: false } },
                                     { batch_type: { $in: studentBatchTypes } },
-                                    { $or: [
-                                        { allowed_batches: { $size: 0 } },
-                                        { allowed_batches: { $exists: false } },
-                                        { allowed_batches: null }
-                                    ] }
+                                    {
+                                        $or: [
+                                            { allowed_batches: { $size: 0 } },
+                                            { allowed_batches: { $exists: false } },
+                                            { allowed_batches: null }
+                                        ]
+                                    }
                                 ]
                             },
 
@@ -6291,7 +6399,7 @@ app.get('/api/data/:table', authenticateToken, async (req, res) => {
                 // Day N             → release_day 1..N ✅
                 // Future            → release_day > N ❌ (locked)
                 if (table === 'course_videos') {
-                    const queriedCourseId = query['course_id'] 
+                    const queriedCourseId = query['course_id']
                         || (query['$and'] && query['$and'].find(q => q['course_id'])?.['course_id']);
 
                     let enrolledAt = null;

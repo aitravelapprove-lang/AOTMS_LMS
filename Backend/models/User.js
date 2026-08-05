@@ -79,6 +79,7 @@ const OTPSchema = new mongoose.Schema({
     otp: { type: String, required: true },
     full_name: { type: String },
     expires_at: { type: Date, required: true },
+    failed_attempts: { type: Number, default: 0 },
     created_at: { type: Date, default: Date.now }
 });
 

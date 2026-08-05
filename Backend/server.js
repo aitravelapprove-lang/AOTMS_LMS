@@ -260,8 +260,58 @@ const generateToken = (user) => {
             email: user.email,
         },
         JWT_SECRET,
+        { expiresIn: '30m' }
+    );
+};
+
+const generateRefreshToken = (user) => {
+    return jwt.sign(
+        {
+            id: user._id,
+            email: user.email,
+        },
+        JWT_SECRET,
         { expiresIn: '7d' }
     );
+};
+
+const getCookie = (req, name) => {
+    const matches = req.headers.cookie && req.headers.cookie.match(new RegExp(
+        "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
+    ));
+    return matches ? decodeURIComponent(matches[1]) : undefined;
+};
+
+const isPasswordStrong = (password) => {
+    if (!password) return false;
+    if (password.length < 8) return false;
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasLowercase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecial = /[^A-Za-z0-9]/.test(password);
+    return hasUppercase && hasLowercase && hasNumber && hasSpecial;
+};
+
+const verifyRecaptcha = async (token) => {
+    if (process.env.NODE_ENV !== 'production' && !token) {
+        return true;
+    }
+    const secret = process.env.RECAPTCHA_SECRET_KEY;
+    if (!secret) return true;
+    if (!token) return false;
+
+    try {
+        const response = await fetch(`https://www.google.com/recaptcha/api/siteverify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ secret, response: token })
+        });
+        const data = await response.json();
+        return data.success;
+    } catch (err) {
+        console.error('ReCAPTCHA verify error:', err.message);
+        return false;
+    }
 };
 
 const authenticateToken = async (req, res, next) => {
@@ -680,62 +730,156 @@ app.post('/api/manager/generate-questions', authenticateToken, requireInstructor
     console.log('[API] Generate Questions Request:', req.body.topic, req.body.type);
     const { topic, type, count, difficulty, prompt } = req.body;
 
-    // Determine webhook URL based on type
-    const N8N_MCQ_WEBHOOK = process.env.N8N_MCQ_GENERATOR_URL || 'https://aotms.app.n8n.cloud/webhook/generate-quiz';
-    const N8N_TRUE_FALSE_WEBHOOK = process.env.N8N_TRUE_FALSE_GENERATOR_URL || 'https://aotms.app.n8n.cloud/webhook/true';
-    const N8N_SHORT_ANSWER_WEBHOOK = process.env.N8N_SHORT_ANSWER_GENERATOR_URL || 'https://aotms.app.n8n.cloud/webhook/generate-short-answer';
-    const N8N_LONG_ANSWER_WEBHOOK = process.env.N8N_LONG_ANSWER_GENERATOR_URL || 'https://aotms.app.n8n.cloud/webhook/generate-long-answer';
-    const N8N_FILL_BLANK_WEBHOOK = process.env.N8N_FILL_BLANK_GENERATOR_URL || 'https://aotms.app.n8n.cloud/webhook/generate-fill-blank';
-    const N8N_CODING_WEBHOOK = process.env.N8N_CODING_GENERATOR_URL || 'https://aotms.app.n8n.cloud/webhook/generate-coding';
+    const aiAgentApiKey = (process.env.AI_AGENT_API || '').trim();
 
-    let webhookUrl;
-    switch (type) {
-        case 'mcq':
-            webhookUrl = N8N_MCQ_WEBHOOK;
-            break;
-        case 'true_false':
-            webhookUrl = N8N_TRUE_FALSE_WEBHOOK;
-            break;
-        case 'short':
-        case 'short_answer':
-            webhookUrl = N8N_SHORT_ANSWER_WEBHOOK;
-            break;
-        case 'long':
-        case 'long_answer':
-            webhookUrl = N8N_LONG_ANSWER_WEBHOOK;
-            break;
-        case 'fill_blank':
-            webhookUrl = N8N_FILL_BLANK_WEBHOOK;
-            break;
-        case 'coding':
-            webhookUrl = N8N_CODING_WEBHOOK;
-            break;
-        default:
-            webhookUrl = N8N_MCQ_WEBHOOK; // Default fallback
+    const buildMockQuestion = (qType, qTopic, qDifficulty) => {
+        const shortType = qType?.toLowerCase();
+        if (shortType === 'true_false') {
+            return {
+                topic: qTopic || "General",
+                question_text: "Is the server correctly running?",
+                type: "true_false",
+                difficulty: qDifficulty || "medium",
+                options: ["True", "False"],
+                correct_answer: "True",
+                explanation: "This is a simple explanation.",
+                marks: 1
+            };
+        }
+        if (shortType === 'short' || shortType === 'short_answer') {
+            return {
+                topic: qTopic || "General",
+                question_text: "State the primary method to authenticate API key.",
+                type: "short_answer",
+                difficulty: qDifficulty || "medium",
+                correct_answer: "Process API key headers.",
+                explanation: "This is a simple explanation.",
+                marks: 1
+            };
+        }
+        if (shortType === 'long' || shortType === 'long_answer') {
+            return {
+                topic: qTopic || "General",
+                question_text: "Explain the concept of API routing.",
+                type: "long_answer",
+                difficulty: qDifficulty || "medium",
+                correct_answer: "API routing processes requests dynamically through express routes.",
+                explanation: "This is a simple explanation.",
+                marks: 5
+            };
+        }
+        if (shortType === 'fill_blank') {
+            return {
+                topic: qTopic || "General",
+                question_text: "AOTMS uses _______ for databases.",
+                type: "fill_blank",
+                difficulty: qDifficulty || "medium",
+                correct_answer: "MongoDB",
+                explanation: "This is a simple explanation.",
+                marks: 1
+            };
+        }
+        if (shortType === 'coding') {
+            return {
+                topic: qTopic || "General",
+                question_text: "Write code to log 'Hello World'.",
+                type: "coding",
+                difficulty: qDifficulty || "medium",
+                correct_answer: "console.log('Hello World');",
+                explanation: "This is a simple explanation.",
+                marks: 5
+            };
+        }
+        // Default MCQ
+        return {
+            topic: qTopic || "General",
+            question_text: "Which protocol is standard for web traffic?",
+            type: "mcq",
+            difficulty: qDifficulty || "medium",
+            options: ["HTTP", "FTP", "SMTP", "SSH"],
+            correct_answer: "HTTP",
+            explanation: "This is a simple explanation.",
+            marks: 1
+        };
+    };
+
+    if (!aiAgentApiKey) {
+        console.warn('[AI_AGENT_API] Key is missing in .env. Returning local mock questions.');
+        const mockQ = buildMockQuestion(type, topic, difficulty);
+        return res.json({
+            testing_msg: "testing HI message Received an Output",
+            ai_agent_api: "none",
+            questions: [mockQ]
+        });
     }
 
     try {
-        const response = await axios.post(webhookUrl, {
-            topic,
-            context: topic, // Alias for older n8n workflows
-            type,
-            question_type: type, // Alias
-            count,
-            questionCount: count, // Alias
-            difficulty,
-            prompt,
-            timestamp: new Date().toISOString()
-        }, { timeout: 120000 }); // AI generation can be slow
+        console.log(`[AI_AGENT_API Trigger] Calling OpenAI chat/completions using Project Key...`);
+        console.log("testing HI message Received an Output.");
 
-        // Forward the response data directly
-        res.json(response.data);
-    } catch (error) {
-        console.error('Error calling n8n webhook:', error.message);
-        if (error.response) {
-            res.status(error.response.status).json(error.response.data);
-        } else {
-            res.status(500).json({ error: 'Failed to generate questions via AI service' });
+        const systemPrompt = `You are an expert quiz generator. Generate exactly ${count || 1} questions of type '${type || 'mcq'}' on the topic '${topic || 'General'}' with a difficulty level of '${difficulty || 'medium'}'.
+Extra instructions: ${prompt || 'None'}.
+
+You MUST reply with a JSON object in this exact schema:
+{
+  "questions": [
+    {
+      "topic": "${topic || 'General'}",
+      "question_text": "Question text here",
+      "type": "${type || 'mcq'}",
+      "difficulty": "${difficulty || 'medium'}",
+      "options": ["Option A", "Option B", "Option C", "Option D"], // ONLY include for mcq or true_false (options should be ["True", "False"] for true_false)
+      "correct_answer": "Option text of the correct answer, or True/False, or text containing the exact correct answer/code",
+      "explanation": "Simple explanation describing why this answer is correct",
+      "marks": 1
+    }
+  ]
+}
+Do not include any Markdown wrapper like \`\`\`json or text explanation around the JSON, just a clean JSON output.`;
+
+        const response = await axios.post('https://api.openai.com/v1/chat/completions', {
+            model: 'gpt-4o-mini',
+            messages: [
+                { role: 'user', content: systemPrompt }
+            ],
+            temperature: 0.7,
+            response_format: { type: 'json_object' }
+        }, {
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${aiAgentApiKey}`
+            },
+            timeout: 60000
+        });
+
+        const content = response.data.choices[0].message.content;
+        let data = JSON.parse(content);
+
+        if (data && typeof data === 'object') {
+            if (Array.isArray(data)) {
+                data = { questions: data };
+            }
+            data.testing_msg = "testing HI message Received an Output";
+            data.ai_agent_api = aiAgentApiKey;
         }
+
+        console.log(`[AI_AGENT_API Success] Successfully generated ${data.questions ? data.questions.length : 0} questions via OpenAI.`);
+        res.json(data);
+
+    } catch (error) {
+        console.error('Error generating questions via OpenAI API:', error.message);
+        if (error.response) {
+            console.error('OpenAI Error Details:', JSON.stringify(error.response.data));
+        }
+
+        console.log(`[AI_AGENT_API Fallback] Returning mock question under error.`);
+        const mockQ = buildMockQuestion(type, topic, difficulty);
+        res.json({
+            testing_msg: "testing HI message Received an Output (fallback)",
+            ai_agent_api: aiAgentApiKey,
+            questions: [mockQ],
+            error: error.message
+        });
     }
 });
 
@@ -865,12 +1009,21 @@ app.post('/api/auth/send-otp', async (req, res) => {
     if (!email) return res.status(400).json({ error: 'Email is required' });
 
     try {
+        const existingOtp = await OTP.findOne({ email });
+        if (existingOtp) {
+            const timePassed = Date.now() - new Date(existingOtp.created_at).getTime();
+            if (timePassed < 60 * 1000) {
+                const waitSeconds = Math.ceil((60 * 1000 - timePassed) / 1000);
+                return res.status(429).json({ error: `Please wait ${waitSeconds} seconds before requesting another OTP.` });
+            }
+        }
+
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+        const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 min
 
         await OTP.findOneAndUpdate(
             { email },
-            { otp, full_name, expires_at: expiresAt },
+            { otp, full_name, expires_at: expiresAt, created_at: new Date() },
             { upsert: true, returnDocument: 'after' }
         );
 
@@ -914,12 +1067,21 @@ app.post('/api/auth/resend-otp', async (req, res) => {
     if (!email) return res.status(400).json({ error: 'Email is required' });
 
     try {
+        const existingOtp = await OTP.findOne({ email });
+        if (existingOtp) {
+            const timePassed = Date.now() - new Date(existingOtp.created_at).getTime();
+            if (timePassed < 60 * 1000) {
+                const waitSeconds = Math.ceil((60 * 1000 - timePassed) / 1000);
+                return res.status(429).json({ error: `Please wait ${waitSeconds} seconds before requesting another OTP.` });
+            }
+        }
+
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+        const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
         await OTP.findOneAndUpdate(
             { email },
-            { otp, full_name, expires_at: expiresAt },
+            { otp, full_name, expires_at: expiresAt, created_at: new Date() },
             { upsert: true, returnDocument: 'after' }
         );
         console.log(`[AUTH-OTP] Resent OTP for ${email}: ${otp}`);
@@ -963,8 +1125,23 @@ app.post('/api/auth/verify-otp', async (req, res) => {
     try {
         const otpDoc = await OTP.findOne({ email });
         if (!otpDoc) return res.status(400).json({ error: 'No OTP found' });
-        if (otpDoc.otp !== otp) return res.status(400).json({ error: 'Invalid OTP' });
         if (new Date() > otpDoc.expires_at) return res.status(400).json({ error: 'OTP expired' });
+
+        if (otpDoc.failed_attempts >= 5) {
+            return res.status(400).json({ error: 'Too many failed attempts. Please request a new OTP.' });
+        }
+
+        if (otpDoc.otp !== otp) {
+            otpDoc.failed_attempts = (otpDoc.failed_attempts || 0) + 1;
+            await otpDoc.save();
+
+            const remaining = 5 - otpDoc.failed_attempts;
+            if (remaining <= 0) {
+                await OTP.deleteOne({ email });
+                return res.status(400).json({ error: 'Too many failed attempts. OTP has been invalidated. Please request a new OTP.' });
+            }
+            return res.status(400).json({ error: `Invalid OTP. You have ${remaining} attempts remaining.` });
+        }
 
         await VerifiedEmail.findOneAndUpdate(
             { email },
@@ -972,13 +1149,24 @@ app.post('/api/auth/verify-otp', async (req, res) => {
             { upsert: true }
         );
 
+        // Delete successful OTP
+        await OTP.deleteOne({ email });
+
         res.json({ success: true, message: 'OTP verified' });
     } catch (err) {
         handleError(res, err, 'verify-otp');
     }
 });
 
-app.post('/api/auth/logout', (req, res) => {
+app.post('/api/auth/logout', authenticateToken, (req, res) => {
+    if (req.user && req.user.id) {
+        blacklistUserTokens(req.user.id);
+    }
+    res.clearCookie('refresh_token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+    });
     res.json({ success: true, message: 'Logged out successfully' });
 });
 
@@ -992,17 +1180,26 @@ app.post('/api/auth/forgot-password', async (req, res) => {
         const { email } = req.body;
         if (!email) return res.status(400).json({ error: 'Email is required' });
 
+        const existingRecord = resetOtpStore.get(email.toLowerCase().trim());
+        if (existingRecord) {
+            const timePassed = Date.now() - existingRecord.createdAt;
+            if (timePassed < 60 * 1000) {
+                const waitSeconds = Math.ceil((60 * 1000 - timePassed) / 1000);
+                return res.status(429).json({ error: `Please wait ${waitSeconds} seconds before requesting another OTP.` });
+            }
+        }
+
         // Check user exists case-insensitively
         const user = await User.findOne({ email: { $regex: new RegExp("^" + email.trim() + "$", "i") } });
         if (!user) return res.status(404).json({ error: 'No account found with this email.' });
 
         // Generate random 6-digit OTP
         const otp = String(Math.floor(100000 + Math.random() * 900000));
-        const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+        const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
 
         // Store OTP (store as lowercase email in key for consistency)
-        resetOtpStore.set(email.toLowerCase().trim(), { otp, expiresAt });
-        setTimeout(() => resetOtpStore.delete(email.toLowerCase().trim()), 10 * 60 * 1000);
+        resetOtpStore.set(email.toLowerCase().trim(), { otp, expiresAt, failedAttempts: 0, createdAt: Date.now() });
+        setTimeout(() => resetOtpStore.delete(email.toLowerCase().trim()), 5 * 60 * 1000);
 
         // Call n8n webhook — it emails the OTP to the user
         try {
@@ -1040,8 +1237,19 @@ app.post('/api/auth/verify-reset-otp', async (req, res) => {
             resetOtpStore.delete(email.toLowerCase().trim());
             return res.status(400).json({ error: 'OTP has expired. Request a new one.' });
         }
+        if (record.failedAttempts >= 5) {
+            resetOtpStore.delete(email.toLowerCase().trim());
+            return res.status(400).json({ error: 'Too many failed attempts. OTP has been invalidated. Please request a new one.' });
+        }
+
         if (String(otp).trim() !== record.otp) {
-            return res.status(400).json({ error: 'Invalid OTP. Please check and try again.' });
+            record.failedAttempts = (record.failedAttempts || 0) + 1;
+            const remaining = 5 - record.failedAttempts;
+            if (remaining <= 0) {
+                resetOtpStore.delete(email.toLowerCase().trim());
+                return res.status(400).json({ error: 'Too many failed attempts. OTP has been invalidated. Please request a new one.' });
+            }
+            return res.status(400).json({ error: `Invalid OTP. You have ${remaining} attempts remaining.` });
         }
 
         console.log(`[ForgotPassword] OTP verified for ${email}`);
@@ -1056,7 +1264,9 @@ app.post('/api/auth/reset-password', async (req, res) => {
     try {
         const { email, otp, new_password } = req.body;
         if (!email || !otp || !new_password) return res.status(400).json({ error: 'All fields required' });
-        if (new_password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });
+        if (!isPasswordStrong(new_password)) {
+            return res.status(400).json({ error: 'Password must be at least 8 characters, and contain mixed case, numbers, and special characters.' });
+        }
 
         // Re-verify OTP for security
         const record = resetOtpStore.get(email.toLowerCase().trim());
@@ -1068,7 +1278,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
         const user = await User.findOne({ email: { $regex: new RegExp("^" + email.trim() + "$", "i") } });
         if (!user) return res.status(404).json({ error: 'No account found with this email.' });
 
-        const salt = await bcrypt.genSalt(10);
+        const salt = await bcrypt.genSalt(12);
         user.password_hash = await bcrypt.hash(new_password, salt);
         await user.save();
 
@@ -1081,15 +1291,36 @@ app.post('/api/auth/reset-password', async (req, res) => {
 });
 
 app.post('/api/auth/refresh', async (req, res) => {
-    const { refresh_token } = req.body;
-    if (!refresh_token) return res.status(400).json({ error: 'Refresh token required' });
-    // In a real app, verify refresh_token in DB. For now, we just mock success if token exists.
-    res.json({
-        session: {
-            access_token: 'new_mock_token_' + Date.now(),
-            refresh_token: 'new_mock_refresh_' + Date.now()
-        }
-    });
+    const refreshToken = getCookie(req, 'refresh_token') || req.body.refresh_token;
+    if (!refreshToken) return res.status(401).json({ error: 'Refresh token is missing' });
+
+    try {
+        const decoded = jwt.verify(refreshToken, JWT_SECRET);
+        const user = await User.findById(decoded.id);
+        if (!user) return res.status(401).json({ error: 'User session no longer valid' });
+
+        // Generate new token pair
+        const newAccessToken = generateToken(user);
+        const newRefreshToken = generateRefreshToken(user);
+
+        // Update the HttpOnly cookie
+        res.cookie('refresh_token', newRefreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
+
+        res.json({
+            session: {
+                access_token: newAccessToken,
+                expires_in: 1800
+            }
+        });
+    } catch (err) {
+        console.error('[Refresh Token Error]:', err.message);
+        return res.status(401).json({ error: 'Invalid or expired refresh token' });
+    }
 });
 
 app.post('/api/public/enroll', async (req, res) => {
@@ -1106,12 +1337,29 @@ app.post('/api/public/enroll', async (req, res) => {
 });
 
 app.post('/api/auth/signup', async (req, res) => {
-    const { email, password, fullName, phone, courseType, collegeName, instituteName, city, district, country, fullAddress, latitude, longitude } = req.body;
+    const { email, password, fullName, phone, courseType, collegeName, instituteName, city, district, country, fullAddress, latitude, longitude, captcha_token } = req.body;
     try {
+        // 1. CAPTCHA verification
+        const isValidCaptcha = await verifyRecaptcha(captcha_token || req.body['g-recaptcha-response']);
+        if (!isValidCaptcha) {
+            return res.status(400).json({ error: 'CAPTCHA verification failed. Please try again.' });
+        }
+
+        // 2. Email verification check
+        const isVerified = await VerifiedEmail.findOne({ email: email.toLowerCase().trim(), verified: true });
+        if (!isVerified) {
+            return res.status(401).json({ error: 'Email must be verified before completing registration.' });
+        }
+
+        // 3. Password strength check
+        if (!isPasswordStrong(password)) {
+            return res.status(400).json({ error: 'Password must be at least 8 characters, and contain mixed case, numbers, and special characters.' });
+        }
+
         const existingUser = await User.findOne({ email });
         if (existingUser) return res.status(400).json({ error: 'User already exists' });
 
-        const salt = await bcrypt.genSalt(10);
+        const salt = await bcrypt.genSalt(12);
         const passwordHash = await bcrypt.hash(password, salt);
         const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=random&color=fff`;
 
@@ -1163,9 +1411,17 @@ app.post('/api/auth/signup', async (req, res) => {
         });
 
         const token = generateToken(user);
+        const refreshToken = generateRefreshToken(user);
+        res.cookie('refresh_token', refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
+
         res.json({
             user: { id: user._id, email, full_name: fullName, avatar_url: avatarUrl, role: assignedRole },
-            session: { access_token: token, expires_in: 604800 }
+            session: { access_token: token, expires_in: 1800 }
         });
 
     } catch (err) {
@@ -1173,11 +1429,30 @@ app.post('/api/auth/signup', async (req, res) => {
     }
 });
 
+const loginIpLimitStore = new Map();
+
 app.post('/api/auth/login', async (req, res) => {
-    const { email, password } = req.body;
+    const { email, password, captcha_token } = req.body;
     try {
-        const user = await User.findOne({ email: { $regex: new RegExp("^" + email.trim() + "$", "i") } });
         const loginIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+        // 1. CAPTCHA verification
+        const isValidCaptcha = await verifyRecaptcha(captcha_token || req.body['g-recaptcha-response']);
+        if (!isValidCaptcha) {
+            return res.status(400).json({ error: 'CAPTCHA verification failed. Please try again.' });
+        }
+
+        // Login Rate Limit: 5 requests / 15 min per IP
+        const now = Date.now();
+        let ipAttempts = loginIpLimitStore.get(loginIp) || [];
+        ipAttempts = ipAttempts.filter(ts => now - ts < 15 * 60 * 1000);
+        if (ipAttempts.length >= 5) {
+            return res.status(429).json({ error: 'Too many login attempts from this IP. Please try again after 15 minutes.' });
+        }
+        ipAttempts.push(now);
+        loginIpLimitStore.set(loginIp, ipAttempts);
+
+        const user = await User.findOne({ email: { $regex: new RegExp("^" + email.trim() + "$", "i") } });
 
         if (!user) {
             // Log generic failed attempt for unknown user
@@ -1189,39 +1464,21 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        const isMatch = await bcrypt.compare(password, user.password_hash);
-
-        if (!isMatch) {
-            // Brute force protection
-            user.failed_login_attempts = (user.failed_login_attempts || 0) + 1;
-            await user.save();
-
-            let errorMessage = 'Invalid credentials';
-
-            if (user.failed_login_attempts >= 3) {
-                await Profile.findOneAndUpdate({ user_id: user._id }, { approval_status: 'suspended' });
-                await SecurityEvent.create({
-                    event_type: 'account_auto_suspended',
-                    ip_address: loginIp,
-                    user_id: user._id,
-                    details: { reason: 'Too many failed login attempts', attempts: user.failed_login_attempts }
-                });
-                errorMessage = 'Account suspended due to too many failed attempts. Contact Administrator.';
-            }
-
-            return res.status(401).json({ error: errorMessage });
-        }
-
-        // Update last login info
-        user.last_login_at = new Date();
-        user.last_login_ip = loginIp;
-        await user.save();
-
-        // Check if suspended
+        // Check if suspended/locked before bcrypt check
         const [profile, roleDoc] = await Promise.all([
             Profile.findOne({ user_id: user._id }),
             UserRole.findOne({ user_id: user._id })
         ]);
+
+        const userRole = roleDoc ? roleDoc.role : 'student';
+
+        // 2. Email verification check (non-admins must be verified prior to login)
+        if (userRole !== 'admin') {
+            const isVerified = await VerifiedEmail.findOne({ email: email.toLowerCase().trim(), verified: true });
+            if (!isVerified) {
+                return res.status(401).json({ error: 'Email verification is required before login.' });
+            }
+        }
 
         if (profile?.approval_status === 'suspended') {
             // Check if auto-unsuspend is applicable
@@ -1230,16 +1487,48 @@ app.post('/api/auth/login', async (req, res) => {
                 profile.suspended_until = null;
                 await profile.save();
             } else {
+                if (profile?.suspended_until) {
+                    const timeLeftMs = new Date(profile.suspended_until).getTime() - Date.now();
+                    const timeLeftMins = Math.ceil(timeLeftMs / (60 * 1000));
+                    return res.status(403).json({ error: `Account locked due to too many failed attempts. Try again in ${timeLeftMins} minutes.` });
+                }
                 return res.status(403).json({ error: 'Your account is suspended. Please contact the administrator.' });
             }
         }
 
-        // Login Success Housekeeping
+        const isMatch = await bcrypt.compare(password, user.password_hash);
+
+        if (!isMatch) {
+            // Brute force protection: 5 attempts -> 15 min lock
+            user.failed_login_attempts = (user.failed_login_attempts || 0) + 1;
+            await user.save();
+
+            let errorMessage = 'Invalid credentials';
+            const remaining = 5 - user.failed_login_attempts;
+
+            if (user.failed_login_attempts >= 5) {
+                const lockTime = new Date(Date.now() + 15 * 60 * 1000); // 15 min lock
+                await Profile.findOneAndUpdate({ user_id: user._id }, { approval_status: 'suspended', suspended_until: lockTime });
+                await SecurityEvent.create({
+                    event_type: 'account_auto_locked',
+                    ip_address: loginIp,
+                    user_id: user._id,
+                    details: { reason: '5 failed login attempts', attempts: user.failed_login_attempts }
+                });
+                errorMessage = 'Account locked due to too many failed attempts. Try again in 15 minutes.';
+            } else {
+                errorMessage = `Invalid credentials. You have ${remaining} attempts remaining before account lock.`;
+            }
+
+            return res.status(401).json({ error: errorMessage });
+        }
+
+        // Update last login info & housekeeping
+        user.last_login_at = new Date();
         user.failed_login_attempts = 0;
         user.last_login_ip = loginIp;
         await user.save();
 
-        const userRole = roleDoc ? roleDoc.role : 'student';
         const loginTime = new Date().toISOString();
 
         console.log(`[Auth] Login Successful: ${email} | Role: ${userRole}`);
@@ -1248,7 +1537,7 @@ app.post('/api/auth/login', async (req, res) => {
         // Admin must verify via OTP before receiving an access token
         if (userRole === 'admin') {
             const otp = Math.floor(100000 + Math.random() * 900000).toString();
-            const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+            const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 min
 
             await OTP.findOneAndUpdate(
                 { email },
@@ -1266,22 +1555,26 @@ app.post('/api/auth/login', async (req, res) => {
 
             // Send Admin Login OTP directly via Resend email helper
             const otpHtml = `
-                <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #334155; max-width: 500px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);">
-                    <div style="text-align: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 16px; margin-bottom: 20px;">
-                        <h2 style="color: #0f172a; margin: 0; font-size: 20px; font-weight: 800;">Academy of Tech Masters</h2>
-                        <span style="color: #ea580c; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Admin Security Authentication</span>
+                <div style="font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #334155; max-width: 500px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 20px; background-color: #ffffff; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);">
+                    <div style="text-align: center; margin-bottom: 24px;">
+                        <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); width: 56px; height: 56px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px; color: #ffffff; font-size: 20px; font-weight: 800; line-height: 56px; text-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-left: auto; margin-right: auto;">A</div>
+                        <h2 style="color: #0f172a; margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.02em;">Academy of Tech Masters</h2>
+                        <p style="color: #ea580c; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 4px 0 0 0;">Admin Security Authentication</p>
                     </div>
-                    <p style="font-size: 14px; color: #334155; margin-top: 0; font-weight: 500;">Hello ${user.full_name || 'Admin'},</p>
-                    <p style="font-size: 14px; color: #334155;">A login attempt was initiated on your administrator platform account. Use the following security code to authenticate:</p>
-                    <div style="background-color: #f8fafc; padding: 16px; border-radius: 12px; text-align: center; font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #ea580c; border: 1px dashed #fdba74; margin: 24px 0;">
+                    <p style="font-size: 15px; color: #334155; margin-top: 0; font-weight: 600;">Hello ${user.full_name || 'Admin'},</p>
+                    <p style="font-size: 14px; color: #475569;">A login attempt was initiated on your administrator platform account. Use the following security code to authenticate. This code is valid for 10 minutes:</p>
+                    <div style="background: #fdf8f6; border: 1px dashed #fdba74; border-radius: 12px; text-align: center; font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #ea580c; padding: 18px; margin: 24px 0; text-shadow: 0 1px 1px rgba(0,0,0,0.05); font-family: monospace;">
                         ${otp}
                     </div>
-                    <p style="font-size: 13px; color: #334155;"><strong>Login Details:</strong><br/>
-                    • <strong>IP Address:</strong> ${loginIp}<br/>
-                    • <strong>Time:</strong> ${loginTime}</p>
-                    <p style="font-size: 12px; color: #ef4444; font-weight: 600; margin-top: 20px;">If this login attempt was not initiated by you, please secure your credentials immediately.</p>
-                    <div style="margin-top: 32px; border-top: 2px solid #f1f5f9; padding-top: 16px; text-align: center;">
-                        <p style="font-size: 10px; color: #94a3b8; margin: 0;">&copy; ${new Date().getFullYear()} Academy of Tech Masters Security Team.</p>
+                    <div style="background-color: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; margin: 20px 0; font-size: 13px; color: #475569;">
+                        <p style="font-weight: 700; color: #1e293b; margin: 0 0 8px 0;">Login Details:</p>
+                        <p style="margin: 0 0 4px 0;"><strong>IP Address:</strong> ${loginIp}</p>
+                        <p style="margin: 0;"><strong>Time:</strong> ${loginTime}</p>
+                    </div>
+                    <p style="font-size: 12px; color: #ef4444; font-weight: 600; margin-bottom: 0;">If this login attempt was not initiated by you, please secure your credentials immediately.</p>
+                    <div style="margin-top: 32px; border-top: 1px solid #f1f5f9; padding-top: 16px; text-align: center;">
+                        <p style="font-size: 11px; color: #94a3b8; margin: 0 0 4px 0;">Academy of Tech Masters Security Team.</p>
+                        <p style="font-size: 11px; color: #94a3b8; margin: 0;">&copy; ${new Date().getFullYear()} <a href="https://aotms.com" style="color: #3b82f6; text-decoration: none; font-weight: 600;">aotms.com</a>. All rights reserved.</p>
                     </div>
                 </div>
             `;
@@ -1300,6 +1593,13 @@ app.post('/api/auth/login', async (req, res) => {
         // ----------------------
 
         const token = generateToken(user);
+        const refreshToken = generateRefreshToken(user);
+        res.cookie('refresh_token', refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
 
         res.json({
             user: {
@@ -1311,7 +1611,7 @@ app.post('/api/auth/login', async (req, res) => {
                 approval_status: profile ? profile.approval_status : 'pending',
                 suspended_until: profile ? profile.suspended_until : null
             },
-            session: { access_token: token, expires_in: 604800 }
+            session: { access_token: token, expires_in: 1800 }
         });
 
     } catch (err) {
@@ -1328,8 +1628,27 @@ app.post('/api/auth/admin-verify-otp', async (req, res) => {
     try {
         const otpRecord = await OTP.findOne({ email });
         if (!otpRecord) return res.status(400).json({ error: 'OTP not found. Please log in again.' });
-        if (otpRecord.otp !== otp) return res.status(400).json({ error: 'Invalid OTP. Please try again.' });
-        if (new Date() > new Date(otpRecord.expires_at)) return res.status(400).json({ error: 'OTP has expired. Please log in again.' });
+        if (new Date() > new Date(otpRecord.expires_at)) {
+            await OTP.deleteOne({ email });
+            return res.status(400).json({ error: 'OTP has expired. Please log in again.' });
+        }
+
+        if (otpRecord.failed_attempts >= 5) {
+            await OTP.deleteOne({ email });
+            return res.status(400).json({ error: 'Too many failed attempts. OTP has been invalidated. Please log in again.' });
+        }
+
+        if (otpRecord.otp !== otp) {
+            otpRecord.failed_attempts = (otpRecord.failed_attempts || 0) + 1;
+            await otpRecord.save();
+
+            const remaining = 5 - otpRecord.failed_attempts;
+            if (remaining <= 0) {
+                await OTP.deleteOne({ email });
+                return res.status(400).json({ error: 'Too many failed attempts. OTP has been invalidated. Please log in again.' });
+            }
+            return res.status(400).json({ error: `Invalid OTP. You have ${remaining} attempts remaining.` });
+        }
 
         // Consume the OTP
         await OTP.deleteOne({ email });
@@ -1364,6 +1683,14 @@ app.post('/api/auth/admin-verify-otp', async (req, res) => {
 
         console.log(`[Security] Admin OTP verified — login complete for ${email}`);
 
+        const refreshToken = generateRefreshToken(user);
+        res.cookie('refresh_token', refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
+
         res.json({
             user: {
                 id: user._id,
@@ -1374,7 +1701,7 @@ app.post('/api/auth/admin-verify-otp', async (req, res) => {
                 approval_status: profile ? profile.approval_status : 'approved',
                 suspended_until: profile ? profile.suspended_until : null
             },
-            session: { access_token: token, expires_in: 604800 }
+            session: { access_token: token, expires_in: 1800 }
         });
     } catch (err) {
         handleError(res, err, 'admin-verify-otp');
@@ -1393,32 +1720,45 @@ app.post('/api/auth/admin-resend-otp', async (req, res) => {
         const roleDoc = await UserRole.findOne({ user_id: user._id });
         if (!roleDoc || roleDoc.role !== 'admin') return res.status(403).json({ error: 'Admin access only.' });
 
+        const existingOtp = await OTP.findOne({ email });
+        if (existingOtp) {
+            const timePassed = Date.now() - new Date(existingOtp.created_at).getTime();
+            if (timePassed < 60 * 1000) {
+                const waitSeconds = Math.ceil((60 * 1000 - timePassed) / 1000);
+                return res.status(429).json({ error: `Please wait ${waitSeconds} seconds before requesting another OTP.` });
+            }
+        }
+
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+        const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
         await OTP.findOneAndUpdate(
             { email },
-            { otp, full_name: user.full_name, expires_at: expiresAt },
+            { otp, full_name: user.full_name, expires_at: expiresAt, created_at: new Date() },
             { upsert: true, returnDocument: 'after' }
         );
 
         // Send Admin Login OTP directly via Resend email helper
         const otpHtml = `
-            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #334155; max-width: 500px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);">
-                <div style="text-align: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 16px; margin-bottom: 20px;">
-                    <h2 style="color: #0f172a; margin: 0; font-size: 20px; font-weight: 800;">Academy of Tech Masters</h2>
-                    <span style="color: #ea580c; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Admin Security Authentication</span>
+            <div style="font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #334155; max-width: 500px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 20px; background-color: #ffffff; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);">
+                <div style="text-align: center; margin-bottom: 24px;">
+                    <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); width: 56px; height: 56px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px; color: #ffffff; font-size: 20px; font-weight: 800; line-height: 56px; text-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-left: auto; margin-right: auto;">A</div>
+                    <h2 style="color: #0f172a; margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.02em;">Academy of Tech Masters</h2>
+                    <p style="color: #ea580c; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 4px 0 0 0;">Admin Security Authentication</p>
                 </div>
-                <p style="font-size: 14px; color: #334155; margin-top: 0; font-weight: 500;">Hello ${user.full_name || 'Admin'},</p>
-                <p style="font-size: 14px; color: #334155;">A login attempt was initiated on your administrator platform account. Use the following security code to authenticate:</p>
-                <div style="background-color: #f8fafc; padding: 16px; border-radius: 12px; text-align: center; font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #ea580c; border: 1px dashed #fdba74; margin: 24px 0;">
+                <p style="font-size: 15px; color: #334155; margin-top: 0; font-weight: 600;">Hello ${user.full_name || 'Admin'},</p>
+                <p style="font-size: 14px; color: #475569;">A login attempt was initiated on your administrator platform account. Use the following security code to authenticate. This code is valid for 10 minutes:</p>
+                <div style="background: #fdf8f6; border: 1px dashed #fdba74; border-radius: 12px; text-align: center; font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #ea580c; padding: 18px; margin: 24px 0; text-shadow: 0 1px 1px rgba(0,0,0,0.05); font-family: monospace;">
                     ${otp}
                 </div>
-                <p style="font-size: 13px; color: #334155;"><strong>Login Details (Resent):</strong><br/>
-                • <strong>Time:</strong> ${new Date().toLocaleString()}</p>
-                <p style="font-size: 12px; color: #ef4444; font-weight: 600; margin-top: 20px;">If this login attempt was not initiated by you, please secure your credentials immediately.</p>
-                <div style="margin-top: 32px; border-top: 2px solid #f1f5f9; padding-top: 16px; text-align: center;">
-                    <p style="font-size: 10px; color: #94a3b8; margin: 0;">&copy; ${new Date().getFullYear()} Academy of Tech Masters Security Team.</p>
+                <div style="background-color: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; margin: 20px 0; font-size: 13px; color: #475569;">
+                    <p style="font-weight: 700; color: #1e293b; margin: 0 0 8px 0;">Login Details (Resent):</p>
+                    <p style="margin: 0;"><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+                </div>
+                <p style="font-size: 12px; color: #ef4444; font-weight: 600; margin-bottom: 0;">If this login attempt was not initiated by you, please secure your credentials immediately.</p>
+                <div style="margin-top: 32px; border-top: 1px solid #f1f5f9; padding-top: 16px; text-align: center;">
+                    <p style="font-size: 11px; color: #94a3b8; margin: 0 0 4px 0;">Academy of Tech Masters Security Team.</p>
+                    <p style="font-size: 11px; color: #94a3b8; margin: 0;">&copy; ${new Date().getFullYear()} <a href="https://aotms.com" style="color: #3b82f6; text-decoration: none; font-weight: 600;">aotms.com</a>. All rights reserved.</p>
                 </div>
             </div>
         `;
@@ -3388,7 +3728,7 @@ app.post('/api/instructor/register', upload.single('resume'), async (req, res) =
     const { email, password, fullName, areaOfExpertise, customExpertise, experience } = req.body;
     try {
         // Reuse Signup Logic (Partial)
-        const salt = await bcrypt.genSalt(10);
+        const salt = await bcrypt.genSalt(12);
         const passwordHash = await bcrypt.hash(password, salt);
 
         let user = await User.findOne({ email });

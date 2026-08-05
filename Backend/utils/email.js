@@ -1,8 +1,8 @@
 const nodemailer = require('nodemailer');
-const axios = require('axios');
 
 /**
- * Send an email directly using Brevo API (rest endpoint bypasses Render port blocks) with SMTP as fallback
+ * Send an email directly using Brevo SMTP.
+ * Bypasses Render port blocks by dynamically trying port 2525 (recommended for cloud hosts) and 587.
  * @param {Object} options
  * @param {string} options.to - Recipient email
  * @param {string} options.subject - Email subject
@@ -19,54 +19,51 @@ const sendEmail = async ({ to, subject, html, text }) => {
         throw new Error('Email credentials are not configured.');
     }
 
-    try {
-        console.log(`[Brevo API] Sending email to ${to} via REST API...`);
-        const payload = {
-            sender: { name: "Academy of Tech Masters", email: fromSender },
-            to: [{ email: to }],
-            subject: subject,
-            htmlContent: html || text
-        };
-        if (text && !html) {
-            payload.textContent = text;
-        }
+    // Try port 2525 first (Render typically allows outbound on 2525 while blocking 587/465)
+    // If process.env.BREVO_SMTP_PORT is defined, prioritize it, otherwise default to 2525
+    const preferredPort = process.env.BREVO_SMTP_PORT ? parseInt(process.env.BREVO_SMTP_PORT, 10) : 2525;
+    const smtpHost = process.env.BREVO_SMTP_HOST || 'smtp-relay.brevo.com';
 
-        const response = await axios.post('https://api.brevo.com/v3/smtp/email', payload, {
-            headers: {
-                'api-key': apiKey,
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            timeout: 15000
-        });
+    const mailOptions = {
+        from: `"Academy of Tech Masters" <${fromSender}>`,
+        to,
+        subject,
+        text,
+        html
+    };
 
-        console.log(`[Brevo API] Sent successfully. Message ID: ${response.data.messageId || 'REST_API_SUCCESS'}`);
-        return response.data;
-    } catch (err) {
-        console.warn(`[Brevo API Failed] Falling back to standard SMTP transport: ${err.message}`);
-
-        // Fallback to Nodemailer SMTP
+    const trySendWithPort = async (port) => {
+        console.log(`[Brevo SMTP] Attempting send to ${to} on host: ${smtpHost}, port: ${port}...`);
         const transporter = nodemailer.createTransport({
-            host: process.env.BREVO_SMTP_HOST || 'smtp-relay.brevo.com',
-            port: parseInt(process.env.BREVO_SMTP_PORT || '587', 10),
-            secure: false, // 587 uses STARTTLS
+            host: smtpHost,
+            port: port,
+            secure: port === 465, // True for 465, false for others
             auth: {
                 user: process.env.BREVO_SMTP_USER || 'b46190001@smtp-brevo.com',
                 pass: apiKey
-            }
+            },
+            connectionTimeout: 10000 // 10 seconds timeout
         });
 
-        const mailOptions = {
-            from: `"Academy of Tech Masters" <${fromSender}>`,
-            to,
-            subject,
-            text,
-            html
-        };
+        return await transporter.sendMail(mailOptions);
+    };
 
-        const info = await transporter.sendMail(mailOptions);
-        console.log(`[Brevo SMTP Fallback] Sent successfully. Message ID: ${info.messageId}`);
+    try {
+        const info = await trySendWithPort(preferredPort);
+        console.log(`[Brevo SMTP] Sent successfully on port ${preferredPort}. Message ID: ${info.messageId}`);
         return info;
+    } catch (err) {
+        // Render or Brevo failed on the preferred port, try the alternative
+        const alternativePort = preferredPort === 587 ? 2525 : 587;
+        console.warn(`[Brevo SMTP Port ${preferredPort} Failed: ${err.message}]. Retrying with alternative port ${alternativePort}...`);
+        try {
+            const info = await trySendWithPort(alternativePort);
+            console.log(`[Brevo SMTP Fallback] Sent successfully on port ${alternativePort}. Message ID: ${info.messageId}`);
+            return info;
+        } catch (fallbackErr) {
+            console.error(`[Brevo SMTP Error] All port attempts (including standard and fallback) failed:`, fallbackErr.message);
+            throw fallbackErr;
+        }
     }
 };
 

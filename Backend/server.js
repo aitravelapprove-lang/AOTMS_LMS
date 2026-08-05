@@ -1049,11 +1049,11 @@ app.post('/api/auth/send-otp', async (req, res) => {
                 </div>
             </div>
         `;
-        sendEmail({
+        await sendEmail({
             to: email,
             subject: 'Verify Your Email | Academy of Tech Masters',
             html: otpHtml
-        }).catch(e => console.error('SMTP OTP sending failed:', e.message));
+        });
 
         res.json({ message: 'OTP sent successfully' });
     } catch (err) {
@@ -1106,11 +1106,11 @@ app.post('/api/auth/resend-otp', async (req, res) => {
                 </div>
             </div>
         `;
-        sendEmail({
+        await sendEmail({
             to: email,
             subject: 'Verify Your Email | Academy of Tech Masters',
             html: otpHtml
-        }).catch(e => console.error('SMTP OTP sending failed:', e.message));
+        });
 
         res.json({ message: 'OTP resent successfully' });
     } catch (err) {
@@ -1579,13 +1579,16 @@ app.post('/api/auth/login', async (req, res) => {
                 </div>
             `;
 
-            sendEmail({
-                to: email,
-                subject: 'Security: Admin Login Passcode | Academy of Tech Masters',
-                html: otpHtml
-            })
-                .then(() => console.log(`[Security] Admin OTP sent successfully to ${email}`))
-                .catch(e => console.error(`[Security] Admin OTP Resend API error:`, e.message));
+            try {
+                await sendEmail({
+                    to: email,
+                    subject: 'Security: Admin Login Passcode | Academy of Tech Masters',
+                    html: otpHtml
+                });
+                console.log(`[Security] Admin OTP sent successfully to ${email}`);
+            } catch (e) {
+                console.error(`[Security] Admin OTP Resend API error:`, e.message);
+            }
 
             console.log(`[Security] Admin OTP generated and scheduled for ${email}: ${otp}`);
             return res.json({ requiresOtp: true, message: 'OTP sent to your admin email' });
@@ -1763,13 +1766,16 @@ app.post('/api/auth/admin-resend-otp', async (req, res) => {
             </div>
         `;
 
-        sendEmail({
-            to: email,
-            subject: 'Security: Admin Login Passcode | Academy of Tech Masters',
-            html: otpHtml
-        })
-            .then(() => console.log(`[Security] Admin OTP resent successfully to ${email}`))
-            .catch(e => console.error(`[Security] Admin OTP Resend API error (Resend):`, e.message));
+        try {
+            await sendEmail({
+                to: email,
+                subject: 'Security: Admin Login Passcode | Academy of Tech Masters',
+                html: otpHtml
+            });
+            console.log(`[Security] Admin OTP resent successfully to ${email}`);
+        } catch (e) {
+            console.error(`[Security] Admin OTP Resend API error (Resend):`, e.message);
+        }
 
         console.log(`[Security] Admin OTP resent to ${email}: ${otp}`);
         res.json({ message: 'OTP resent successfully' });

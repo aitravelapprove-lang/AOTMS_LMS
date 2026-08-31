@@ -16,25 +16,24 @@ const mentors = [
   },
   {
     id: 2,
-    name: "Intiaz Shaik",
-    affiliation: "Cyber Security Specialist • 6+ Yrs Exp",
-    quote:
-      "In the digital age, security is not an option—it's a necessity. I mentor the next generation of ethical hackers to secure our global future.",
+    name: "P. Varun",
+    affiliation: "Data Analytics Expert • 8+ Yrs Exp",
+    quote:"Passionate about empowering learners with Artificial Intelligence and Machine Learning skills. Expert in Python, ML algorithms, deep learning, and real-world AI applications through practical, hands-on training",
     imageSrc:
-      "https://res.cloudinary.com/dbhuezxh0/image/upload/v1769142934/mentos-2_hod2iu_stcqlv.jpg",
+      "image/varun.jpg",
     thumbnailSrc:
-      "https://res.cloudinary.com/dbhuezxh0/image/upload/v1769142934/mentos-2_hod2iu_stcqlv.jpg",
+      "image/varun.jpg",
   },
   {
     id: 3,
-    name: "B. Rohith",
-    affiliation: "QA Automation Expert • 12+ Yrs Exp",
+    name: "P.Bhargav",
+    affiliation: "Python Expert • 8+ Yrs Exp",
     quote:
-      "Precision and automation are the backbones of modern software. I teach the art of building unbreakable systems through rigorous testing.",
+      "Passionate about building scalable Python applications and automation solutions. Expert in Python, APIs, frameworks, and backend development, delivering efficient, reliable, and real-world software solutions.",
     imageSrc:
-      "https://res.cloudinary.com/dbhuezxh0/image/upload/v1774935695/Mentor_dvgns5_cumvsj.png",
+      "image/bhargav.jpg",
     thumbnailSrc:
-      "https://res.cloudinary.com/dbhuezxh0/image/upload/v1774935695/Mentor_dvgns5_cumvsj.png",
+      "image/bhargav.jpg",
   },
   {
     id: 4,

@@ -2,6 +2,9 @@ import { motion } from "framer-motion";
 import { Users, Sparkles } from "lucide-react";
 import { TestimonialSlider } from "@/components/ui/testimonial-slider-1";
 
+import varunImg from "@/assets/Varun.png";
+import bhargavImg from "@/assets/Bhargav.jpeg";
+
 const mentors = [
   {
     id: 1,
@@ -18,11 +21,10 @@ const mentors = [
     id: 2,
     name: "P. Varun",
     affiliation: "Data Analytics Expert • 8+ Yrs Exp",
-    quote:"Passionate about empowering learners with Artificial Intelligence and Machine Learning skills. Expert in Python, ML algorithms, deep learning, and real-world AI applications through practical, hands-on training",
-    imageSrc:
-      "image/varun.jpg",
-    thumbnailSrc:
-      "image/varun.jpg",
+    quote:
+      "Passionate about empowering learners with Artificial Intelligence and Machine Learning skills. Expert in Python, ML algorithms, deep learning, and real-world AI applications through practical, hands-on training",
+    imageSrc: varunImg,
+    thumbnailSrc: varunImg,
   },
   {
     id: 3,
@@ -30,10 +32,8 @@ const mentors = [
     affiliation: "Python Expert • 8+ Yrs Exp",
     quote:
       "Passionate about building scalable Python applications and automation solutions. Expert in Python, APIs, frameworks, and backend development, delivering efficient, reliable, and real-world software solutions.",
-    imageSrc:
-      "image/bhargav.jpg",
-    thumbnailSrc:
-      "image/bhargav.jpg",
+    imageSrc: bhargavImg,
+    thumbnailSrc: bhargavImg,
   },
   {
     id: 4,

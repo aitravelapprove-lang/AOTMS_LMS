@@ -1,11 +1,8 @@
-import { fetchWithAuth } from "@/lib/api";
+import { fetchWithAuth, API_URL } from "@/lib/api";
 import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-
-const API_URL =
-  import.meta.env.VITE_API_URL || "https://new-lms-m5l5.onrender.com/api";
 
 export interface Course {
   rejectionReason: string;

@@ -1,5 +1,6 @@
-import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
+import { useState, useEffect, createContext, useContext, ReactNode, useCallback, useRef } from 'react';
 import { UserRole } from '@/types/auth';
+import { API_URL, refreshAccessToken } from '@/lib/api';
 
 // Simplified types to replace backend user types
 interface User {
@@ -37,7 +38,20 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const getTokenExpiryMs = (token: string): number | null => {
+  try {
+    const payloadBase64 = token.split('.')[1];
+    if (!payloadBase64) return null;
+    const json = atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/'));
+    const payload = JSON.parse(json);
+    if (payload && typeof payload.exp === 'number') {
+      return payload.exp * 1000;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+};
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   // Initialize state from localStorage for instant persistence on refresh
@@ -51,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return null;
     }
   });
+
   const [session, setSession] = useState<Session | null>(() => {
     const token = localStorage.getItem('access_token');
     if (!token || token === 'undefined') return null;
@@ -68,27 +83,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user: parsedUser
     } as Session;
   });
+
   const [userRole, setUserRole] = useState<UserRole | null>(() => {
     const role = localStorage.getItem('user_role');
     return (role && role !== 'undefined') ? (role as UserRole) : null;
   });
 
   const [loading, setLoading] = useState(true);
+  const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const clearRefreshTimer = () => {
+    if (refreshTimerRef.current) {
+      clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = null;
+    }
+  };
+
+  const scheduleSilentRefresh = useCallback((token: string) => {
+    clearRefreshTimer();
+    const expiryMs = getTokenExpiryMs(token);
+    if (!expiryMs) return;
+
+    const remainingMs = expiryMs - Date.now();
+    // Schedule refresh 2 minutes before expiry (or immediately if less than 2 mins remain)
+    const refreshInMs = Math.max(10000, remainingMs - 2 * 60 * 1000);
+
+    refreshTimerRef.current = setTimeout(async () => {
+      try {
+        const newToken = await refreshAccessToken();
+        setSession(prev => prev ? { ...prev, access_token: newToken } : { access_token: newToken, user: null });
+        scheduleSilentRefresh(newToken);
+      } catch (e) {
+        console.warn('Proactive silent refresh attempt failed:', e);
+      }
+    }, refreshInMs);
+  }, []);
 
   const signOut = useCallback(async () => {
+    clearRefreshTimer();
     try {
       const token = localStorage.getItem('access_token');
-      if (token) {
-        await fetch(`${API_URL}/auth/logout`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` }
-        });
-      }
+      await fetch(`${API_URL}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
     } catch (e) {
       console.error('Logout error:', e);
     } finally {
       localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
       localStorage.removeItem('user');
       localStorage.removeItem('user_role');
       setUser(null);
@@ -99,32 +142,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const checkSession = useCallback(async () => {
-    const token = localStorage.getItem('access_token');
+    let token = localStorage.getItem('access_token');
+
+    // If no access token, try refreshing from HttpOnly cookie first
     if (!token) {
-      setLoading(false);
-      return;
+      try {
+        token = await refreshAccessToken();
+      } catch {
+        setLoading(false);
+        return;
+      }
     }
 
     try {
-      // 1. Validate session and fetch role with backend
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 20000); // Increased to 20s
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
 
-      const [profileRes] = await Promise.all([
-        fetch(`${API_URL}/user/profile`, {
-          headers: { Authorization: `Bearer ${token}` },
-          signal: controller.signal
-        })
-      ]);
+      let profileRes = await fetch(`${API_URL}/user/profile`, {
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
+        signal: controller.signal
+      });
 
       clearTimeout(timeoutId);
 
+      // If access token is expired (401), attempt a silent refresh once
       if (profileRes.status === 401) {
-        throw new Error('Session expired');
+        try {
+          token = await refreshAccessToken();
+          profileRes = await fetch(`${API_URL}/user/profile`, {
+            headers: { Authorization: `Bearer ${token}` },
+            credentials: 'include'
+          });
+        } catch (refreshErr) {
+          console.warn('Refresh failed during checkSession:', refreshErr);
+          await signOut();
+          return;
+        }
       }
 
       if (profileRes.status === 403) {
-        console.warn('Profile access forbidden (Role mismatch?): Skipping update');
+        console.warn('Profile access forbidden: Skipping update');
         setLoading(false);
         return;
       }
@@ -136,19 +194,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const { user: userData } = await profileRes.json();
 
-      // Update local state and storage with fresh profile data
       setUser(userData);
       setSession({ access_token: token, user: userData } as Session);
       if (userData) {
         localStorage.setItem('user', JSON.stringify(userData));
       }
 
-      // Use the role returned from profile endpoint
       if (userData.role) {
         const freshRole = userData.role as UserRole;
         setUserRole(freshRole);
         localStorage.setItem('user_role', freshRole);
       }
+
+      // Schedule next proactive silent refresh
+      scheduleSilentRefresh(token);
 
     } catch (error: unknown) {
       if (error instanceof Error && error.name === 'AbortError') {
@@ -157,48 +216,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      console.error('Session validation failed:', error);
-
-      if (error instanceof Error) {
-         if (error.message?.includes('expired') || error.message?.includes('token') || error.message?.includes('401')) {
-          void signOut();
-        }
-      }
+      console.error('Session validation error:', error);
     } finally {
       setLoading(false);
     }
-  }, [signOut]);
+  }, [signOut, scheduleSilentRefresh]);
 
+  // Initial authentication check on app load
   useEffect(() => {
-    // This effect runs on app load and handles the persistence check
     const initAuth = async () => {
       await checkSession();
     };
     initAuth();
+    return () => clearRefreshTimer();
   }, [checkSession]);
 
-  // Removed Real-time Role Sync (Firebase listeners removed)
-  // Replaced with periodic polling or just relying on checkSession on navigation
+  // Listen for tokens refreshed by other parts of the app (e.g. fetchWithAuth)
   useEffect(() => {
-      if (!user?.id) return;
-      // Simple polling every 2 minutes to keep role in sync without websockets
-      const interval = setInterval(() => {
-          checkSession();
-      }, 2 * 60 * 1000);
-      return () => clearInterval(interval);
+    const handleTokenRefreshed = (e: Event) => {
+      const customEvent = e as CustomEvent<{ token: string }>;
+      const newToken = customEvent.detail?.token;
+      if (newToken) {
+        setSession(prev => prev ? { ...prev, access_token: newToken } : { access_token: newToken, user } as Session);
+        scheduleSilentRefresh(newToken);
+      }
+    };
+
+    window.addEventListener('auth:token_refreshed', handleTokenRefreshed);
+    return () => window.removeEventListener('auth:token_refreshed', handleTokenRefreshed);
+  }, [user, scheduleSilentRefresh]);
+
+  // Periodic role / status sync every 5 minutes (resilient, no auto-logout on hiccups)
+  useEffect(() => {
+    if (!user?.id) return;
+    const interval = setInterval(() => {
+      checkSession();
+    }, 5 * 60 * 1000);
+    return () => clearInterval(interval);
   }, [user?.id, checkSession]);
 
-  const signUp = useCallback(async (email: string, password: string, fullName: string, phone?: string, courseType?: string, collegeName?: string, locationData?: { city?: string; district?: string; country?: string; fullAddress?: string; latitude?: number; longitude?: number }) => {
+  const signUp = useCallback(async (
+    email: string,
+    password: string,
+    fullName: string,
+    phone?: string,
+    courseType?: string,
+    collegeName?: string,
+    locationData?: { city?: string; district?: string; country?: string; fullAddress?: string; latitude?: number; longitude?: number }
+  ) => {
     try {
       const res = await fetch(`${API_URL}/auth/signup`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           email, 
           password, 
           fullName, 
           phone, 
-          courseType,
+          courseType, 
           collegeName,
           city: locationData?.city,
           district: locationData?.district,
@@ -217,33 +293,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (data.session) {
         localStorage.setItem('access_token', data.session.access_token);
-        if (data.session.refresh_token) {
-          localStorage.setItem('refresh_token', data.session.refresh_token);
-        }
         const newUser = { ...data.user, approval_status: 'pending' };
         if (newUser) {
           localStorage.setItem('user', JSON.stringify(newUser));
         }
-        // Use the role returned by the server (intern for internship, student for full_time)
         const signupRole = data.user?.role || 'student';
         localStorage.setItem('user_role', signupRole);
 
         setUser(newUser);
         setSession(data.session);
         setUserRole(signupRole as UserRole);
+        scheduleSilentRefresh(data.session.access_token);
       }
       return { error: null };
     } catch (error: unknown) {
       if (error instanceof Error) return { error };
       return { error: new Error('Unknown error during signup') };
     }
-  }, []);
+  }, [scheduleSilentRefresh]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     try {
       setLoading(true);
       const res = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
@@ -255,7 +329,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: new Error(data.error || 'Login failed') };
       }
 
-      // Admin requires OTP verification — don't issue token yet
       if (data.requiresOtp) {
         setLoading(false);
         return { error: null, requiresAdminOtp: true };
@@ -263,10 +336,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (data.session) {
         localStorage.setItem('access_token', data.session.access_token);
-        if (data.session.refresh_token) {
-          localStorage.setItem('access_token_refresh', data.session.refresh_token);
-        }
-
         const userData = data.user;
         const role = userData.role || 'student';
 
@@ -278,6 +347,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(userData);
         setSession(data.session);
         setUserRole(role);
+        scheduleSilentRefresh(data.session.access_token);
       }
 
       setLoading(false);
@@ -287,13 +357,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error instanceof Error) return { error };
       return { error: new Error('Unknown error during signin') };
     }
-  }, []);
+  }, [scheduleSilentRefresh]);
 
   const verifyAdminOtp = useCallback(async (email: string, otp: string) => {
     try {
       setLoading(true);
       const res = await fetch(`${API_URL}/auth/admin-verify-otp`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp }),
       });
@@ -307,9 +378,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (data.session) {
         localStorage.setItem('access_token', data.session.access_token);
-        if (data.session.refresh_token) {
-          localStorage.setItem('access_token_refresh', data.session.refresh_token);
-        }
         const userData = data.user;
         const role = userData.role || 'admin';
         if (userData) {
@@ -319,6 +387,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(userData);
         setSession(data.session);
         setUserRole(role as UserRole);
+        scheduleSilentRefresh(data.session.access_token);
       }
 
       setLoading(false);
@@ -328,7 +397,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error instanceof Error) return { error };
       return { error: new Error('Unknown error during OTP verification') };
     }
-  }, []);
+  }, [scheduleSilentRefresh]);
 
   return (
     <AuthContext.Provider value={{ user, session, userRole, loading, signUp, signIn, signOut, checkSession, verifyAdminOtp }}>

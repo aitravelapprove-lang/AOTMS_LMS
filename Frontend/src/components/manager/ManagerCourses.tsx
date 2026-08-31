@@ -20,7 +20,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Clock, Calendar, ShieldAlert, GraduationCap, Mail, Monitor, BookOpen as BookOpenIcon } from 'lucide-react';
 
 export function ManagerCourses() {
-    const { data: courses, isLoading, refetch } = useInstructorS3Courses(true);
+    const { data: courses = [], isLoading, refetch } = useInstructorS3Courses(true);
     const [viewingCourse, setViewingCourse] = useState<Course | null>(null);
     const [selectedCourseProfile, setSelectedCourseProfile] = useState<Course | null>(null);
     const [showProfile, setShowProfile] = useState(false);
@@ -87,7 +87,6 @@ export function ManagerCourses() {
                                             <span className="bg-primary hover:bg-primary/90 text-primary-foreground px-2 py-1 rounded-md text-xs font-medium shadow-sm backdrop-blur-md">
                                                 {course.category || 'Course'}
                                             </span>
-                                        </div>
                                         </div>
                                     </div>
                                     <CardContent className="p-4 flex-1 flex flex-col">

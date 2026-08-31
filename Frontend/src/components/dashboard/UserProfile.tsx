@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Save, Upload, Github, Briefcase, Copy, CheckCircle, ExternalLink, Linkedin } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { useRef } from 'react';
-import { API_URL } from '@/lib/api';
+import { fetchWithAuth, API_URL } from '@/lib/api';
 
 interface ProfileData {
     id: string;
@@ -82,17 +82,7 @@ export function UserProfile() {
     const fetchProfile = useCallback(async () => {
         try {
             if (!user) return;
-            const token = localStorage.getItem('access_token');
-            const res = await fetch(`${API_URL}/user/profile?t=${Date.now()}`, {
-                headers: { 
-                    Authorization: `Bearer ${token}`
-                },
-                cache: 'no-store'
-            });
-
-            if (!res.ok) throw new Error('Failed to fetch profile');
-
-            const result = await res.json();
+            const result = await fetchWithAuth<{ profile: any; user: any }>(`/user/profile?t=${Date.now()}`);
             const data = result.profile;
             const userData = result.user;
 
@@ -178,19 +168,10 @@ export function UserProfile() {
                 // mobile_number: profile.phone,
             };
 
-            const res = await fetch(`${API_URL}/user/profile`, {
+            await fetchWithAuth('/user/profile', {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                },
                 body: JSON.stringify(updates)
             });
-
-            if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.error || 'Update failed');
-            }
 
             toast({
                 title: 'Success',
@@ -216,24 +197,13 @@ export function UserProfile() {
 
         setUploadingImage(true);
         try {
-            const token = localStorage.getItem('access_token');
             const formData = new FormData();
             formData.append('file', file);
 
-            const res = await fetch(`${API_URL}/user/profile/image`, {
+            const data = await fetchWithAuth<{ url?: string; path?: string; fileUrl?: string }>('/user/profile/image', {
                 method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${token}`
-                },
                 body: formData
             });
-
-            if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.error || 'Upload failed');
-            }
-
-            const data = await res.json();
             
             const imageUrl = data.url || data.path || data.fileUrl;
             if (imageUrl) {
@@ -271,22 +241,14 @@ export function UserProfile() {
 
         setUploadingResume(true);
         try {
-            const token = localStorage.getItem('access_token');
-            const res = await fetch(`${API_URL}/s3/upload-url`, {
+            const { uploadUrl, fileName: s3Key } = await fetchWithAuth<{ uploadUrl: string; fileName: string }>('/s3/upload-url', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                },
                 body: JSON.stringify({
                     fileName: file.name,
                     fileType: file.type,
                     folder: `resumes/${profile.id || user?.id}`
                 })
             });
-
-            if (!res.ok) throw new Error('Failed to get upload URL');
-            const { uploadUrl, fileName: s3Key } = await res.json();
 
             const uploadRes = await fetch(uploadUrl, {
                 method: 'PUT',

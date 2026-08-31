@@ -282,6 +282,21 @@ const getCookie = (req, name) => {
     return matches ? decodeURIComponent(matches[1]) : undefined;
 };
 
+const getRefreshTokenCookieOptions = () => ({
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    path: '/',
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+});
+
+const getClearRefreshTokenCookieOptions = () => ({
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    path: '/'
+});
+
 const isPasswordStrong = (password) => {
     if (!password) return false;
     if (password.length < 8) return false;
@@ -1158,15 +1173,20 @@ app.post('/api/auth/verify-otp', async (req, res) => {
     }
 });
 
-app.post('/api/auth/logout', authenticateToken, (req, res) => {
-    if (req.user && req.user.id) {
-        blacklistUserTokens(req.user.id);
+app.post('/api/auth/logout', (req, res) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (token) {
+        try {
+            const decoded = jwt.verify(token, JWT_SECRET);
+            if (decoded && decoded.id) {
+                blacklistUserTokens(decoded.id);
+            }
+        } catch (e) {
+            // Expired or invalid access token is fine, still clear the refresh cookie
+        }
     }
-    res.clearCookie('refresh_token', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax'
-    });
+    res.clearCookie('refresh_token', getClearRefreshTokenCookieOptions());
     res.json({ success: true, message: 'Logged out successfully' });
 });
 
@@ -1291,7 +1311,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
 });
 
 app.post('/api/auth/refresh', async (req, res) => {
-    const refreshToken = getCookie(req, 'refresh_token') || req.body.refresh_token;
+    const refreshToken = getCookie(req, 'refresh_token') || req.body?.refresh_token;
     if (!refreshToken) return res.status(401).json({ error: 'Refresh token is missing' });
 
     try {
@@ -1299,17 +1319,15 @@ app.post('/api/auth/refresh', async (req, res) => {
         const user = await User.findById(decoded.id);
         if (!user) return res.status(401).json({ error: 'User session no longer valid' });
 
+        // Unblacklist user if previously blacklisted
+        tokenBlacklist.delete(`user:${user._id.toString()}`);
+
         // Generate new token pair
         const newAccessToken = generateToken(user);
         const newRefreshToken = generateRefreshToken(user);
 
         // Update the HttpOnly cookie
-        res.cookie('refresh_token', newRefreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-        });
+        res.cookie('refresh_token', newRefreshToken, getRefreshTokenCookieOptions());
 
         res.json({
             session: {
@@ -1410,14 +1428,10 @@ app.post('/api/auth/signup', async (req, res) => {
             role: assignedRole
         });
 
+        tokenBlacklist.delete(`user:${user._id.toString()}`);
         const token = generateToken(user);
         const refreshToken = generateRefreshToken(user);
-        res.cookie('refresh_token', refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-        });
+        res.cookie('refresh_token', refreshToken, getRefreshTokenCookieOptions());
 
         res.json({
             user: { id: user._id, email, full_name: fullName, avatar_url: avatarUrl, role: assignedRole },
@@ -1595,14 +1609,10 @@ app.post('/api/auth/login', async (req, res) => {
         }
         // ----------------------
 
+        tokenBlacklist.delete(`user:${user._id.toString()}`);
         const token = generateToken(user);
         const refreshToken = generateRefreshToken(user);
-        res.cookie('refresh_token', refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-        });
+        res.cookie('refresh_token', refreshToken, getRefreshTokenCookieOptions());
 
         res.json({
             user: {
@@ -1667,6 +1677,7 @@ app.post('/api/auth/admin-verify-otp', async (req, res) => {
         const userRole = roleDoc ? roleDoc.role : 'student';
         if (userRole !== 'admin') return res.status(403).json({ error: 'Admin access only.' });
 
+        tokenBlacklist.delete(`user:${user._id.toString()}`);
         const token = generateToken(user);
         const loginTime = new Date().toISOString();
         const loginIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
@@ -1687,12 +1698,7 @@ app.post('/api/auth/admin-verify-otp', async (req, res) => {
         console.log(`[Security] Admin OTP verified — login complete for ${email}`);
 
         const refreshToken = generateRefreshToken(user);
-        res.cookie('refresh_token', refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-        });
+        res.cookie('refresh_token', refreshToken, getRefreshTokenCookieOptions());
 
         res.json({
             user: {

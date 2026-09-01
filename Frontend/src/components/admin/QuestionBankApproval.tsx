@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { fetchWithAuth } from '@/lib/api';
+import { fetchWithAuth, API_URL } from '@/lib/api';
 import { Loader2, CheckCircle, XCircle, FileText, AlertCircle, LayoutGrid, Clock, History, Eye, Users, UserPlus, Trash2, ShieldCheck, BrainCircuit, RefreshCw, Award, Calendar, User, BookOpen, ArrowRight, ShieldAlert, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -123,8 +123,6 @@ interface Batch {
     start_time?: string;
     end_time?: string;
 }
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 interface QuestionBankApprovalProps {
     onSync?: () => void;

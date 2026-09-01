@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +8,7 @@ import { FileText, ClipboardCheck, Clock, Award, ArrowRight, CheckCircle2, BarCh
 import { useStudentExams, useStudentMockPapers, StudentExam } from "@/hooks/useStudentData";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ExamSession } from "./ExamSession";
-import { fetchWithAuth } from "@/lib/api";
+import { fetchWithAuth, API_URL } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import {
     Dialog,

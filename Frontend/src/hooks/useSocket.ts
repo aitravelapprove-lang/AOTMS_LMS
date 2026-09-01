@@ -4,8 +4,8 @@ import { useAuth } from './useAuth';
 
 // Determine the base URL for the socket connection
 const getSocketUrl = () => {
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-  return apiUrl.replace('/api', '');
+  const apiUrl = (import.meta.env.VITE_API_URL || import.meta.env.VITE_RENDER_URL || 'http://localhost:5000').trim();
+  return apiUrl.replace(/\/api\/?$/, '').replace(/\/+$/, '');
 };
 
 interface AppNotification {

@@ -1,6 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { format } from 'date-fns';
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 import {
   Card,
   CardContent,
@@ -15,7 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { fetchWithAuth } from '@/lib/api';
+import { fetchWithAuth, API_URL } from '@/lib/api';
 import { 
   Sparkles, 
   Users, 
@@ -1155,7 +1154,7 @@ function DashboardHome({ basePath = "/student-dashboard" }: { basePath?: string 
 
 // ─── Routing Map ──────────────────────────────────────────────────────────────
 
-const routeConfig: Record<string, { title: string; description: string; icon: React.ElementType; component?: React.ReactNode; }> = {
+const routeConfig: Record<string, { title: string; description: string; icon: React.ComponentType<{ className?: string }>; component?: React.ReactNode; }> = {
   "/student-dashboard/profile": {
     title: "Student Profile",
     description: "Manage your credentials and portfolio",

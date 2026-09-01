@@ -1,5 +1,45 @@
-export const API_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+/**
+ * Normalizes the backend base URL so that it always points to the '/api' prefix,
+ * preventing 404 HTML responses that trigger "Unexpected token '<', <!DOCTYPE" syntax errors.
+ */
+const getBaseApiUrl = (): string => {
+  const envUrl = (
+    import.meta.env.VITE_API_URL ||
+    import.meta.env.VITE_RENDER_URL ||
+    "http://localhost:5000/api"
+  )
+    .trim()
+    .replace(/\/+$/, "");
+
+  return envUrl.endsWith("/api") ? envUrl : `${envUrl}/api`;
+};
+
+export const API_URL = getBaseApiUrl();
+
+/**
+ * Safely parse JSON responses from backend. If the backend returns an HTML page
+ * (e.g. 404 Not Found, 502 Bad Gateway during Render cold starts), this provides
+ * a descriptive Error instead of throwing SyntaxError: Unexpected token '<', <!DOCTYPE.
+ */
+export const parseJsonResponse = async <T = any>(res: Response): Promise<T> => {
+  const text = await res.text();
+  try {
+    return (text ? JSON.parse(text) : {}) as T;
+  } catch {
+    if (!res.ok) {
+      if (res.status === 404) {
+        throw new Error(`API endpoint not found (404) at ${res.url}. Please check the backend route.`);
+      }
+      if (res.status === 502 || res.status === 503 || res.status === 504) {
+        throw new Error(
+          `Backend server is waking up or temporarily unavailable (${res.status}). Please retry in a few seconds.`
+        );
+      }
+      throw new Error(`Server returned error status ${res.status} (${res.statusText || 'Unknown'}).`);
+    }
+    throw new Error("Invalid response format received from server (expected JSON).");
+  }
+};
 
 // Shared promise for deduplicating concurrent refresh requests
 let refreshPromise: Promise<string> | null = null;
@@ -43,7 +83,7 @@ export const refreshAccessToken = async (): Promise<string> => {
         throw new Error(`Session refresh failed with status ${res.status}`);
       }
 
-      const data = await res.json();
+      const data = await parseJsonResponse<any>(res);
       const newAccessToken = data?.session?.access_token;
       if (!newAccessToken) {
         throw new Error("Invalid refresh response: access token missing");
@@ -131,11 +171,11 @@ export const fetchWithAuth = async <T = unknown>(
   if (!res.ok) {
     let errStr = `API Request Failed (${res.status})`;
     try {
-      const err = await res.json();
+      const err = await parseJsonResponse<any>(res);
       errStr =
         err.error || err.message || (err.data && err.data.message) || errStr;
-    } catch {
-      // Non-JSON error body, keep fallback
+    } catch (e: any) {
+      errStr = e.message || errStr;
     }
     throw new Error(errStr);
   }
@@ -145,5 +185,5 @@ export const fetchWithAuth = async <T = unknown>(
     return {} as T;
   }
 
-  return res.json();
+  return parseJsonResponse<T>(res);
 };

@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/hooks/useAuth";
+import { API_URL, parseJsonResponse } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -313,8 +314,6 @@ export default function Auth() {
     }
   }, [forgotResendTimer]);
 
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-
   // ── Forgot Password Handlers ───────────────────────────────────────────────
   const handleForgotSendOtp = async () => {
     if (!forgotEmail.trim() || !/\S+@\S+\.\S+/.test(forgotEmail)) {
@@ -329,7 +328,7 @@ export default function Auth() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: forgotEmail })
       });
-      const data = await res.json();
+      const data = await parseJsonResponse<any>(res);
       if (!res.ok) throw new Error(data.error || 'Failed to send OTP');
 
       setForgotStep('otp');
@@ -356,7 +355,7 @@ export default function Auth() {
         body: JSON.stringify({ email: forgotEmail, otp: targetOtp })
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await parseJsonResponse<any>(res);
         throw new Error(err.error || 'Invalid OTP');
       }
       setForgotStep('reset');
@@ -385,7 +384,7 @@ export default function Auth() {
         body: JSON.stringify({ email: forgotEmail, otp: forgotOtp, new_password: forgotNewPassword })
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await parseJsonResponse<any>(res);
         throw new Error(err.error || 'Reset failed');
       }
       toast({ title: "Password Reset!", description: "Login with your new password." });
@@ -412,7 +411,7 @@ export default function Auth() {
         }),
       });
 
-      const result = await response.json();
+      const result = await parseJsonResponse<any>(response);
 
       if (response.ok) {
         setRegistrationStep("otp");
@@ -452,7 +451,7 @@ export default function Auth() {
         }),
       });
 
-      const result = await response.json();
+      const result = await parseJsonResponse<any>(response);
 
       if (response.ok) {
         setRegistrationStep("details");
@@ -496,7 +495,7 @@ export default function Auth() {
         }),
       });
 
-      const result = await response.json();
+      const result = await parseJsonResponse<any>(response);
 
       if (response.ok) {
         setOtpResendTimer(120);
@@ -704,7 +703,7 @@ export default function Auth() {
           description: "A new OTP has been sent to your email.",
         });
       } else {
-        const result = await response.json();
+        const result = await parseJsonResponse<any>(response);
         toast({
           title: "Error",
           description: result.error || "Failed to resend OTP.",

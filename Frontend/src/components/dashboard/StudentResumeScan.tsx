@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchWithAuth } from "@/lib/api";
+import { fetchWithAuth, API_URL } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -72,7 +72,7 @@ export function StudentResumeScan() {
       if (resumeText) formData.append('text', resumeText);
 
       const token = localStorage.getItem('access_token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/student/scan-resume`, {
+      const response = await fetch(`${API_URL}/student/scan-resume`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

@@ -31,4 +31,35 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    chunkSizeWarningLimit: 4500,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            if (id.includes("@zoom/meetingsdk")) {
+              return "zoom-vendor";
+            }
+            if (
+              id.includes("three") ||
+              id.includes("@react-three") ||
+              id.includes("@splinetool")
+            ) {
+              return "three-vendor";
+            }
+            if (id.includes("recharts")) {
+              return "charts-vendor";
+            }
+            if (
+              id.includes("framer-motion") ||
+              id.includes("gsap") ||
+              id.includes("lucide-react")
+            ) {
+              return "ui-vendor";
+            }
+          }
+        },
+      },
+    },
+  },
 }));

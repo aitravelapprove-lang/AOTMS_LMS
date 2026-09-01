@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'manager' | 'instructor' | 'student';
+export type UserRole = 'admin' | 'manager' | 'instructor' | 'student' | 'intern';
 
 export interface SendOtpRequest {
   email: string;

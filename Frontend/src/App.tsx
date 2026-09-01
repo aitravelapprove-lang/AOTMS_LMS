@@ -11,29 +11,31 @@ import {
 } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { SocketProvider } from "@/hooks/useSocket";
-import { useEffect, useRef, useState } from "react";
-import Home from "./pages/Home";
-import Auth from "./pages/Auth";
-import InstructorRegister from "./pages/InstructorRegister";
-import Dashboard from "./pages/Dashboard";
-import InternDashboard from "./pages/Interndashboard";
-import InstructorDashboard from "./pages/InstructorDashboard";
-import AdminDashboard from "./pages/AdminDashboard";
-import ManagerDashboard from "./pages/ManagerDashboard";
-import LiveSession from "./pages/LiveSession";
-import NotFound from "./pages/NotFound";
-import About from "./pages/About";
-import PendingApproval from "./pages/PendingApproval";
-import Courses from "./pages/Courses";
-import FAQ from "./pages/FAQ";
-import Contact from "./pages/Contact";
-import Privacy from "./pages/Privacy";
-import Terms from "./pages/Terms";
-import Docs from "./pages/Docs";
-import Careers from "./pages/Careers";
-import Trainers from "./pages/Trainers";
-import Press from "./pages/Press";
-import Features from "./pages/Features";
+import { useEffect, useRef, useState, lazy, Suspense } from "react";
+
+// Code-split pages with React.lazy
+const Home = lazy(() => import("./pages/Home"));
+const Auth = lazy(() => import("./pages/Auth"));
+const InstructorRegister = lazy(() => import("./pages/InstructorRegister"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const InternDashboard = lazy(() => import("./pages/Interndashboard"));
+const InstructorDashboard = lazy(() => import("./pages/InstructorDashboard"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const ManagerDashboard = lazy(() => import("./pages/ManagerDashboard"));
+const LiveSession = lazy(() => import("./pages/LiveSession"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const About = lazy(() => import("./pages/About"));
+const PendingApproval = lazy(() => import("./pages/PendingApproval"));
+const Courses = lazy(() => import("./pages/Courses"));
+const FAQ = lazy(() => import("./pages/FAQ"));
+const Contact = lazy(() => import("./pages/Contact"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
+const Docs = lazy(() => import("./pages/Docs"));
+const Careers = lazy(() => import("./pages/Careers"));
+const Trainers = lazy(() => import("./pages/Trainers"));
+const Press = lazy(() => import("./pages/Press"));
+const Features = lazy(() => import("./pages/Features"));
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import ScrollToTop from "@/components/ScrollToTop";
 import { SuspensionOverlay } from "@/components/auth/SuspensionOverlay";
@@ -191,7 +193,8 @@ const App = () => (
             <ScrollToTop />
             <BackNavigationHandler />
             <RoleRedirector />
-            <Routes>
+            <Suspense fallback={<PageLoader isVisible={true} />}>
+              <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/courses" element={<Courses />} />
               <Route path="/about" element={<About />} />
@@ -319,6 +322,7 @@ const App = () => (
               />
               <Route path="*" element={<NotFound />} />
             </Routes>
+          </Suspense>
           </BrowserRouter>
         </TooltipProvider>
       </SocketProvider>

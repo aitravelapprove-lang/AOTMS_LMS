@@ -21,6 +21,8 @@ const connectDB = async (attempt = 1) => {
             serverSelectionTimeoutMS: 10000, // fail fast instead of hanging
             socketTimeoutMS: 45000,
             family: 4, // prefer IPv4, avoids some SRV/DNS resolution issues on certain networks
+            maxPoolSize: 20,
+            minPoolSize: 5,
         });
         console.log('[DB] MongoDB Connected...');
     } catch (err) {

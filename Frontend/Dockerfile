@@ -2,6 +2,9 @@
 FROM node:20-slim AS builder
 WORKDIR /app
 
+# Set memory limit to prevent Node OOM (Exit code 134)
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
 # Copy package files and install dependencies
 COPY package*.json ./
 RUN npm install --legacy-peer-deps --no-audit --no-fund

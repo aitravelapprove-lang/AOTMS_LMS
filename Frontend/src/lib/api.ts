@@ -3,15 +3,12 @@
  * preventing 404 HTML responses that trigger "Unexpected token '<', <!DOCTYPE" syntax errors.
  */
 const getBaseApiUrl = (): string => {
-  const envUrl = (
-    import.meta.env.VITE_API_URL ||
-    import.meta.env.VITE_RENDER_URL ||
-    "http://localhost:5000/api"
-  )
-    .trim()
-    .replace(/\/+$/, "");
-
-  return envUrl.endsWith("/api") ? envUrl : `${envUrl}/api`;
+  const envUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_RENDER_URL;
+  if (!envUrl) {
+    return "/api";
+  }
+  const trimmed = envUrl.trim().replace(/\/+$/, "");
+  return trimmed.endsWith("/api") ? trimmed : `${trimmed}/api`;
 };
 
 export const API_URL = getBaseApiUrl();

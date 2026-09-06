@@ -73,7 +73,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const newSocket = io(socketUrl, {
         auth: { token },
-        transports: ['websocket'],
+        transports: ['polling', 'websocket'],
         reconnection: true,
         reconnectionAttempts: 5,
         reconnectionDelay: 1000,

@@ -1,6 +1,7 @@
 services:
   # Backend Node.js service (Scalable)
   backend:
+    image: aotms_lms-1-backend:latest
     build:
       context: ./Backend
       dockerfile: Dockerfile

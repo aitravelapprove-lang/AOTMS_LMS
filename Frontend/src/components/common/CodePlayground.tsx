@@ -129,17 +129,45 @@ export const SUPPORTED_LANGUAGES: LanguageDef[] = [
   }
 ];
 
+export const detectSmartLanguage = (inputLang?: string, questionText?: string): string => {
+  // 1. Scan question text for explicit language mentions first
+  if (questionText) {
+    const qLower = questionText.toLowerCase();
+    if (qLower.includes('python')) return 'python';
+    if (qLower.includes('c++') || qLower.includes('cpp')) return 'cpp';
+    if (qLower.includes('java ') || qLower.includes('java\n') || qLower.includes('in java') || qLower.includes('java class')) return 'java';
+    if (qLower.includes('c#') || qLower.includes('csharp')) return 'csharp';
+    if (qLower.includes('sql') || qLower.includes('sqlite') || qLower.includes('select ') || qLower.includes('table')) return 'sql';
+    if (qLower.includes('typescript') || qLower.includes(' ts ')) return 'typescript';
+    if (qLower.includes('rust')) return 'rust';
+    if (qLower.includes('golang') || qLower.includes('go lang')) return 'go';
+    if (qLower.includes('php')) return 'php';
+    if (qLower.includes('ruby')) return 'ruby';
+    if (qLower.includes('kotlin')) return 'kotlin';
+    if (qLower.includes('swift')) return 'swift';
+    if (qLower.includes('c program') || qLower.includes('in c ') || qLower.includes('c language')) return 'c';
+    if (qLower.includes('javascript') || qLower.includes('js function')) return 'javascript';
+  }
+
+  // 2. Try explicit input language if provided
+  if (inputLang) {
+    const clean = inputLang.toLowerCase().trim();
+    const found = SUPPORTED_LANGUAGES.find(
+      (l) => l.id === clean || l.aliases.includes(clean)
+    );
+    if (found) return found.id;
+  }
+
+  return 'python';
+};
+
 export const normalizeLanguageId = (input?: string): string => {
-  if (!input) return 'python';
-  const clean = input.toLowerCase().trim();
-  const found = SUPPORTED_LANGUAGES.find(
-    (l) => l.id === clean || l.aliases.includes(clean)
-  );
-  return found ? found.id : 'python';
+  return detectSmartLanguage(input);
 };
 
 interface CodePlaygroundProps {
   initialLanguage?: string;
+  questionText?: string;
   value: string;
   onChange: (val: string | undefined) => void;
   output?: string;
@@ -150,6 +178,7 @@ interface CodePlaygroundProps {
 
 export const CodePlayground: React.FC<CodePlaygroundProps> = ({
   initialLanguage = 'python',
+  questionText = '',
   value,
   onChange,
   output = '',
@@ -158,7 +187,7 @@ export const CodePlayground: React.FC<CodePlaygroundProps> = ({
   readOnly = false,
 }) => {
   const [selectedLanguage, setSelectedLanguage] = useState<string>(() =>
-    normalizeLanguageId(initialLanguage)
+    detectSmartLanguage(initialLanguage, questionText)
   );
   const [isFullScreen, setIsFullScreen] = useState(false);
 
@@ -168,7 +197,7 @@ export const CodePlayground: React.FC<CodePlaygroundProps> = ({
 
   // Sync selected language when question target language changes
   useEffect(() => {
-    const target = normalizeLanguageId(initialLanguage);
+    const target = detectSmartLanguage(initialLanguage, questionText);
     setSelectedLanguage(target);
 
     // If code is empty or matching another language template, set default code for target language
@@ -176,7 +205,7 @@ export const CodePlayground: React.FC<CodePlaygroundProps> = ({
     if (langObj && (!value || value.trim() === '')) {
       onChange(langObj.defaultCode);
     }
-  }, [initialLanguage]);
+  }, [initialLanguage, questionText]);
 
   // Initialize xterm.js Terminal
   useEffect(() => {

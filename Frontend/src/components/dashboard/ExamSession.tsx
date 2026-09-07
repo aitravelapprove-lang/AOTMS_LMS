@@ -450,7 +450,8 @@ export function ExamSession({ examId, examTitle, durationMinutes, scheduledDate,
                                      {/* Coding / Practical - Monaco Editor + xterm.js */}
                                      {(qType === 'coding' || qType === 'practical') && (
                                          <CodePlayground
-                                             initialLanguage={currentQuestion.language || 'javascript'}
+                                             initialLanguage={currentQuestion.language || 'python'}
+                                             questionText={currentQuestion.question_text || ''}
                                              value={answers[currentQuestion.id as string] || ''}
                                              onChange={(val) => handleAnswerChange(val || '')}
                                              output={consoleOutput[currentQuestion.id as string]}

@@ -3,10 +3,140 @@ import Editor from '@monaco-editor/react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
-import { Play, RotateCcw, Trash2, Terminal as TerminalIcon, Code2, Loader2 } from 'lucide-react';
+import { 
+  Play, 
+  RotateCcw, 
+  Trash2, 
+  Terminal as TerminalIcon, 
+  Code2, 
+  Loader2, 
+  Maximize2, 
+  Minimize2,
+  Sparkles,
+  CheckCircle2
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+
+export interface LanguageDef {
+  id: string;
+  name: string;
+  aliases: string[];
+  monacoLang: string;
+  defaultCode: string;
+}
+
+export const SUPPORTED_LANGUAGES: LanguageDef[] = [
+  {
+    id: 'python',
+    name: 'Python 3',
+    aliases: ['python', 'python3', 'py'],
+    monacoLang: 'python',
+    defaultCode: '# Write your Python solution here\ndef main():\n    print("Hello from Python!")\n\nif __name__ == "__main__":\n    main()\n'
+  },
+  {
+    id: 'javascript',
+    name: 'JavaScript (Node.js)',
+    aliases: ['javascript', 'js', 'node'],
+    monacoLang: 'javascript',
+    defaultCode: '// Write your JavaScript solution here\nfunction main() {\n    console.log("Hello from JavaScript!");\n}\n\nmain();\n'
+  },
+  {
+    id: 'typescript',
+    name: 'TypeScript',
+    aliases: ['typescript', 'ts'],
+    monacoLang: 'typescript',
+    defaultCode: '// Write your TypeScript solution here\nconst greeting: string = "Hello from TypeScript!";\nconsole.log(greeting);\n'
+  },
+  {
+    id: 'cpp',
+    name: 'C++',
+    aliases: ['cpp', 'c++', 'g++'],
+    monacoLang: 'cpp',
+    defaultCode: '#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello from C++!" << endl;\n    return 0;\n}\n'
+  },
+  {
+    id: 'c',
+    name: 'C',
+    aliases: ['c', 'gcc'],
+    monacoLang: 'c',
+    defaultCode: '#include <stdio.h>\n\nint main() {\n    printf("Hello from C!\\n");\n    return 0;\n}\n'
+  },
+  {
+    id: 'java',
+    name: 'Java',
+    aliases: ['java', 'openjdk'],
+    monacoLang: 'java',
+    defaultCode: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello from Java!");\n    }\n}\n'
+  },
+  {
+    id: 'csharp',
+    name: 'C# (.NET)',
+    aliases: ['csharp', 'c#', 'dotnet'],
+    monacoLang: 'csharp',
+    defaultCode: 'using System;\n\nclass Program {\n    static void Main() {\n        Console.WriteLine("Hello from C#!");\n    }\n}\n'
+  },
+  {
+    id: 'sql',
+    name: 'SQL (SQLite)',
+    aliases: ['sql', 'sqlite', 'sqlite3'],
+    monacoLang: 'sql',
+    defaultCode: '-- Write your SQL queries here\nCREATE TABLE students (id INT, name TEXT);\nINSERT INTO students VALUES (1, "LITAM Student");\nSELECT * FROM students;\n'
+  },
+  {
+    id: 'go',
+    name: 'Go',
+    aliases: ['go', 'golang'],
+    monacoLang: 'go',
+    defaultCode: 'package main\nimport "fmt"\n\nfunc main() {\n    fmt.Println("Hello from Go!")\n}\n'
+  },
+  {
+    id: 'rust',
+    name: 'Rust',
+    aliases: ['rust', 'rs'],
+    monacoLang: 'rust',
+    defaultCode: 'fn main() {\n    println!("Hello from Rust!");\n}\n'
+  },
+  {
+    id: 'php',
+    name: 'PHP',
+    aliases: ['php'],
+    monacoLang: 'php',
+    defaultCode: '<?php\necho "Hello from PHP!\\n";\n'
+  },
+  {
+    id: 'ruby',
+    name: 'Ruby',
+    aliases: ['ruby', 'rb'],
+    monacoLang: 'ruby',
+    defaultCode: 'puts "Hello from Ruby!"\n'
+  },
+  {
+    id: 'kotlin',
+    name: 'Kotlin',
+    aliases: ['kotlin', 'kt'],
+    monacoLang: 'kotlin',
+    defaultCode: 'fun main() {\n    println("Hello from Kotlin!")\n}\n'
+  },
+  {
+    id: 'swift',
+    name: 'Swift',
+    aliases: ['swift'],
+    monacoLang: 'swift',
+    defaultCode: 'print("Hello from Swift!")\n'
+  }
+];
+
+export const normalizeLanguageId = (input?: string): string => {
+  if (!input) return 'python';
+  const clean = input.toLowerCase().trim();
+  const found = SUPPORTED_LANGUAGES.find(
+    (l) => l.id === clean || l.aliases.includes(clean)
+  );
+  return found ? found.id : 'python';
+};
 
 interface CodePlaygroundProps {
   initialLanguage?: string;
@@ -18,17 +148,8 @@ interface CodePlaygroundProps {
   readOnly?: boolean;
 }
 
-const SUPPORTED_LANGUAGES = [
-  { id: 'javascript', name: 'JavaScript (Node.js)', defaultCode: '// Write your JavaScript code here\nconsole.log("Hello, Academy of Tech Masters!");\n' },
-  { id: 'python', name: 'Python 3', defaultCode: '# Write your Python code here\nprint("Hello, Academy of Tech Masters!")\n' },
-  { id: 'cpp', name: 'C++', defaultCode: '#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello, Academy of Tech Masters!" << endl;\n    return 0;\n}\n' },
-  { id: 'c', name: 'C', defaultCode: '#include <stdio.h>\n\nint main() {\n    printf("Hello, Academy of Tech Masters!\\n");\n    return 0;\n}\n' },
-  { id: 'java', name: 'Java', defaultCode: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, Academy of Tech Masters!");\n    }\n}\n' },
-  { id: 'sql', name: 'SQL (SQLite)', defaultCode: '-- Write your SQL queries here\nCREATE TABLE students (id INT, name TEXT);\nINSERT INTO students VALUES (1, "LITAM Student");\nSELECT * FROM students;\n' }
-];
-
 export const CodePlayground: React.FC<CodePlaygroundProps> = ({
-  initialLanguage = 'javascript',
+  initialLanguage = 'python',
   value,
   onChange,
   output = '',
@@ -36,19 +157,24 @@ export const CodePlayground: React.FC<CodePlaygroundProps> = ({
   isRunning = false,
   readOnly = false,
 }) => {
-  const [selectedLanguage, setSelectedLanguage] = useState(initialLanguage.toLowerCase());
+  const [selectedLanguage, setSelectedLanguage] = useState<string>(() =>
+    normalizeLanguageId(initialLanguage)
+  );
+  const [isFullScreen, setIsFullScreen] = useState(false);
+
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
 
-  // Synchronize language if prop changes
+  // Sync selected language when question target language changes
   useEffect(() => {
-    if (initialLanguage) {
-      const normalized = initialLanguage.toLowerCase();
-      if (normalized === 'js') setSelectedLanguage('javascript');
-      else if (normalized === 'py' || normalized === 'python3') setSelectedLanguage('python');
-      else if (normalized === 'c++') setSelectedLanguage('cpp');
-      else setSelectedLanguage(normalized);
+    const target = normalizeLanguageId(initialLanguage);
+    setSelectedLanguage(target);
+
+    // If code is empty or matching another language template, set default code for target language
+    const langObj = SUPPORTED_LANGUAGES.find((l) => l.id === target);
+    if (langObj && (!value || value.trim() === '')) {
+      onChange(langObj.defaultCode);
     }
   }, [initialLanguage]);
 
@@ -58,7 +184,7 @@ export const CodePlayground: React.FC<CodePlaygroundProps> = ({
       const term = new Terminal({
         theme: {
           background: '#090d16',
-          foreground: '#e2e8f0',
+          foreground: '#f8fafc',
           cursor: '#38bdf8',
           selectionBackground: '#334155',
           black: '#0f172a',
@@ -68,19 +194,21 @@ export const CodePlayground: React.FC<CodePlaygroundProps> = ({
           blue: '#60a5fa',
           magenta: '#c084fc',
           cyan: '#38bdf8',
-          white: '#f8fafc'
+          white: '#ffffff'
         },
         fontSize: 13,
         fontFamily: 'Consolas, "Fira Code", Monaco, "Courier New", monospace',
         cursorBlink: true,
-        scrollback: 1000,
+        scrollback: 2000,
         convertEol: true,
       });
 
       const fitAddon = new FitAddon();
       term.loadAddon(fitAddon);
       term.open(terminalRef.current);
-      fitAddon.fit();
+
+      // Timeout allows DOM container layout to calculate exact pixel dimensions
+      setTimeout(() => fitAddon.fit(), 100);
 
       xtermRef.current = term;
       fitAddonRef.current = fitAddon;
@@ -89,7 +217,7 @@ export const CodePlayground: React.FC<CodePlaygroundProps> = ({
       term.writeln('\x1b[90mPowered by Monaco Editor + xterm.js + Piston Engine\x1b[0m');
       term.writeln('');
 
-      const handleResize = () => fitAddon.fit();
+      const handleResize = () => fitAddonRef.current?.fit();
       window.addEventListener('resize', handleResize);
 
       return () => {
@@ -106,24 +234,40 @@ export const CodePlayground: React.FC<CodePlaygroundProps> = ({
       if (output) {
         xtermRef.current.clear();
         xtermRef.current.writeln('\x1b[1;32m[Execution Completed]\x1b[0m');
-        
-        // Split by newlines and write
+
         const lines = output.split('\n');
         lines.forEach((line) => {
-          if (line.toLowerCase().includes('error') || line.toLowerCase().includes('exception')) {
+          if (
+            line.toLowerCase().includes('error') ||
+            line.toLowerCase().includes('exception') ||
+            line.toLowerCase().includes('traceback')
+          ) {
             xtermRef.current?.writeln(`\x1b[1;31m${line}\x1b[0m`);
+          } else if (line.toLowerCase().includes('warn')) {
+            xtermRef.current?.writeln(`\x1b[1;33m${line}\x1b[0m`);
           } else {
             xtermRef.current?.writeln(line);
           }
         });
+
+        // Trigger refit after writing content
+        setTimeout(() => fitAddonRef.current?.fit(), 50);
       }
     }
   }, [output]);
 
+  // Refit terminal on fullscreen toggle
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fitAddonRef.current?.fit();
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [isFullScreen]);
+
   const handleClearTerminal = () => {
     if (xtermRef.current) {
       xtermRef.current.clear();
-      xtermRef.current.writeln('\x1b[90mTerminal cleared. Ready for execution...\x1b[0m');
+      xtermRef.current.writeln('\x1b[90mTerminal cleared. Ready for code execution...\x1b[0m');
     }
   };
 
@@ -137,50 +281,77 @@ export const CodePlayground: React.FC<CodePlaygroundProps> = ({
   const handleLanguageChange = (newLang: string) => {
     setSelectedLanguage(newLang);
     const langObj = SUPPORTED_LANGUAGES.find((l) => l.id === newLang);
-    if (langObj && (!value || value.trim() === '')) {
+    if (langObj) {
       onChange(langObj.defaultCode);
     }
   };
 
-  const currentLangName = SUPPORTED_LANGUAGES.find(l => l.id === selectedLanguage)?.name || selectedLanguage;
+  const currentLangObj =
+    SUPPORTED_LANGUAGES.find((l) => l.id === selectedLanguage) || SUPPORTED_LANGUAGES[0];
+
+  const targetLangObj =
+    SUPPORTED_LANGUAGES.find((l) => l.id === normalizeLanguageId(initialLanguage)) ||
+    SUPPORTED_LANGUAGES[0];
 
   return (
-    <div className="flex flex-col w-full h-[520px] rounded-2xl border border-slate-200 bg-slate-950 overflow-hidden shadow-xl">
-      {/* Top Toolbar */}
-      <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900 border-b border-slate-800">
-        <div className="flex items-center gap-3">
+    <div
+      className={cn(
+        "flex flex-col w-full rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden shadow-2xl transition-all duration-300",
+        isFullScreen
+          ? "fixed inset-0 z-[9999] rounded-none border-none p-2 bg-slate-950"
+          : "h-[620px] xl:h-[680px] min-h-[550px]"
+      )}
+    >
+      {/* Top Main Toolbar */}
+      <div className="flex flex-wrap items-center justify-between px-4 py-3 bg-slate-900/90 border-b border-slate-800/80 gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             <Code2 className="h-4 w-4 text-cyan-400" />
-            <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">VS Code Editor</span>
+            <span className="text-xs font-bold text-slate-100 tracking-wide uppercase">
+              VS Code Studio
+            </span>
           </div>
 
-          <Badge variant="outline" className="text-[10px] bg-cyan-950 text-cyan-400 border-cyan-800/50 font-bold">
-            Piston Engine
+          {/* Question Target Language Badge */}
+          <Badge
+            variant="outline"
+            className="text-[11px] bg-emerald-950/80 text-emerald-400 border-emerald-700/50 px-2.5 py-0.5 font-mono font-bold flex items-center gap-1.5 shadow-sm"
+          >
+            <Sparkles className="h-3 w-3 text-emerald-400 animate-pulse" />
+            Question Target: {targetLangObj.name.toUpperCase()}
           </Badge>
 
-          <Select value={selectedLanguage} onValueChange={handleLanguageChange} disabled={readOnly}>
-            <SelectTrigger className="h-8 w-[160px] text-xs bg-slate-800 text-slate-200 border-slate-700 font-mono">
-              <SelectValue placeholder="Select Language" />
-            </SelectTrigger>
-            <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
-              {SUPPORTED_LANGUAGES.map((lang) => (
-                <SelectItem key={lang.id} value={lang.id} className="text-xs font-mono hover:bg-slate-800">
-                  {lang.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* Active Selector */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] uppercase font-bold text-slate-400">Environment:</span>
+            <Select value={selectedLanguage} onValueChange={handleLanguageChange} disabled={readOnly}>
+              <SelectTrigger className="h-8 min-w-[170px] text-xs bg-slate-800/90 text-slate-100 border-slate-700 font-mono font-bold focus:ring-emerald-500">
+                <SelectValue placeholder="Select Language" />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 max-h-[300px]">
+                {SUPPORTED_LANGUAGES.map((lang) => (
+                  <SelectItem
+                    key={lang.id}
+                    value={lang.id}
+                    className="text-xs font-mono hover:bg-slate-800 cursor-pointer"
+                  >
+                    {lang.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Controls */}
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
             size="sm"
             onClick={handleResetCode}
             disabled={readOnly}
-            title="Reset code template"
-            className="h-8 text-xs text-slate-400 hover:text-white hover:bg-slate-800"
+            title="Reset to starter template"
+            className="h-8 text-xs text-slate-300 hover:text-white hover:bg-slate-800 font-semibold"
           >
             <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reset
           </Button>
@@ -189,10 +360,20 @@ export const CodePlayground: React.FC<CodePlaygroundProps> = ({
             variant="ghost"
             size="sm"
             onClick={handleClearTerminal}
-            title="Clear terminal"
-            className="h-8 text-xs text-slate-400 hover:text-white hover:bg-slate-800"
+            title="Clear terminal console"
+            className="h-8 text-xs text-slate-300 hover:text-white hover:bg-slate-800 font-semibold"
           >
-            <Trash2 className="h-3.5 w-3.5 mr-1" /> Clear
+            <Trash2 className="h-3.5 w-3.5 mr-1" /> Clear Console
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsFullScreen(!isFullScreen)}
+            title={isFullScreen ? "Exit Fullscreen" : "Fullscreen IDE"}
+            className="h-8 w-8 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg"
+          >
+            {isFullScreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </Button>
 
           {onRunCode && (
@@ -200,15 +381,15 @@ export const CodePlayground: React.FC<CodePlaygroundProps> = ({
               size="sm"
               onClick={() => onRunCode(selectedLanguage, value)}
               disabled={isRunning || !value || !value.trim()}
-              className="h-8 px-4 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-md transition-all flex items-center gap-1.5"
+              className="h-8 px-5 text-xs font-black bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-lg hover:shadow-emerald-900/40 transition-all flex items-center gap-2"
             >
               {isRunning ? (
                 <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Compiling...
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Executing...
                 </>
               ) : (
                 <>
-                  <Play className="h-3.5 w-3.5 fill-current" /> Run Code
+                  <Play className="h-3.5 w-3.5 fill-current text-white" /> Run {currentLangObj.name}
                 </>
               )}
             </Button>
@@ -216,44 +397,59 @@ export const CodePlayground: React.FC<CodePlaygroundProps> = ({
         </div>
       </div>
 
-      {/* Main Split Body: Monaco Editor (Left) & xterm.js Terminal (Right) */}
+      {/* Main Split Screen (Monaco Left 60% / xterm.js Right 40%) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 flex-1 overflow-hidden">
-        {/* Monaco Editor Canvas */}
-        <div className="lg:col-span-7 h-full border-b lg:border-b-0 lg:border-r border-slate-800 bg-[#1e1e1e]">
-          <Editor
-            height="100%"
-            language={selectedLanguage === 'cpp' || selectedLanguage === 'c' ? 'cpp' : selectedLanguage}
-            theme="vs-dark"
-            value={value}
-            onChange={onChange}
-            options={{
-              readOnly,
-              fontSize: 13,
-              fontFamily: '"Fira Code", Consolas, Monaco, monospace',
-              minimap: { enabled: false },
-              scrollBeyondLastLine: false,
-              automaticLayout: true,
-              tabSize: 4,
-              wordWrap: 'on',
-              lineNumbers: 'on',
-              folding: true,
-              smoothScrolling: true,
-              cursorBlinking: 'smooth',
-            }}
-          />
-        </div>
-
-        {/* xterm.js Terminal Console */}
-        <div className="lg:col-span-5 h-full bg-[#090d16] flex flex-col overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-1.5 bg-slate-900/80 border-b border-slate-800/80">
-            <div className="flex items-center gap-2">
-              <TerminalIcon className="h-3.5 w-3.5 text-emerald-400" />
-              <span className="text-[11px] font-bold text-slate-300 font-mono">xterm.js Terminal</span>
-            </div>
-            <span className="text-[10px] text-slate-500 font-mono">{currentLangName}</span>
+        {/* Monaco Code Editor Canvas */}
+        <div className="lg:col-span-7 h-full border-b lg:border-b-0 lg:border-r border-slate-800/80 bg-[#1e1e1e] flex flex-col">
+          <div className="flex items-center justify-between px-3 py-1.5 bg-[#252526] border-b border-[#333333] text-xs font-mono text-slate-400">
+            <span className="flex items-center gap-1.5 text-slate-300">
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              solution.{currentLangObj.monacoLang === 'python' ? 'py' : currentLangObj.monacoLang === 'cpp' ? 'cpp' : currentLangObj.monacoLang === 'java' ? 'java' : 'js'}
+            </span>
+            <span className="text-[10px] text-slate-500 uppercase">{currentLangObj.name}</span>
           </div>
 
-          <div ref={terminalRef} className="flex-1 w-full p-2 overflow-hidden" />
+          <div className="flex-1 w-full h-full">
+            <Editor
+              height="100%"
+              language={currentLangObj.monacoLang}
+              theme="vs-dark"
+              value={value}
+              onChange={onChange}
+              options={{
+                readOnly,
+                fontSize: 14,
+                fontFamily: '"Fira Code", Consolas, Monaco, "Courier New", monospace',
+                minimap: { enabled: false },
+                scrollBeyondLastLine: false,
+                automaticLayout: true,
+                tabSize: 4,
+                wordWrap: 'on',
+                lineNumbers: 'on',
+                folding: true,
+                smoothScrolling: true,
+                cursorBlinking: 'smooth',
+                padding: { top: 12, bottom: 12 }
+              }}
+            />
+          </div>
+        </div>
+
+        {/* xterm.js Terminal Console Canvas */}
+        <div className="lg:col-span-5 h-full bg-[#090d16] flex flex-col overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-1.5 bg-slate-900 border-b border-slate-800">
+            <div className="flex items-center gap-2">
+              <TerminalIcon className="h-3.5 w-3.5 text-emerald-400" />
+              <span className="text-xs font-bold text-slate-200 font-mono">
+                xterm.js Terminal Output
+              </span>
+            </div>
+            <Badge variant="outline" className="text-[9px] bg-slate-800 text-slate-300 border-slate-700 font-mono">
+              Piston Sandbox
+            </Badge>
+          </div>
+
+          <div ref={terminalRef} className="flex-1 w-full p-2 overflow-hidden bg-[#090d16]" />
         </div>
       </div>
     </div>

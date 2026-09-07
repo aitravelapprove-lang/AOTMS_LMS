@@ -179,7 +179,7 @@ export function ExamSession({ examId, examTitle, durationMinutes, scheduledDate,
         }>('/run-code', {
             method: 'POST',
             body: JSON.stringify({
-                language: currentQuestion.language || 'javascript', 
+                language: language, 
                 version: '*',
                 files: [{ content: code }]
             })

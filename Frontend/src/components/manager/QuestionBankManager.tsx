@@ -101,11 +101,20 @@ const QUESTION_TYPES = [
 ];
 
 const SUPPORTED_LANGUAGES = [
-  { value: 'javascript', label: 'JavaScript' },
   { value: 'python', label: 'Python 3' },
-  { value: 'java', label: 'Java' },
+  { value: 'javascript', label: 'JavaScript (Node.js)' },
+  { value: 'typescript', label: 'TypeScript' },
   { value: 'cpp', label: 'C++' },
   { value: 'c', label: 'C' },
+  { value: 'java', label: 'Java' },
+  { value: 'csharp', label: 'C# (.NET)' },
+  { value: 'sql', label: 'SQL (SQLite)' },
+  { value: 'go', label: 'Go' },
+  { value: 'rust', label: 'Rust' },
+  { value: 'php', label: 'PHP' },
+  { value: 'ruby', label: 'Ruby' },
+  { value: 'kotlin', label: 'Kotlin' },
+  { value: 'swift', label: 'Swift' },
 ];
 
 const EMPTY_QUESTION = {

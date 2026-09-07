@@ -900,40 +900,30 @@ Do not include any Markdown wrapper like \`\`\`json or text explanation around t
 
 // --- Code Execution Helper ---
 // --- Code Execution Helper (Piston + Local VM Integration) ---
+// --- Multi-Engine Free Code Execution Helper (Wandbox + Judge0 CE + Local VM) ---
 const executeCode = async (language, sourceCode, stdin = '') => {
     const lang = language?.toLowerCase() || 'javascript';
 
-    // Map common frontend language names to Piston language identifiers
-    const pistonLangMap = {
-        'javascript': 'javascript',
-        'js': 'javascript',
-        'node': 'javascript',
-        'typescript': 'typescript',
-        'ts': 'typescript',
-        'python': 'python',
-        'python3': 'python',
-        'py': 'python',
+    // Normalization map
+    const langMap = {
+        'javascript': 'javascript', 'js': 'javascript', 'node': 'javascript',
+        'typescript': 'typescript', 'ts': 'typescript',
+        'python': 'python', 'python3': 'python', 'py': 'python',
         'java': 'java',
-        'cpp': 'c++',
-        'c++': 'c++',
-        'c': 'c',
-        'csharp': 'csharp',
-        'c#': 'csharp',
-        'sql': 'sqlite3',
-        'sqlite': 'sqlite3',
-        'go': 'go',
-        'golang': 'go',
-        'rust': 'rust',
-        'rs': 'rust',
+        'cpp': 'cpp', 'c++': 'cpp', 'g++': 'cpp',
+        'c': 'c', 'gcc': 'c',
+        'csharp': 'csharp', 'c#': 'csharp',
+        'sql': 'sql', 'sqlite': 'sql', 'sqlite3': 'sql',
+        'go': 'go', 'golang': 'go',
+        'rust': 'rust', 'rs': 'rust',
         'php': 'php',
-        'ruby': 'ruby',
-        'rb': 'ruby'
+        'ruby': 'ruby', 'rb': 'ruby'
     };
 
-    const targetLang = pistonLangMap[lang] || lang;
+    const targetLang = langMap[lang] || 'python';
 
-    // 1. Local JS VM execution for super fast simple JS scripts
-    if ((lang === 'javascript' || lang === 'js') && !stdin) {
+    // Tier 1: Fast local JS execution
+    if (targetLang === 'javascript' && !stdin) {
         try {
             const outputBuffer = [];
             const errorBuffer = [];
@@ -959,42 +949,94 @@ const executeCode = async (language, sourceCode, stdin = '') => {
                 language: 'javascript'
             };
         } catch (err) {
-            // Fall through to Piston if local VM script fails or syntax complex
-            console.log('[Local VM JS] Falling back to Piston due to:', err.message);
+            console.log('[Local JS VM] Falling through to cloud compilers due to:', err.message);
         }
     }
 
-    // 2. Piston Engine Execution (Free, Open-Source, Supports 50+ languages)
+    // Tier 2: Wandbox Free Open Compiler API (No Keys, 50+ Languages)
     try {
-        console.log(`[Piston Engine] Submitting ${targetLang} code execution request...`);
-        const pistonRes = await axios.post('https://emkc.org/api/v2/piston/execute', {
-            language: targetLang,
-            version: '*',
-            files: [
-                {
-                    content: sourceCode
-                }
-            ],
-            stdin: stdin || ''
-        }, {
-            timeout: 10000
-        });
+        console.log(`[Wandbox Engine] Compiling ${targetLang} code...`);
+        const wandboxCompilerMap = {
+            'python': 'python-head',
+            'javascript': 'nodejs-head',
+            'typescript': 'typescript-head',
+            'cpp': 'gcc-head',
+            'c': 'gcc-head-c',
+            'java': 'openjdk-head',
+            'csharp': 'dotnetcore-head',
+            'sql': 'sqlite-head',
+            'go': 'go-head',
+            'rust': 'rust-head',
+            'php': 'php-head',
+            'ruby': 'ruby-head'
+        };
 
-        const { run } = pistonRes.data;
+        const wandboxCompiler = wandboxCompilerMap[targetLang] || 'python-head';
+        const wandboxRes = await axios.post('https://wandbox.org/api/compile.json', {
+            compiler: wandboxCompiler,
+            code: sourceCode,
+            stdin: stdin || ''
+        }, { timeout: 10000 });
+
+        const data = wandboxRes.data;
+        const stdout = data.program_output || data.stdout || '';
+        const stderr = data.compiler_error || data.program_error || data.stderr || '';
+        const exitCode = (data.status === "0" || data.status === 0) ? 0 : 1;
 
         return {
             run: {
-                stdout: run.stdout || '',
-                stderr: run.stderr || run.output && run.code !== 0 ? run.output : '',
-                code: run.code ?? 0,
-                output: run.output || run.stdout || run.stderr || '',
-                signal: run.signal
+                stdout,
+                stderr,
+                code: exitCode,
+                output: stdout || stderr || 'Execution completed with no output.'
             },
             language: targetLang
         };
-    } catch (pistonErr) {
-        console.error('[Piston Execution Error]:', pistonErr.response?.data || pistonErr.message);
-        throw new Error(`Code execution failed: ${pistonErr.response?.data?.message || pistonErr.message}`);
+    } catch (wandboxErr) {
+        console.warn('[Wandbox Engine Error]:', wandboxErr.message, 'Falling back to Judge0 Public CE...');
+    }
+
+    // Tier 3: Judge0 Free Public CE API (No API Key Required)
+    try {
+        console.log(`[Judge0 Public CE] Compiling ${targetLang} code...`);
+        const judge0LangMap = {
+            'python': 71,
+            'javascript': 63,
+            'typescript': 74,
+            'cpp': 54,
+            'c': 50,
+            'java': 62,
+            'csharp': 51,
+            'sql': 82,
+            'go': 60,
+            'rust': 73,
+            'php': 68,
+            'ruby': 72
+        };
+        const langId = judge0LangMap[targetLang] || 71;
+
+        const judge0Res = await axios.post('https://ce.judge0.com/submissions?wait=true', {
+            source_code: sourceCode,
+            language_id: langId,
+            stdin: stdin || ''
+        }, { timeout: 10000 });
+
+        const { stdout, stderr, compile_output, message, status } = judge0Res.data;
+        const outStr = stdout || '';
+        const errStr = stderr || compile_output || message || '';
+
+        return {
+            run: {
+                stdout: outStr,
+                stderr: errStr,
+                code: status?.id === 3 ? 0 : 1,
+                output: outStr || errStr || 'Execution finished.'
+            },
+            language: targetLang
+        };
+    } catch (j0Err) {
+        console.error('[Judge0 Public CE Error]:', j0Err.message);
+        throw new Error(`Code execution failed across all engines: ${j0Err.message}`);
     }
 };
 

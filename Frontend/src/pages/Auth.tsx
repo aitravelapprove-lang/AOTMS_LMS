@@ -58,9 +58,10 @@ import {
 
 
 const COLLEGES = [
+  "3rd Year Loyola Institute of Technology and Management (LITAM)",
+  "4th Year Loyola Institute of Technology and Management (LITAM)",
   "Velagapudi Ramakrishna Siddhartha Engineering College",
   "Prasad V Potluri Siddhartha Institute of Technology",
-  "Loyola Institute of Technology and Management (LITAM)",
   "Andhra Loyola Institute of Engineering and Technology",
   "Dhanekula Institute of Engineering and Technology",
   "SRK Institute of Technology",

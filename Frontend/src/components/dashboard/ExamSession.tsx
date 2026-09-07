@@ -30,6 +30,7 @@ import { useExamQuestions, Question } from '@/hooks/useStudentData';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { fetchWithAuth } from '@/lib/api';
+import { CodePlayground } from '@/components/common/CodePlayground';
 
 import { 
   Dialog,
@@ -159,9 +160,10 @@ export function ExamSession({ examId, examTitle, durationMinutes, scheduledDate,
     setAnswers(prev => ({ ...prev, [currentQuestion.id]: val }));
   };
 
-  const runCode = async () => {
+  const runCode = async (selectedLang?: string, customCode?: string) => {
     if (!currentQuestion) return;
-    const code = answers[currentQuestion.id];
+    const code = customCode !== undefined ? customCode : answers[currentQuestion.id];
+    const language = selectedLang || currentQuestion.language || 'javascript';
     if (!code || !code.trim()) {
         toast({ title: "Empty Code", description: "Please write some code to run.", variant: "destructive" });
         return;
@@ -445,44 +447,17 @@ export function ExamSession({ examId, examTitle, durationMinutes, scheduledDate,
                                         </div>
                                     )}
 
-                                    {/* Coding / Practical */}
-                                    {(qType === 'coding' || qType === 'practical') && (
-                                        <div className="flex flex-col gap-4 h-full">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Code Editor ({currentQuestion.language || 'javascript'})</span>
-                                                <Button 
-                                                    size="sm" 
-                                                    onClick={runCode} 
-                                                    disabled={isRunning}
-                                                    className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 font-bold"
-                                                >
-                                                    {isRunning ? <Monitor className="h-3 w-3 animate-pulse" /> : <Play className="h-3 w-3" />}
-                                                    {isRunning ? "Running..." : "Run Code"}
-                                                </Button>
-                                            </div>
-                                            
-                                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-[400px]">
-                                                <Textarea
-                                                    value={answers[currentQuestion.id as string] || ''}
-                                                    onChange={(e) => handleAnswerChange(e.target.value)}
-                                                    placeholder="// Write your solution here..."
-                                                    className="font-mono text-sm p-4 bg-slate-950 text-slate-50 resize-none h-full rounded-xl border-slate-800 focus:border-emerald-500/50"
-                                                    spellCheck={false}
-                                                />
-                                                <div className="bg-slate-900 rounded-xl border border-slate-800 p-4 flex flex-col h-full">
-                                                    <div className="flex items-center gap-2 mb-2 text-slate-400 border-b border-slate-800 pb-2">
-                                                        <Terminal className="h-4 w-4" />
-                                                        <span className="text-xs font-mono font-bold uppercase">Console Output</span>
-                                                    </div>
-                                                    <ScrollArea className="flex-1">
-                                                        <pre className="text-xs font-mono text-emerald-400 whitespace-pre-wrap">
-                                                            {consoleOutput[currentQuestion.id as string] || "> Ready to execute..."}
-                                                        </pre>
-                                                    </ScrollArea>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
+                                     {/* Coding / Practical - Monaco Editor + xterm.js */}
+                                     {(qType === 'coding' || qType === 'practical') && (
+                                         <CodePlayground
+                                             initialLanguage={currentQuestion.language || 'javascript'}
+                                             value={answers[currentQuestion.id as string] || ''}
+                                             onChange={(val) => handleAnswerChange(val || '')}
+                                             output={consoleOutput[currentQuestion.id as string]}
+                                             onRunCode={(lang, code) => runCode(lang, code)}
+                                             isRunning={isRunning}
+                                         />
+                                     )}
                                 </div>
                             </motion.div>
                         </AnimatePresence>

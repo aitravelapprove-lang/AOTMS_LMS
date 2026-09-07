@@ -899,17 +899,42 @@ Do not include any Markdown wrapper like \`\`\`json or text explanation around t
 });
 
 // --- Code Execution Helper ---
-// --- Code Execution Helper (Judge0 Integration) ---
-const JUDGE0_API_KEY = process.env.JUDGE0_API_KEY;
-const JUDGE0_HOST = process.env.JUDGE0_HOST || 'judge0-extra-ce.p.rapidapi.com';
-
+// --- Code Execution Helper (Piston + Local VM Integration) ---
 const executeCode = async (language, sourceCode, stdin = '') => {
-    const lang = language?.toLowerCase();
+    const lang = language?.toLowerCase() || 'javascript';
 
-    // 1. Local JavaScript Execution (Fallback/Fast Path)
-    if (lang === 'javascript' || lang === 'js' || lang === 'node') {
-        // ... (Keep existing local VM logic for JS as standard)
-        return new Promise((resolve) => {
+    // Map common frontend language names to Piston language identifiers
+    const pistonLangMap = {
+        'javascript': 'javascript',
+        'js': 'javascript',
+        'node': 'javascript',
+        'typescript': 'typescript',
+        'ts': 'typescript',
+        'python': 'python',
+        'python3': 'python',
+        'py': 'python',
+        'java': 'java',
+        'cpp': 'c++',
+        'c++': 'c++',
+        'c': 'c',
+        'csharp': 'csharp',
+        'c#': 'csharp',
+        'sql': 'sqlite3',
+        'sqlite': 'sqlite3',
+        'go': 'go',
+        'golang': 'go',
+        'rust': 'rust',
+        'rs': 'rust',
+        'php': 'php',
+        'ruby': 'ruby',
+        'rb': 'ruby'
+    };
+
+    const targetLang = pistonLangMap[lang] || lang;
+
+    // 1. Local JS VM execution for super fast simple JS scripts
+    if ((lang === 'javascript' || lang === 'js') && !stdin) {
+        try {
             const outputBuffer = [];
             const errorBuffer = [];
             const sandbox = {
@@ -921,80 +946,55 @@ const executeCode = async (language, sourceCode, stdin = '') => {
                 setTimeout, clearTimeout, setInterval, clearInterval,
                 process: { exit: (code) => { throw new Error(`Process exited with code ${code}`); } }
             };
-            try {
-                const script = new vm.Script(sourceCode);
-                const context = vm.createContext(sandbox);
-                script.runInContext(context, { timeout: 2000 });
-                resolve({
-                    run: {
-                        stdout: outputBuffer.join('\n'),
-                        stderr: errorBuffer.join('\n'),
-                        code: 0,
-                        output: outputBuffer.join('\n')
-                    },
-                    language: 'javascript'
-                });
-            } catch (err) {
-                resolve({
-                    run: { stdout: '', stderr: err.message, code: 1, output: err.message },
-                    language: 'javascript'
-                });
-            }
-        });
+            const script = new vm.Script(sourceCode);
+            const context = vm.createContext(sandbox);
+            script.runInContext(context, { timeout: 3000 });
+            return {
+                run: {
+                    stdout: outputBuffer.join('\n'),
+                    stderr: errorBuffer.join('\n'),
+                    code: 0,
+                    output: outputBuffer.join('\n') || errorBuffer.join('\n')
+                },
+                language: 'javascript'
+            };
+        } catch (err) {
+            // Fall through to Piston if local VM script fails or syntax complex
+            console.log('[Local VM JS] Falling back to Piston due to:', err.message);
+        }
     }
 
-    // 2. Judge0 Execution for Other Languages (Python, Java, etc.)
-    if (!JUDGE0_API_KEY) {
-        throw new Error('Judge0 API Key not configured for non-JS languages.');
-    }
-
-    // Map common names to Judge0 Language IDs
-    const langMap = {
-        'python': 71, // Python 3.8.1
-        'python3': 71,
-        'java': 62,   // Java (OpenJDK 13.0.1)
-        'cpp': 54,    // C++ (GCC 9.2.0)
-        'c': 50,      // C (GCC 9.2.0)
-    };
-
-    const languageId = langMap[language.toLowerCase()];
-    if (!languageId) throw new Error(`Language ${language} is not supported by backend compiler yet.`);
-
+    // 2. Piston Engine Execution (Free, Open-Source, Supports 50+ languages)
     try {
-        console.log(`[Judge0] Submitting ${language} code...`);
-        // Step 1: Submit Code
-        const submitResponse = await axios.post(`https://${JUDGE0_HOST}/submissions`, {
-            source_code: Buffer.from(sourceCode).toString('base64'),
-            language_id: languageId,
-            stdin: Buffer.from(stdin).toString('base64'),
+        console.log(`[Piston Engine] Submitting ${targetLang} code execution request...`);
+        const pistonRes = await axios.post('https://emkc.org/api/v2/piston/execute', {
+            language: targetLang,
+            version: '*',
+            files: [
+                {
+                    content: sourceCode
+                }
+            ],
+            stdin: stdin || ''
         }, {
-            params: { wait: true, base64_encoded: true },
-            headers: {
-                'X-RapidAPI-Key': JUDGE0_API_KEY,
-                'X-RapidAPI-Host': JUDGE0_HOST,
-                'Content-Type': 'application/json'
-            }
+            timeout: 10000
         });
 
-        const { stdout, stderr, compile_output, message, status } = submitResponse.data;
-
-        const decodedStdout = stdout ? Buffer.from(stdout, 'base64').toString() : '';
-        const decodedStderr = (stderr || compile_output || message) ?
-            Buffer.from(stderr || compile_output || message, 'base64').toString() : '';
+        const { run } = pistonRes.data;
 
         return {
             run: {
-                stdout: decodedStdout,
-                stderr: decodedStderr,
-                code: status.id === 3 ? 0 : 1, // 3 is "Accepted"
-                output: decodedStdout || decodedStderr,
-                status: status.description
+                stdout: run.stdout || '',
+                stderr: run.stderr || run.output && run.code !== 0 ? run.output : '',
+                code: run.code ?? 0,
+                output: run.output || run.stdout || run.stderr || '',
+                signal: run.signal
             },
-            language
+            language: targetLang
         };
-    } catch (err) {
-        console.error('[Judge0 Error]', err.message);
-        throw new Error(`Execution failed: ${err.message}`);
+    } catch (pistonErr) {
+        console.error('[Piston Execution Error]:', pistonErr.response?.data || pistonErr.message);
+        throw new Error(`Code execution failed: ${pistonErr.response?.data?.message || pistonErr.message}`);
     }
 };
 

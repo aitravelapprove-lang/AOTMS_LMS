@@ -12,6 +12,10 @@ const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 const cloudinary = require('cloudinary').v2;
 const vm = require('vm'); // Native Node.js module for executing code locally
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+const { execFile } = require('child_process');
 const pdfParse = require('pdf-parse');
 const FormData = require('form-data');
 const { sendEmail } = require('./utils/email');
@@ -898,9 +902,54 @@ Do not include any Markdown wrapper like \`\`\`json or text explanation around t
     }
 });
 
-// --- Code Execution Helper ---
-// --- Code Execution Helper (Piston + Local VM Integration) ---
-// --- Multi-Engine Free Code Execution Helper (Wandbox + Judge0 CE + Local VM) ---
+// --- Local Native Python Execution Helper ---
+const runLocalPython = (code, stdin = '') => {
+    return new Promise((resolve) => {
+        const tmpDir = os.tmpdir();
+        const tmpFile = path.join(tmpDir, `script_${Date.now()}_${Math.floor(Math.random() * 10000)}.py`);
+        
+        fs.writeFile(tmpFile, code, 'utf8', (err) => {
+            if (err) {
+                return resolve({
+                    stdout: '',
+                    stderr: `Failed to write python script: ${err.message}`,
+                    code: 1,
+                    output: `Failed to write python script: ${err.message}`
+                });
+            }
+
+            const child = execFile('python3', [tmpFile], { timeout: 8000, maxBuffer: 5 * 1024 * 1024, encoding: 'utf8' }, (execErr, stdout, stderr) => {
+                fs.unlink(tmpFile, () => {});
+
+                if (execErr && execErr.killed) {
+                    return resolve({
+                        stdout: stdout || '',
+                        stderr: 'Time Limit Exceeded (8 seconds max runtime).',
+                        code: 1,
+                        output: (stdout || '') + '\nTime Limit Exceeded (8 seconds max runtime).'
+                    });
+                }
+
+                const outStr = stdout || '';
+                const errStr = stderr || (execErr && !stdout ? execErr.message : '');
+
+                resolve({
+                    stdout: outStr,
+                    stderr: errStr,
+                    code: execErr ? (execErr.code || 1) : 0,
+                    output: outStr || errStr || 'Execution completed.'
+                });
+            });
+
+            if (stdin && child.stdin) {
+                child.stdin.write(stdin);
+                child.stdin.end();
+            }
+        });
+    });
+};
+
+// --- Multi-Engine Code Execution Helper (Native Local + Judge0 Public CE) ---
 const executeCode = async (language, sourceCode, stdin = '') => {
     const lang = language?.toLowerCase() || 'javascript';
 
@@ -922,7 +971,21 @@ const executeCode = async (language, sourceCode, stdin = '') => {
 
     const targetLang = langMap[lang] || 'python';
 
-    // Tier 1: Fast local JS execution
+    // 1. Native Fast Python Execution (0ms network latency, supports emojis, long scripts & loops)
+    if (targetLang === 'python') {
+        try {
+            console.log('[Native Engine] Running Python code locally via child_process...');
+            const res = await runLocalPython(sourceCode, stdin);
+            if (res.stdout || (res.code === 0 && !res.stderr.includes('python3: not found'))) {
+                return { run: res, language: 'python' };
+            }
+            console.log('[Native Python] Local python3 not installed in environment, trying cloud compiler...');
+        } catch (pyErr) {
+            console.warn('[Native Python Error]:', pyErr.message, 'Falling back to cloud API...');
+        }
+    }
+
+    // 2. Fast Local JS Execution
     if (targetLang === 'javascript' && !stdin) {
         try {
             const outputBuffer = [];
@@ -938,7 +1001,7 @@ const executeCode = async (language, sourceCode, stdin = '') => {
             };
             const script = new vm.Script(sourceCode);
             const context = vm.createContext(sandbox);
-            script.runInContext(context, { timeout: 3000 });
+            script.runInContext(context, { timeout: 4000 });
             return {
                 run: {
                     stdout: outputBuffer.join('\n'),
@@ -953,50 +1016,7 @@ const executeCode = async (language, sourceCode, stdin = '') => {
         }
     }
 
-    // Tier 2: Wandbox Free Open Compiler API (No Keys, 50+ Languages)
-    try {
-        console.log(`[Wandbox Engine] Compiling ${targetLang} code...`);
-        const wandboxCompilerMap = {
-            'python': 'python-head',
-            'javascript': 'nodejs-head',
-            'typescript': 'typescript-head',
-            'cpp': 'gcc-head',
-            'c': 'gcc-head-c',
-            'java': 'openjdk-head',
-            'csharp': 'dotnetcore-head',
-            'sql': 'sqlite-head',
-            'go': 'go-head',
-            'rust': 'rust-head',
-            'php': 'php-head',
-            'ruby': 'ruby-head'
-        };
-
-        const wandboxCompiler = wandboxCompilerMap[targetLang] || 'python-head';
-        const wandboxRes = await axios.post('https://wandbox.org/api/compile.json', {
-            compiler: wandboxCompiler,
-            code: sourceCode,
-            stdin: stdin || ''
-        }, { timeout: 10000 });
-
-        const data = wandboxRes.data;
-        const stdout = data.program_output || data.stdout || '';
-        const stderr = data.compiler_error || data.program_error || data.stderr || '';
-        const exitCode = (data.status === "0" || data.status === 0) ? 0 : 1;
-
-        return {
-            run: {
-                stdout,
-                stderr,
-                code: exitCode,
-                output: stdout || stderr || 'Execution completed with no output.'
-            },
-            language: targetLang
-        };
-    } catch (wandboxErr) {
-        console.warn('[Wandbox Engine Error]:', wandboxErr.message, 'Falling back to Judge0 Public CE...');
-    }
-
-    // Tier 3: Judge0 Free Public CE API (No API Key Required)
+    // 3. Judge0 Public CE API (No API Key Required)
     try {
         console.log(`[Judge0 Public CE] Compiling ${targetLang} code...`);
         const judge0LangMap = {
@@ -1036,7 +1056,7 @@ const executeCode = async (language, sourceCode, stdin = '') => {
         };
     } catch (j0Err) {
         console.error('[Judge0 Public CE Error]:', j0Err.message);
-        throw new Error(`Code execution failed across all engines: ${j0Err.message}`);
+        throw new Error(`Code execution failed: ${j0Err.message}`);
     }
 };
 

@@ -60,6 +60,7 @@ import {
 const COLLEGES = [
   "Velagapudi Ramakrishna Siddhartha Engineering College",
   "Prasad V Potluri Siddhartha Institute of Technology",
+  "Loyola Institute of Technology and Management (LITAM)",
   "Andhra Loyola Institute of Engineering and Technology",
   "Dhanekula Institute of Engineering and Technology",
   "SRK Institute of Technology",

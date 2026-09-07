@@ -374,7 +374,7 @@ export function UserProfile() {
                                     <Label htmlFor="collegeName">College Name</Label>
                                     <Input
                                         id="collegeName"
-                                        placeholder="e.g. DVR & DR.HS MIC COLLEGE OF TECHNOLOGY"
+                                        placeholder="e.g. Loyola Institute of Technology and Management (LITAM)"
                                         value={profile.college_name || ''}
                                         onChange={(e) => setProfile({ ...profile, college_name: e.target.value })}
                                     />

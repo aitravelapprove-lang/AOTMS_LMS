@@ -5355,8 +5355,11 @@ app.get('/api/student/exam-questions/:id', authenticateToken, async (req, res) =
         const data = questions.map(q => ({
             id: q._id,
             text: q.question_text,
+            question_text: q.question_text,
             type: q.type,
-            options: q.options.map(opt => ({ id: opt._id || Math.random(), text: opt.text })),
+            question_type: q.type,
+            language: q.language || 'python',
+            options: (q.options || []).map(opt => ({ id: opt._id || Math.random(), text: typeof opt === 'string' ? opt : opt.text })),
             // Do NOT send is_correct to frontend during exam
             marks: q.marks || 1
         }));

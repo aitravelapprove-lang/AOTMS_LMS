@@ -1,0 +1,27 @@
+name: Deploy Backend to Hostinger VPS
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Backend/**'
+      - 'docker-compose.yml'
+      - '.github/workflows/deploy.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          script: |
+            cd ~/AOTMS_LMS-1
+            git reset --hard HEAD
+            git pull origin main
+            docker compose up --build --force-recreate -d

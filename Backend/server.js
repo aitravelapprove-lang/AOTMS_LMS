@@ -1110,7 +1110,10 @@ const triggerOtpWebhook = async ({ email, full_name, otp }) => {
             console.log(`[AUTH-OTP Webhook Fallback] Successfully delivered OTP via n8n (${altUrl}) for ${email}:`, altResponse.data);
             return true;
         } catch (fallbackErr) {
-            console.error(`[AUTH-OTP Webhook Error]: All n8n URL attempts failed (${err.message} / ${fallbackErr.message}). Falling back to SMTP...`);
+            console.error(`[AUTH-OTP Webhook Error]: n8n Webhook failed (${err.message} / ${fallbackErr.message}).`);
+            
+            // ── Brevo SMTP Fallback Disabled (Uncomment below to re-enable Brevo SMTP if needed) ──
+            /*
             const otpHtml = `
                 <div style="font-family: 'Outfit', 'Inter', sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; border-radius: 16px; background: #ffffff; border: 1px solid #e2e8f0;">
                     <h2 style="color: #0f172a;">Academy of Tech Masters</h2>
@@ -1124,6 +1127,7 @@ const triggerOtpWebhook = async ({ email, full_name, otp }) => {
                 subject: `🎉 Email Verification OTP: ${otp} | Academy of Tech Masters`,
                 html: otpHtml
             });
+            */
             return false;
         }
     }

@@ -1081,35 +1081,51 @@ app.post('/api/run-code', authenticateToken, async (req, res) => {
 
 // --- Auth Routes ---
 
-// Helper to trigger n8n OTP Webhook
+// Helper to trigger n8n OTP Webhook with automatic Test/Prod URL fallback
 const triggerOtpWebhook = async ({ email, full_name, otp }) => {
-    const n8nUrl = (process.env.OTP_N8N_URL || process.env.OTP_N8n || process.env.OTP_N8N || 'https://aotms.app.n8n.cloud/webhook/Email').trim();
+    let n8nUrl = (process.env.OTP_N8N_URL || process.env.OTP_N8n || process.env.OTP_N8N || 'https://aotms.app.n8n.cloud/webhook-test/Email').trim();
     console.log(`[AUTH-OTP Webhook] Triggering n8n at ${n8nUrl} for ${email}...`);
 
     try {
-        await axios.post(n8nUrl, {
+        const response = await axios.post(n8nUrl, {
             email,
             full_name: full_name || 'Student',
             otp
         }, { timeout: 8000 });
-        console.log(`[AUTH-OTP Webhook] Successfully delivered OTP via n8n for ${email}`);
+        console.log(`[AUTH-OTP Webhook] Successfully delivered OTP via n8n for ${email}:`, response.data);
         return true;
     } catch (err) {
-        console.error(`[AUTH-OTP Webhook Error]: ${err.message}. Falling back to SMTP...`);
-        const otpHtml = `
-            <div style="font-family: 'Outfit', 'Inter', sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; border-radius: 16px; background: #ffffff; border: 1px solid #e2e8f0;">
-                <h2 style="color: #0f172a;">Academy of Tech Masters</h2>
-                <p>Hello ${full_name || 'Student'}, your verification OTP code is:</p>
-                <div style="background: #f8fafc; font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #1e3a8a; text-align: center; padding: 16px; border-radius: 12px; margin: 20px 0;">${otp}</div>
-                <p style="font-size: 12px; color: #64748b;">This OTP is valid for 5 minutes.</p>
-            </div>
-        `;
-        await sendEmail({
-            to: email,
-            subject: `🎉 Email Verification OTP: ${otp} | Academy of Tech Masters`,
-            html: otpHtml
-        });
-        return false;
+        // Automatically try swapping between test URL (/webhook-test/) and prod URL (/webhook/)
+        const altUrl = n8nUrl.includes('/webhook-test/') 
+            ? n8nUrl.replace('/webhook-test/', '/webhook/')
+            : n8nUrl.replace('/webhook/', '/webhook-test/');
+
+        console.warn(`[AUTH-OTP Webhook Primary Failed: ${err.message}]. Retrying with fallback URL: ${altUrl}...`);
+        try {
+            const altResponse = await axios.post(altUrl, {
+                email,
+                full_name: full_name || 'Student',
+                otp
+            }, { timeout: 8000 });
+            console.log(`[AUTH-OTP Webhook Fallback] Successfully delivered OTP via n8n (${altUrl}) for ${email}:`, altResponse.data);
+            return true;
+        } catch (fallbackErr) {
+            console.error(`[AUTH-OTP Webhook Error]: All n8n URL attempts failed (${err.message} / ${fallbackErr.message}). Falling back to SMTP...`);
+            const otpHtml = `
+                <div style="font-family: 'Outfit', 'Inter', sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; border-radius: 16px; background: #ffffff; border: 1px solid #e2e8f0;">
+                    <h2 style="color: #0f172a;">Academy of Tech Masters</h2>
+                    <p>Hello ${full_name || 'Student'}, your verification OTP code is:</p>
+                    <div style="background: #f8fafc; font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #1e3a8a; text-align: center; padding: 16px; border-radius: 12px; margin: 20px 0;">${otp}</div>
+                    <p style="font-size: 12px; color: #64748b;">This OTP is valid for 5 minutes.</p>
+                </div>
+            `;
+            await sendEmail({
+                to: email,
+                subject: `🎉 Email Verification OTP: ${otp} | Academy of Tech Masters`,
+                html: otpHtml
+            });
+            return false;
+        }
     }
 };
 

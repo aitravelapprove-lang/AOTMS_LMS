@@ -1081,6 +1081,38 @@ app.post('/api/run-code', authenticateToken, async (req, res) => {
 
 // --- Auth Routes ---
 
+// Helper to trigger n8n OTP Webhook
+const triggerOtpWebhook = async ({ email, full_name, otp }) => {
+    const n8nUrl = (process.env.OTP_N8n || process.env.OTP_N8N_URL || 'https://aotms.app.n8n.cloud/webhook/Email').trim();
+    console.log(`[AUTH-OTP Webhook] Triggering n8n at ${n8nUrl} for ${email}...`);
+
+    try {
+        await axios.post(n8nUrl, {
+            email,
+            full_name: full_name || 'Student',
+            otp
+        }, { timeout: 8000 });
+        console.log(`[AUTH-OTP Webhook] Successfully delivered OTP via n8n for ${email}`);
+        return true;
+    } catch (err) {
+        console.error(`[AUTH-OTP Webhook Error]: ${err.message}. Falling back to SMTP...`);
+        const otpHtml = `
+            <div style="font-family: 'Outfit', 'Inter', sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; border-radius: 16px; background: #ffffff; border: 1px solid #e2e8f0;">
+                <h2 style="color: #0f172a;">Academy of Tech Masters</h2>
+                <p>Hello ${full_name || 'Student'}, your verification OTP code is:</p>
+                <div style="background: #f8fafc; font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #1e3a8a; text-align: center; padding: 16px; border-radius: 12px; margin: 20px 0;">${otp}</div>
+                <p style="font-size: 12px; color: #64748b;">This OTP is valid for 5 minutes.</p>
+            </div>
+        `;
+        await sendEmail({
+            to: email,
+            subject: `🎉 Email Verification OTP: ${otp} | Academy of Tech Masters`,
+            html: otpHtml
+        });
+        return false;
+    }
+};
+
 app.post('/api/auth/send-otp', async (req, res) => {
     const { email, full_name } = req.body;
     if (!email) return res.status(400).json({ error: 'Email is required' });
@@ -1104,33 +1136,10 @@ app.post('/api/auth/send-otp', async (req, res) => {
             { upsert: true, returnDocument: 'after' }
         );
 
-        console.log(`[AUTH-OTP] OTP for ${email}: ${otp}`);
+        console.log(`[AUTH-OTP] Generated OTP for ${email}: ${otp}`);
 
-        // Send OTP email directly via SMTP
-        const otpHtml = `
-            <div style="font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #334155; max-width: 500px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 20px; background-color: #ffffff; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);">
-                <div style="text-align: center; margin-bottom: 24px;">
-                    <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); width: 56px; height: 56px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px; color: #ffffff; font-size: 20px; font-weight: 800; line-height: 56px; text-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-left: auto; margin-right: auto;">A</div>
-                    <h2 style="color: #0f172a; margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.02em;">Academy of Tech Masters</h2>
-                    <p style="color: #ea580c; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 4px 0 0 0;">One-Time verification code</p>
-                </div>
-                <p style="font-size: 15px; color: #334155; margin-top: 0; font-weight: 600;">Dear ${full_name || 'Student'},</p>
-                <p style="font-size: 14px; color: #475569;">To complete your login or registration on the AOTMS portal, please enter the following verification code. This code is valid for 10 minutes:</p>
-                <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; text-align: center; font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #1e3a8a; padding: 18px; margin: 24px 0; text-shadow: 0 1px 1px rgba(0,0,0,0.05); font-family: monospace;">
-                    ${otp}
-                </div>
-                <p style="font-size: 12px; color: #64748b; margin-bottom: 0; border-top: 1px solid #f1f5f9; padding-top: 16px;">If you did not make this request, you do not need to take any action. Your account remains secure.</p>
-                <div style="margin-top: 32px; border-top: 1px solid #f1f5f9; padding-top: 16px; text-align: center;">
-                    <p style="font-size: 11px; color: #94a3b8; margin: 0 0 4px 0;">Academy of Tech Masters Learning Management System.</p>
-                    <p style="font-size: 11px; color: #94a3b8; margin: 0;">&copy; ${new Date().getFullYear()} <a href="https://aotms.com" style="color: #3b82f6; text-decoration: none; font-weight: 600;">aotms.com</a>. All rights reserved.</p>
-                </div>
-            </div>
-        `;
-        await sendEmail({
-            to: email,
-            subject: 'Verify Your Email | Academy of Tech Masters',
-            html: otpHtml
-        });
+        // Trigger n8n Webhook for OTP Email
+        await triggerOtpWebhook({ email, full_name, otp });
 
         res.json({ message: 'OTP sent successfully' });
     } catch (err) {
@@ -1139,7 +1148,6 @@ app.post('/api/auth/send-otp', async (req, res) => {
 });
 
 app.post('/api/auth/resend-otp', async (req, res) => {
-    // Reuse logic, maybe separate if needed differently
     const { email, full_name } = req.body;
     if (!email) return res.status(400).json({ error: 'Email is required' });
 
@@ -1163,31 +1171,8 @@ app.post('/api/auth/resend-otp', async (req, res) => {
         );
         console.log(`[AUTH-OTP] Resent OTP for ${email}: ${otp}`);
 
-        // Send OTP email directly via SMTP
-        const otpHtml = `
-            <div style="font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #334155; max-width: 500px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 20px; background-color: #ffffff; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);">
-                <div style="text-align: center; margin-bottom: 24px;">
-                    <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); width: 56px; height: 56px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px; color: #ffffff; font-size: 20px; font-weight: 800; line-height: 56px; text-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-left: auto; margin-right: auto;">A</div>
-                    <h2 style="color: #0f172a; margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.02em;">Academy of Tech Masters</h2>
-                    <p style="color: #ea580c; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 4px 0 0 0;">One-Time verification code</p>
-                </div>
-                <p style="font-size: 15px; color: #334155; margin-top: 0; font-weight: 600;">Dear ${full_name || 'Student'},</p>
-                <p style="font-size: 14px; color: #475569;">To complete your login or registration on the AOTMS portal, please enter the following verification code. This code is valid for 10 minutes:</p>
-                <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; text-align: center; font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #1e3a8a; padding: 18px; margin: 24px 0; text-shadow: 0 1px 1px rgba(0,0,0,0.05); font-family: monospace;">
-                    ${otp}
-                </div>
-                <p style="font-size: 12px; color: #64748b; margin-bottom: 0; border-top: 1px solid #f1f5f9; padding-top: 16px;">If you did not make this request, you do not need to take any action. Your account remains secure.</p>
-                <div style="margin-top: 32px; border-top: 1px solid #f1f5f9; padding-top: 16px; text-align: center;">
-                    <p style="font-size: 11px; color: #94a3b8; margin: 0 0 4px 0;">Academy of Tech Masters Learning Management System.</p>
-                    <p style="font-size: 11px; color: #94a3b8; margin: 0;">&copy; ${new Date().getFullYear()} <a href="https://aotms.com" style="color: #3b82f6; text-decoration: none; font-weight: 600;">aotms.com</a>. All rights reserved.</p>
-                </div>
-            </div>
-        `;
-        await sendEmail({
-            to: email,
-            subject: 'Verify Your Email | Academy of Tech Masters',
-            html: otpHtml
-        });
+        // Trigger n8n Webhook for OTP Email
+        await triggerOtpWebhook({ email, full_name, otp });
 
         res.json({ message: 'OTP resent successfully' });
     } catch (err) {

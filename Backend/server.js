@@ -1083,7 +1083,7 @@ app.post('/api/run-code', authenticateToken, async (req, res) => {
 
 // Helper to trigger n8n OTP Webhook
 const triggerOtpWebhook = async ({ email, full_name, otp }) => {
-    const n8nUrl = (process.env.OTP_N8n || process.env.OTP_N8N_URL || 'https://aotms.app.n8n.cloud/webhook/Email').trim();
+    const n8nUrl = (process.env.OTP_N8N_URL || process.env.OTP_N8n || process.env.OTP_N8N || 'https://aotms.app.n8n.cloud/webhook/Email').trim();
     console.log(`[AUTH-OTP Webhook] Triggering n8n at ${n8nUrl} for ${email}...`);
 
     try {

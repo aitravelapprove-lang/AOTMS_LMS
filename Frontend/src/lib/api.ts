@@ -3,11 +3,15 @@
  * preventing 404 HTML responses or duplicated hostnames (e.g. 187.53.134.243/187.53.134.243/api).
  */
 const getBaseApiUrl = (): string => {
-  const envUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_RENDER_URL;
+  let envUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_RENDER_URL;
   if (!envUrl) {
     return "/api";
   }
-  const trimmed = envUrl.trim().replace(/\/+$/, "");
+  let trimmed = envUrl.trim().replace(/\/+$/, "");
+  // Automatically convert https:// on raw IP 187.53.134.243 to http:// to prevent SSL ERR_CERT_AUTHORITY_INVALID
+  if (trimmed.startsWith("https://187.53.134.243")) {
+    trimmed = trimmed.replace("https://187.53.134.243", "http://187.53.134.243");
+  }
   // If envUrl does not start with http://, https://, or /, default safely to relative "/api"
   if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://") && !trimmed.startsWith("/")) {
     return "/api";

@@ -36,6 +36,7 @@ dist-ssr
 Backend/*.json
 !Backend/package*.json
 !Backend/tsconfig.json
+!Backend/jsconfig.json
 !Backend/manifest.json
 Backend/service.json
 Frontend/package-lock.json

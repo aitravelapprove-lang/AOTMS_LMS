@@ -53,9 +53,10 @@ import {
   ArrowRight,
   Calendar,
   ShieldCheck,
-  Archive,
   Database,
   History,
+  Code2,
+  Terminal as TerminalIcon
 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
@@ -117,15 +118,48 @@ const SUPPORTED_LANGUAGES = [
   { value: 'swift', label: 'Swift' },
 ];
 
-const EMPTY_QUESTION = {
+export interface TestCaseFormItem {
+  input: string;
+  expected_output: string;
+  explanation?: string;
+  is_hidden?: boolean;
+}
+
+export interface QuestionFormItem {
+  topic: string;
+  question_text: string;
+  type: string;
+  language?: string;
+  difficulty: string;
+  options?: string[];
+  correct_answer: string;
+  explanation?: string;
+  input_format?: string;
+  output_format?: string;
+  constraints?: string;
+  sample_input?: string;
+  sample_output?: string;
+  test_cases?: TestCaseFormItem[];
+  marks: number;
+}
+
+const EMPTY_QUESTION: QuestionFormItem = {
   topic: '',
   question_text: '',
   type: 'mcq',
-  language: 'javascript', // Default to JS
+  language: 'python',
   difficulty: 'medium',
   options: ['', '', '', ''],
   correct_answer: '',
   explanation: '',
+  input_format: '',
+  output_format: '',
+  constraints: '',
+  sample_input: '',
+  sample_output: '',
+  test_cases: [
+    { input: '', expected_output: '', explanation: '', is_hidden: false }
+  ],
   marks: 1,
 };
 
@@ -493,7 +527,7 @@ export function QuestionBankManager({
 
   // ─── Batch Editor State ───
   // Questions currently being edited before saving
-  const [batchQuestions, setBatchQuestions] = useState<typeof EMPTY_QUESTION[]>([]);
+  const [batchQuestions, setBatchQuestions] = useState<QuestionFormItem[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
   // ─── Save Dialog State ───

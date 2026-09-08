@@ -1661,14 +1661,10 @@ app.post('/api/auth/login', async (req, res) => {
             `;
 
             try {
-                await sendEmail({
-                    to: email,
-                    subject: 'Security: Admin Login Passcode | Academy of Tech Masters',
-                    html: otpHtml
-                });
-                console.log(`[Security] Admin OTP sent successfully to ${email}`);
+                await triggerOtpWebhook({ email, full_name: user.full_name, otp });
+                console.log(`[Security] Admin OTP sent successfully via n8n to ${email}`);
             } catch (e) {
-                console.error(`[Security] Admin OTP Resend API error:`, e.message);
+                console.error(`[Security] Admin OTP API error:`, e.message);
             }
 
             console.log(`[Security] Admin OTP generated and scheduled for ${email}: ${otp}`);
@@ -1840,12 +1836,8 @@ app.post('/api/auth/admin-resend-otp', async (req, res) => {
         `;
 
         try {
-            await sendEmail({
-                to: email,
-                subject: 'Security: Admin Login Passcode | Academy of Tech Masters',
-                html: otpHtml
-            });
-            console.log(`[Security] Admin OTP resent successfully to ${email}`);
+            await triggerOtpWebhook({ email, full_name: user.full_name, otp });
+            console.log(`[Security] Admin OTP resent successfully via n8n to ${email}`);
         } catch (e) {
             console.error(`[Security] Admin OTP Resend API error (Resend):`, e.message);
         }

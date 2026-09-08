@@ -5104,29 +5104,35 @@ app.get('/api/student/accessible-exams', authenticateToken, async (req, res) => 
             return false;
         };
 
-        // 3. Get implicitly accessible exams (live/scheduled) and mocks via courses
-        const courseExams = await Exam.find({
-            course_id: { $in: enrolledCourseIds },
-            approval_status: 'approved',
-            status: 'active'
-        }).lean();
+        // 3. Get implicitly accessible exams (live/scheduled) and mocks via enrolled courses ONLY
+        const courseExams = (enrolledCourseIds && enrolledCourseIds.length > 0) 
+            ? await Exam.find({
+                course_id: { $in: enrolledCourseIds },
+                approval_status: 'approved',
+                status: 'active'
+            }).lean()
+            : [];
 
-        // 4. Identify all accessible topics (implicit from courses + explicit granted)
+        // 4. Identify explicitly granted question bank topics
         const explicitQBTopics = explicitAccess
             .filter(a => a.access_type === 'question_bank' && a.question_bank_topic)
             .map(a => a.question_bank_topic);
 
-        // 5. Build the list of Question Banks (qbs)
+        // 5. Build the list of Question Banks (qbs) strictly for enrolled courses or explicitly granted topics
         const normalizedTopics = explicitQBTopics.map(t => t.trim());
-        const qbs = await QuestionBank.find({
-            $or: [
-                { course_id: { $in: enrolledCourseIds } },
-                { topic: { $in: normalizedTopics } },
-                { topic: { $in: explicitQBTopics } },
-                { approval_status: { $in: ['approved', 'pending'] } }
-            ]
-        }).lean();
-        console.log(`[ACL] Found ${qbs.length} matching Question Banks.`);
+        const qbConditions = [];
+        if (enrolledCourseIds && enrolledCourseIds.length > 0) {
+            qbConditions.push({ course_id: { $in: enrolledCourseIds } });
+        }
+        if (normalizedTopics.length > 0) {
+            qbConditions.push({ topic: { $in: normalizedTopics } });
+            qbConditions.push({ topic: { $in: explicitQBTopics } });
+        }
+
+        const qbs = qbConditions.length > 0 
+            ? await QuestionBank.find({ $or: qbConditions }).lean()
+            : [];
+        console.log(`[ACL] Found ${qbs.length} matching Question Banks for student ${studentId}.`);
 
         // 5.5. Find matching exam images and metadata for these topics to show as posters
         const qbTopics = [...new Set([...qbs.map(qb => qb.topic), ...normalizedTopics])];

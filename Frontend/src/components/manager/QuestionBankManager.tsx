@@ -645,7 +645,13 @@ export function QuestionBankManager({
           question_text: q.question_text,
           options: (q.options && q.options.length >= 2) ? q.options : ['', '', '', ''],
           correct_answer: q.correct_answer || '',
-          explanation: q.explanation || '',
+          explanation: (q.explanation || (q as Record<string, unknown>).explanation || '') as string,
+          input_format: ((q as Record<string, unknown>).input_format || '') as string,
+          output_format: ((q as Record<string, unknown>).output_format || '') as string,
+          constraints: ((q as Record<string, unknown>).constraints || '') as string,
+          sample_input: ((q as Record<string, unknown>).sample_input || '') as string,
+          sample_output: ((q as Record<string, unknown>).sample_output || '') as string,
+          test_cases: ((q as Record<string, unknown>).test_cases || []) as { input: string; expected_output: string; explanation?: string; is_hidden?: boolean }[],
           marks: q.marks || globalMarks,
         }));
 
@@ -1110,28 +1116,171 @@ export function QuestionBankManager({
                     {(q.type !== 'mcq' && q.type !== 'true_false') && (
                       <div className="space-y-4">
                         {q.type === 'coding' && (
-                          <div className="space-y-2">
-                            <Label className="text-[10px] uppercase font-bold text-slate-500">Target Programming Language</Label>
-                            <Select 
-                              value={q.language || 'javascript'} 
-                              onValueChange={(val) => handleUpdateQuestion(idx, 'language', val)}
-                            >
-                              <SelectTrigger className="h-10 rounded-xl bg-slate-50 border-slate-200">
-                                <SelectValue placeholder="Select Language" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {SUPPORTED_LANGUAGES.map(lang => (
-                                  <SelectItem key={lang.value} value={lang.value} className="font-bold text-[10px] uppercase tracking-wider">
-                                    {lang.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                          <div className="space-y-4 border-2 border-primary/20 bg-primary/5 p-4 rounded-2xl">
+                            <div className="flex items-center justify-between">
+                              <Label className="text-xs font-black uppercase tracking-wider text-primary flex items-center gap-1.5">
+                                <Code2 className="h-4 w-4" /> Coding Challenge Configuration
+                              </Label>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-1.5">
+                                <Label className="text-xs font-bold text-slate-700">Target Programming Language</Label>
+                                <Select 
+                                  value={q.language || 'python'} 
+                                  onValueChange={(val) => handleUpdateQuestion(idx, 'language', val)}
+                                >
+                                  <SelectTrigger className="h-10 rounded-xl bg-white border-slate-200 font-bold text-xs uppercase">
+                                    <SelectValue placeholder="Select Language" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {SUPPORTED_LANGUAGES.map(lang => (
+                                      <SelectItem key={lang.value} value={lang.value} className="font-bold text-[10px] uppercase tracking-wider">
+                                        {lang.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div className="space-y-1.5">
+                                <Label className="text-xs font-bold text-slate-700">Constraints</Label>
+                                <Input
+                                  value={q.constraints || ''}
+                                  onChange={(e) => handleUpdateQuestion(idx, 'constraints', e.target.value)}
+                                  placeholder="e.g. 1 <= price <= 100000, 1 <= quantity <= 100"
+                                  className="h-10 rounded-xl bg-white border-slate-200 font-mono text-xs"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-1.5">
+                                <Label className="text-xs font-bold text-slate-700">Input Format</Label>
+                                <Textarea
+                                  value={q.input_format || ''}
+                                  onChange={(e) => handleUpdateQuestion(idx, 'input_format', e.target.value)}
+                                  rows={3}
+                                  className="bg-white border-slate-200 text-xs"
+                                  placeholder="Line 1: price (float)&#10;Line 2: quantity (int)..."
+                                />
+                              </div>
+
+                              <div className="space-y-1.5">
+                                <Label className="text-xs font-bold text-slate-700">Output Format</Label>
+                                <Textarea
+                                  value={q.output_format || ''}
+                                  onChange={(e) => handleUpdateQuestion(idx, 'output_format', e.target.value)}
+                                  rows={3}
+                                  className="bg-white border-slate-200 text-xs"
+                                  placeholder="Print Total Amount, Discount, Final Amount..."
+                                />
+                              </div>
+                            </div>
+
+                            {/* Test Cases Editor */}
+                            <div className="space-y-3 pt-2">
+                              <div className="flex items-center justify-between">
+                                <Label className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                                  <TerminalIcon className="h-4 w-4 text-emerald-600" /> Test Cases & Example Inputs/Outputs
+                                </Label>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  type="button"
+                                  onClick={() => {
+                                    const currentTc = q.test_cases || [];
+                                    handleUpdateQuestion(idx, 'test_cases', [
+                                      ...currentTc,
+                                      { input: '', expected_output: '', explanation: '', is_hidden: false }
+                                    ]);
+                                  }}
+                                  className="h-7 text-xs rounded-lg font-bold bg-white text-primary border-primary/30 hover:bg-primary/5"
+                                >
+                                  <Plus className="h-3.5 w-3.5 mr-1" /> Add Test Case
+                                </Button>
+                              </div>
+
+                              {(q.test_cases || [{ input: q.sample_input || '', expected_output: q.sample_output || '', is_hidden: false }]).map((tc, tcIdx) => (
+                                <div key={tcIdx} className="bg-white p-3 rounded-xl border border-slate-200 space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <Badge variant="outline" className="text-[10px] font-bold">
+                                      Test Case #{tcIdx + 1} {tc.is_hidden ? '(Hidden)' : '(Sample)'}
+                                    </Badge>
+                                    <div className="flex items-center gap-2">
+                                      <label className="flex items-center gap-1 text-[10px] text-slate-600 cursor-pointer">
+                                        <input
+                                          type="checkbox"
+                                          checked={!!tc.is_hidden}
+                                          onChange={(e) => {
+                                            const updatedTc = [...(q.test_cases || [])];
+                                            if (updatedTc[tcIdx]) {
+                                              updatedTc[tcIdx].is_hidden = e.target.checked;
+                                              handleUpdateQuestion(idx, 'test_cases', updatedTc);
+                                            }
+                                          }}
+                                          className="rounded text-primary"
+                                        />
+                                        Is Hidden Test Case?
+                                      </label>
+                                      {((q.test_cases || []).length > 1) && (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          type="button"
+                                          className="h-6 w-6 text-rose-500 hover:text-rose-700"
+                                          onClick={() => {
+                                            const updatedTc = (q.test_cases || []).filter((_, i) => i !== tcIdx);
+                                            handleUpdateQuestion(idx, 'test_cases', updatedTc);
+                                          }}
+                                        >
+                                          <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                      <Label className="text-[10px] font-bold text-slate-500">Expected Input</Label>
+                                      <Textarea
+                                        value={tc.input || ''}
+                                        onChange={(e) => {
+                                          const updatedTc = [...(q.test_cases || [])];
+                                          if (!updatedTc[tcIdx]) updatedTc[tcIdx] = { input: '', expected_output: '' };
+                                          updatedTc[tcIdx].input = e.target.value;
+                                          handleUpdateQuestion(idx, 'test_cases', updatedTc);
+                                        }}
+                                        rows={2}
+                                        placeholder="500&#10;4"
+                                        className="font-mono text-xs bg-slate-900 text-emerald-400 border-slate-800"
+                                      />
+                                    </div>
+
+                                    <div className="space-y-1">
+                                      <Label className="text-[10px] font-bold text-slate-500">Expected Output</Label>
+                                      <Textarea
+                                        value={tc.expected_output || ''}
+                                        onChange={(e) => {
+                                          const updatedTc = [...(q.test_cases || [])];
+                                          if (!updatedTc[tcIdx]) updatedTc[tcIdx] = { input: '', expected_output: '' };
+                                          updatedTc[tcIdx].expected_output = e.target.value;
+                                          handleUpdateQuestion(idx, 'test_cases', updatedTc);
+                                        }}
+                                        rows={2}
+                                        placeholder="Total Amount: 2000&#10;Discount: 200&#10;Final Amount: 1800"
+                                        className="font-mono text-xs bg-slate-900 text-sky-300 border-slate-800"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
                         <div className="space-y-2">
                           <Label className="flex items-center gap-2">
-                            Ideal Answer Logic
+                            Ideal Answer Solution Code / Logic
                             <Badge variant="outline" className="text-[10px] font-normal tracking-wide">
                               {String(q.type || 'short').toUpperCase().replace('_', ' ')}
                             </Badge>
@@ -1143,7 +1292,7 @@ export function QuestionBankManager({
                               "min-h-[140px] font-mono leading-relaxed",
                               q.type === 'coding' ? "bg-slate-900 text-emerald-400 border-slate-800" : "bg-slate-50 border-slate-200"
                             )}
-                            placeholder={q.type === 'coding' ? "// Paste solution here..." : "Enter the correct answer..."}
+                            placeholder={q.type === 'coding' ? "# Write solution code here..." : "Enter the correct answer..."}
                           />
                         </div>
                       </div>

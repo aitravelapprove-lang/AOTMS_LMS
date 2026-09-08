@@ -31,6 +31,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { fetchWithAuth } from '@/lib/api';
 import { CodePlayground } from '@/components/common/CodePlayground';
+import { CodingQuestionDisplay } from '@/components/common/CodingQuestionDisplay';
 
 import { 
   Dialog,
@@ -359,10 +360,25 @@ export function ExamSession({ examId, examTitle, durationMinutes, scheduledDate,
                                             <span className="hidden sm:inline">{flagged[currentQuestion.id as string] ? "Flagged" : "Flag"}</span>
                                         </Button>
                                     </div>
-                                    <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 leading-snug">
-                                        {currentQuestion.question_text || currentQuestion.text}
-                                    </h2>
-                                </div>
+                                     {(qType === 'coding' || qType === 'practical') ? (
+                                         <CodingQuestionDisplay
+                                             question_text={currentQuestion.question_text || currentQuestion.text}
+                                             input_format={currentQuestion.input_format}
+                                             output_format={currentQuestion.output_format}
+                                             explanation={currentQuestion.explanation}
+                                             constraints={currentQuestion.constraints}
+                                             sample_input={currentQuestion.sample_input}
+                                             sample_output={currentQuestion.sample_output}
+                                             test_cases={currentQuestion.test_cases}
+                                             language={currentQuestion.language}
+                                             difficulty={currentQuestion.difficulty}
+                                         />
+                                     ) : (
+                                         <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 leading-snug">
+                                             {currentQuestion.question_text || currentQuestion.text}
+                                         </h2>
+                                     )}
+                                 </div>
 
                                 <Separator className="bg-slate-200" />
 

@@ -48,6 +48,18 @@ const QuestionBankSchema = new Schema({
         default: 'multiple_choice' 
     },
     language: { type: String, default: 'javascript' }, // For coding type questions
+    input_format: { type: String },
+    output_format: { type: String },
+    explanation: { type: String },
+    constraints: { type: String },
+    sample_input: { type: String },
+    sample_output: { type: String },
+    test_cases: [{
+        input: { type: String },
+        expected_output: { type: String },
+        explanation: { type: String },
+        is_hidden: { type: Boolean, default: false }
+    }],
     marks: { type: Number, default: 1 },
     course_id: { type: Schema.Types.ObjectId, ref: 'Course' }, // Optional course link
     approval_status: { type: String, default: 'pending' }, // pending, approved, rejected

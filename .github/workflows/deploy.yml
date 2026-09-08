@@ -20,8 +20,10 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           password: ${{ secrets.VPS_PASSWORD }}
+          key: ${{ secrets.VPS_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
           script: |
-            cd ~/AOTMS_LMS-1
+            cd ~/AOTMS_LMS-1 || cd /root/AOTMS_LMS-1 || true
             git reset --hard HEAD
             git pull origin main
             docker compose up --build --force-recreate -d

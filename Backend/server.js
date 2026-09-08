@@ -8533,4 +8533,11 @@ httpServer.listen(port, () => {
     console.log(`[System] Auto-restart triggered at ${new Date().toISOString()}`);
 });
 
-// Trigger nodemon restart
+// ── Global Process Safety Handlers (Prevents Server Crashes) ──
+process.on('uncaughtException', (err) => {
+    console.error('[CRITICAL] Uncaught Exception caught to prevent crash:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('[CRITICAL] Unhandled Promise Rejection caught to prevent crash:', reason);
+});

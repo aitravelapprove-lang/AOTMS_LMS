@@ -5344,6 +5344,7 @@ app.get('/api/student/exam-questions/:id', authenticateToken, async (req, res) =
                         $or: [
                             { topic: { $in: topicRegexes } },
                             { topic: { $in: searchTopics } },
+                            ...(exam.created_by ? [{ created_by: exam.created_by }] : []),
                             ...(exam.course_id ? [{ course_id: exam.course_id }] : [])
                         ]
                     })

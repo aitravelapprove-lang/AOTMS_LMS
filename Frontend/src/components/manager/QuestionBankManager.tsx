@@ -820,9 +820,22 @@ export function QuestionBankManager({
 
       await createQuestion.mutateAsync(questionsToSave);
 
-      // 2. We don't need a separate MockTestConfig if it's attached to an Exam, 
-      // but we'll create a log or simply notify.
-      // The user wants it simply attached.
+      // Auto-link Exam: Update topics & total_questions count on the Exam document in DB
+      if (selectedExamId) {
+        try {
+          await fetchWithAuth(`/data/exams/${selectedExamId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({
+              topics: Array.from(new Set([...(selectedExam?.topics || []), batchTopic])),
+              total_questions: (selectedExam?.total_questions || 0) + questionsToSave.length,
+              status: 'ready',
+              approval_status: 'approved'
+            })
+          });
+        } catch (patchErr) {
+          console.warn('[QuestionBankManager] Could not patch exam metadata:', patchErr);
+        }
+      }
 
       setBatchQuestions([]);
       setGlobalPrompt('');

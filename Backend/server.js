@@ -5356,6 +5356,19 @@ app.get('/api/student/exam-questions/:id', authenticateToken, async (req, res) =
             type: q.type,
             question_type: q.type,
             language: q.language || 'python',
+            difficulty: q.difficulty || 'medium',
+            input_format: q.input_format,
+            output_format: q.output_format,
+            explanation: q.explanation,
+            constraints: q.constraints,
+            sample_input: q.sample_input,
+            sample_output: q.sample_output,
+            test_cases: (q.test_cases || []).map(tc => ({
+                input: tc.input,
+                expected_output: tc.expected_output,
+                explanation: tc.explanation,
+                is_hidden: tc.is_hidden
+            })),
             options: (q.options || []).map(opt => ({ id: opt._id || Math.random(), text: typeof opt === 'string' ? opt : opt.text })),
             // Do NOT send is_correct to frontend during exam
             marks: q.marks || 1

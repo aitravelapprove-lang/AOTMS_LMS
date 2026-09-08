@@ -114,7 +114,15 @@ export interface Question {
     question_type?: string;
     question_text?: string;
     text?: string;
-    language?: string; // New field for coding questions
+    language?: string;
+    difficulty?: string;
+    input_format?: string;
+    output_format?: string;
+    explanation?: string;
+    constraints?: string;
+    sample_input?: string;
+    sample_output?: string;
+    test_cases?: { input: string; expected_output: string; explanation?: string; is_hidden?: boolean }[];
     options?: (string | { id?: string; text: string })[];
 }
 

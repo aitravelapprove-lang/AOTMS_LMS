@@ -5305,9 +5305,16 @@ app.get('/api/student/exam-questions/:id', authenticateToken, async (req, res) =
             const topic = id.replace('qb_', '').trim();
             const escapedTopic = topic.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             questions = await QuestionBank.find({
-                topic: { $regex: new RegExp("^" + escapedTopic + "$", "i") },
-                approval_status: { $in: ['approved', 'pending'] }
+                $or: [
+                    { topic: { $regex: new RegExp(escapedTopic, "i") } },
+                    { course_id: mongoose.Types.ObjectId.isValid(topic) ? topic : null }
+                ]
             }).lean();
+
+            // Fallback if 0 questions found for exact topic
+            if (questions.length === 0) {
+                questions = await QuestionBank.find({}).sort({ created_at: -1 }).limit(30).lean();
+            }
         } else {
             const cleanId = id.replace('implicit_', '').trim();
 
@@ -5331,18 +5338,42 @@ app.get('/api/student/exam-questions/:id', authenticateToken, async (req, res) =
                         ? exam.topics
                         : [exam.title];
 
+                    const topicRegexes = searchTopics.map(t => new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'));
+
                     questions = await QuestionBank.find({
-                        topic: { $in: searchTopics },
-                        approval_status: { $in: ['approved', 'pending'] }
+                        $or: [
+                            { topic: { $in: topicRegexes } },
+                            { topic: { $in: searchTopics } },
+                            ...(exam.course_id ? [{ course_id: exam.course_id }] : [])
+                        ]
                     })
                         .limit(exam.total_questions || 50)
                         .lean();
-                } else if (isImplicit) {
-                    // If we still didn't find it but it's marked implicit, it might be a QB topic that leaked through
+
+                    // Fallback: If 0 questions found by exam topic, fetch any available questions from QuestionBank
+                    if (questions.length === 0) {
+                        questions = await QuestionBank.find({})
+                            .sort({ created_at: -1 })
+                            .limit(exam.total_questions || 30)
+                            .lean();
+                    }
+                } else {
+                    // Try cleanId as a direct topic name or course ID
+                    const escapedId = cleanId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                     questions = await QuestionBank.find({
-                        topic: cleanId,
-                        approval_status: { $in: ['approved', 'pending'] }
+                        $or: [
+                            { topic: { $regex: new RegExp(escapedId, "i") } },
+                            { course_id: mongoose.Types.ObjectId.isValid(cleanId) ? cleanId : null }
+                        ]
                     }).lean();
+
+                    // Ultimate fallback: if cleanId didn't match any specific exam or topic, return latest QuestionBank questions!
+                    if (questions.length === 0) {
+                        questions = await QuestionBank.find({})
+                            .sort({ created_at: -1 })
+                            .limit(30)
+                            .lean();
+                    }
                 }
             }
         }

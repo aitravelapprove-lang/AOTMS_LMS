@@ -790,8 +790,15 @@ export function QuestionBankManager({
             topic: batchTopic,
             question_text: q.question_text,
             type: finalType,
-            language: q.language || 'javascript', // Ensure language is saved
-            difficulty: globalDifficulty,
+            language: q.language || 'python',
+            difficulty: q.difficulty || globalDifficulty,
+            input_format: q.input_format || null,
+            output_format: q.output_format || null,
+            explanation: q.explanation || null,
+            constraints: q.constraints || null,
+            sample_input: q.sample_input || null,
+            sample_output: q.sample_output || null,
+            test_cases: q.test_cases || [],
             options: (finalType === 'multiple_choice' || finalType === 'true_false') ? 
               (Array.isArray(q.options) 
                 ? q.options
@@ -803,10 +810,9 @@ export function QuestionBankManager({
                 : []) 
               : [],
             correct_answer: q.correct_answer || '',
-            explanation: q.explanation || null,
             marks: Number(globalMarks) || 1,
             created_by: user.id,
-            approval_status: 'pending',
+            approval_status: 'approved', // Auto-approve created questions so students can access them immediately
           };
         });
 

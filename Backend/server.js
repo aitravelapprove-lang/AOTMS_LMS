@@ -5120,9 +5120,10 @@ app.get('/api/student/accessible-exams', authenticateToken, async (req, res) => 
         const normalizedTopics = explicitQBTopics.map(t => t.trim());
         const qbs = await QuestionBank.find({
             $or: [
-                { course_id: { $in: enrolledCourseIds }, approval_status: 'approved' },
-                { topic: { $in: normalizedTopics }, approval_status: 'approved' },
-                { topic: { $in: explicitQBTopics }, approval_status: 'approved' }
+                { course_id: { $in: enrolledCourseIds } },
+                { topic: { $in: normalizedTopics } },
+                { topic: { $in: explicitQBTopics } },
+                { approval_status: { $in: ['approved', 'pending'] } }
             ]
         }).lean();
         console.log(`[ACL] Found ${qbs.length} matching Question Banks.`);
@@ -5301,10 +5302,11 @@ app.get('/api/student/exam-questions/:id', authenticateToken, async (req, res) =
         const isImplicit = id.startsWith('implicit_');
 
         if (isQB) {
-            const topic = id.replace('qb_', '');
+            const topic = id.replace('qb_', '').trim();
+            const escapedTopic = topic.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             questions = await QuestionBank.find({
-                topic,
-                approval_status: 'approved'
+                topic: { $regex: new RegExp("^" + escapedTopic + "$", "i") },
+                approval_status: { $in: ['approved', 'pending'] }
             }).lean();
         } else {
             const cleanId = id.replace('implicit_', '').trim();
@@ -5331,7 +5333,7 @@ app.get('/api/student/exam-questions/:id', authenticateToken, async (req, res) =
 
                     questions = await QuestionBank.find({
                         topic: { $in: searchTopics },
-                        approval_status: 'approved'
+                        approval_status: { $in: ['approved', 'pending'] }
                     })
                         .limit(exam.total_questions || 50)
                         .lean();
@@ -5339,7 +5341,7 @@ app.get('/api/student/exam-questions/:id', authenticateToken, async (req, res) =
                     // If we still didn't find it but it's marked implicit, it might be a QB topic that leaked through
                     questions = await QuestionBank.find({
                         topic: cleanId,
-                        approval_status: 'approved'
+                        approval_status: { $in: ['approved', 'pending'] }
                     }).lean();
                 }
             }

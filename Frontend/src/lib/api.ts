@@ -8,9 +8,10 @@ const getBaseApiUrl = (): string => {
     return "/api";
   }
   let trimmed = envUrl.trim().replace(/\/+$/, "");
-  // Automatically convert https:// on raw IP 187.53.134.243 to http:// to prevent SSL ERR_CERT_AUTHORITY_INVALID
-  if (trimmed.startsWith("https://187.53.134.243")) {
-    trimmed = trimmed.replace("https://187.53.134.243", "http://187.53.134.243");
+  // If envUrl contains raw IP 187.53.134.243, always return relative "/api"
+  // to prevent HTTPS Mixed Content errors on domains like lms.academyoftechmasters.com
+  if (trimmed.includes("187.53.134.243")) {
+    return "/api";
   }
   // If envUrl does not start with http://, https://, or /, default safely to relative "/api"
   if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://") && !trimmed.startsWith("/")) {
